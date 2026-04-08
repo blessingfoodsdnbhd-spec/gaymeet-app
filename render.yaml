@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: gaymeet-backend
+    runtime: node
+    rootDir: backend-express
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is injected automatically by Render — do not hardcode it
+      - key: MONGODB_URI
+        sync: false          # set manually in Render dashboard → Environment
+      - key: JWT_SECRET
+        generateValue: true  # Render generates a secure random value
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: MAX_FILE_SIZE_MB
+        value: "5"
+      # Set CLIENT_URL to your Flutter web / admin origin to enable credentials.
+      # Leave unset (or set to *) if you only have mobile clients.
+      # Example: https://gaymeet.onrender.com
+      - key: CLIENT_URL
+        sync: false

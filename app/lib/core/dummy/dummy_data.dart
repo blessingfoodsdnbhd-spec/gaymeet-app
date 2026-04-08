@@ -1,0 +1,237 @@
+import '../models/user.dart';
+import '../models/match.dart';
+import '../models/message.dart';
+import '../models/shout.dart';
+
+/// Toggle this to switch between dummy data and real API.
+/// Set to false when backend is running.
+/// Set to false to use the real backend API (localhost:3000)
+const bool kUseDummyData = false;
+
+class DummyData {
+  static final List<UserModel> users = [
+    UserModel(
+      id: 'u1',
+      nickname: 'Alex',
+      avatarUrl: 'https://i.pravatar.cc/400?img=11',
+      bio: 'Coffee addict. Dog lover. Let\'s grab ramen sometime.',
+      tags: ['travel', 'fitness', 'coffee'],
+      isOnline: true,
+      distance: 0.017,
+      isPremium: false,
+      height: 175,
+      weight: 70,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(minutes: 2)),
+    ),
+    UserModel(
+      id: 'u2',
+      nickname: 'Marcus',
+      avatarUrl: 'https://i.pravatar.cc/400?img=12',
+      bio: 'Photographer by day. DJ by night. Always up for an adventure.',
+      tags: ['photography', 'music', 'nightlife'],
+      isOnline: true,
+      distance: 0.186,
+      isPremium: true,
+      isBoosted: true,
+      height: 180,
+      weight: 80,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(minutes: 19)),
+    ),
+    UserModel(
+      id: 'u3',
+      nickname: 'Kenji',
+      avatarUrl: 'https://i.pravatar.cc/400?img=14',
+      bio: 'Just moved here. Looking for friends and more.',
+      tags: ['anime', 'gaming', 'cooking'],
+      isOnline: false,
+      distance: 0.312,
+      isPremium: false,
+      height: 168,
+      weight: 62,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(hours: 6)),
+    ),
+    UserModel(
+      id: 'u4',
+      nickname: 'Daniel',
+      avatarUrl: 'https://i.pravatar.cc/400?img=53',
+      bio: 'Yoga instructor. Plant-based. Love hiking on weekends.',
+      tags: ['yoga', 'hiking', 'vegan'],
+      isOnline: true,
+      distance: 0.557,
+      isPremium: false,
+      height: 172,
+      weight: 65,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(minutes: 22)),
+    ),
+    UserModel(
+      id: 'u5',
+      nickname: 'Ryan',
+      avatarUrl: 'https://i.pravatar.cc/400?img=57',
+      bio: 'Software engineer who actually goes outside sometimes.',
+      tags: ['tech', 'running', 'dogs'],
+      isOnline: true,
+      distance: 0.605,
+      isPremium: true,
+      height: 177,
+      weight: 75,
+      countryCode: 'SG',
+      lastActive: DateTime.now().subtract(const Duration(hours: 1)),
+    ),
+    UserModel(
+      id: 'u6',
+      nickname: 'Tomás',
+      avatarUrl: 'https://i.pravatar.cc/400?img=59',
+      bio: 'Originally from Barcelona. Love surfing and sunsets.',
+      tags: ['surfing', 'travel', 'wine'],
+      isOnline: false,
+      distance: 0.774,
+      isPremium: false,
+      height: 183,
+      weight: 78,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+    UserModel(
+      id: 'u7',
+      nickname: 'James',
+      avatarUrl: 'https://i.pravatar.cc/400?img=60',
+      bio: 'Bookworm. Jazz enthusiast. Looking for deep conversations.',
+      tags: ['books', 'jazz', 'film'],
+      isOnline: false,
+      distance: 1.2,
+      isPremium: false,
+      height: 170,
+      weight: 68,
+      countryCode: 'MY',
+      lastActive: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+  ];
+
+  static final List<MatchModel> matches = [
+    MatchModel(
+      matchId: 'm1',
+      matchedAt: DateTime.now().subtract(const Duration(hours: 2)),
+      user: users[0],
+      lastMessage: 'Hey! Nice to match with you 😊',
+      lastMessageAt: DateTime.now().subtract(const Duration(minutes: 15)),
+      unreadCount: 1,
+    ),
+    MatchModel(
+      matchId: 'm2',
+      matchedAt: DateTime.now().subtract(const Duration(days: 1)),
+      user: users[1],
+      lastMessage: 'That ramen place was amazing!',
+      lastMessageAt: DateTime.now().subtract(const Duration(hours: 3)),
+      unreadCount: 0,
+    ),
+    MatchModel(
+      matchId: 'm3',
+      matchedAt: DateTime.now().subtract(const Duration(days: 3)),
+      user: users[3],
+      lastMessage: null,
+      lastMessageAt: null,
+      unreadCount: 0,
+    ),
+  ];
+
+  static List<MessageModel> messagesFor(String matchId) {
+    final now = DateTime.now();
+    if (matchId == 'm1') {
+      return [
+        MessageModel(id: 'msg1', matchId: matchId, senderId: 'u1', content: 'Hey! Nice to match with you 😊', createdAt: now.subtract(const Duration(minutes: 15))),
+        MessageModel(id: 'msg2', matchId: matchId, senderId: 'me', content: 'Hey Alex! How\'s it going?', createdAt: now.subtract(const Duration(minutes: 20))),
+        MessageModel(id: 'msg3', matchId: matchId, senderId: 'u1', content: 'Great! Just got back from a run. You?', createdAt: now.subtract(const Duration(minutes: 25))),
+        MessageModel(id: 'msg4', matchId: matchId, senderId: 'me', content: 'Nice! I love running too. What\'s your usual route?', createdAt: now.subtract(const Duration(minutes: 30)), isRead: true),
+      ];
+    }
+    if (matchId == 'm2') {
+      return [
+        MessageModel(id: 'msg5', matchId: matchId, senderId: 'me', content: 'That ramen place was amazing!', createdAt: now.subtract(const Duration(hours: 3)), isRead: true),
+        MessageModel(id: 'msg6', matchId: matchId, senderId: 'u2', content: 'Right?? We should go again sometime', createdAt: now.subtract(const Duration(hours: 4)), isRead: true),
+      ];
+    }
+    return [];
+  }
+
+  static List<ShoutModel> get shouts => [
+    ShoutModel(
+      id: 's1',
+      user: users[0],
+      content: 'Anyone around Bangsar area? Coffee? ☕',
+      distance: 0.017,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+      expiresAt: DateTime.now().add(const Duration(hours: 23, minutes: 30)),
+    ),
+    ShoutModel(
+      id: 's2',
+      user: users[1],
+      content: 'Free tonight, anyone want to hang out in KLCC? 🌃',
+      distance: 0.186,
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      expiresAt: DateTime.now().add(const Duration(hours: 22)),
+    ),
+    ShoutModel(
+      id: 's3',
+      user: users[3],
+      content: 'Looking for gym buddy nearby 💪',
+      distance: 0.557,
+      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
+      expiresAt: DateTime.now().add(const Duration(hours: 19)),
+    ),
+  ];
+
+  static final List<UserModel> popularUsers = [
+    ...users.take(5),
+    UserModel(
+      id: 'p1',
+      nickname: 'WL',
+      avatarUrl: 'https://i.pravatar.cc/400?img=65',
+      isOnline: false,
+      distance: 2.1,
+      height: 169,
+      weight: 72,
+      countryCode: 'MY',
+      isPremium: true,
+      lastActive: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+    UserModel(
+      id: 'p2',
+      nickname: 'SkyDragon',
+      avatarUrl: 'https://i.pravatar.cc/400?img=66',
+      isOnline: true,
+      distance: 3.5,
+      height: 175,
+      weight: 105,
+      countryCode: 'MY',
+      isPremium: false,
+      lastActive: DateTime.now().subtract(const Duration(minutes: 19)),
+    ),
+    UserModel(
+      id: 'p3',
+      nickname: 'Beans',
+      avatarUrl: 'https://i.pravatar.cc/400?img=67',
+      isOnline: false,
+      distance: 8.0,
+      height: 183,
+      weight: 150,
+      countryCode: 'MY',
+      isPremium: false,
+      lastActive: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+  ];
+
+  static final UserModel currentUser = UserModel(
+    id: 'me',
+    email: 'me@gaymeet.app',
+    nickname: 'You',
+    avatarUrl: 'https://i.pravatar.cc/400?img=68',
+    bio: 'Just here to meet cool people.',
+    tags: ['music', 'travel', 'coffee'],
+    isPremium: false,
+    isOnline: true,
+  );
+}

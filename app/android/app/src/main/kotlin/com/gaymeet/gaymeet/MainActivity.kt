@@ -1,0 +1,5 @@
+package com.gaymeet.gaymeet
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

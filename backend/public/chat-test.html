@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GayMeet Chat Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d0d0d; color: #f5f5f5; height: 100vh; display: flex; flex-direction: column; }
+
+    .header { padding: 16px 20px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; gap: 12px; }
+    .header .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #FF3B6F, #FF8A5C); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .header .info h2 { font-size: 15px; font-weight: 600; }
+    .header .info .status { font-size: 11px; color: #00E676; display: flex; align-items: center; gap: 4px; }
+    .header .info .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #00E676; }
+
+    .login-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; }
+    .login-panel h1 { font-size: 28px; background: linear-gradient(135deg, #FF3B6F, #FF8A5C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .login-panel input, .login-panel button { width: 300px; padding: 14px 18px; border-radius: 14px; border: none; font-size: 14px; }
+    .login-panel input { background: #1a1a1a; color: #f5f5f5; }
+    .login-panel input:focus { outline: 1px solid #FF3B6F; }
+    .login-panel button { background: linear-gradient(135deg, #FF3B6F, #FF8A5C); color: white; font-weight: 700; cursor: pointer; }
+    .login-panel button:hover { opacity: 0.9; }
+    .login-panel .hint { font-size: 12px; color: #616161; }
+    .login-panel .error { color: #FF5252; font-size: 13px; }
+
+    .chat-panel { display: none; flex: 1; flex-direction: column; }
+    .messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 72%; padding: 12px 16px; border-radius: 18px; font-size: 14px; line-height: 1.4; animation: fadeIn 0.2s; }
+    .msg.me { align-self: flex-end; background: linear-gradient(135deg, #FF3B6F, #FF8A5C); border-bottom-right-radius: 4px; }
+    .msg.them { align-self: flex-start; background: #242424; border-bottom-left-radius: 4px; }
+    .msg .meta { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 4px; text-align: right; }
+    .msg.them .meta { text-align: left; }
+    .system-msg { text-align: center; font-size: 12px; color: #616161; padding: 8px; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .input-bar { padding: 12px 16px; background: #1a1a1a; border-top: 1px solid #2a2a2a; display: flex; gap: 8px; }
+    .input-bar input { flex: 1; padding: 12px 18px; border-radius: 24px; border: none; background: #242424; color: #f5f5f5; font-size: 14px; }
+    .input-bar input:focus { outline: none; }
+    .input-bar button { width: 44px; height: 44px; border-radius: 22px; border: none; background: linear-gradient(135deg, #FF3B6F, #FF8A5C); color: white; cursor: pointer; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<div class="login-panel" id="loginPanel">
+  <h1>GayMeet Chat</h1>
+  <input type="email" id="emailInput" placeholder="Email (e.g. yuto0@gaymeet.app)" />
+  <input type="password" id="passInput" placeholder="Password" value="pass123456" />
+  <button onclick="login()">Log In</button>
+  <div class="hint">Use any seeded user: yuto0@gaymeet.app, haruki1@gaymeet.app, etc.</div>
+  <div class="error" id="loginError"></div>
+</div>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="header" id="chatHeader">
+    <div class="avatar">💬</div>
+    <div class="info">
+      <h2 id="chatWith">Select a match</h2>
+      <div class="status" id="onlineStatus" style="display:none">Online</div>
+    </div>
+  </div>
+
+  <!-- Match list (shows before selecting a chat) -->
+  <div id="matchList" style="flex:1; overflow-y:auto; padding:12px;"></div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages" style="display:none"></div>
+
+  <!-- Input -->
+  <div class="input-bar" id="inputBar" style="display:none">
+    <input type="text" id="msgInput" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMsg()" />
+    <button onclick="sendMsg()">→</button>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3000/api';
+let token = '';
+let myUserId = '';
+let myNickname = '';
+let socket = null;
+let currentMatchId = null;
+let currentOtherUserId = null;
+
+async function login() {
+  const email = document.getElementById('emailInput').value;
+  const pass = document.getElementById('passInput').value;
+  document.getElementById('loginError').textContent = '';
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const json = await res.json();
+    if (!json.data) throw new Error(json.message || 'Login failed');
+
+    token = json.data.accessToken;
+    myUserId = json.data.user.id;
+    myNickname = json.data.user.nickname;
+
+    // Connect socket
+    connectSocket();
+
+    // Show chat panel
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('chatPanel').style.display = 'flex';
+    document.title = `GayMeet - ${myNickname}`;
+
+    // Load matches
+    loadMatches();
+  } catch (e) {
+    document.getElementById('loginError').textContent = e.message;
+  }
+}
+
+function connectSocket() {
+  socket = io('http://localhost:3000/chat', {
+    auth: { token },
+    transports: ['websocket']
+  });
+
+  socket.on('connect', () => {
+    addSystemMsg('Connected to chat server ✓');
+  });
+
+  socket.on('disconnect', () => {
+    addSystemMsg('Disconnected from server');
+  });
+
+  socket.on('chat:receive', (data) => {
+    if (data.matchId === currentMatchId) {
+      addMsg(data.content, false, data.createdAt);
+    }
+  });
+
+  socket.on('user:online', (data) => {
+    if (data.userId === currentOtherUserId) {
+      document.getElementById('onlineStatus').style.display = 'flex';
+    }
+  });
+
+  socket.on('user:offline', (data) => {
+    if (data.userId === currentOtherUserId) {
+      document.getElementById('onlineStatus').style.display = 'none';
+    }
+  });
+
+  socket.on('chat:read', (data) => {
+    if (data.matchId === currentMatchId) {
+      // Could update read receipts UI
+    }
+  });
+}
+
+async function loadMatches() {
+  const res = await fetch(`${API}/matches`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const json = await res.json();
+  const matches = json.data || [];
+
+  const list = document.getElementById('matchList');
+  if (matches.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#616161;padding:40px;">No matches yet. Swipe first!</div>';
+    return;
+  }
+
+  list.innerHTML = matches.map(m => `
+    <div onclick="openChat('${m.matchId}', '${m.user.nickname}', '${m.user.id}', ${m.user.isOnline})"
+         style="display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-radius:12px;margin-bottom:4px;"
+         onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
+      <div style="width:44px;height:44px;border-radius:50%;background:#242424;display:flex;align-items:center;justify-content:center;font-size:20px;">
+        ${m.user.avatarUrl ? `<img src="${m.user.avatarUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">` : '👤'}
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">${m.user.nickname} ${m.user.isOnline ? '<span style="color:#00E676;font-size:10px;">● Online</span>' : ''}</div>
+        <div style="font-size:12px;color:#9e9e9e;">Tap to chat</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openChat(matchId, nickname, otherId, isOnline) {
+  currentMatchId = matchId;
+  currentOtherUserId = otherId;
+
+  document.getElementById('chatWith').textContent = nickname;
+  document.getElementById('onlineStatus').style.display = isOnline ? 'flex' : 'none';
+  document.getElementById('matchList').style.display = 'none';
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('inputBar').style.display = 'flex';
+
+  // Clear messages
+  document.getElementById('messages').innerHTML = '';
+  addSystemMsg(`Chat with ${nickname}`);
+
+  // Load history
+  const res = await fetch(`${API}/chat/${matchId}/messages`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const json = await res.json();
+  const msgs = (json.data?.messages || []).reverse();
+  msgs.forEach(m => {
+    addMsg(m.content, m.senderId === myUserId, m.createdAt);
+  });
+
+  // Mark as read
+  socket.emit('chat:read', { matchId });
+
+  // Focus input
+  document.getElementById('msgInput').focus();
+}
+
+function sendMsg() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !currentMatchId) return;
+
+  socket.emit('chat:send', {
+    matchId: currentMatchId,
+    content: text
+  });
+
+  addMsg(text, true);
+  input.value = '';
+  input.focus();
+}
+
+function addMsg(content, isMe, timestamp) {
+  const div = document.createElement('div');
+  div.className = `msg ${isMe ? 'me' : 'them'}`;
+  const time = timestamp ? new Date(timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `${escapeHtml(content)}<div class="meta">${time}</div>`;
+  document.getElementById('messages').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function addSystemMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'system-msg';
+  div.textContent = text;
+  const container = document.getElementById('messages');
+  if (container) container.appendChild(div);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
