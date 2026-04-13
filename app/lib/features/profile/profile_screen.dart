@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../core/dummy/dummy_data.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/boost_provider.dart';
+import '../../shared/widgets/design_system/rainbow_border.dart';
 import '../../shared/widgets/looking_for_badge.dart';
 import '../gifts/gift_sheet.dart';
 import '../dm/send_dm_sheet.dart';
@@ -44,27 +45,20 @@ class ProfileScreen extends ConsumerWidget {
               _PhotoStrip(photos: user.photos),
               const SizedBox(height: 20),
             ] else ...[
-              // Fallback single avatar when no photos list
+              // Fallback avatar with rainbow border
               Center(
-                child: Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.3),
-                      width: 3,
-                    ),
-                  ),
+                child: RainbowBorder(
+                  borderWidth: 3,
+                  borderRadius: 60,
                   child: CircleAvatar(
                     radius: 52,
                     backgroundImage: user.avatarUrl != null
                         ? CachedNetworkImageProvider(user.avatarUrl!)
                         : null,
-                    backgroundColor: AppTheme.card,
+                    backgroundColor: AppColors.bgSurface,
                     child: user.avatarUrl == null
                         ? const Icon(Icons.person_rounded,
-                            size: 48, color: Colors.grey)
+                            size: 48, color: AppColors.textHint)
                         : null,
                   ),
                 ),

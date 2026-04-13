@@ -22,6 +22,14 @@ const Gift = require('./models/Gift');
 const GiftTransaction = require('./models/GiftTransaction');
 const Event = require('./models/Event');
 const StickerPack = require('./models/StickerPack');
+const Referral = require('./models/Referral');
+const Commission = require('./models/Commission');
+const Wallet = require('./models/Wallet');
+const Withdrawal = require('./models/Withdrawal');
+const Payment = require('./models/Payment');
+const generateUniqueReferralCode = require('./utils/generateReferralCode');
+const Place = require('./models/Place');
+const PlaceEvent = require('./models/PlaceEvent');
 
 // ── KL-area coordinates (jittered) ───────────────────────────────────────────
 const KL_CENTER = [101.6869, 3.1390]; // [lng, lat]
@@ -122,12 +130,25 @@ async function seed() {
     Gift.deleteMany({}),
     GiftTransaction.deleteMany({}),
     Event.deleteMany({}),
+    Referral.deleteMany({}),
+    Commission.deleteMany({}),
+    Wallet.deleteMany({}),
+    Withdrawal.deleteMany({}),
+    Payment.deleteMany({}),
+    Place.deleteMany({}),
+    PlaceEvent.deleteMany({}),
   ]);
   console.log('🗑️  Cleared existing data');
 
   // ── Create users ───────────────────────────────────────────────────────────
   const passwordHash = await bcrypt.hash('password123', 12);
   const coords = DUMMY_USERS.map(() => jitter(KL_CENTER, 20));
+
+  // Pre-generate referral codes
+  const referralCodes = [];
+  for (let i = 0; i < DUMMY_USERS.length; i++) {
+    referralCodes.push(await generateUniqueReferralCode());
+  }
 
   const userDocs = await User.insertMany(
     DUMMY_USERS.map((u, i) => ({
@@ -144,6 +165,9 @@ async function seed() {
       isPremium: i < 5, // first 5 users are premium
       isBoosted: i < 2, // first 2 are boosted
       boostExpiresAt: i < 2 ? new Date(Date.now() + 30 * 60 * 1000) : null,
+      referralCode: referralCodes[i],
+      // Users 2-6 were referred by user 0
+      referredBy: (i >= 2 && i <= 6) ? null : null, // set after insert below
     }))
   );
   console.log(`👤 Created ${userDocs.length} users`);
@@ -429,7 +453,238 @@ async function seed() {
     $addToSet: { ownedStickerPacks: (await StickerPack.findOne({ price: 0 }))._id },
   });
 
+  // ── Referral system seed ───────────────────────────────────────────────────
+  // User 0 (Hafiz) referred users 1-5
+  const referrer = userDocs[0];
+  const referredUsers = userDocs.slice(1, 6);
+
+  // Link referredBy on referred users
+  for (const ru of referredUsers) {
+    await User.findByIdAndUpdate(ru._id, { referredBy: referrer._id });
+  }
+  await User.findByIdAndUpdate(referrer._id, { referralCount: referredUsers.length });
+
+  // Create referral records (mix of pending and active)
+  const referralDocs = await Referral.insertMany(
+    referredUsers.map((ru, i) => ({
+      referrer: referrer._id,
+      referred: ru._id,
+      referralCode: referrer.referralCode,
+      status: i < 3 ? 'active' : 'pending',
+      totalCommissionEarned: 0,
+      createdAt: new Date(Date.now() - (5 - i) * 86400000 * 3),
+    }))
+  );
+  console.log(`🔗 Created ${referralDocs.length} referral relationships`);
+
+  // Simulate payments and commissions for the 3 active referrals
+  const PAYMENT_TYPES = ['premium', 'coins', 'boost'];
+  const PAYMENT_AMOUNTS = [29.90, 9.90, 14.90];
+
+  let totalCommission = 0;
+  const paymentDocs = [];
+  const commissionDocs = [];
+
+  for (let i = 0; i < 3; i++) {
+    const referred = referredUsers[i];
+    const amount = PAYMENT_AMOUNTS[i];
+    const commission = parseFloat((amount * 0.10).toFixed(2));
+
+    const payment = await Payment.create({
+      user: referred._id,
+      type: PAYMENT_TYPES[i],
+      amount,
+      currency: 'MYR',
+      referralProcessed: true,
+      createdAt: new Date(Date.now() - (3 - i) * 86400000),
+    });
+    paymentDocs.push(payment);
+
+    const comm = await Commission.create({
+      referrer: referrer._id,
+      referred: referred._id,
+      payment: payment._id,
+      amount: commission,
+      currency: 'MYR',
+      status: 'approved',
+      createdAt: new Date(Date.now() - (3 - i) * 86400000 + 3600000),
+    });
+    commissionDocs.push(comm);
+
+    await Referral.findOneAndUpdate(
+      { referrer: referrer._id, referred: referred._id },
+      { $inc: { totalCommissionEarned: commission } }
+    );
+
+    totalCommission += commission;
+  }
+  console.log(`💰 Created ${commissionDocs.length} commissions (total RM${totalCommission.toFixed(2)})`);
+
+  // Create wallet for referrer
+  await Wallet.create({
+    user: referrer._id,
+    balance: totalCommission,
+    totalEarned: totalCommission,
+    totalWithdrawn: 0,
+  });
+  console.log(`👛 Created wallet for ${referrer.nickname} (balance: RM${totalCommission.toFixed(2)})`);
+
+  // Create a sample withdrawal (pending)
+  await Withdrawal.create({
+    user: referrer._id,
+    amount: 0, // no balance consumed — just a sample record
+    method: 'ewallet',
+    accountDetails: 'Touch n Go: 012-3456789',
+    status: 'completed',
+    processedAt: new Date(Date.now() - 86400000 * 7),
+    createdAt: new Date(Date.now() - 86400000 * 8),
+  });
+  console.log('🏦 Created sample withdrawal record');
+
   // ── Print test account info ────────────────────────────────────────────────
+  // ── Places seed ────────────────────────────────────────────────────────────
+  const PLACES_SEED = [
+    {
+      name: 'Utopia KL',
+      description: '吉隆坡最受欢迎的同志酒吧，每周五六有主题派对和DJ表演。彩虹旗常飘，欢迎所有人！',
+      category: 'bar',
+      address: 'Jalan Ampang, Kuala Lumpur',
+      city: 'Kuala Lumpur',
+      tags: ['DJ', '派对', '彩虹', '夜生活', 'karaoke'],
+      priceRange: '$$',
+      openingHours: 'Wed-Sun 8PM-3AM',
+      coordinates: [101.7069, 3.1569],
+    },
+    {
+      name: 'Fahrenheit Club',
+      description: '吉隆坡著名同志夜店，宽敞舞池，顶级音响，每月举办Drag Show和主题之夜。',
+      category: 'club',
+      address: 'Jalan Bukit Bintang, KL',
+      city: 'Kuala Lumpur',
+      tags: ['夜店', 'drag show', '舞池', '主题派对'],
+      priceRange: '$$$',
+      openingHours: 'Fri-Sat 10PM-5AM',
+      coordinates: [101.7138, 3.1488],
+    },
+    {
+      name: 'Rainbow Cafe',
+      description: '温馨友善的彩虹咖啡馆，提供精品咖啡和轻食。墙上挂满LGBTQ+艺术作品，是约会和休闲的好去处。',
+      category: 'cafe',
+      address: 'Damansara Heights, KL',
+      city: 'Kuala Lumpur',
+      tags: ['咖啡', '轻食', '艺术', '友善空间', '约会'],
+      priceRange: '$',
+      openingHours: 'Daily 9AM-10PM',
+      coordinates: [101.6658, 3.1502],
+    },
+    {
+      name: 'The Pink Elephant Restaurant',
+      description: '精致的亚洲融合餐厅，LGBTQ+友善，提供马来西亚及国际美食。推荐周末brunch！',
+      category: 'restaurant',
+      address: 'KLCC, Kuala Lumpur',
+      city: 'Kuala Lumpur',
+      tags: ['餐厅', '亚洲融合', 'brunch', '友善', '约会'],
+      priceRange: '$$$',
+      openingHours: 'Tue-Sun 11AM-11PM',
+      coordinates: [101.7124, 3.1578],
+    },
+    {
+      name: 'Blue Moon Sauna',
+      description: '吉隆坡中心区的私人温泉桑拿，设施齐全，卫生整洁，私密空间，LGBTQ+专属。',
+      category: 'sauna',
+      address: 'Chow Kit, Kuala Lumpur',
+      city: 'Kuala Lumpur',
+      tags: ['桑拿', '温泉', '私密', '放松'],
+      priceRange: '$$',
+      openingHours: 'Daily 12PM-12AM',
+      coordinates: [101.6969, 3.1669],
+    },
+  ];
+
+  const placeDocs = await Place.insertMany(
+    PLACES_SEED.map((p, i) => ({
+      user: userDocs[i]._id,
+      name: p.name,
+      description: p.description,
+      category: p.category,
+      address: p.address,
+      city: p.city,
+      country: 'MY',
+      tags: p.tags,
+      priceRange: p.priceRange,
+      openingHours: p.openingHours,
+      photos: [],
+      isVerified: i < 3, // first 3 are verified
+      location: { type: 'Point', coordinates: p.coordinates },
+    }))
+  );
+
+  // Add some reviews
+  const REVIEWS = [
+    [{ user: 1, score: 5, review: '超棒的地方！每次去都很开心，工作人员很友善。' },
+     { user: 2, score: 4, review: '环境不错，酒水价格合理，会再来！' }],
+    [{ user: 0, score: 5, review: '最好的夜店！Drag Show非常精彩！' },
+     { user: 3, score: 4, review: '音乐很棒，但周末人太多了。' }],
+    [{ user: 4, score: 5, review: '咖啡超好喝！装修很有艺术感，适合聊天。' }],
+    [{ user: 1, score: 4, review: '食物美味，服务很好，价格稍贵但值得。' },
+     { user: 5, score: 5, review: '周末brunch必去！推荐班尼蛋。' }],
+    [{ user: 2, score: 4, review: '设施干净，私密性好，会员价格合理。' }],
+  ];
+
+  for (let i = 0; i < placeDocs.length; i++) {
+    const place = placeDocs[i];
+    const reviews = REVIEWS[i] || [];
+    for (const r of reviews) {
+      place.ratings.push({ user: userDocs[r.user]._id, score: r.score, review: r.review });
+    }
+    const avg = reviews.length > 0
+      ? reviews.reduce((s, r) => s + r.score, 0) / reviews.length
+      : 0;
+    place.averageRating = parseFloat(avg.toFixed(2));
+    place.totalReviews = reviews.length;
+
+    // Give a few likes
+    for (let j = 0; j < Math.min(3, userDocs.length); j++) {
+      place.likes.push(userDocs[(i + j + 1) % userDocs.length]._id);
+    }
+    await place.save();
+  }
+  console.log(`🗺️  Created ${placeDocs.length} places with reviews`);
+
+  // Place events
+  const nextDay = (d) => new Date(Date.now() + d * 86400000);
+  await PlaceEvent.insertMany([
+    {
+      place: placeDocs[0]._id,
+      user: userDocs[0]._id,
+      title: '彩虹之夜 🌈',
+      description: '每月一度的彩虹派对，DJ表演 + 免费彩虹 shot！',
+      date: nextDay(7),
+      endDate: nextDay(7.25),
+      price: 25,
+      currency: 'MYR',
+    },
+    {
+      place: placeDocs[1]._id,
+      user: userDocs[1]._id,
+      title: 'Drag Queen Show Night',
+      description: '吉隆坡最顶级的Drag Show！三位表演者轮番登场，full glam！',
+      date: nextDay(4),
+      price: 50,
+      currency: 'MYR',
+    },
+    {
+      place: placeDocs[2]._id,
+      user: userDocs[2]._id,
+      title: '同志艺术展 × 咖啡下午茶',
+      description: '本地LGBTQ+艺术家作品展，配上精品咖啡和甜点。入场免费。',
+      date: nextDay(10),
+      price: 0,
+      currency: 'MYR',
+    },
+  ]);
+  console.log('🎪 Created 3 place events');
+
   console.log('\n✅ Seed complete!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🔑 Test accounts (password: password123)');
@@ -437,6 +692,7 @@ async function seed() {
     const label = u.isPremium ? '[Premium]' : '[Free]';
     console.log(`   ${label} ${u.email}`);
   });
+  console.log(`\n💌 Referral code for ${userDocs[0].nickname}: ${userDocs[0].referralCode}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   await mongoose.disconnect();

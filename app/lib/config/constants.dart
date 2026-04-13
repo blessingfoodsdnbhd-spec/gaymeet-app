@@ -3,14 +3,14 @@ class AppConstants {
 
   // ── API base URL ─────────────────────────────────────────────────────────────
   // To switch between environments use --dart-define when running:
-  //   Local dev (default):  flutter run
-  //   Production:           flutter run --dart-define=API_URL=https://gaymeet-backend.onrender.com
+  //   Local dev:   flutter run --dart-define=API_URL=http://localhost:3000
+  //   Production (default): https://gaymeet-api.onrender.com
   //
-  // For a release build pointing at production:
-  //   flutter build apk --dart-define=API_URL=https://gaymeet-backend.onrender.com
+  // For a release build:
+  //   flutter build apk --release
   static const String _apiUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://gaymeet-api.onrender.com',
   );
 
   static const String apiBaseUrl = '$_apiUrl/api';

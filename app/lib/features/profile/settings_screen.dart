@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/privacy_provider.dart';
+import '../../core/providers/referral_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -41,6 +42,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final notifier = ref.read(privacyProvider.notifier);
     final sub = ref.watch(subscriptionProvider);
     final subNotifier = ref.read(subscriptionProvider.notifier);
+    final referral = ref.watch(referralProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -182,6 +184,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // ── Referral ───────────────────────────────────────────────────────
+          const _SectionHeader(title: 'EARN MONEY'),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFB300), Color(0xFFFF6D00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Text('💰', style: TextStyle(fontSize: 14)),
+            ),
+            title: const Text('邀请好友得奖励 🎁'),
+            subtitle: Text(
+              referral.walletBalance > 0
+                  ? '已获得 ${(referral.walletBalance * 10).toInt()}🪙 金币奖励'
+                  : '邀请好友注册，双方得金币奖励',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            trailing: referral.walletBalance > 0
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB300), Color(0xFFFF6D00)]),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${(referral.walletBalance * 10).toInt()}🪙',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black),
+                    ),
+                  )
+                : const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              ref.read(referralProvider.notifier).load();
+              context.push('/referral');
+            },
+          ),
+
+          const Divider(),
+
           // ── Features ───────────────────────────────────────────────────────
           const _SectionHeader(title: 'FEATURES'),
           ListTile(
@@ -308,14 +357,27 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.textHint,
-          letterSpacing: 1.2,
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              gradient: AppColors.pinkGradient,
+              borderRadius: AppRadius.fullRadius,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textHint,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }

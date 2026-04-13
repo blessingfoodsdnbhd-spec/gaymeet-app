@@ -26,6 +26,8 @@ const dmRoutes = require('./routes/direct-messages');
 const callsRoutes = require('./routes/calls');
 const stickersRoutes = require('./routes/stickers');
 const secretCodesRoutes = require('./routes/secret-codes');
+const referralsRoutes = require('./routes/referrals');
+const placesRoutes = require('./routes/places');
 
 const app = express();
 
@@ -73,6 +75,8 @@ app.use('/api/dm', dmRoutes);
 app.use('/api/calls', callsRoutes);
 app.use('/api/stickers', stickersRoutes);
 app.use('/api/codes', secretCodesRoutes);
+app.use('/api/referrals', referralsRoutes);
+app.use('/api/places', placesRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

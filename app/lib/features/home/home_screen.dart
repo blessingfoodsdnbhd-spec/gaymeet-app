@@ -14,6 +14,7 @@ import '../chat/chat_list_screen.dart';
 import '../moments/moments_feed_screen.dart';
 import '../saw_you/saw_you_screen.dart';
 import '../profile/profile_screen.dart';
+import '../places/places_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     MatchesScreen(),
     ChatListScreen(),
     MomentsFeedScreen(),
+    PlacesScreen(),
     SawYouScreen(),
     ProfileScreen(),
   ];
@@ -66,10 +68,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: IndexedStack(index: _tab, children: _screens),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
           border: Border(
-            top: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+            top: BorderSide(
+                color: AppColors.pink500.withOpacity(0.15), width: 0.5),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.hotPink.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: BottomNavigationBar(
           currentIndex: _tab,
@@ -111,6 +122,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.photo_library_rounded),
               label: 'moments'.tr(locale),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.storefront_rounded),
+              label: '找店',
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.remove_red_eye_rounded),

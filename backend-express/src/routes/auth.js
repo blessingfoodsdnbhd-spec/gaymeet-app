@@ -1,13 +1,15 @@
 const router = require('express').Router();
 const User = require('../models/User');
+const Referral = require('../models/Referral');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
+const generateUniqueReferralCode = require('../utils/generateReferralCode');
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, nickname } = req.body;
+    const { email, password, nickname, referralCode, deviceFingerprint } = req.body;
     if (!email || !password || !nickname) {
       return err(res, 'email, password and nickname are required');
     }
@@ -16,7 +18,43 @@ router.post('/register', async (req, res, next) => {
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return err(res, 'Email already registered', 409);
 
-    const user = await User.create({ email, password, nickname });
+    // Auto-generate a unique referral code for this new user
+    const myReferralCode = await generateUniqueReferralCode();
+
+    // Resolve referrer if a code was provided
+    let referredBy = null;
+    let referrerDoc = null;
+    if (referralCode) {
+      referrerDoc = await User.findOne({ referralCode: referralCode.toUpperCase() }).select('_id deviceFingerprint');
+      if (referrerDoc) {
+        // Fraud: same device fingerprint
+        if (deviceFingerprint && referrerDoc.deviceFingerprint === deviceFingerprint) {
+          referredBy = null; // silently ignore — don't block registration
+        } else {
+          referredBy = referrerDoc._id;
+        }
+      }
+    }
+
+    const user = await User.create({
+      email,
+      password,
+      nickname,
+      referralCode: myReferralCode,
+      referredBy,
+      deviceFingerprint: deviceFingerprint || null,
+    });
+
+    // Create pending referral relationship
+    if (referredBy) {
+      await Referral.create({
+        referrer: referredBy,
+        referred: user._id,
+        referralCode: referralCode.toUpperCase(),
+        status: 'pending',
+      }).catch(() => {}); // ignore duplicate errors
+      await User.findByIdAndUpdate(referredBy, { $inc: { referralCount: 1 } });
+    }
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());

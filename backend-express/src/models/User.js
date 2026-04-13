@@ -93,6 +93,12 @@ const userSchema = new mongoose.Schema(
 
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // Referral system
+    referralCode: { type: String, unique: true, sparse: true, uppercase: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    referralCount: { type: Number, default: 0 },
+    deviceFingerprint: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -101,6 +107,7 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ location: '2dsphere' });
 userSchema.index({ email: 1 });
 userSchema.index({ isBoosted: 1, lastActiveAt: -1 });
+userSchema.index({ referralCode: 1 });
 
 // ── Virtuals ──────────────────────────────────────────────────────────────────
 userSchema.virtual('distanceLabel').get(function () {

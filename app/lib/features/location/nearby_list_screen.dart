@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../core/models/user.dart';
 import '../../core/providers/filter_provider.dart';
 import '../../core/providers/promotion_provider.dart';
 import '../../core/providers/user_provider.dart';
+import '../../shared/widgets/design_system/app_avatar.dart';
 import '../../shared/widgets/promo_banner.dart';
 
 class NearbyListScreen extends ConsumerStatefulWidget {
@@ -174,26 +174,11 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          width: 62,
-          height: 62,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: AppTheme.card,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: user.avatarUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: user.avatarUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: AppTheme.card),
-                  errorWidget: (_, __, ___) => const Icon(
-                      Icons.person_rounded,
-                      size: 30,
-                      color: Color(0xFF3A3A3A)),
-                )
-              : const Icon(Icons.person_rounded,
-                  size: 30, color: Color(0xFF3A3A3A)),
+        AppAvatar(
+          imageUrl: user.avatarUrl,
+          size: 62,
+          isOnline: user.isOnline,
+          isPremium: user.isPremium,
         ),
 
         // Boosted badge
@@ -204,7 +189,7 @@ class _Avatar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(
-                color: AppTheme.boost,
+                color: AppColors.warning,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomRight: Radius.circular(6),
@@ -214,23 +199,6 @@ class _Avatar extends StatelessWidget {
                   size: 10, color: Colors.black),
             ),
           ),
-
-        // Online dot — bottom right
-        Positioned(
-          bottom: 2,
-          right: 2,
-          child: Container(
-            width: 11,
-            height: 11,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: user.isOnline
-                  ? AppTheme.online
-                  : const Color(0xFF3A3A3A),
-              border: Border.all(color: AppTheme.bg, width: 2),
-            ),
-          ),
-        ),
       ],
     );
   }

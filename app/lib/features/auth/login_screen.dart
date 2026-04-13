@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../shared/widgets/gradient_button.dart';
+import '../../shared/widgets/design_system/rainbow_border.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.initState();
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 900),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
@@ -54,6 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
+      backgroundColor: AppColors.bgDark,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
@@ -66,92 +67,132 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 children: [
                   const SizedBox(height: 32),
 
-                  // Logo
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.brandGradient,
-                      borderRadius: BorderRadius.circular(24),
+                  // ── Logo with rainbow border ──────────────────────────────────
+                  Center(
+                    child: RainbowBorder(
+                      borderWidth: 2.5,
+                      borderRadius: 28,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: const BoxDecoration(
+                          gradient: AppColors.pinkPurpleGradient,
+                        ),
+                        child: const Icon(Icons.favorite_rounded,
+                            size: 44, color: Colors.white),
+                      ),
                     ),
-                    child: const Icon(Icons.favorite_rounded,
-                        size: 44, color: Colors.white),
                   ),
+
                   const SizedBox(height: 24),
-                  const Text(
-                    'GayMeet',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+
+                  // ── App name ──────────────────────────────────────────────────
+                  Center(
+                    child: ShaderMask(
+                      shaderCallback: (bounds) =>
+                          AppColors.rainbowGradient.createShader(bounds),
+                      child: const Text(
+                        'GayMeet',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'Find your people.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.textSecondary,
-                      height: 1.4,
+                  Center(
+                    child: Text(
+                      'Find your people.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 48),
 
-                  // Email
-                  TextFormField(
-                    controller: _emailC,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(fontSize: 15),
-                    decoration: const InputDecoration(
-                      hintText: 'Email address',
-                      prefixIcon: Icon(Icons.mail_outline_rounded, size: 20),
+                  // ── Glass card ────────────────────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgCard,
+                      borderRadius: AppRadius.lgRadius,
+                      border: Border.all(
+                          color: AppColors.pink500.withOpacity(0.15), width: 1),
                     ),
-                    validator: (v) =>
-                        v == null || !v.contains('@') ? 'Valid email required' : null,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Password
-                  TextFormField(
-                    controller: _passC,
-                    obscureText: _obscure,
-                    style: const TextStyle(fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon:
-                          const Icon(Icons.lock_outline_rounded, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscure ? Icons.visibility_off : Icons.visibility,
-                          size: 20,
-                          color: AppTheme.textHint,
+                    child: Column(
+                      children: [
+                        // Email
+                        TextFormField(
+                          controller: _emailC,
+                          keyboardType: TextInputType.emailAddress,
+                          style: AppTypography.body,
+                          decoration: const InputDecoration(
+                            hintText: 'Email address',
+                            prefixIcon:
+                                Icon(Icons.mail_outline_rounded, size: 20),
+                          ),
+                          validator: (v) => v == null || !v.contains('@')
+                              ? 'Valid email required'
+                              : null,
                         ),
-                        onPressed: () => setState(() => _obscure = !_obscure),
-                      ),
+                        const SizedBox(height: 14),
+
+                        // Password
+                        TextFormField(
+                          controller: _passC,
+                          obscureText: _obscure,
+                          style: AppTypography.body,
+                          decoration: InputDecoration(
+                            hintText: 'Password',
+                            prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                                size: 20),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 20,
+                                color: AppColors.textHint,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                          ),
+                          validator: (v) => v == null || v.length < 6
+                              ? 'Min 6 characters'
+                              : null,
+                        ),
+                      ],
                     ),
-                    validator: (v) =>
-                        v == null || v.length < 6 ? 'Min 6 characters' : null,
                   ),
 
-                  // Error
+                  // ── Error ─────────────────────────────────────────────────────
                   if (auth.error != null) ...[
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppTheme.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: AppRadius.mdRadius,
+                        border: Border.all(
+                            color: AppColors.error.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.error_outline,
-                              color: AppTheme.error, size: 18),
+                              color: AppColors.error, size: 18),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(auth.error!,
                                 style: const TextStyle(
-                                    color: AppTheme.error, fontSize: 13)),
+                                    color: AppColors.error, fontSize: 13)),
                           ),
                         ],
                       ),
@@ -160,31 +201,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                   const SizedBox(height: 28),
 
-                  // Login button
-                  GradientButton(
-                    text: 'Log In',
-                    isLoading: auth.isLoading,
-                    onPressed: auth.isLoading ? null : _login,
+                  // ── Login button ──────────────────────────────────────────────
+                  GestureDetector(
+                    onTap: auth.isLoading ? null : _login,
+                    child: Container(
+                      height: 54,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.pinkPurpleGradient,
+                        borderRadius: AppRadius.lgRadius,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.hotPink.withOpacity(0.4),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          )
+                        ],
+                      ),
+                      child: Center(
+                        child: auth.isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Log In',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Divider
+                  // ── Divider ───────────────────────────────────────────────────
                   Row(
                     children: [
-                      const Expanded(child: Divider()),
+                      Expanded(child: Divider(color: AppColors.pink500.withOpacity(0.2))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text('or',
                             style: TextStyle(
-                                color: AppTheme.textHint, fontSize: 13)),
+                                color: AppColors.textHint, fontSize: 13)),
                       ),
-                      const Expanded(child: Divider()),
+                      Expanded(child: Divider(color: AppColors.pink500.withOpacity(0.2))),
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  // Social buttons (stubs)
+                  // ── Social buttons ────────────────────────────────────────────
                   OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
@@ -199,20 +270,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                   const SizedBox(height: 32),
 
-                  // Register link
+                  // ── Register link ─────────────────────────────────────────────
                   Center(
                     child: GestureDetector(
                       onTap: () => context.go('/register'),
                       child: RichText(
                         text: TextSpan(
                           style: TextStyle(
-                              color: AppTheme.textSecondary, fontSize: 14),
+                              color: AppColors.textSecondary, fontSize: 14),
                           children: [
                             const TextSpan(text: "Don't have an account? "),
                             TextSpan(
                               text: 'Sign Up',
                               style: TextStyle(
-                                color: AppTheme.primary,
+                                color: AppColors.hotPink,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

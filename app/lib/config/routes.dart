@@ -43,6 +43,12 @@ import '../features/secret_code/secret_code_screen.dart';
 import '../features/settings/language_screen.dart';
 import '../features/settings/theme_screen.dart';
 import '../features/health/health_reminder_screen.dart';
+import '../features/referral/referral_screen.dart';
+import '../features/referral/wallet_screen.dart';
+import '../features/places/places_screen.dart';
+import '../features/places/place_detail_screen.dart';
+import '../features/places/create_place_screen.dart';
+import '../core/models/place.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -129,6 +135,23 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(path: '/settings/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/settings/theme', builder: (_, __) => const ThemeScreen()),
       GoRoute(path: '/health-reminder', builder: (_, __) => const HealthReminderScreen()),
+
+      // ── Referral & Wallet ─────────────────────────────────────────────────
+      GoRoute(path: '/referral', builder: (_, __) => const ReferralScreen()),
+      GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
+
+      // ── Places ───────────────────────────────────────────────────────────
+      GoRoute(path: '/places', builder: (_, __) => const PlacesScreen()),
+      GoRoute(path: '/places/create', builder: (_, __) => const CreatePlaceScreen()),
+      GoRoute(
+        path: '/places/:id',
+        builder: (_, state) {
+          final place = state.extra as Place?;
+          if (place != null) return PlaceDetailScreen(place: place);
+          // Fallback: should not happen if navigating correctly
+          return const PlacesScreen();
+        },
+      ),
 
       // ── Events ───────────────────────────────────────────────────────────
       GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),

@@ -206,7 +206,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF1A0814), Color(0xFF100A1A)],
+              colors: [Color(0xFF1E0A2E), Color(0xFF0D0D1A), Color(0xFF1A0B1E)],
             ),
           ),
           child: Column(
@@ -246,13 +246,13 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               const SizedBox(height: 4),
               ShaderMask(
                 shaderCallback: (bounds) =>
-                    AppTheme.brandGradient.createShader(bounds),
+                    AppColors.rainbowGradient.createShader(bounds),
                 child: const Text(
                   'Unlock your full potential',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

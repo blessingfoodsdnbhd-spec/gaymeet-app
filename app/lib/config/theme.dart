@@ -1,42 +1,37 @@
 import 'package:flutter/material.dart';
+import '../core/theme/design_system.dart';
+
+export '../core/theme/design_system.dart';
 
 class AppTheme {
-  // Brand colors
-  static const Color primary = Color(0xFFFF3B6F);
-  static const Color primaryLight = Color(0xFFFF6B95);
-  static const Color accent = Color(0xFF7C4DFF);
-  static const Color gradient1 = Color(0xFFFF3B6F);
-  static const Color gradient2 = Color(0xFFFF8A5C);
+  // ── Brand colors (map to design tokens) ────────────────────────────────────
+  static const Color primary      = AppColors.hotPink;
+  static const Color primaryLight = AppColors.rose;
+  static const Color accent       = AppColors.violet;
+  static const Color gradient1    = AppColors.hotPink;
+  static const Color gradient2    = AppColors.pink500;
 
-  // Surface colors
-  static const Color bg = Color(0xFF0D0D0D);
-  static const Color surface = Color(0xFF1A1A1A);
-  static const Color card = Color(0xFF242424);
-  static const Color cardHover = Color(0xFF2E2E2E);
+  // ── Surface colors ──────────────────────────────────────────────────────────
+  static const Color bg       = AppColors.bgDark;
+  static const Color surface  = AppColors.bgCard;
+  static const Color card     = AppColors.bgCardLight;
+  static const Color cardHover= AppColors.bgSurface;
 
-  // Status colors
-  static const Color online = Color(0xFF00E676);
-  static const Color boost = Color(0xFFFFD740);
-  static const Color premium = Color(0xFFFFD700);
-  static const Color error = Color(0xFFFF5252);
+  // ── Status colors ───────────────────────────────────────────────────────────
+  static const Color online  = AppColors.online;
+  static const Color boost   = AppColors.warning;
+  static const Color premium = AppColors.premium;
+  static const Color error   = AppColors.error;
 
-  // Text
-  static const Color textPrimary = Color(0xFFF5F5F5);
-  static const Color textSecondary = Color(0xFF9E9E9E);
-  static const Color textHint = Color(0xFF616161);
+  // ── Text ────────────────────────────────────────────────────────────────────
+  static const Color textPrimary   = AppColors.textPrimary;
+  static const Color textSecondary = AppColors.textSecondary;
+  static const Color textHint      = AppColors.textHint;
 
-  static const LinearGradient brandGradient = LinearGradient(
-    colors: [gradient1, gradient2],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  // ── Gradients ────────────────────────────────────────────────────────────────
+  static const LinearGradient brandGradient = AppColors.pinkGradient;
 
-  static const LinearGradient cardGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Colors.transparent, Colors.transparent, Color(0xCC000000)],
-    stops: [0.0, 0.45, 1.0],
-  );
+  static const LinearGradient cardGradient = AppColors.cardOverlay;
 
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
@@ -46,26 +41,26 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: primary,
       secondary: accent,
-      surface: surface,
+      surface: AppColors.bgCard,
       error: error,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: bg,
+      backgroundColor: AppColors.bgDark,
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        color: textPrimary,
+        color: AppColors.textPrimary,
         fontSize: 18,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
       ),
-      iconTheme: IconThemeData(color: textPrimary),
+      iconTheme: IconThemeData(color: AppColors.textPrimary),
     ),
     cardTheme: CardThemeData(
-      color: card,
+      color: AppColors.bgCardLight,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -75,7 +70,7 @@ class AppTheme {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         textStyle: const TextStyle(
           fontSize: 16,
@@ -86,39 +81,43 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: textPrimary,
-        side: const BorderSide(color: Color(0xFF3A3A3A)),
+        foregroundColor: AppColors.textPrimary,
+        side: BorderSide(color: AppColors.pink500.withOpacity(0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: surface,
+      fillColor: AppColors.bgCard,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide.none,
       ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide(color: AppColors.pink500.withOpacity(0.15)),
+      ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: primary, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      hintStyle: const TextStyle(color: textHint, fontSize: 15),
+      hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 15),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: surface,
+      backgroundColor: AppColors.bgCard,
       selectedItemColor: primary,
-      unselectedItemColor: textHint,
+      unselectedItemColor: AppColors.textHint,
       type: BottomNavigationBarType.fixed,
       showUnselectedLabels: true,
       selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
       unselectedLabelStyle: TextStyle(fontSize: 11),
     ),
-    dividerTheme: const DividerThemeData(
-      color: Color(0xFF2A2A2A),
+    dividerTheme: DividerThemeData(
+      color: AppColors.pink500.withOpacity(0.1),
       thickness: 0.5,
     ),
   );

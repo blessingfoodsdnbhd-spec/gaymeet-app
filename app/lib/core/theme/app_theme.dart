@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/theme.dart';
 
 /// Canonical theme definitions for GayMeet.
 /// Dark theme is the default; a light theme is provided for users who prefer it.
