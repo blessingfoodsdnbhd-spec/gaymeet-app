@@ -1,21 +1,139 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
-import '../../core/dummy/dummy_data.dart';
-import '../../core/providers/likes_provider.dart';
 import '../../core/providers/subscription_provider.dart';
+import '../../core/providers/currency_provider.dart';
 
-// ── Plan IDs (must match backend) ─────────────────────────────────────────────
+// ── VIP tier data ─────────────────────────────────────────────────────────────
 
-const _kWeeklyId  = 'weekly';
-const _kMonthlyId = 'monthly';
-const _kYearlyId  = 'yearly';
+enum VipTier { aPlus, diamond, rainbow }
+
+class _TierConfig {
+  final VipTier tier;
+  final String name;
+  final String nameZh;
+  final String emoji;
+  final double monthlyMYR;
+  final double yearlyMYR;
+  final LinearGradient gradient;
+  final Color accentColor;
+  final String badge;
+  final List<String> features;
+
+  const _TierConfig({
+    required this.tier,
+    required this.name,
+    required this.nameZh,
+    required this.emoji,
+    required this.monthlyMYR,
+    required this.yearlyMYR,
+    required this.gradient,
+    required this.accentColor,
+    required this.badge,
+    required this.features,
+  });
+}
+
+const _tiers = [
+  _TierConfig(
+    tier: VipTier.aPlus,
+    name: 'A+',
+    nameZh: 'A+ 会员',
+    emoji: '⭐',
+    monthlyMYR: 19,
+    yearlyMYR: 99,
+    gradient: LinearGradient(
+      colors: [Color(0xFFFF1493), Color(0xFFE91E63)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    accentColor: Color(0xFFFF1493),
+    badge: 'POPULAR',
+    features: [
+      'Unlimited Swipes',
+      'See Who Liked You',
+      '5 Super Likes / day',
+      'Rewind Last Swipe',
+      'Ad-Free Experience',
+      'Read Receipts',
+    ],
+  ),
+  _TierConfig(
+    tier: VipTier.diamond,
+    name: '钻石',
+    nameZh: '钻石会员',
+    emoji: '💎',
+    monthlyMYR: 39,
+    yearlyMYR: 199,
+    gradient: LinearGradient(
+      colors: [Color(0xFF2196F3), Color(0xFF7C4DFF)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    accentColor: Color(0xFF2196F3),
+    badge: 'BEST VALUE',
+    features: [
+      'All A+ Benefits',
+      'Weekly Profile Boost',
+      'Teleport Anywhere',
+      'Priority in Discovery',
+      'Stealth Mode',
+      'Unlimited Likes Back',
+    ],
+  ),
+  _TierConfig(
+    tier: VipTier.rainbow,
+    name: '彩虹',
+    nameZh: '彩虹会员',
+    emoji: '🌈',
+    monthlyMYR: 69,
+    yearlyMYR: 349,
+    gradient: LinearGradient(
+      colors: [
+        Color(0xFFFF3B3B),
+        Color(0xFFFF8C00),
+        Color(0xFFFFD700),
+        Color(0xFF00E676),
+        Color(0xFF2196F3),
+        Color(0xFF9C27B0),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    accentColor: Color(0xFFFF1493),
+    badge: 'ULTIMATE',
+    features: [
+      'All Diamond Benefits',
+      'Rainbow Border Badge',
+      'Daily Coin Reward',
+      'Exclusive Stickers',
+      'VIP Customer Support',
+      'Early Feature Access',
+    ],
+  ),
+];
+
+// ── Comparison feature table ──────────────────────────────────────────────────
+
+const _comparisonFeatures = [
+  ('Unlimited Swipes',      true,  true,  true),
+  ('See Who Liked You',     true,  true,  true),
+  ('Super Likes / day',     false, true,  true),
+  ('Rewind Last Swipe',     true,  true,  true),
+  ('Ad-Free',               true,  true,  true),
+  ('Read Receipts',         true,  true,  true),
+  ('Profile Boost',         false, true,  true),
+  ('Teleport',              false, true,  true),
+  ('Stealth Mode',          false, true,  true),
+  ('Priority Discovery',    false, true,  true),
+  ('Rainbow Border',        false, false, true),
+  ('Daily Coins',           false, false, true),
+  ('Exclusive Stickers',    false, false, true),
+  ('VIP Support',           false, false, true),
+];
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 class PremiumScreen extends ConsumerStatefulWidget {
   const PremiumScreen({super.key});
@@ -24,67 +142,160 @@ class PremiumScreen extends ConsumerStatefulWidget {
   ConsumerState<PremiumScreen> createState() => _PremiumScreenState();
 }
 
-class _PremiumScreenState extends ConsumerState<PremiumScreen>
-    with SingleTickerProviderStateMixin {
-  String _selectedPlan = _kMonthlyId;
-  late final AnimationController _shimmer;
+class _PremiumScreenState extends ConsumerState<PremiumScreen> {
+  VipTier _selectedTier = VipTier.aPlus;
+  bool _yearlyBilling = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _shimmer = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-    Future.microtask(() => ref.read(likesProvider.notifier).fetchLikes());
-  }
+  _TierConfig get _config => _tiers.firstWhere((t) => t.tier == _selectedTier);
 
-  @override
-  void dispose() {
-    _shimmer.dispose();
-    super.dispose();
+  String get _productId {
+    final tierSuffix = switch (_selectedTier) {
+      VipTier.aPlus => 'aplus',
+      VipTier.diamond => 'diamond',
+      VipTier.rainbow => 'rainbow',
+    };
+    final billingCycle = _yearlyBilling ? 'yearly' : 'monthly';
+    return 'gaymeet_vip_${tierSuffix}_$billingCycle';
   }
 
   Future<void> _purchase() async {
-    final ok =
-        await ref.read(subscriptionProvider.notifier).purchase(_selectedPlan);
+    final ok = await ref.read(subscriptionProvider.notifier).purchase(_productId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok
-            ? 'Welcome to Premium! ✨'
-            : 'Purchase failed. Please try again.'),
-        backgroundColor: ok ? AppTheme.primary : AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-    if (ok && mounted) Navigator.of(context).pop();
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Welcome to ${_config.nameZh}! 🎉')),
+      );
+      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Purchase failed. Please try again.')),
+      );
+    }
   }
 
   Future<void> _restore() async {
     final ok = await ref.read(subscriptionProvider.notifier).restore();
     if (!mounted) return;
-    final isPremium = ref.read(subscriptionProvider).isPremium;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(ok
-            ? (isPremium ? 'Premium restored! ✅' : 'No active subscription found.')
+            ? (ref.read(subscriptionProvider).isPremium
+                ? 'Premium restored!'
+                : 'No active subscription found.')
             : 'Restore failed. Try again.'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
-    if (ok && isPremium && mounted) Navigator.of(context).pop();
+    if (ok && ref.read(subscriptionProvider).isPremium) Navigator.of(context).pop();
+  }
+
+  void _showComparisonTable() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.textHint,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('比较套餐 / Compare Plans',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            // Header row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Expanded(flex: 3, child: SizedBox()),
+                  ..._tiers.map((t) => Expanded(
+                    child: Column(
+                      children: [
+                        Text(t.emoji, style: const TextStyle(fontSize: 20)),
+                        const SizedBox(height: 2),
+                        ShaderMask(
+                          shaderCallback: (b) => t.gradient.createShader(b),
+                          child: Text(t.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                fontSize: 13,
+                              )),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                controller: controller,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _comparisonFeatures.length,
+                itemBuilder: (_, i) {
+                  final f = _comparisonFeatures[i];
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: AppTheme.textHint.withOpacity(0.15),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Text(f.$1,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              )),
+                        ),
+                        ...[f.$2, f.$3, f.$4].map((has) => Expanded(
+                          child: Center(
+                            child: Icon(
+                              has ? Icons.check_circle_rounded : Icons.remove_rounded,
+                              size: 18,
+                              color: has ? const Color(0xFF4CAF50) : AppTheme.textHint,
+                            ),
+                          ),
+                        )),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final sub = ref.watch(subscriptionProvider);
-    final likesState = ref.watch(likesProvider);
-    final likers = kUseDummyData ? DummyData.users : (likesState.valueOrNull ?? []);
-    final likeCount = likers.length;
-    final previewAvatars = likers.take(5).map((u) => u.avatarUrl).toList();
+    final currency = ref.watch(currencyProvider);
+    final currencyNotifier = ref.read(currencyProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -92,117 +303,105 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen>
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
               slivers: [
-                _buildAppBar(context, sub.isPremium),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ── Already premium card ─────────────────────────────
-                        if (sub.isPremium) ...[
-                          const SizedBox(height: 20),
-                          _ActivePremiumCard(sub: sub),
-                        ],
+                _buildHeader(),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const SizedBox(height: 20),
 
-                        // ── Blurred likes preview ────────────────────────────
-                        if (likeCount > 0 && !sub.isPremium) ...[
-                          const SizedBox(height: 20),
-                          _LikesPreviewBanner(
-                            likeCount: likeCount,
-                            avatarUrls: previewAvatars.cast<String?>(),
+                      // ── Billing toggle ─────────────────────────────────────
+                      _BillingToggle(
+                        yearly: _yearlyBilling,
+                        onChanged: (v) => setState(() => _yearlyBilling = v),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ── Section header ─────────────────────────────────────
+                      _SectionHeader(label: '选择套餐 CHOOSE YOUR PLAN'),
+                      const SizedBox(height: 12),
+
+                      // ── Tier cards ─────────────────────────────────────────
+                      ..._tiers.map((tier) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _TierCard(
+                              config: tier,
+                              selected: _selectedTier == tier.tier,
+                              yearlyBilling: _yearlyBilling,
+                              currencySymbol: currency.symbol,
+                              formatPrice: currencyNotifier.formatPrice,
+                              onTap: () => setState(() => _selectedTier = tier.tier),
+                            ),
+                          )),
+
+                      const SizedBox(height: 16),
+
+                      // ── Section header ─────────────────────────────────────
+                      _SectionHeader(label: '套餐功能 PLAN FEATURES'),
+                      const SizedBox(height: 12),
+
+                      // ── Feature grid 2-column ─────────────────────────────
+                      _FeatureGrid(config: _config),
+
+                      const SizedBox(height: 16),
+
+                      // ── Compare button ─────────────────────────────────────
+                      GestureDetector(
+                        onTap: _showComparisonTable,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.card,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.primary.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
-                        ],
-
-                        const SizedBox(height: 24),
-
-                        // ── Benefits ─────────────────────────────────────────
-                        const _SectionLabel('What you unlock'),
-                        const SizedBox(height: 12),
-                        ..._benefits.map((b) => _BenefitRow(
-                              icon: b.$1,
-                              title: b.$2,
-                              subtitle: b.$3,
-                            )),
-
-                        const SizedBox(height: 28),
-
-                        // ── Plan selector ─────────────────────────────────────
-                        const _SectionLabel('Choose your plan'),
-                        const SizedBox(height: 12),
-                        _PlanCard(
-                          id: _kYearlyId,
-                          title: 'Yearly',
-                          price: 'RM99.90',
-                          period: 'per year',
-                          badge: 'Save 58%',
-                          subtext: 'RM8.33 / month',
-                          selected: _selectedPlan == _kYearlyId,
-                          highlighted: false,
-                          onTap: () => setState(() => _selectedPlan = _kYearlyId),
-                        ),
-                        const SizedBox(height: 10),
-                        _PlanCard(
-                          id: _kMonthlyId,
-                          title: 'Monthly',
-                          price: 'RM19.90',
-                          period: 'per month',
-                          badge: 'Most Popular',
-                          subtext: null,
-                          selected: _selectedPlan == _kMonthlyId,
-                          highlighted: true,
-                          onTap: () => setState(() => _selectedPlan = _kMonthlyId),
-                        ),
-                        const SizedBox(height: 10),
-                        _PlanCard(
-                          id: _kWeeklyId,
-                          title: 'Weekly',
-                          price: 'RM9.90',
-                          period: 'per week',
-                          badge: null,
-                          subtext: 'Try it out',
-                          selected: _selectedPlan == _kWeeklyId,
-                          highlighted: false,
-                          onTap: () => setState(() => _selectedPlan = _kWeeklyId),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // ── CTA ───────────────────────────────────────────────
-                        _GradientCTAButton(
-                          label: sub.isPremium
-                              ? 'Extend Subscription'
-                              : 'Unlock Premium ✨',
-                          onTap: _purchase,
-                          shimmer: _shimmer,
-                        ),
-
-                        const SizedBox(height: 14),
-                        Center(
-                          child: TextButton(
-                            onPressed: _restore,
-                            child: Text(
-                              'Restore purchases',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 13,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.compare_arrows_rounded,
+                                  color: AppTheme.primary, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                '比较所有套餐  Compare all plans',
+                                style: TextStyle(
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Center(
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── CTA ───────────────────────────────────────────────
+                      _PurchaseButton(config: _config, onTap: _purchase),
+
+                      const SizedBox(height: 14),
+                      Center(
+                        child: TextButton(
+                          onPressed: _restore,
                           child: Text(
-                            'Cancel anytime  ·  Auto-renews  ·  Secured by App Store',
+                            'Restore purchases',
                             style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textHint,
-                            ),
-                            textAlign: TextAlign.center,
+                                color: AppTheme.textSecondary, fontSize: 13),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Center(
+                        child: Text(
+                          'Cancel anytime · Auto-renews · Secured by App Store',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textHint),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ]),
                   ),
                 ),
               ],
@@ -210,67 +409,106 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen>
     );
   }
 
-  SliverAppBar _buildAppBar(BuildContext context, bool isPremium) {
+  SliverAppBar _buildHeader() {
+    final config = _config;
     return SliverAppBar(
-      expandedHeight: 230,
+      expandedHeight: 200,
       pinned: true,
       backgroundColor: AppTheme.bg,
       leading: IconButton(
-        icon: const Icon(Icons.close_rounded),
+        icon: const Icon(Icons.close),
         onPressed: () => Navigator.of(context).pop(),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: _PremiumHeader(isPremium: isPremium, shimmer: _shimmer),
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1E0A2E), Color(0xFF0D0D1A), Color(0xFF1A0B1E)],
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 48),
+              // Animated tier icon
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  key: ValueKey(config.tier),
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: config.gradient,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: config.accentColor.withOpacity(0.5),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(config.emoji,
+                        style: const TextStyle(fontSize: 32)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'GayMeet VIP',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              ShaderMask(
+                shaderCallback: (b) => AppColors.rainbowGradient.createShader(b),
+                child: const Text(
+                  '解锁你的全部潜能  Unlock your full potential',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-// ── Premium header ────────────────────────────────────────────────────────────
+// ── Billing toggle ────────────────────────────────────────────────────────────
 
-class _PremiumHeader extends StatelessWidget {
-  final bool isPremium;
-  final AnimationController shimmer;
-
-  const _PremiumHeader({required this.isPremium, required this.shimmer});
+class _BillingToggle extends StatelessWidget {
+  final bool yearly;
+  final ValueChanged<bool> onChanged;
+  const _BillingToggle({required this.yearly, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E0A2E), Color(0xFF0D0D1A), Color(0xFF1A0730)],
-        ),
+      decoration: BoxDecoration(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.all(4),
+      child: Row(
         children: [
-          const SizedBox(height: 56),
-          // Animated ring around crown
-          _RainbowRingIcon(shimmer: shimmer),
-          const SizedBox(height: 16),
-          Text(
-            isPremium ? 'You\'re Premium ✨' : 'GayMeet Premium',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ShaderMask(
-            shaderCallback: (b) =>
-                AppColors.rainbowGradient.createShader(b),
-            child: const Text(
-              'Unlimited connections · Zero limits',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          _Tab(label: '月付 Monthly', selected: !yearly, onTap: () => onChanged(false)),
+          _Tab(
+            label: '年付 Yearly',
+            selected: yearly,
+            onTap: () => onChanged(true),
+            badge: 'Save ~40%',
           ),
         ],
       ),
@@ -278,40 +516,297 @@ class _PremiumHeader extends StatelessWidget {
   }
 }
 
-class _RainbowRingIcon extends StatelessWidget {
-  final AnimationController shimmer;
-  const _RainbowRingIcon({required this.shimmer});
+class _Tab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final String? badge;
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.badge,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: shimmer,
-      builder: (_, __) {
-        return CustomPaint(
-          painter: _RainbowRingPainter(progress: shimmer.value),
-          child: Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFD700), Color(0xFFFFA726)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            gradient: selected ? AppTheme.brandGradient : null,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.35),
-                  blurRadius: 24,
-                  spreadRadius: 2,
+              if (badge != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? Colors.white.withOpacity(0.2)
+                        : AppTheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? Colors.white : AppTheme.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            gradient: AppColors.pinkGradient,
+            borderRadius: AppRadius.fullRadius,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textHint,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Tier card ─────────────────────────────────────────────────────────────────
+
+class _TierCard extends StatelessWidget {
+  final _TierConfig config;
+  final bool selected;
+  final bool yearlyBilling;
+  final String currencySymbol;
+  final String Function(double) formatPrice;
+  final VoidCallback onTap;
+
+  const _TierCard({
+    required this.config,
+    required this.selected,
+    required this.yearlyBilling,
+    required this.currencySymbol,
+    required this.formatPrice,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final amountMYR = yearlyBilling ? config.yearlyMYR : config.monthlyMYR;
+    final priceStr = formatPrice(amountMYR);
+    final period = yearlyBilling ? '/ year' : '/ month';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected
+              ? config.accentColor.withOpacity(0.08)
+              : AppTheme.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? config.accentColor : const Color(0xFF3A3A3A),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Radio
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? config.accentColor : AppTheme.textHint,
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? Center(
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: config.accentColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            // Emoji
+            Text(config.emoji, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 10),
+            // Name
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (b) => config.gradient.createShader(b),
+                        child: Text(
+                          config.nameZh,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: config.gradient,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          config.badge,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${config.features.take(2).join(' · ')}…',
+                    style: TextStyle(fontSize: 11, color: AppTheme.textHint),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // Price
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  priceStr,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                    color: selected ? config.accentColor : AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  period,
+                  style: TextStyle(fontSize: 10, color: AppTheme.textHint),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.workspace_premium_rounded,
-              color: Colors.black,
-              size: 42,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Feature grid (2-column) ───────────────────────────────────────────────────
+
+class _FeatureGrid extends StatelessWidget {
+  final _TierConfig config;
+  const _FeatureGrid({required this.config});
+
+  @override
+  Widget build(BuildContext context) {
+    final features = config.features;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 2.6,
+      ),
+      itemCount: features.length,
+      itemBuilder: (_, i) {
+        final feature = features[i];
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: config.accentColor.withOpacity(0.2),
+              width: 1,
             ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: config.accentColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  feature,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -319,543 +814,41 @@ class _RainbowRingIcon extends StatelessWidget {
   }
 }
 
-class _RainbowRingPainter extends CustomPainter {
-  final double progress;
-  _RainbowRingPainter({required this.progress});
+// ── Purchase button ───────────────────────────────────────────────────────────
 
-  static const _colors = [
-    AppColors.rainbowRed,
-    AppColors.rainbowOrange,
-    AppColors.rainbowYellow,
-    AppColors.rainbowGreen,
-    AppColors.rainbowBlue,
-    AppColors.rainbowViolet,
-    AppColors.rainbowRed,
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 + 6;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final gradient = SweepGradient(
-      colors: _colors,
-      startAngle: progress * 2 * math.pi,
-      endAngle: progress * 2 * math.pi + 2 * math.pi,
-    );
-
-    final paint = Paint()
-      ..shader = gradient.createShader(rect)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-            center: center,
-            width: size.width + 12,
-            height: size.height + 12),
-        const Radius.circular(24),
-      ),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RainbowRingPainter old) => old.progress != progress;
-}
-
-// ── Active premium card ───────────────────────────────────────────────────────
-
-class _ActivePremiumCard extends StatelessWidget {
-  final SubscriptionState sub;
-  const _ActivePremiumCard({required this.sub});
+class _PurchaseButton extends StatelessWidget {
+  final _TierConfig config;
+  final VoidCallback onTap;
+  const _PurchaseButton({required this.config, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    // sub.isPremium is true here
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.premium.withOpacity(0.15),
-            AppColors.premium.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppColors.premium.withOpacity(0.4), width: 1),
-      ),
-      child: Row(
-        children: [
-          const Text('👑', style: TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Active Premium',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: AppColors.premium,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'All features unlocked · Enjoying GayMeet Premium',
-                  style: TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle_rounded,
-              color: AppColors.premium, size: 22),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Blurred likes banner ──────────────────────────────────────────────────────
-
-class _LikesPreviewBanner extends StatelessWidget {
-  final int likeCount;
-  final List<String?> avatarUrls;
-
-  const _LikesPreviewBanner({
-    required this.likeCount,
-    required this.avatarUrls,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primary.withOpacity(0.15),
-            AppTheme.accent.withOpacity(0.10),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppTheme.primary.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: avatarUrls.length * 24.0 + 16,
-            height: 44,
-            child: Stack(
-              children: [
-                for (var i = 0; i < avatarUrls.length; i++)
-                  Positioned(
-                    left: i * 24.0,
-                    child: _BlurredAvatar(url: avatarUrls[i]),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$likeCount ${likeCount == 1 ? 'person' : 'people'} liked you 👀',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 14),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Unlock Premium to see who they are',
-                  style: TextStyle(
-                      fontSize: 11, color: AppTheme.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BlurredAvatar extends StatelessWidget {
-  final String? url;
-  const _BlurredAvatar({this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipOval(
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        height: 56,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppTheme.surface, width: 2),
-          color: AppTheme.card,
-        ),
-        child: url != null
-            ? ImageFiltered(
-                imageFilter:
-                    ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: CachedNetworkImage(
-                  imageUrl: url!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Container(color: AppTheme.card),
-                  errorWidget: (_, __, ___) =>
-                      Container(color: AppTheme.card),
-                ),
-              )
-            : Icon(Icons.person_rounded,
-                color: AppTheme.textHint, size: 20),
-      ),
-    );
-  }
-}
-
-// ── Benefits ──────────────────────────────────────────────────────────────────
-
-const _benefits = [
-  (Icons.all_inclusive_rounded,
-      'Unlimited Swipes',
-      'No daily cap — explore everyone around you'),
-  (Icons.star_rounded,
-      '5 Super Likes / Day',
-      'Stand out and get noticed instantly'),
-  (Icons.visibility_rounded,
-      'See Who Liked You',
-      'Know your admirers without guessing'),
-  (Icons.bolt_rounded,
-      'Weekly Profile Boost',
-      'Reach 3× more people for 30 minutes'),
-  (Icons.replay_rounded,
-      'Rewind Last Swipe',
-      'Changed your mind? Take back a pass'),
-  (Icons.card_giftcard_rounded,
-      '3 Free Gifts / Day',
-      'Send gifts to crushes without spending coins'),
-  (Icons.block_rounded,
-      'Ad-Free',
-      'Zero interruptions — pure connections'),
-];
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textHint,
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-}
-
-class _BenefitRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _BenefitRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: AppTheme.brandGradient,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(icon, color: Colors.white, size: 19),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
-                Text(subtitle,
-                    style: TextStyle(
-                        fontSize: 11, color: AppTheme.textSecondary)),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle_rounded,
-              color: AppTheme.primary, size: 18),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Plan card ─────────────────────────────────────────────────────────────────
-
-class _PlanCard extends StatelessWidget {
-  final String id;
-  final String title;
-  final String price;
-  final String period;
-  final String? badge;
-  final String? subtext;
-  final bool selected;
-  final bool highlighted;
-  final VoidCallback onTap;
-
-  const _PlanCard({
-    required this.id,
-    required this.title,
-    required this.price,
-    required this.period,
-    required this.badge,
-    required this.subtext,
-    required this.selected,
-    required this.highlighted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppTheme.primary.withOpacity(0.10)
-              : highlighted
-                  ? AppTheme.primary.withOpacity(0.05)
-                  : AppTheme.card,
+          gradient: config.gradient,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? AppTheme.primary
-                : highlighted
-                    ? AppTheme.primary.withOpacity(0.35)
-                    : AppColors.textHint.withOpacity(0.15),
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Radio dot
-            _RadioDot(selected: selected),
-            const SizedBox(width: 12),
-
-            // Title + subtext
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: selected
-                              ? AppTheme.textPrimary
-                              : AppTheme.textSecondary,
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.brandGradient,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badge!,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (subtext != null)
-                    Text(
-                      subtext!,
-                      style: TextStyle(
-                          fontSize: 11, color: AppTheme.textHint),
-                    ),
-                ],
-              ),
-            ),
-
-            // Price
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  price,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                    color: selected
-                        ? AppTheme.textPrimary
-                        : AppTheme.textSecondary,
-                  ),
-                ),
-                Text(
-                  period,
-                  style: TextStyle(
-                      fontSize: 10, color: AppTheme.textHint),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: config.accentColor.withOpacity(0.45),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _RadioDot extends StatelessWidget {
-  final bool selected;
-  const _RadioDot({required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected ? AppTheme.primary : AppTheme.textHint,
-          width: 2,
+        child: Center(
+          child: Text(
+            '${config.emoji}  立即解锁 Unlock Now',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: 0.3,
+            ),
+          ),
         ),
-      ),
-      child: selected
-          ? Center(
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-// ── Gradient CTA button ───────────────────────────────────────────────────────
-
-class _GradientCTAButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final AnimationController shimmer;
-
-  const _GradientCTAButton({
-    required this.label,
-    required this.onTap,
-    required this.shimmer,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedBuilder(
-        animation: shimmer,
-        builder: (_, __) {
-          return Container(
-            height: 58,
-            decoration: BoxDecoration(
-              gradient: AppTheme.brandGradient,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.45),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Moving sheen
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: AnimatedBuilder(
-                      animation: shimmer,
-                      builder: (_, __) => Transform.translate(
-                        offset: Offset(
-                          (shimmer.value * 2 - 1) * 300,
-                          0,
-                        ),
-                        child: Container(
-                          width: 60,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0),
-                                Colors.white.withOpacity(0.12),
-                                Colors.white.withOpacity(0),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

@@ -155,21 +155,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
-          // ── Notifications / Requests ───────────────────────────────────────
-          const _SectionHeader(title: 'REQUESTS'),
+          // ── Security ───────────────────────────────────────────────────────
+          const _SectionHeader(title: 'SECURITY'),
           ListTile(
-            leading: const Icon(Icons.lock_rounded, color: Color(0xFFFFD700)),
-            title: const Text('私密照片申请'),
-            subtitle: Text('查看别人发来的照片解锁申请',
-                style: TextStyle(color: AppTheme.textSecondary)),
+            leading: const Icon(Icons.security_rounded, color: Color(0xFF7C4DFF)),
+            title: const Text('Security & 2FA'),
+            subtitle: Text('Two-factor auth, data export, account deletion',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/photo-requests/inbox'),
+            onTap: () => context.push('/settings/security'),
           ),
 
           const Divider(),
 
           // ── Personalisation ────────────────────────────────────────────────
           const _SectionHeader(title: 'PERSONALISATION'),
+          ListTile(
+            leading: Icon(Icons.currency_exchange_rounded, color: AppTheme.accent),
+            title: const Text('货币 / Currency'),
+            subtitle: Text('Display prices in your currency',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/currency'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_month_rounded, color: Color(0xFF2196F3)),
+            title: const Text('Calendar / 日历'),
+            subtitle: Text('Your dates and reminders',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/calendar'),
+          ),
           ListTile(
             leading: Icon(Icons.translate_rounded, color: AppTheme.primary),
             title: const Text('语言 / Language'),
@@ -193,22 +209,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: TextStyle(color: AppTheme.textSecondary)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/health-reminder'),
-          ),
-          ListTile(
-            leading: const Text('💰', style: TextStyle(fontSize: 22)),
-            title: const Text('货币 / Currency'),
-            subtitle: Text('当前货币设置',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/settings/currency'),
-          ),
-          ListTile(
-            leading: const Text('📅', style: TextStyle(fontSize: 22)),
-            title: const Text('活动日历'),
-            subtitle: Text('Pride活动·节日·社区聚会',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/calendar'),
           ),
 
           const Divider(),
@@ -314,62 +314,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: TextStyle(color: AppTheme.textSecondary)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/secret-code'),
-          ),
-
-          const Divider(),
-
-          ListTile(
-            leading: const Text('📬', style: TextStyle(fontSize: 22)),
-            title: const Text('我的提问箱'),
-            subtitle: Text('查看别人匿名发来的提问',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/questions/inbox'),
-          ),
-          ListTile(
-            leading: const Text('🛡️', style: TextStyle(fontSize: 22)),
-            title: const Text('安全约会'),
-            subtitle: Text('约会时实时分享位置给可信联系人',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/safe-date'),
-          ),
-          ListTile(
-            leading: const Text('🔐', style: TextStyle(fontSize: 22)),
-            title: const Text('安全中心'),
-            subtitle: Text('双重验证·设备管理·数据导出',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/security'),
-          ),
-          ListTile(
-            leading: const Text('💑', style: TextStyle(fontSize: 22)),
-            title: const Text('虚拟约会房间'),
-            subtitle: Text('与心仪对象开启专属虚拟约会',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/date-room'),
-          ),
-
-          const Divider(),
-
-          // ── Business ───────────────────────────────────────────────────────
-          const _SectionHeader(title: 'BUSINESS'),
-          ListTile(
-            leading: const Text('🏪', style: TextStyle(fontSize: 22)),
-            title: const Text('商家入驻'),
-            subtitle: Text('开通商家账号，推广你的品牌',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/business/register'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard_rounded, color: Color(0xFFFFB300)),
-            title: const Text('商家后台'),
-            subtitle: Text('管理商家资料和推广计划',
-                style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/business/dashboard'),
           ),
 
           const Divider(),

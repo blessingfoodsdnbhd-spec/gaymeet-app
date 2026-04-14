@@ -1,275 +1,361 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
-import '../../core/api/calendar_service.dart';
-import '../../core/models/calendar_event.dart';
+import '../../core/api/api_client.dart';
 import '../../core/providers/auth_provider.dart';
 
-class CalendarScreen extends ConsumerStatefulWidget {
+// ── Model ─────────────────────────────────────────────────────────────────────
+
+class CalendarEvent {
+  final String id;
+  final String title;
+  final String description;
+  final DateTime startAt;
+  final DateTime endAt;
+  final bool allDay;
+  final String type;
+  final String color;
+  final String? location;
+
+  const CalendarEvent({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.startAt,
+    required this.endAt,
+    required this.allDay,
+    required this.type,
+    required this.color,
+    this.location,
+  });
+
+  factory CalendarEvent.fromJson(Map<String, dynamic> json) {
+    return CalendarEvent(
+      id: json['_id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      startAt: DateTime.parse(json['startAt'] as String).toLocal(),
+      endAt: DateTime.parse(json['endAt'] as String).toLocal(),
+      allDay: json['allDay'] as bool? ?? false,
+      type: json['type'] as String? ?? 'event',
+      color: json['color'] as String? ?? '#E91E63',
+      location: json['location'] as String?,
+    );
+  }
+}
+
+// ── Providers ─────────────────────────────────────────────────────────────────
+
+final _selectedMonthProvider = StateProvider<DateTime>(
+  (_) => DateTime(DateTime.now().year, DateTime.now().month),
+);
+
+final _calendarEventsProvider = FutureProvider.family
+    .autoDispose<List<CalendarEvent>, DateTime>((ref, month) async {
+  final api = ref.watch(apiClientProvider);
+  final from = DateTime(month.year, month.month);
+  final to = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+  final res = await api.dio.get('/calendar', queryParameters: {
+    'from': from.toIso8601String(),
+    'to': to.toIso8601String(),
+  });
+  final list = res.data['data'] as List;
+  return list.map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>)).toList();
+});
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
   @override
-  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedMonth = ref.watch(_selectedMonthProvider);
+    final eventsAsync = ref.watch(_calendarEventsProvider(selectedMonth));
 
-class _CalendarScreenState extends ConsumerState<CalendarScreen> {
-  late CalendarService _svc;
-  DateTime _focusedMonth = DateTime.now();
-  DateTime? _selectedDay;
-  List<CalendarEvent> _events = [];
-  bool _loading = false;
-
-  static const List<String> _weekdays = ['一', '二', '三', '四', '五', '六', '日'];
-
-  @override
-  void initState() {
-    super.initState();
-    _svc = CalendarService(ref.read(apiClientProvider));
-    _loadEvents(_focusedMonth);
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        title: const Text('Calendar'),
+        backgroundColor: AppTheme.bg,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => _showCreateSheet(context, ref, selectedMonth),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _MonthSelector(selectedMonth: selectedMonth),
+          _CalendarGrid(
+            month: selectedMonth,
+            eventsAsync: eventsAsync,
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: eventsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text('Failed to load events',
+                    style: TextStyle(color: AppTheme.textSecondary)),
+              ),
+              data: (events) => events.isEmpty
+                  ? _EmptyState(onAdd: () => _showCreateSheet(context, ref, selectedMonth))
+                  : _EventList(
+                      events: events,
+                      onDelete: (id) => _deleteEvent(context, ref, id, selectedMonth),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _loadEvents(DateTime month) async {
-    setState(() { _loading = true; });
+  Future<void> _showCreateSheet(BuildContext context, WidgetRef ref, DateTime month) async {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final locCtrl = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    String selectedType = 'event';
+    String selectedColor = '#E91E63';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.brandGradient,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Text('New Event',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              ]),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleCtrl,
+                decoration: _inputDecoration('Title *'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: descCtrl,
+                decoration: _inputDecoration('Description'),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: locCtrl,
+                decoration: _inputDecoration('Location (optional)'),
+              ),
+              const SizedBox(height: 14),
+              // Date picker row
+              GestureDetector(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                    builder: (_, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.dark(primary: AppTheme.primary),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) setState(() => selectedDate = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.event_rounded, color: AppTheme.primary, size: 18),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Type chips
+              Wrap(
+                spacing: 8,
+                children: ['event', 'date', 'reminder', 'birthday'].map((t) {
+                  final icons = {'event': '📅', 'date': '💕', 'reminder': '⏰', 'birthday': '🎂'};
+                  return ChoiceChip(
+                    label: Text('${icons[t]} $t'),
+                    selected: selectedType == t,
+                    onSelected: (_) => setState(() => selectedType = t),
+                    selectedColor: AppTheme.primary.withOpacity(0.2),
+                    labelStyle: TextStyle(
+                      color: selectedType == t ? AppTheme.primary : AppTheme.textSecondary,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    if (titleCtrl.text.trim().isEmpty) return;
+                    Navigator.pop(ctx);
+                    await _createEvent(
+                      context, ref,
+                      title: titleCtrl.text.trim(),
+                      description: descCtrl.text.trim(),
+                      location: locCtrl.text.trim(),
+                      date: selectedDate,
+                      type: selectedType,
+                      color: selectedColor,
+                      month: month,
+                    );
+                  },
+                  child: const Text('Add Event', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppTheme.card,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        hintStyle: TextStyle(color: AppTheme.textHint),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      );
+
+  Future<void> _createEvent(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    required String description,
+    required String location,
+    required DateTime date,
+    required String type,
+    required String color,
+    required DateTime month,
+  }) async {
+    final api = ref.read(apiClientProvider);
     try {
-      final events = await _svc.getEvents(month.month, month.year);
-      setState(() {
-        _events = events;
-        _loading = false;
+      await api.dio.post('/calendar', data: {
+        'title': title,
+        'description': description,
+        'location': location.isEmpty ? null : location,
+        'startAt': date.toIso8601String(),
+        'endAt': date.toIso8601String(),
+        'type': type,
+        'color': color,
       });
-    } catch (_) {
-      setState(() { _loading = false; });
+      ref.invalidate(_calendarEventsProvider(month));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create event: $e')),
+        );
+      }
     }
   }
 
-  void _prevMonth() {
-    final newMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
-    setState(() {
-      _focusedMonth = newMonth;
-      _selectedDay = null;
-    });
-    _loadEvents(newMonth);
+  Future<void> _deleteEvent(
+      BuildContext context, WidgetRef ref, String id, DateTime month) async {
+    final api = ref.read(apiClientProvider);
+    try {
+      await api.dio.delete('/calendar/$id');
+      ref.invalidate(_calendarEventsProvider(month));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete event')),
+        );
+      }
+    }
   }
+}
 
-  void _nextMonth() {
-    final newMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1);
-    setState(() {
-      _focusedMonth = newMonth;
-      _selectedDay = null;
-    });
-    _loadEvents(newMonth);
-  }
+// ── Month selector ────────────────────────────────────────────────────────────
 
-  List<CalendarEvent> _eventsForDay(DateTime day) {
-    return _events.where((e) {
-      final d = e.date;
-      return d.year == day.year && d.month == day.month && d.day == day.day;
-    }).toList();
-  }
-
-  bool _isToday(DateTime day) {
-    final now = DateTime.now();
-    return day.year == now.year && day.month == now.month && day.day == now.day;
-  }
-
-  bool _isSelected(DateTime day) {
-    if (_selectedDay == null) return false;
-    return day.year == _selectedDay!.year &&
-        day.month == _selectedDay!.month &&
-        day.day == _selectedDay!.day;
-  }
+class _MonthSelector extends ConsumerWidget {
+  final DateTime selectedMonth;
+  const _MonthSelector({required this.selectedMonth});
 
   @override
-  Widget build(BuildContext context) {
-    final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    // Monday=1, offset from Monday start
-    int startWeekday = firstDayOfMonth.weekday; // 1=Mon ... 7=Sun
-    final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
-    final totalCells = startWeekday - 1 + daysInMonth;
-    final rows = (totalCells / 7).ceil();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
 
-    final selectedEvents = _selectedDay != null ? _eventsForDay(_selectedDay!) : <CalendarEvent>[];
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('活动日历')),
-      body: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // ── Month header ─────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: _prevMonth,
-                  icon: const Icon(Icons.chevron_left_rounded),
-                ),
-                Text(
-                  DateFormat('yyyy年M月').format(_focusedMonth),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                IconButton(
-                  onPressed: _nextMonth,
-                  icon: const Icon(Icons.chevron_right_rounded),
-                ),
-              ],
-            ),
+          IconButton(
+            icon: Icon(Icons.chevron_left_rounded, color: AppTheme.primary),
+            onPressed: () {
+              ref.read(_selectedMonthProvider.notifier).state = DateTime(
+                selectedMonth.year,
+                selectedMonth.month - 1,
+              );
+            },
           ),
-
-          // ── Weekday headers ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: _weekdays.map((w) {
-                return Expanded(
-                  child: Center(
-                    child: Text(
-                      w,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+          Text(
+            '${months[selectedMonth.month - 1]} ${selectedMonth.year}',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
-
-          // ── Calendar grid ────────────────────────────────────────────────────
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Table(
-                children: List.generate(rows, (rowIdx) {
-                  return TableRow(
-                    children: List.generate(7, (colIdx) {
-                      final cellIdx = rowIdx * 7 + colIdx;
-                      final dayNum = cellIdx - (startWeekday - 1) + 1;
-
-                      if (dayNum < 1 || dayNum > daysInMonth) {
-                        return const SizedBox(height: 52);
-                      }
-
-                      final day = DateTime(_focusedMonth.year, _focusedMonth.month, dayNum);
-                      final dayEvents = _eventsForDay(day);
-                      final today = _isToday(day);
-                      final selected = _isSelected(day);
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedDay = selected ? null : day;
-                          });
-                        },
-                        child: Container(
-                          height: 52,
-                          margin: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppTheme.primary
-                                : today
-                                    ? AppTheme.primary.withOpacity(0.15)
-                                    : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: today && !selected
-                                ? Border.all(
-                                    color: AppTheme.primary.withOpacity(0.5))
-                                : null,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '$dayNum',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: today || selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: selected
-                                      ? Colors.white
-                                      : today
-                                          ? AppTheme.primary
-                                          : AppTheme.textPrimary,
-                                ),
-                              ),
-                              if (dayEvents.isNotEmpty)
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: dayEvents
-                                      .take(3)
-                                      .map(
-                                        (e) => Container(
-                                          width: 5,
-                                          height: 5,
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 1),
-                                          decoration: BoxDecoration(
-                                            color: selected
-                                                ? Colors.white
-                                                : e.typeColor,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  );
-                }),
-              ),
-            ),
-
-          const Divider(height: 24),
-
-          // ── Selected day events ──────────────────────────────────────────────
-          Expanded(
-            child: _selectedDay == null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('📅',
-                            style: const TextStyle(fontSize: 40)),
-                        const SizedBox(height: 8),
-                        Text(
-                          '选择日期查看活动',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      ],
-                    ),
-                  )
-                : selectedEvents.isEmpty
-                    ? Center(
-                        child: Text(
-                          '该日暂无活动',
-                          style:
-                              TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        itemCount: selectedEvents.length,
-                        itemBuilder: (_, i) {
-                          final event = selectedEvents[i];
-                          return _EventCard(event: event);
-                        },
-                      ),
+          IconButton(
+            icon: Icon(Icons.chevron_right_rounded, color: AppTheme.primary),
+            onPressed: () {
+              ref.read(_selectedMonthProvider.notifier).state = DateTime(
+                selectedMonth.year,
+                selectedMonth.month + 1,
+              );
+            },
           ),
         ],
       ),
@@ -277,92 +363,209 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 }
 
-class _EventCard extends StatelessWidget {
-  final CalendarEvent event;
-  const _EventCard({required this.event});
+// ── Calendar grid ─────────────────────────────────────────────────────────────
+
+class _CalendarGrid extends StatelessWidget {
+  final DateTime month;
+  final AsyncValue<List<CalendarEvent>> eventsAsync;
+  const _CalendarGrid({required this.month, required this.eventsAsync});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: event.typeColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final firstWeekday = DateTime(month.year, month.month, 1).weekday % 7; // Sun=0
+    final today = DateTime.now();
+
+    final eventDays = eventsAsync.maybeWhen(
+      data: (events) => events.map((e) => e.startAt.day).toSet(),
+      orElse: () => <int>{},
+    );
+
+    final dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: event.typeColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(event.emoji, style: const TextStyle(fontSize: 22)),
+          // Day headers
+          Row(
+            children: dayLabels.map((d) => Expanded(
+              child: Center(
+                child: Text(d,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textHint,
+                    )),
+              ),
+            )).toList(),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15),
-                      ),
+          const SizedBox(height: 6),
+          // Days grid
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 1,
+            ),
+            itemCount: firstWeekday + daysInMonth,
+            itemBuilder: (_, i) {
+              if (i < firstWeekday) return const SizedBox.shrink();
+              final day = i - firstWeekday + 1;
+              final isToday = today.year == month.year &&
+                  today.month == month.month &&
+                  today.day == day;
+              final hasEvent = eventDays.contains(day);
+
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: isToday ? AppTheme.brandGradient : null,
+                      shape: BoxShape.circle,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: event.typeColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                    child: Center(
                       child: Text(
-                        event.typeLabel,
+                        '$day',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: event.typeColor,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                          color: isToday ? Colors.white : AppTheme.textPrimary,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                if (event.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    event.description,
-                    style: TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (hasEvent)
+                    Container(
+                      width: 4,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                 ],
-                if (event.location.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Row(
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Event list ────────────────────────────────────────────────────────────────
+
+class _EventList extends StatelessWidget {
+  final List<CalendarEvent> events;
+  final void Function(String id) onDelete;
+  const _EventList({required this.events, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: events.length,
+      itemBuilder: (_, i) {
+        final e = events[i];
+        final typeIcon = {'date': '💕', 'reminder': '⏰', 'birthday': '🎂'}[e.type] ?? '📅';
+        final colorVal = Color(
+          int.parse(e.color.replaceFirst('#', '0xFF')),
+        );
+
+        return Dismissible(
+          key: Key(e.id),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) => onDelete(e.id),
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+          ),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.card,
+              borderRadius: BorderRadius.circular(14),
+              border: Border(left: BorderSide(color: colorVal, width: 3)),
+            ),
+            child: Row(
+              children: [
+                Text(typeIcon, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on_outlined,
-                          size: 13, color: AppTheme.textHint),
-                      const SizedBox(width: 4),
+                      Text(e.title,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                      if (e.description.isNotEmpty)
+                        Text(e.description,
+                            style: TextStyle(
+                                fontSize: 12, color: AppTheme.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
                       Text(
-                        event.location,
-                        style: TextStyle(
-                            fontSize: 12, color: AppTheme.textHint),
+                        '${e.startAt.day}/${e.startAt.month}/${e.startAt.year}'
+                        '${e.location != null ? ' · ${e.location}' : ''}',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textHint),
                       ),
                     ],
                   ),
-                ],
+                ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final VoidCallback onAdd;
+  const _EmptyState({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('📅', style: const TextStyle(fontSize: 48)),
+          const SizedBox(height: 14),
+          Text('No events this month',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary)),
+          const SizedBox(height: 6),
+          Text('Tap + to add a date or reminder',
+              style: TextStyle(fontSize: 13, color: AppTheme.textHint)),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add Event'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],

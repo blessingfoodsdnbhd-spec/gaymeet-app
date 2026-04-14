@@ -2,12 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const mongoSanitize = require('express-mongo-sanitize');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
 const env = require('./config/env');
-const { authLimiter, apiLimiter, strictLimiter } = require('./middleware/rateLimiter');
+const { globalLimiter, authLimiter } = require('./middleware/rateLimit');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -32,16 +29,6 @@ const stickersRoutes = require('./routes/stickers');
 const secretCodesRoutes = require('./routes/secret-codes');
 const referralsRoutes = require('./routes/referrals');
 const placesRoutes = require('./routes/places');
-const energyRoutes = require('./routes/energy');
-const privatePhotosRoutes = require('./routes/private-photos');
-const followsRoutes = require('./routes/follows');
-const storiesRoutes = require('./routes/stories');
-const groupsRoutes = require('./routes/groups');
-const statusRoutes = require('./routes/status');
-const questionsRoutes = require('./routes/questions');
-const safeDateRoutes = require('./routes/safe-date');
-const dateRoomsRoutes = require('./routes/date-rooms');
-const businessRoutes = require('./routes/business');
 const twoFactorRoutes = require('./routes/two-factor');
 const accountRoutes = require('./routes/account');
 const calendarRoutes = require('./routes/calendar');
@@ -50,12 +37,6 @@ const app = express();
 
 // ── Security & parsing ────────────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-
-// Global rate limiting
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false }));
-
-// Input sanitization
-app.use(mongoSanitize());
 
 const corsOrigin = env.CLIENT_URL === '*'
   ? '*'
@@ -69,13 +50,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// ── Security: NoSQL injection prevention ──────────────────────────────────────
-app.use(mongoSanitize({ replaceWith: '_' }));
-
-// ── Rate limiters ─────────────────────────────────────────────────────────────
-app.use('/api', apiLimiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+// ── Rate limiting ──────────────────────────────────────────────────────────────
+app.use(globalLimiter);
 
 // ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
@@ -83,28 +59,14 @@ app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-// ── Status (public — no auth, no maintenance block) ───────────────────────────
-app.use('/api/status', statusRoutes);
-
-// ── Maintenance middleware — blocks all API routes except /api/status ─────────
-app.use('/api', (req, res, next) => {
-  if (env.MAINTENANCE_MODE) {
-    return res.status(503).json({
-      error: 'maintenance',
-      message: env.MAINTENANCE_MESSAGE || '系统维护中，请稍后再试',
-    });
-  }
-  next();
-});
-
 // ── API routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/users', photosRoutes);
 app.use('/api/swipes', swipesRoutes);
 app.use('/api/matches', matchesRoutes);
 app.use('/api/users', blocksRoutes);
-app.use('/api/subscriptions', strictLimiter, subscriptionsRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
 app.use('/api/plates', platesRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/users', boostRoutes);
@@ -112,8 +74,8 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/shouts', shoutsRoutes);
 app.use('/api/popular', popularRoutes);
 app.use('/api/moments', momentsRoutes);
-app.use('/api/gifts', strictLimiter, giftsRoutes);
-app.use('/api/coins', strictLimiter, giftsRoutes); // /api/coins/balance and /api/coins/purchase
+app.use('/api/gifts', giftsRoutes);
+app.use('/api/coins', giftsRoutes); // /api/coins/balance and /api/coins/purchase
 app.use('/api/events', eventsRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/dm', dmRoutes);
@@ -122,17 +84,6 @@ app.use('/api/stickers', stickersRoutes);
 app.use('/api/codes', secretCodesRoutes);
 app.use('/api/referrals', referralsRoutes);
 app.use('/api/places', placesRoutes);
-app.use('/api/energy', energyRoutes);
-app.use('/api/users', privatePhotosRoutes);
-app.use('/api/photo-requests', privatePhotosRoutes);
-app.use('/api/users', followsRoutes);
-app.use('/api/stories', storiesRoutes);
-app.use('/api/groups', groupsRoutes);
-app.use('/api/users', questionsRoutes);
-app.use('/api/questions', questionsRoutes);
-app.use('/api/safe-date', safeDateRoutes);
-app.use('/api/date-rooms', dateRoomsRoutes);
-app.use('/api/business', businessRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/calendar', calendarRoutes);
