@@ -34,7 +34,7 @@ void main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
-      child: const GayMeetApp(),
+      child: const MeetupNearbyApp(),
     ),
   );
 }

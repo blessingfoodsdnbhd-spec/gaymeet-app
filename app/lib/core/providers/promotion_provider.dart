@@ -20,7 +20,7 @@ final _dummyPromotions = [
   Promotion(
     id: 'promo_2',
     imageUrl: '',
-    title: 'GayMeet 同骄活动',
+    title: 'Meetup Nearby 同骄活动',
     subtitle: '参与彩虹周活动，赢取免费高级会员',
     actionUrl: '/premium',
     type: PromotionType.banner,

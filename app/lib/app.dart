@@ -12,14 +12,14 @@ import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/widgets/promo_popup.dart';
 
-class GayMeetApp extends ConsumerStatefulWidget {
-  const GayMeetApp({super.key});
+class MeetupNearbyApp extends ConsumerStatefulWidget {
+  const MeetupNearbyApp({super.key});
 
   @override
-  ConsumerState<GayMeetApp> createState() => _GayMeetAppState();
+  ConsumerState<MeetupNearbyApp> createState() => _MeetupNearbyAppState();
 }
 
-class _GayMeetAppState extends ConsumerState<GayMeetApp> {
+class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
   @override
   void initState() {
     super.initState();
@@ -92,7 +92,7 @@ class _GayMeetAppState extends ConsumerState<GayMeetApp> {
     final router = createRouter(isLoggedIn: authState.isLoggedIn);
 
     return MaterialApp.router(
-      title: 'GayMeet',
+      title: 'Meetup Nearby',
       debugShowCheckedModeBanner: false,
       theme: AppThemeLight.lightTheme,
       darkTheme: AppTheme.darkTheme,
