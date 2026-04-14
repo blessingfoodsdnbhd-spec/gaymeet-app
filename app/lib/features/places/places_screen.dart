@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/models/place.dart';
 import '../../core/providers/places_provider.dart';
+import '../../core/providers/business_provider.dart';
+import '../../shared/widgets/promoted_badge.dart';
 
 const _categories = [
   ('all', '全部', '🗺️'),
@@ -160,6 +162,42 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
             ),
           ),
           const SizedBox(height: 8),
+
+          // ── Promoted businesses ────────────────────────────────────────
+          Consumer(builder: (context, ref, _) {
+            final promoted = ref.watch(businessProvider).promoted;
+            if (promoted.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(children: [
+                    const PromotedBadge(),
+                    const SizedBox(width: 6),
+                    Text('推广商家', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemCount: promoted.length,
+                    itemBuilder: (_, i) => _PromotedCard(
+                      businessName: promoted[i].businessName,
+                      category: promoted[i].category,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+              ],
+            );
+          }),
 
           // ── Content ──────────────────────────────────────────────────────
           Expanded(
@@ -689,6 +727,71 @@ class _TagChip extends StatelessWidget {
             fontWeight: FontWeight.w600),
       ),
     );
+  }
+}
+
+// ── Promoted business card ─────────────────────────────────────────────────────
+
+class _PromotedCard extends StatelessWidget {
+  final String businessName;
+  final String category;
+  const _PromotedCard({required this.businessName, required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(_emoji(category), style: const TextStyle(fontSize: 20)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  businessName,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                const PromotedBadge(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _emoji(String cat) {
+    switch (cat) {
+      case 'bar': return '🍺';
+      case 'club': return '🎵';
+      case 'restaurant': return '🍜';
+      case 'sauna': return '🧖';
+      case 'hotel': return '🏨';
+      case 'gym': return '💪';
+      default: return '🏪';
+    }
   }
 }
 

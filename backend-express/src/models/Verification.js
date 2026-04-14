@@ -8,8 +8,14 @@ const verificationSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    selfieUrl: { type: String, required: true },
+    selfieUrl: { type: String, default: null },
+    videoUrl: { type: String, default: null },
     pose: { type: String, required: true },
+    verificationType: {
+      type: String,
+      enum: ['photo', 'video'],
+      default: 'photo',
+    },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

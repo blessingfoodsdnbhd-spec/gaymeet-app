@@ -36,6 +36,8 @@ const groupsRoutes = require('./routes/groups');
 const statusRoutes = require('./routes/status');
 const questionsRoutes = require('./routes/questions');
 const safeDateRoutes = require('./routes/safe-date');
+const dateRoomsRoutes = require('./routes/date-rooms');
+const businessRoutes = require('./routes/business');
 
 const app = express();
 
@@ -108,6 +110,8 @@ app.use('/api/groups', groupsRoutes);
 app.use('/api/users', questionsRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/safe-date', safeDateRoutes);
+app.use('/api/date-rooms', dateRoomsRoutes);
+app.use('/api/business', businessRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

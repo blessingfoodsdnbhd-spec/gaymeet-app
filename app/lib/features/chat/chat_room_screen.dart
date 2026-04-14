@@ -16,6 +16,7 @@ import '../../core/providers/user_provider.dart';
 import '../gifts/gift_sheet.dart';
 import '../call/active_call_screen.dart';
 import '../stickers/sticker_picker.dart';
+import '../date_room/date_room_invite_sheet.dart';
 import '../../core/providers/call_provider.dart';
 import '../../core/models/sticker.dart';
 
@@ -591,6 +592,17 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const ActiveCallScreen()));
               },
+            ),
+            // Virtual date room
+            IconButton(
+              icon: const Text('💑', style: TextStyle(fontSize: 18)),
+              tooltip: '虚拟约会',
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const DateRoomInviteSheet(),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.more_vert_rounded, size: 20),

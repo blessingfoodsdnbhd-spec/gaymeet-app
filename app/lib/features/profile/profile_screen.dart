@@ -17,6 +17,7 @@ import '../../shared/widgets/looking_for_badge.dart';
 import '../gifts/gift_sheet.dart';
 import '../dm/send_dm_sheet.dart';
 import '../questions/ask_question_sheet.dart';
+import '../date_room/date_room_invite_sheet.dart';
 import 'looking_for_sheet.dart';
 import 'private_photos_section.dart';
 import 'public_qa_section.dart';
@@ -241,31 +242,54 @@ class ProfileScreen extends ConsumerWidget {
                     ref.read(followProvider(user.id).notifier).toggle(),
               ),
 
-            // ── Ask question button (other profile only) ──────────────────────
+            // ── Other profile action buttons ──────────────────────────────────
             if (!isOwnProfile) ...[
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => AskQuestionSheet(
-                      targetUserId: user.id,
-                      targetNickname: user.nickname,
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => AskQuestionSheet(
+                          targetUserId: user.id,
+                          targetNickname: user.nickname,
+                        ),
+                      ),
+                      icon: const Text('📬', style: TextStyle(fontSize: 14)),
+                      label: const Text('提问箱'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textSecondary,
+                        side: const BorderSide(color: Colors.white24),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
-                  icon: const Text('📬', style: TextStyle(fontSize: 15)),
-                  label: const Text('提问箱'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textSecondary,
-                    side: BorderSide(color: Colors.white24),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const DateRoomInviteSheet(),
+                      ),
+                      icon: const Text('💑', style: TextStyle(fontSize: 14)),
+                      label: const Text('虚拟约会'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        side: BorderSide(color: AppTheme.primary.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
 

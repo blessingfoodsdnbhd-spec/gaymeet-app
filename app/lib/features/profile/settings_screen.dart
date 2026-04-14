@@ -318,8 +318,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/safe-date'),
           ),
+          ListTile(
+            leading: const Text('💑', style: TextStyle(fontSize: 22)),
+            title: const Text('虚拟约会房间'),
+            subtitle: Text('与心仪对象开启专属虚拟约会',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/date-room'),
+          ),
 
           const Divider(),
+
+          // ── Business ───────────────────────────────────────────────────────
+          const _SectionHeader(title: 'BUSINESS'),
+          ListTile(
+            leading: const Text('🏪', style: TextStyle(fontSize: 22)),
+            title: const Text('商家入驻'),
+            subtitle: Text('开通商家账号，推广你的品牌',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/business/register'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.dashboard_rounded, color: Color(0xFFFFB300)),
+            title: const Text('商家后台'),
+            subtitle: Text('管理商家资料和推广计划',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/business/dashboard'),
+          ),
+
+          const Divider();
 
           // ── Danger zone ────────────────────────────────────────────────────
           const _SectionHeader(title: 'ACCOUNT ACTIONS'),

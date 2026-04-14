@@ -58,6 +58,9 @@ import '../features/groups/create_group_screen.dart';
 import '../features/questions/question_inbox_screen.dart';
 import '../features/safety/safe_date_screen.dart';
 import '../features/safety/panic_alert_screen.dart';
+import '../features/date_room/date_room_screen.dart';
+import '../features/business/business_register_screen.dart';
+import '../features/business/business_dashboard_screen.dart';
 import '../core/models/place.dart';
 import '../core/models/user.dart';
 import '../core/models/story.dart';
@@ -223,6 +226,13 @@ GoRouter createRouter({required bool isLoggedIn}) {
       // ── Safe Date ─────────────────────────────────────────────────────────
       GoRoute(path: '/safe-date', builder: (_, __) => const SafeDateScreen()),
       GoRoute(path: '/safe-date/alerts', builder: (_, __) => const PanicAlertScreen()),
+
+      // ── Virtual Date Room ─────────────────────────────────────────────────
+      GoRoute(path: '/date-room', builder: (_, __) => const DateRoomScreen()),
+
+      // ── Business ──────────────────────────────────────────────────────────
+      GoRoute(path: '/business/register', builder: (_, __) => const BusinessRegisterScreen()),
+      GoRoute(path: '/business/dashboard', builder: (_, __) => const BusinessDashboardScreen()),
 
       // ── Events ───────────────────────────────────────────────────────────
       GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),
