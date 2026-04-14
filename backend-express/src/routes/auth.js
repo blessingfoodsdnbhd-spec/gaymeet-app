@@ -73,71 +73,89 @@ router.post('/register', async (req, res, next) => {
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password, deviceId, deviceName, twoFactorCode } = req.body;
     if (!email || !password) return err(res, 'email and password are required');
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+password +loginAttempts +lockoutUntil'
+    );
     if (!user) return err(res, 'Invalid credentials', 401);
 
-    const valid = await user.comparePassword(password);
-    if (!valid) return err(res, 'Invalid credentials', 401);
+    // ── Account lockout check ────────────────────────────────────────────────
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      const minutes = Math.ceil((user.lockoutUntil - new Date()) / 60000);
+      return err(
+        res,
+        `Account locked after too many failed attempts. Try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+        423
+      );
+    }
 
-    // Check 2FA
+    // ── Password verification ────────────────────────────────────────────────
+    const valid = await user.comparePassword(password);
+
+    if (!valid) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        user.loginAttempts = 0;
+        await user.save();
+        return err(res, 'Too many failed attempts. Account locked for 30 minutes.', 423);
+      }
+      const remaining = MAX_LOGIN_ATTEMPTS - user.loginAttempts;
+      await user.save();
+      return err(
+        res,
+        `Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before lockout.`,
+        401
+      );
+    }
+
+    // ── Two-factor authentication (if enabled) ───────────────────────────────
     const tfa = await TwoFactorAuth.findOne({ user: user._id });
     if (tfa && tfa.isEnabled) {
       if (!twoFactorCode) {
         return res.status(202).json({ requiresTwoFactor: true });
       }
-      // Try TOTP code first, then backup codes
       const totpValid = speakeasy.totp.verify({
         secret: tfa.secret,
         encoding: 'base32',
         token: twoFactorCode,
         window: 1,
       });
-
       if (!totpValid) {
-        // Check backup codes
-        const backupIndex = tfa.backupCodes.findIndex(
-          (b) => !b.used && b.code === twoFactorCode
-        );
-        if (backupIndex === -1) {
-          return err(res, 'Invalid two-factor code', 401);
-        }
-        // Mark backup code as used
+        const backupIndex = tfa.backupCodes.findIndex((b) => !b.used && b.code === twoFactorCode);
+        if (backupIndex === -1) return err(res, 'Invalid two-factor code', 401);
         tfa.backupCodes[backupIndex].used = true;
         await tfa.save();
       }
     }
 
-    // Track device
+    // ── Track device ─────────────────────────────────────────────────────────
     const resolvedDeviceId = deviceId || `device-${Date.now()}`;
     const resolvedDeviceName = deviceName || req.headers['user-agent'] || 'Unknown Device';
     const ip = req.ip || req.connection?.remoteAddress || null;
-
-    const existingIdx = user.devices.findIndex((d) => d.deviceId === resolvedDeviceId);
+    const existingIdx = user.devices?.findIndex((d) => d.deviceId === resolvedDeviceId) ?? -1;
     if (existingIdx >= 0) {
       user.devices[existingIdx].lastUsed = new Date();
       user.devices[existingIdx].deviceName = resolvedDeviceName;
       user.devices[existingIdx].ip = ip;
-    } else {
-      user.devices.push({
-        deviceId: resolvedDeviceId,
-        deviceName: resolvedDeviceName,
-        lastUsed: new Date(),
-        ip,
-        refreshToken: null,
-      });
-      // Keep max 5 devices — remove oldest
+    } else if (user.devices) {
+      user.devices.push({ deviceId: resolvedDeviceId, deviceName: resolvedDeviceName, lastUsed: new Date(), ip, refreshToken: null });
       if (user.devices.length > 5) {
         user.devices.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
         user.devices = user.devices.slice(0, 5);
       }
     }
 
-    // Update online status
+    // ── Reset lockout counters on success ────────────────────────────────────
+    user.loginAttempts = 0;
+    user.lockoutUntil = null;
     user.isOnline = true;
     user.lastActiveAt = new Date();
     await user.save();

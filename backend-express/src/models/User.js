@@ -145,6 +145,9 @@ const userSchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
     deleteScheduledAt: { type: Date, default: null },
+    // Brute-force protection
+    loginAttempts: { type: Number, default: 0 },
+    lockoutUntil: { type: Date, default: null },
   },
   { timestamps: true }
 );
