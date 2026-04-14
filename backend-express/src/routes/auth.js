@@ -70,18 +70,56 @@ router.post('/register', async (req, res, next) => {
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return err(res, 'email and password are required');
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+password +loginAttempts +lockoutUntil'
+    );
     if (!user) return err(res, 'Invalid credentials', 401);
 
-    const valid = await user.comparePassword(password);
-    if (!valid) return err(res, 'Invalid credentials', 401);
+    // ── Account lockout check ────────────────────────────────────────────────
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      const minutes = Math.ceil((user.lockoutUntil - new Date()) / 60000);
+      return err(
+        res,
+        `Account locked after too many failed attempts. Try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+        423
+      );
+    }
 
-    // Update online status
+    const valid = await user.comparePassword(password);
+
+    if (!valid) {
+      // Increment attempts and lock if threshold reached
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        user.loginAttempts = 0;
+        await user.save();
+        return err(
+          res,
+          `Too many failed attempts. Account locked for 30 minutes.`,
+          423
+        );
+      }
+      const remaining = MAX_LOGIN_ATTEMPTS - user.loginAttempts;
+      await user.save();
+      return err(
+        res,
+        `Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before lockout.`,
+        401
+      );
+    }
+
+    // ── Success: reset lockout counters ──────────────────────────────────────
+    user.loginAttempts = 0;
+    user.lockoutUntil = null;
     user.isOnline = true;
     user.lastActiveAt = new Date();
     await user.save();

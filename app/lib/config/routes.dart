@@ -33,6 +33,7 @@ import '../features/gifts/gift_inbox_screen.dart';
 import '../features/events/events_screen.dart';
 import '../features/events/event_detail_screen.dart';
 import '../features/events/create_event_screen.dart';
+import '../features/events/calendar_screen.dart';
 import '../core/models/moment.dart';
 import '../core/models/event.dart';
 import '../features/verification/verification_screen.dart';
@@ -155,6 +156,7 @@ GoRouter createRouter({required bool isLoggedIn}) {
 
       // ── Events ───────────────────────────────────────────────────────────
       GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),
+      GoRoute(path: '/events/calendar', builder: (_, __) => const EventsCalendarScreen()),
       GoRoute(path: '/events/create', builder: (_, __) => const CreateEventScreen()),
       GoRoute(
         path: '/events/:id',

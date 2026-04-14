@@ -2,8 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoSanitize = require('express-mongo-sanitize');
 const path = require('path');
 const env = require('./config/env');
+const { authLimiter, apiLimiter, strictLimiter } = require('./middleware/rateLimiter');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -46,6 +48,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+// ── Security: NoSQL injection prevention ──────────────────────────────────────
+app.use(mongoSanitize({ replaceWith: '_' }));
+
+// ── Rate limiters ─────────────────────────────────────────────────────────────
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
 // ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 
@@ -59,7 +69,7 @@ app.use('/api/users', photosRoutes);
 app.use('/api/swipes', swipesRoutes);
 app.use('/api/matches', matchesRoutes);
 app.use('/api/users', blocksRoutes);
-app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/subscriptions', strictLimiter, subscriptionsRoutes);
 app.use('/api/plates', platesRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/users', boostRoutes);
@@ -67,8 +77,8 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/shouts', shoutsRoutes);
 app.use('/api/popular', popularRoutes);
 app.use('/api/moments', momentsRoutes);
-app.use('/api/gifts', giftsRoutes);
-app.use('/api/coins', giftsRoutes); // /api/coins/balance and /api/coins/purchase
+app.use('/api/gifts', strictLimiter, giftsRoutes);
+app.use('/api/coins', strictLimiter, giftsRoutes); // /api/coins/balance and /api/coins/purchase
 app.use('/api/events', eventsRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/dm', dmRoutes);

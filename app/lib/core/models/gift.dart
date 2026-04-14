@@ -77,26 +77,34 @@ class GiftTransaction {
 class CoinPackage {
   final String id;
   final int coins;
+  final int bonus;
   final double price;
   final String currency;
   final String label;
   final bool bestValue;
+  final bool popular;
 
   const CoinPackage({
     required this.id,
     required this.coins,
+    this.bonus = 0,
     required this.price,
     required this.currency,
     required this.label,
     this.bestValue = false,
+    this.popular = false,
   });
+
+  int get totalCoins => coins + bonus;
 
   factory CoinPackage.fromJson(Map<String, dynamic> j) => CoinPackage(
         id: (j['id'] ?? '') as String,
         coins: (j['coins'] as num?)?.toInt() ?? 0,
+        bonus: (j['bonus'] as num?)?.toInt() ?? 0,
         price: (j['price'] as num?)?.toDouble() ?? 0,
         currency: (j['currency'] ?? 'MYR') as String,
         label: (j['label'] ?? '') as String,
         bestValue: (j['bestValue'] as bool?) ?? false,
+        popular: (j['popular'] as bool?) ?? false,
       );
 }

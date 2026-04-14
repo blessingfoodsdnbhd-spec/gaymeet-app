@@ -21,9 +21,10 @@ final _dummyGifts = [
 ];
 
 final _dummyPackages = const [
-  CoinPackage(id: 'coins_100', coins: 100, price: 9.90, currency: 'MYR', label: '100 Coins'),
-  CoinPackage(id: 'coins_500', coins: 500, price: 39.90, currency: 'MYR', label: '500 Coins'),
-  CoinPackage(id: 'coins_1000', coins: 1000, price: 69.90, currency: 'MYR', label: '1000 Coins', bestValue: true),
+  CoinPackage(id: 'coins_60',   coins: 60,   bonus: 0,   price: 4.90,  currency: 'MYR', label: '60 Coins'),
+  CoinPackage(id: 'coins_300',  coins: 300,  bonus: 30,  price: 19.90, currency: 'MYR', label: '300 Coins', popular: true),
+  CoinPackage(id: 'coins_700',  coins: 700,  bonus: 100, price: 39.90, currency: 'MYR', label: '700 Coins'),
+  CoinPackage(id: 'coins_1500', coins: 1500, bonus: 300, price: 79.90, currency: 'MYR', label: '1500 Coins', bestValue: true),
 ];
 
 // ── State ─────────────────────────────────────────────────────────────────────

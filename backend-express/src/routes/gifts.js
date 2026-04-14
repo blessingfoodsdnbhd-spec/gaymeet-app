@@ -12,9 +12,46 @@ function todayStr() {
 }
 
 const COIN_PACKAGES = [
-  { id: 'coins_100', coins: 100, price: 9.90, currency: 'MYR', label: '100 Coins' },
-  { id: 'coins_500', coins: 500, price: 39.90, currency: 'MYR', label: '500 Coins', bestValue: false },
-  { id: 'coins_1000', coins: 1000, price: 69.90, currency: 'MYR', label: '1000 Coins', bestValue: true },
+  {
+    id: 'coins_60',
+    coins: 60,
+    bonus: 0,
+    price: 4.90,
+    currency: 'MYR',
+    label: '60 Coins',
+    bestValue: false,
+    popular: false,
+  },
+  {
+    id: 'coins_300',
+    coins: 300,
+    bonus: 30,
+    price: 19.90,
+    currency: 'MYR',
+    label: '300 Coins',
+    bestValue: false,
+    popular: true,
+  },
+  {
+    id: 'coins_700',
+    coins: 700,
+    bonus: 100,
+    price: 39.90,
+    currency: 'MYR',
+    label: '700 Coins',
+    bestValue: false,
+    popular: false,
+  },
+  {
+    id: 'coins_1500',
+    coins: 1500,
+    bonus: 300,
+    price: 79.90,
+    currency: 'MYR',
+    label: '1500 Coins',
+    bestValue: true,
+    popular: false,
+  },
 ];
 
 // ── GET /api/gifts ────────────────────────────────────────────────────────────

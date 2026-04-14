@@ -28,6 +28,11 @@ class EventsScreen extends ConsumerWidget {
         title: const Text('活动'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.calendar_month_rounded, size: 24),
+            tooltip: 'Calendar view',
+            onPressed: () => context.push('/events/calendar'),
+          ),
+          IconButton(
             icon: const Icon(Icons.add_rounded, size: 24),
             onPressed: () => context.push('/events/create'),
           ),

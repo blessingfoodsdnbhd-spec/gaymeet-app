@@ -99,6 +99,10 @@ const userSchema = new mongoose.Schema(
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     referralCount: { type: Number, default: 0 },
     deviceFingerprint: { type: String, default: null },
+
+    // Brute-force protection
+    loginAttempts: { type: Number, default: 0 },
+    lockoutUntil: { type: Date, default: null },
   },
   { timestamps: true }
 );
