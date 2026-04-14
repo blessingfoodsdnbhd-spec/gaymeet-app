@@ -580,8 +580,8 @@ class _BoostButton extends StatelessWidget {
                 ? null
                 : Border.all(
                     color: isPremium
-                        ? AppTheme.boost.withOpacity(0.5)
-                        : AppTheme.textHint.withOpacity(0.3),
+                        ? AppTheme.boost.withValues(alpha: 0.5)
+                        : AppTheme.textHint.withValues(alpha: 0.3),
                     width: 1,
                   ),
           ),
@@ -649,7 +649,7 @@ class _BoostCountdownBarState extends State<_BoostCountdownBar> {
           colors: [Color(0xFF2A1F00), Color(0xFF1A1000)],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.boost.withOpacity(0.4), width: 1),
+        border: Border.all(color: AppTheme.boost.withValues(alpha: 0.4), width: 1),
       ),
       child: Row(
         children: [
@@ -668,7 +668,7 @@ class _BoostCountdownBarState extends State<_BoostCountdownBar> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppTheme.boost.withOpacity(0.15),
+              color: AppTheme.boost.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -800,15 +800,15 @@ class _ActionBtn extends StatelessWidget {
               color: AppTheme.card,
               border: Border.all(
                 color: locked
-                    ? AppTheme.textHint.withOpacity(0.3)
-                    : color.withOpacity(0.4),
+                    ? AppTheme.textHint.withValues(alpha: 0.3)
+                    : color.withValues(alpha: 0.4),
                 width: 2,
               ),
               boxShadow: locked
                   ? []
                   : [
                       BoxShadow(
-                        color: color.withOpacity(0.15),
+                        color: color.withValues(alpha: 0.15),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -943,8 +943,8 @@ class _SwipeLimitFullScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppTheme.primary.withOpacity(0.15),
-                      AppTheme.accent.withOpacity(0.1),
+                      AppTheme.primary.withValues(alpha: 0.15),
+                      AppTheme.accent.withValues(alpha: 0.1),
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -1032,7 +1032,7 @@ class _GradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withOpacity(0.35),
+              color: AppTheme.primary.withValues(alpha: 0.35),
               blurRadius: 14,
               offset: const Offset(0, 5),
             )

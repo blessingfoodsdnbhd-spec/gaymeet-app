@@ -19,9 +19,9 @@ class LookingForBadge extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: info.color.withOpacity(0.15),
+        color: info.color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: info.color.withOpacity(0.4)),
+        border: Border.all(color: info.color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

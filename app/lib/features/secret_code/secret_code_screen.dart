@@ -90,7 +90,7 @@ class _SecretCodeScreenState extends ConsumerState<SecretCodeScreen>
                 color: const Color(0xFF1A1A2E),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                    color: const Color(0xFF6C3CE1).withOpacity(0.4)),
+                    color: const Color(0xFF6C3CE1).withValues(alpha: 0.4)),
               ),
               child: const Text(
                 '和朋友约定一个暗号，输入相同暗号即可匹配！暗号24小时后过期。',
@@ -162,7 +162,7 @@ class _InputWidget extends StatelessWidget {
             color: const Color(0xFF1A1A2E),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: const Color(0xFF6C3CE1).withOpacity(0.6), width: 1.5),
+                color: const Color(0xFF6C3CE1).withValues(alpha: 0.6), width: 1.5),
           ),
           child: TextField(
             controller: ctrl,
@@ -246,7 +246,7 @@ class _WaitingWidget extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                  color: const Color(0xFF6C3CE1).withOpacity(0.6), width: 3),
+                  color: const Color(0xFF6C3CE1).withValues(alpha: 0.6), width: 3),
             ),
             child: const Text('🔮', style: TextStyle(fontSize: 48)),
           ),

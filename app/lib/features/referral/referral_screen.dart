@@ -122,7 +122,7 @@ class _HeroBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFB300).withOpacity(0.3),
+            color: const Color(0xFFFFB300).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           )
@@ -147,7 +147,7 @@ class _HeroBanner extends StatelessWidget {
             '朋友用你的邀请码注册，双方都获得金币奖励\n金币可兑换Premium会员及更多特权',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -193,7 +193,7 @@ class _CodeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3), width: 1),
+        border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
@@ -595,7 +595,7 @@ class _WithdrawButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [

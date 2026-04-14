@@ -299,7 +299,7 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
                           onDeleted: () => _removeTag(t),
                           backgroundColor: AppTheme.surface,
                           side: BorderSide(
-                              color: AppTheme.primary.withOpacity(0.3)),
+                              color: AppTheme.primary.withValues(alpha: 0.3)),
                           labelStyle:
                               TextStyle(color: AppTheme.textPrimary),
                         ))

@@ -99,7 +99,7 @@ class LevelBadge extends StatelessWidget {
                 Text(
                   'Lv',
                   style: TextStyle(
-                    color: _textColor(level).withOpacity(0.8),
+                    color: _textColor(level).withValues(alpha: 0.8),
                     fontSize: size * 0.18,
                     fontWeight: FontWeight.w600,
                     height: 1.1,

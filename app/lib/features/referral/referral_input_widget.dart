@@ -93,7 +93,7 @@ class _ReferralInputWidgetState extends ConsumerState<ReferralInputWidget>
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: _appliedCode != null
-                    ? const Color(0xFFFFB300).withOpacity(0.6)
+                    ? const Color(0xFFFFB300).withValues(alpha: 0.6)
                     : AppTheme.surface,
               ),
             ),
@@ -237,7 +237,7 @@ class _AppliedBanner extends StatelessWidget {
         color: const Color(0xFF1B2A10),
         borderRadius: BorderRadius.circular(12),
         border:
-            Border.all(color: const Color(0xFFFFB300).withOpacity(0.4)),
+            Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [

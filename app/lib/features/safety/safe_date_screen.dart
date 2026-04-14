@@ -213,9 +213,9 @@ class _SetupForm extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
           ),
           child: const Row(
             children: [
@@ -307,7 +307,7 @@ class _SetupForm extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.4),
+                  color: Colors.blue.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -385,7 +385,7 @@ class _ContactTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? Colors.blue.withOpacity(0.12)
+              ? Colors.blue.withValues(alpha: 0.12)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -504,7 +504,7 @@ class _ActiveSessionState extends State<_ActiveSession>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -559,10 +559,10 @@ class _ActiveSessionState extends State<_ActiveSession>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.15),
+                color: Colors.red.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: Colors.red.withOpacity(0.4), width: 1.5),
+                    color: Colors.red.withValues(alpha: 0.4), width: 1.5),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -600,7 +600,7 @@ class _ActiveSessionState extends State<_ActiveSession>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.6),
+                        color: Colors.red.withValues(alpha: 0.6),
                         blurRadius: 24,
                         spreadRadius: 4,
                         offset: const Offset(0, 4),

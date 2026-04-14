@@ -178,7 +178,7 @@ class _MasterToggle extends StatelessWidget {
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(14),
         border: value
-            ? Border.all(color: AppTheme.primary.withOpacity(0.4))
+            ? Border.all(color: AppTheme.primary.withValues(alpha: 0.4))
             : null,
       ),
       child: Row(
@@ -265,7 +265,7 @@ class _FilterSection extends StatelessWidget {
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(14),
         border: enabled
-            ? Border.all(color: AppTheme.primary.withOpacity(0.3))
+            ? Border.all(color: AppTheme.primary.withValues(alpha: 0.3))
             : null,
       ),
       child: Column(
@@ -319,7 +319,7 @@ class _FilterSection extends StatelessWidget {
                   activeTrackColor: AppTheme.primary,
                   inactiveTrackColor: AppTheme.surface,
                   thumbColor: AppTheme.primary,
-                  overlayColor: AppTheme.primary.withOpacity(0.12),
+                  overlayColor: AppTheme.primary.withValues(alpha: 0.12),
                   rangeThumbShape:
                       const RoundRangeSliderThumbShape(enabledThumbRadius: 8),
                   trackHeight: 3,
@@ -406,7 +406,7 @@ class _DistanceSection extends StatelessWidget {
               activeTrackColor: AppTheme.primary,
               inactiveTrackColor: AppTheme.surface,
               thumbColor: AppTheme.primary,
-              overlayColor: AppTheme.primary.withOpacity(0.12),
+              overlayColor: AppTheme.primary.withValues(alpha: 0.12),
               thumbShape:
                   const RoundSliderThumbShape(enabledThumbRadius: 8),
               trackHeight: 3,

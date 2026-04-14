@@ -66,12 +66,12 @@ class ThemeScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppTheme.primary.withOpacity(0.1)
+                    ? AppTheme.primary.withValues(alpha: 0.1)
                     : AppTheme.card,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: selected
-                      ? AppTheme.primary.withOpacity(0.6)
+                      ? AppTheme.primary.withValues(alpha: 0.6)
                       : const Color(0xFF2A2A2A),
                   width: selected ? 1.5 : 1,
                 ),
@@ -86,7 +86,7 @@ class ThemeScreen extends ConsumerWidget {
                     color: previewColor,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.1), width: 1),
+                        color: Colors.white.withValues(alpha: 0.1), width: 1),
                   ),
                   child: Icon(icon,
                       size: 20,

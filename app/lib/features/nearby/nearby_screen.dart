@@ -194,7 +194,7 @@ class _NearbyTile extends StatelessWidget {
                     '${user.distance!.toStringAsFixed(1)} km',
                     style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white.withOpacity(0.7)),
+                        color: Colors.white.withValues(alpha: 0.7)),
                   ),
               ],
             ),

@@ -104,7 +104,7 @@ class ProfileScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.boost.withOpacity(0.4),
+                            color: AppTheme.boost.withValues(alpha: 0.4),
                             blurRadius: 12,
                           ),
                         ],
@@ -216,7 +216,7 @@ class ProfileScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primary.withOpacity(0.12),
+                      color: AppTheme.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(tag,
@@ -282,7 +282,7 @@ class ProfileScreen extends ConsumerWidget {
                       label: const Text('虚拟约会'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primary,
-                        side: BorderSide(color: AppTheme.primary.withOpacity(0.5)),
+                        side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.5)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -438,7 +438,7 @@ class _VipBanner extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: const Color(0xFFFFD700).withOpacity(0.4), width: 1),
+              color: const Color(0xFFFFD700).withValues(alpha: 0.4), width: 1),
         ),
         child: Row(
           children: [
@@ -472,7 +472,7 @@ class _VipBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFD700).withOpacity(0.25),
+              color: const Color(0xFFFFD700).withValues(alpha: 0.25),
               blurRadius: 12,
               offset: const Offset(0, 3),
             ),
@@ -676,7 +676,7 @@ class _FollowBtn extends StatelessWidget {
           color: isFollowing ? Colors.transparent : AppTheme.primary,
           borderRadius: BorderRadius.circular(12),
           border: isFollowing
-              ? Border.all(color: AppTheme.primary.withOpacity(0.6))
+              ? Border.all(color: AppTheme.primary.withValues(alpha: 0.6))
               : null,
         ),
         child: isLoading
@@ -748,7 +748,7 @@ class _ActionBtn extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: primary
-              ? AppTheme.primary.withOpacity(0.12)
+              ? AppTheme.primary.withValues(alpha: 0.12)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: bdColor, width: 1),
@@ -849,7 +849,7 @@ class _PhotoStripState extends State<_PhotoStrip> {
                   borderRadius: BorderRadius.circular(3),
                   color: active
                       ? AppTheme.primary
-                      : AppTheme.primary.withOpacity(0.25),
+                      : AppTheme.primary.withValues(alpha: 0.25),
                 ),
               );
             }),

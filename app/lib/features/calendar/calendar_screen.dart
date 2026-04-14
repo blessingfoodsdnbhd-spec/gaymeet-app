@@ -192,7 +192,7 @@ class CalendarScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: AppTheme.card,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -216,7 +216,7 @@ class CalendarScreen extends ConsumerWidget {
                     label: Text('${icons[t]} $t'),
                     selected: selectedType == t,
                     onSelected: (_) => setState(() => selectedType = t),
-                    selectedColor: AppTheme.primary.withOpacity(0.2),
+                    selectedColor: AppTheme.primary.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       color: selectedType == t ? AppTheme.primary : AppTheme.textSecondary,
                     ),
@@ -487,7 +487,7 @@ class _EventList extends StatelessWidget {
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.15),
+              color: Colors.redAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),

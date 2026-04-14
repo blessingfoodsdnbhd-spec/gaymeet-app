@@ -75,7 +75,7 @@ class _PrivatePhotosSectionState extends ConsumerState<PrivatePhotosSection> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppTheme.online.withOpacity(0.15),
+                  color: AppTheme.online.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.online, width: 1),
                 ),
@@ -226,7 +226,7 @@ class _PrivatePhotosSectionState extends ConsumerState<PrivatePhotosSection> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A2A1A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.online.withOpacity(0.4), width: 1),
+        border: Border.all(color: AppTheme.online.withValues(alpha: 0.4), width: 1),
       ),
       child: Row(
         children: [
@@ -421,7 +421,7 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: color, width: 1),
         ),

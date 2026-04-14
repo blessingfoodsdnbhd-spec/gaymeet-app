@@ -82,7 +82,7 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.textPrimary,
-        side: BorderSide(color: AppColors.pink500.withOpacity(0.3)),
+        side: BorderSide(color: AppColors.pink500.withValues(alpha: 0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -98,7 +98,7 @@ class AppTheme {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: AppColors.pink500.withOpacity(0.15)),
+        borderSide: BorderSide(color: AppColors.pink500.withValues(alpha: 0.15)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -117,7 +117,7 @@ class AppTheme {
       unselectedLabelStyle: TextStyle(fontSize: 11),
     ),
     dividerTheme: DividerThemeData(
-      color: AppColors.pink500.withOpacity(0.1),
+      color: AppColors.pink500.withValues(alpha: 0.1),
       thickness: 0.5,
     ),
   );

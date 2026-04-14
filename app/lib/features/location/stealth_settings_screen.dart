@@ -313,13 +313,13 @@ class _StealthSettingsScreenState
                     horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: priv.canActivateStealth
-                      ? AppTheme.primary.withOpacity(0.08)
-                      : AppTheme.error.withOpacity(0.08),
+                      ? AppTheme.primary.withValues(alpha: 0.08)
+                      : AppTheme.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: priv.canActivateStealth
-                        ? AppTheme.primary.withOpacity(0.25)
-                        : AppTheme.error.withOpacity(0.3),
+                        ? AppTheme.primary.withValues(alpha: 0.25)
+                        : AppTheme.error.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -407,13 +407,13 @@ class _StealthSettingsScreenState
                         color: priv.stealthOption == StealthOption.timed &&
                                 priv.stealthUntil != null &&
                                 priv.hideFromNearby
-                            ? AppTheme.primary.withOpacity(0.15)
+                            ? AppTheme.primary.withValues(alpha: 0.15)
                             : AppTheme.card,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: priv.stealthOption == StealthOption.timed &&
                                   priv.hideFromNearby
-                              ? AppTheme.primary.withOpacity(0.4)
+                              ? AppTheme.primary.withValues(alpha: 0.4)
                               : const Color(0xFF2A2A2A),
                         ),
                       ),
@@ -487,7 +487,7 @@ class _ToggleCard extends StatelessWidget {
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(14),
         border: value
-            ? Border.all(color: AppTheme.primary.withOpacity(0.3))
+            ? Border.all(color: AppTheme.primary.withValues(alpha: 0.3))
             : null,
       ),
       child: Row(
@@ -550,12 +550,12 @@ class _OptionCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primary.withOpacity(0.1)
+              ? AppTheme.primary.withValues(alpha: 0.1)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? AppTheme.primary.withOpacity(0.4)
+                ? AppTheme.primary.withValues(alpha: 0.4)
                 : const Color(0xFF2A2A2A),
           ),
         ),

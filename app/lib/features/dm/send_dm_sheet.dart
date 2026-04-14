@@ -115,8 +115,8 @@ class _SendDmSheetState extends ConsumerState<SendDmSheet> {
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: canAfford
-                        ? AppTheme.primary.withOpacity(0.12)
-                        : Colors.red.withOpacity(0.12),
+                        ? AppTheme.primary.withValues(alpha: 0.12)
+                        : Colors.red.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

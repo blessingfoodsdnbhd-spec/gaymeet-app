@@ -163,7 +163,7 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.card,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -284,7 +284,7 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
             decoration: BoxDecoration(
               color: AppTheme.card,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange.withOpacity(0.5)),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +319,7 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.2)),
+                      color: AppTheme.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [

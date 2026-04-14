@@ -151,15 +151,15 @@ class _WhoLikedYouSection extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.primary.withOpacity(0.15),
-              AppTheme.accent.withOpacity(0.12),
+              AppTheme.primary.withValues(alpha: 0.15),
+              AppTheme.accent.withValues(alpha: 0.12),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppTheme.primary.withOpacity(0.3),
+            color: AppTheme.primary.withValues(alpha: 0.3),
             width: 1,
           ),
         ),

@@ -123,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       color: AppColors.bgCard,
                       borderRadius: AppRadius.lgRadius,
                       border: Border.all(
-                          color: AppColors.pink500.withOpacity(0.15), width: 1),
+                          color: AppColors.pink500.withValues(alpha: 0.15), width: 1),
                     ),
                     child: Column(
                       children: [
@@ -179,10 +179,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: AppRadius.mdRadius,
                         border: Border.all(
-                            color: AppColors.error.withOpacity(0.3)),
+                            color: AppColors.error.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -211,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         borderRadius: AppRadius.lgRadius,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.hotPink.withOpacity(0.4),
+                            color: AppColors.hotPink.withValues(alpha: 0.4),
                             blurRadius: 18,
                             offset: const Offset(0, 6),
                           )
@@ -243,14 +243,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Divider ───────────────────────────────────────────────────
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppColors.pink500.withOpacity(0.2))),
+                      Expanded(child: Divider(color: AppColors.pink500.withValues(alpha: 0.2))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text('or',
                             style: TextStyle(
                                 color: AppColors.textHint, fontSize: 13)),
                       ),
-                      Expanded(child: Divider(color: AppColors.pink500.withOpacity(0.2))),
+                      Expanded(child: Divider(color: AppColors.pink500.withValues(alpha: 0.2))),
                     ],
                   ),
                   const SizedBox(height: 20),

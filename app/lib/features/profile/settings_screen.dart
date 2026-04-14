@@ -130,7 +130,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   color: AppTheme.card,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.3), width: 1),
+                      color: AppTheme.primary.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Row(
                   children: [

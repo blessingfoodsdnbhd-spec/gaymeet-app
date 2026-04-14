@@ -88,7 +88,7 @@ class _BalanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFB300).withOpacity(0.35),
+            color: const Color(0xFFFFB300).withValues(alpha: 0.35),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -144,7 +144,7 @@ class _BalanceCard extends StatelessWidget {
           Center(
             child: Text(
               '金币可兑换Premium会员或其他特权',
-              style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 11),
+              style: TextStyle(color: Colors.black.withValues(alpha: 0.5), fontSize: 11),
             ),
           ),
         ],
@@ -163,7 +163,7 @@ class _MiniStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.black.withOpacity(0.55), fontSize: 11)),
+        Text(label, style: TextStyle(color: Colors.black.withValues(alpha: 0.55), fontSize: 11)),
         const SizedBox(height: 2),
         Text(value,
             style: const TextStyle(
@@ -278,7 +278,7 @@ class _RedeemFormState extends ConsumerState<_RedeemForm> {
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,7 +448,7 @@ class _RedeemFormState extends ConsumerState<_RedeemForm> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: sel
-                              ? const Color(0xFFFFB300).withOpacity(0.5)
+                              ? const Color(0xFFFFB300).withValues(alpha: 0.5)
                               : Colors.transparent,
                         ),
                       ),
@@ -487,7 +487,7 @@ class _RedeemFormState extends ConsumerState<_RedeemForm> {
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppTheme.textHint.withOpacity(0.3)),
+                      color: AppTheme.textHint.withValues(alpha: 0.3)),
                 ),
                 child: Center(
                   child: Text(

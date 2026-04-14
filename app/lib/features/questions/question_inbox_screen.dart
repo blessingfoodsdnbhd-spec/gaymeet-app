@@ -151,7 +151,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: q.isAnswered
-              ? AppTheme.primary.withOpacity(0.2)
+              ? AppTheme.primary.withValues(alpha: 0.2)
               : Colors.white12,
           width: 1,
         ),
@@ -169,7 +169,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                   shape: BoxShape.circle,
                   color: q.isAnonymous
                       ? AppTheme.card
-                      : AppTheme.primary.withOpacity(0.2),
+                      : AppTheme.primary.withValues(alpha: 0.2),
                   image: !q.isAnonymous && q.sender?.avatarUrl != null
                       ? DecorationImage(
                           image: NetworkImage(q.sender!.avatarUrl!),
@@ -225,10 +225,10 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.08),
+                color: AppTheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: AppTheme.primary.withOpacity(0.2), width: 1),
+                    color: AppTheme.primary.withValues(alpha: 0.2), width: 1),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +249,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withOpacity(0.15),
+                            color: AppTheme.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text('公开',
@@ -331,7 +331,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                 label: const Text('回答'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primary,
-                  side: BorderSide(color: AppTheme.primary.withOpacity(0.5)),
+                  side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),

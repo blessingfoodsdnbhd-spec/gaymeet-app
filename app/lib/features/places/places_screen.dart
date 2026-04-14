@@ -238,7 +238,7 @@ class _SortChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: active ? AppTheme.primary.withOpacity(0.15) : AppTheme.surface,
+          color: active ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: active ? AppTheme.primary : Colors.transparent,
@@ -363,7 +363,7 @@ class PlaceCard extends ConsumerWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
                         ),
                       ),
                     ),
@@ -512,7 +512,7 @@ class _MapView extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -591,7 +591,7 @@ class _PlacePin extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                          color: AppTheme.primary.withOpacity(0.4),
+                          color: AppTheme.primary.withValues(alpha: 0.4),
                           blurRadius: 8,
                           spreadRadius: 1)
                     ],
@@ -678,7 +678,7 @@ class PlaceCategoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -716,7 +716,7 @@ class PlaceTagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withOpacity(0.12),
+        color: AppTheme.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -745,7 +745,7 @@ class _PromotedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.4), width: 1),
+        border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.4), width: 1),
       ),
       child: Row(
         children: [

@@ -57,7 +57,7 @@ class _BusinessDashboardScreenState extends ConsumerState<BusinessDashboardScree
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: profile.isPromoted
-                    ? const Color(0xFFFFB300).withOpacity(0.5)
+                    ? const Color(0xFFFFB300).withValues(alpha: 0.5)
                     : Colors.transparent,
                 width: 1.5,
               ),
@@ -126,7 +126,7 @@ class _BusinessDashboardScreenState extends ConsumerState<BusinessDashboardScree
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFB300).withOpacity(0.12),
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -429,7 +429,7 @@ class _PromotePlanCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.3), width: 1),
+          border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.3), width: 1),
         ),
         child: Row(
           children: [

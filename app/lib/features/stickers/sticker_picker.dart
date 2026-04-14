@@ -103,7 +103,7 @@ class _StickerPickerState extends ConsumerState<StickerPicker> {
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppTheme.primary.withOpacity(0.2)
+                            ? AppTheme.primary.withValues(alpha: 0.2)
                             : AppTheme.card,
                         borderRadius: BorderRadius.circular(10),
                         border: selected

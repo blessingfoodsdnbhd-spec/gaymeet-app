@@ -266,7 +266,7 @@ class _GiftTile extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primary.withOpacity(0.12)
+              ? AppTheme.primary.withValues(alpha: 0.12)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

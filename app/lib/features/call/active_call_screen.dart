@@ -53,7 +53,7 @@ class ActiveCallScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: AppTheme.primary.withOpacity(0.4), width: 3),
+                        color: AppTheme.primary.withValues(alpha: 0.4), width: 3),
                   ),
                   child: ClipOval(
                     child: call.remoteUserAvatar != null
@@ -120,7 +120,7 @@ class ActiveCallScreen extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(
                       32, 28, 32, MediaQuery.of(context).padding.bottom + 28),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(32)),
                   ),
@@ -200,8 +200,8 @@ class _ActionButton extends StatelessWidget {
             height: 54,
             decoration: BoxDecoration(
               color: active
-                  ? AppTheme.primary.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.12),
+                  ? AppTheme.primary.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon,

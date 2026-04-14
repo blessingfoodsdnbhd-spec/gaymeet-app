@@ -265,7 +265,7 @@ class _DurationCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withOpacity(0.12) : AppTheme.card,
+          color: isSelected ? AppTheme.primary.withValues(alpha: 0.12) : AppTheme.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? AppTheme.primary : Colors.transparent,
@@ -393,7 +393,7 @@ class _WaitingRoomView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.card,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.primary.withOpacity(0.4), width: 1.5),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4), width: 1.5),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -456,7 +456,7 @@ class _FloatingHeartsPainter extends CustomPainter {
       final y = 1.0 - progress;
       final opacity = (sin(progress * pi) * 0.9).clamp(0.0, 1.0);
       final paint = Paint()
-        ..color = AppTheme.primary.withOpacity(opacity)
+        ..color = AppTheme.primary.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
       _drawHeart(canvas, paint, Offset(x * size.width, y * size.height), 10 + progress * 6);
     }

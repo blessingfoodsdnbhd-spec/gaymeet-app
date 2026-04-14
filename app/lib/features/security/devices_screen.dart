@@ -151,12 +151,12 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: isCurrent
-                                ? AppTheme.primary.withOpacity(0.08)
+                                ? AppTheme.primary.withValues(alpha: 0.08)
                                 : AppTheme.card,
                             borderRadius: BorderRadius.circular(12),
                             border: isCurrent
                                 ? Border.all(
-                                    color: AppTheme.primary.withOpacity(0.4))
+                                    color: AppTheme.primary.withValues(alpha: 0.4))
                                 : null,
                           ),
                           child: Row(
@@ -198,7 +198,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
                                                 horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
                                               color: AppTheme.primary
-                                                  .withOpacity(0.15),
+                                                  .withValues(alpha: 0.15),
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),

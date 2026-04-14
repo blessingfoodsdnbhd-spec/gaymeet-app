@@ -297,11 +297,11 @@ class _DayCell extends StatelessWidget {
           color: isSelected
               ? AppTheme.primary
               : isToday
-                  ? AppTheme.primary.withOpacity(0.12)
+                  ? AppTheme.primary.withValues(alpha: 0.12)
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: isToday && !isSelected
-              ? Border.all(color: AppTheme.primary.withOpacity(0.5))
+              ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
               : null,
         ),
         child: Column(
@@ -332,7 +332,7 @@ class _DayCell extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(horizontal: 1),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withOpacity(0.8)
+                            ? Colors.white.withValues(alpha: 0.8)
                             : _dotColor(events[i].category),
                         shape: BoxShape.circle,
                       ),
@@ -463,7 +463,7 @@ class _CalendarEventTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: event.isAttending
               ? Border.all(
-                  color: AppColors.rainbowGreen.withOpacity(0.4), width: 1)
+                  color: AppColors.rainbowGreen.withValues(alpha: 0.4), width: 1)
               : null,
         ),
         child: Row(
@@ -529,8 +529,8 @@ class _CalendarEventTile extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: event.isFree
-                        ? AppColors.rainbowGreen.withOpacity(0.15)
-                        : AppTheme.primary.withOpacity(0.12),
+                        ? AppColors.rainbowGreen.withValues(alpha: 0.15)
+                        : AppTheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

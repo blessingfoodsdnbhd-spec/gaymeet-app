@@ -66,7 +66,7 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.5), width: 4),
+                      color: AppTheme.primary.withValues(alpha: 0.5), width: 4),
                 ),
                 child: ClipOval(
                   child: call.remoteUserAvatar != null

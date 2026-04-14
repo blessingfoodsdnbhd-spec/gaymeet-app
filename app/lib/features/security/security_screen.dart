@@ -94,7 +94,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.card,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.primary.withOpacity(0.4)),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [
@@ -434,7 +434,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.15),
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Text('Active', style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50), fontWeight: FontWeight.w600)),
@@ -463,16 +463,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.06),
+              color: Colors.redAccent.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.redAccent.withOpacity(0.25), width: 1),
+              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25), width: 1),
             ),
             child: ListTile(
               leading: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
               title: const Text('Delete Account',
                   style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
               subtitle: Text('Permanently remove all your data',
-                  style: TextStyle(color: Colors.redAccent.withOpacity(0.7), fontSize: 12)),
+                  style: TextStyle(color: Colors.redAccent.withValues(alpha: 0.7), fontSize: 12)),
               trailing: _deleteLoading
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
                   : const Icon(Icons.chevron_right_rounded, color: Colors.redAccent),

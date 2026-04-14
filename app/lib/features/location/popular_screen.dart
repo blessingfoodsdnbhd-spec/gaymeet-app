@@ -165,7 +165,7 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -268,7 +268,7 @@ class _PopularTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: entry.rank <= 3
                       ? AppTheme.boost
-                      : AppTheme.surface.withOpacity(0.85),
+                      : AppTheme.surface.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -291,7 +291,7 @@ class _PopularTile extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.9),
+                    color: AppTheme.primary.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
@@ -327,7 +327,7 @@ class _PopularTile extends StatelessWidget {
                       ].join(' · '),
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                       ),
                     ),
                 ],

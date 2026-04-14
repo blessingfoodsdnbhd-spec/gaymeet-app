@@ -187,7 +187,7 @@ class _GroupAvatar extends StatelessWidget {
     }
     return CircleAvatar(
       radius: 26,
-      backgroundColor: AppTheme.primary.withOpacity(0.2),
+      backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : '?',
         style: TextStyle(

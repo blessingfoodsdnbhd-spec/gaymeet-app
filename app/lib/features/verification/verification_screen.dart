@@ -176,7 +176,7 @@ class _TypeSelectStep extends ConsumerWidget {
             height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.primary.withOpacity(0.12),
+              color: AppTheme.primary.withValues(alpha: 0.12),
             ),
             child: Icon(Icons.verified_user_rounded, size: 42, color: AppTheme.primary),
           ),
@@ -248,7 +248,7 @@ class _TypeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: badgeColor.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 1.5),
         ),
         child: Row(
           children: [
@@ -310,7 +310,7 @@ class _IntroStep extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (isVideo ? const Color(0xFFFFAB00) : const Color(0xFF1976D2)).withOpacity(0.12),
+              color: (isVideo ? const Color(0xFFFFAB00) : const Color(0xFF1976D2)).withValues(alpha: 0.12),
             ),
             child: Icon(
               isVideo ? Icons.video_camera_front_rounded : Icons.verified_user_rounded,
@@ -384,7 +384,7 @@ class _ChallengeStep extends StatelessWidget {
               color: AppTheme.card,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: (isVideo ? const Color(0xFFFFAB00) : AppTheme.primary).withOpacity(0.4),
+                color: (isVideo ? const Color(0xFFFFAB00) : AppTheme.primary).withValues(alpha: 0.4),
                 width: 2,
               ),
             ),
@@ -439,7 +439,7 @@ class _CaptureStep extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: AppTheme.card,
                 border: Border.all(
-                  color: (isVideo ? const Color(0xFFFFAB00) : AppTheme.primary).withOpacity(0.3),
+                  color: (isVideo ? const Color(0xFFFFAB00) : AppTheme.primary).withValues(alpha: 0.3),
                   width: 3,
                 ),
               ),
@@ -598,7 +598,7 @@ class _SuccessStep extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: badgeColor.withOpacity(0.12),
+                color: badgeColor.withValues(alpha: 0.12),
               ),
               child: Icon(Icons.verified_rounded, size: 56, color: badgeColor),
             ),

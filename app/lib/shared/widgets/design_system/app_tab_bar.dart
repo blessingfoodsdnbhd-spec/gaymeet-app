@@ -48,7 +48,7 @@ class AppTabBar extends StatelessWidget {
             border: selected
                 ? null
                 : Border.all(
-                    color: AppColors.pink500.withOpacity(0.2), width: 1),
+                    color: AppColors.pink500.withValues(alpha: 0.2), width: 1),
           ),
           child: Text(
             tabs[i],

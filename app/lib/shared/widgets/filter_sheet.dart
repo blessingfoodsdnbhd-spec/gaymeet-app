@@ -130,7 +130,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   SliderThemeData get _sliderTheme => _sliderThemeBase.copyWith(
         activeTrackColor: AppTheme.primary,
         inactiveTrackColor: AppTheme.card,
-        overlayColor: AppTheme.primary.withOpacity(0.15),
+        overlayColor: AppTheme.primary.withValues(alpha: 0.15),
         activeTickMarkColor: Colors.transparent,
         inactiveTickMarkColor: Colors.transparent,
       );

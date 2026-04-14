@@ -99,7 +99,7 @@ class _MatchSuccessScreenState extends State<MatchSuccessScreen>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primary.withOpacity(0.4),
+                              color: AppTheme.primary.withValues(alpha: 0.4),
                               blurRadius: 60,
                               spreadRadius: 10,
                             ),
@@ -145,7 +145,7 @@ class _MatchSuccessScreenState extends State<MatchSuccessScreen>
                         'You and $name liked each other',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -203,7 +203,7 @@ class _MatchSuccessScreenState extends State<MatchSuccessScreen>
                         child: Text(
                           'Keep Swiping',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),

@@ -24,26 +24,26 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final br = borderRadius ?? AppRadius.lg;
-    final bg = color ?? (glassy ? AppColors.bgCard.withOpacity(0.7) : AppColors.bgCard);
+    final bg = color ?? (glassy ? AppColors.bgCard.withValues(alpha: 0.7) : AppColors.bgCard);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(br),
-        splashColor: AppColors.pink500.withOpacity(0.08),
-        highlightColor: AppColors.pink500.withOpacity(0.04),
+        splashColor: AppColors.pink500.withValues(alpha: 0.08),
+        highlightColor: AppColors.pink500.withValues(alpha: 0.04),
         child: Ink(
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(br),
             border: glassy
-                ? Border.all(color: AppColors.pink500.withOpacity(0.15), width: 1)
+                ? Border.all(color: AppColors.pink500.withValues(alpha: 0.15), width: 1)
                 : null,
             boxShadow: shadows ??
                 [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   )

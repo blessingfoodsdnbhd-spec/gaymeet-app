@@ -268,7 +268,7 @@ class _RoundBtn extends StatelessWidget {
         height: 38,
         decoration: BoxDecoration(
           gradient: gradient ? AppTheme.brandGradient : null,
-          color: gradient ? null : AppTheme.surface.withOpacity(0.85),
+          color: gradient ? null : AppTheme.surface.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: gradient ? Colors.white : color, size: 20),

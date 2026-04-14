@@ -221,7 +221,7 @@ class _TeleportScreenState extends ConsumerState<TeleportScreen> {
                   TextButton(
                     onPressed: _deactivate,
                     style: TextButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(
@@ -243,10 +243,10 @@ class _TeleportScreenState extends ConsumerState<TeleportScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.08),
+                  color: AppTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.25)),
+                      color: AppTheme.primary.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
@@ -314,7 +314,7 @@ class _TeleportScreenState extends ConsumerState<TeleportScreen> {
                     height: 46,
                     decoration: BoxDecoration(
                       color: isActive
-                          ? AppTheme.primary.withOpacity(0.15)
+                          ? AppTheme.primary.withValues(alpha: 0.15)
                           : AppTheme.card,
                       borderRadius: BorderRadius.circular(10),
                     ),

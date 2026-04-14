@@ -202,7 +202,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withOpacity(0.35),
+                      color: AppTheme.primary.withValues(alpha: 0.35),
                       blurRadius: 14,
                       offset: const Offset(0, 5),
                     )
@@ -810,13 +810,13 @@ class _BoostBanner extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primary.withOpacity(0.12),
-            AppTheme.accent.withOpacity(0.1),
+            AppTheme.primary.withValues(alpha: 0.12),
+            AppTheme.accent.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: AppTheme.primary.withOpacity(0.25), width: 1),
+            color: AppTheme.primary.withValues(alpha: 0.25), width: 1),
       ),
       child: Row(
         children: [
@@ -941,7 +941,7 @@ class _Bubble extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         color: isMe
-                            ? Colors.white.withOpacity(0.6)
+                            ? Colors.white.withValues(alpha: 0.6)
                             : AppTheme.textHint,
                       ),
                     ),
@@ -954,7 +954,7 @@ class _Bubble extends StatelessWidget {
                         size: 13,
                         color: message.isRead
                             ? const Color(0xFF64FFDA)
-                            : Colors.white.withOpacity(0.5),
+                            : Colors.white.withValues(alpha: 0.5),
                       ),
                     ],
                   ],

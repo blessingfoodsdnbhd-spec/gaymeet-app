@@ -181,7 +181,7 @@ class _LocationMapScreenState extends ConsumerState<LocationMapScreen> {
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withOpacity(0.2),
+                            color: AppTheme.primary.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                             border:
                                 Border.all(color: AppTheme.primary, width: 2),
@@ -199,7 +199,7 @@ class _LocationMapScreenState extends ConsumerState<LocationMapScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -235,7 +235,7 @@ class _LocationMapScreenState extends ConsumerState<LocationMapScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7B61FF).withOpacity(0.85),
+                          color: const Color(0xFF7B61FF).withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
@@ -385,9 +385,9 @@ class _StatusBanner extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
@@ -404,7 +404,7 @@ class _StatusBanner extends StatelessWidget {
                           fontWeight: FontWeight.w700)),
                   Text(sublabel,
                       style: TextStyle(
-                          color: color.withOpacity(0.75), fontSize: 11)),
+                          color: color.withValues(alpha: 0.75), fontSize: 11)),
                 ],
               ),
             ),
@@ -412,7 +412,7 @@ class _StatusBanner extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(actionLabel,
@@ -454,11 +454,11 @@ class _ActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withOpacity(0.1) : AppTheme.card,
+          color: isActive ? activeColor.withValues(alpha: 0.1) : AppTheme.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActive
-                ? activeColor.withOpacity(0.4)
+                ? activeColor.withValues(alpha: 0.4)
                 : const Color(0xFF2A2A2A),
           ),
         ),

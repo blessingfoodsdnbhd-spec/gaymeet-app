@@ -174,7 +174,7 @@ class _MessageCard extends StatelessWidget {
         border: Border.all(
           color: message.isRead
               ? const Color(0xFF2A2A4A)
-              : const Color(0xFF7B2FBE).withOpacity(0.5),
+              : const Color(0xFF7B2FBE).withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -270,7 +270,7 @@ class _MessageCard extends StatelessWidget {
                           onTap: onUpgrade,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(

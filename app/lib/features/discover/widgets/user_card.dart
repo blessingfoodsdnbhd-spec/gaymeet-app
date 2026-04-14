@@ -22,7 +22,7 @@ class UserCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -83,7 +83,7 @@ class UserCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppTheme.online.withOpacity(0.2),
+                    color: AppTheme.online.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.online, width: 1),
                   ),
@@ -140,7 +140,7 @@ class UserCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppTheme.premium.withOpacity(0.2),
+                            color: AppTheme.premium.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(Icons.workspace_premium_rounded,
@@ -169,13 +169,13 @@ class UserCard extends StatelessWidget {
                     Row(
                       children: [
                         Icon(Icons.location_on_rounded,
-                            size: 14, color: Colors.white.withOpacity(0.7)),
+                            size: 14, color: Colors.white.withValues(alpha: 0.7)),
                         const SizedBox(width: 4),
                         Text(
                           '${user.distance!.toStringAsFixed(1)} km away',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -191,7 +191,7 @@ class UserCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         height: 1.4,
                       ),
                     ),
@@ -208,7 +208,7 @@ class UserCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(

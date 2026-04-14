@@ -169,7 +169,7 @@ class _FollowButton extends StatelessWidget {
           color: isFollowing ? Colors.transparent : AppTheme.primary,
           borderRadius: BorderRadius.circular(20),
           border: isFollowing
-              ? Border.all(color: AppTheme.primary.withOpacity(0.5))
+              ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
               : null,
         ),
         child: Text(

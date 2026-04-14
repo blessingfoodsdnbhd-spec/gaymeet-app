@@ -369,10 +369,10 @@ class _TopBar extends StatelessWidget {
           Container(
             height: 34,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: Colors.white.withOpacity(0.15), width: 0.5),
+                  color: Colors.white.withValues(alpha: 0.15), width: 0.5),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -485,8 +485,8 @@ class _UserPage extends StatelessWidget {
                 colors: [
                   Colors.transparent,
                   Colors.transparent,
-                  Colors.black.withOpacity(0.25),
-                  Colors.black.withOpacity(0.88),
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.black.withValues(alpha: 0.88),
                 ],
               ),
             ),
@@ -696,11 +696,11 @@ class _SideBtn extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               boxShadow: glow
                   ? [
                       BoxShadow(
-                        color: color.withOpacity(0.5),
+                        color: color.withValues(alpha: 0.5),
                         blurRadius: 14,
                         spreadRadius: 1,
                       )
@@ -782,12 +782,12 @@ class _UserInfo extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.location_on_rounded,
-                  size: 12, color: Colors.white.withOpacity(0.8)),
+                  size: 12, color: Colors.white.withValues(alpha: 0.8)),
               const SizedBox(width: 3),
               Text(
                 stats.join('  ·  '),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 12,
                   shadows: const [
                     Shadow(color: Colors.black54, blurRadius: 4)
@@ -818,7 +818,7 @@ class _UserInfo extends StatelessWidget {
           Text(
             user.bio!,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.88),
+              color: Colors.white.withValues(alpha: 0.88),
               fontSize: 13,
               height: 1.4,
               shadows: const [
@@ -854,7 +854,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.85),
+        color: color.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
@@ -910,7 +910,7 @@ class _SwipeHintState extends State<_SwipeHint>
             Text(
               '向上滑动',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.55),
+                color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
               ),
             ),
@@ -948,7 +948,7 @@ class _EmptyState extends StatelessWidget {
             onPressed: onRefresh,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.primary,
-              side: BorderSide(color: AppTheme.primary.withOpacity(0.6)),
+              side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.6)),
             ),
             icon: const Icon(Icons.refresh_rounded, size: 16),
             label: const Text('刷新'),

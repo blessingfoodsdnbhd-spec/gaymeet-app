@@ -171,7 +171,7 @@ class _InboxTileState extends ConsumerState<_InboxTile> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isBlurred
-              ? AppTheme.primary.withOpacity(0.3)
+              ? AppTheme.primary.withValues(alpha: 0.3)
               : const Color(0xFF2A2A2A),
         ),
       ),
@@ -225,7 +225,7 @@ class _InboxTileState extends ConsumerState<_InboxTile> {
                         child: ClipRRect(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.card.withOpacity(0.85),
+                              color: AppTheme.card.withValues(alpha: 0.85),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Center(

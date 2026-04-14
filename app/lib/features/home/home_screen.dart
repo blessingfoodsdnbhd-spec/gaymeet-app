@@ -82,13 +82,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Container(
             decoration: BoxDecoration(
               color: isFullscreen
-                  ? Colors.black.withOpacity(0.45)
-                  : AppColors.bgCard.withOpacity(0.92),
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : AppColors.bgCard.withValues(alpha: 0.92),
               border: Border(
                 top: BorderSide(
                     color: isFullscreen
-                        ? Colors.white.withOpacity(0.10)
-                        : AppColors.pink500.withOpacity(0.15),
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : AppColors.pink500.withValues(alpha: 0.15),
                     width: 0.5),
               ),
             ),
@@ -99,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           elevation: 0,
           selectedItemColor: isFullscreen ? Colors.white : AppTheme.primary,
           unselectedItemColor: isFullscreen
-              ? Colors.white.withOpacity(0.5)
+              ? Colors.white.withValues(alpha: 0.5)
               : AppTheme.textHint,
           items: [
             BottomNavigationBarItem(

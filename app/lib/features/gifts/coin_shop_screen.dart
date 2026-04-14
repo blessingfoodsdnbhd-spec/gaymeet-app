@@ -152,7 +152,7 @@ class _HeroBanner extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.hotPink.withOpacity(0.3),
+          color: AppColors.hotPink.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -180,7 +180,7 @@ class _HeroBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFD700).withOpacity(0.35),
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.35),
                         blurRadius: 16,
                         spreadRadius: 2,
                       ),
@@ -273,9 +273,9 @@ class _PackageCard extends StatelessWidget {
             ? Border.all(color: AppColors.hotPink, width: 1.5)
             : pkg.popular
                 ? Border.all(
-                    color: AppColors.violet.withOpacity(0.6), width: 1.2)
+                    color: AppColors.violet.withValues(alpha: 0.6), width: 1.2)
                 : Border.all(
-                    color: AppColors.textHint.withOpacity(0.15), width: 1),
+                    color: AppColors.textHint.withValues(alpha: 0.15), width: 1),
       ),
       child: InkWell(
         onTap: onBuy,
@@ -326,7 +326,7 @@ class _PackageCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.rainbowGreen.withOpacity(0.15),
+                              color: AppColors.rainbowGreen.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -410,9 +410,9 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
@@ -441,7 +441,7 @@ class _CoinBalanceChip extends StatelessWidget {
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: AppColors.hotPink.withOpacity(0.3), width: 1),
+            color: AppColors.hotPink.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -537,7 +537,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 0.5;
     const step = 24.0;
     for (double x = 0; x < size.width; x += step) {

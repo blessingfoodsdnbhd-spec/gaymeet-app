@@ -92,7 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     color: AppColors.bgCard,
                     borderRadius: AppRadius.lgRadius,
                     border: Border.all(
-                        color: AppColors.pink500.withOpacity(0.15), width: 1),
+                        color: AppColors.pink500.withValues(alpha: 0.15), width: 1),
                   ),
                   child: Column(
                     children: [
@@ -144,9 +144,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: AppRadius.mdRadius,
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                     ),
                     child: Text(auth.error!,
                         style: const TextStyle(
@@ -166,7 +166,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       borderRadius: AppRadius.lgRadius,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.hotPink.withOpacity(0.4),
+                          color: AppColors.hotPink.withValues(alpha: 0.4),
                           blurRadius: 18,
                           offset: const Offset(0, 6),
                         )

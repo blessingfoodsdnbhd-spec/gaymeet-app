@@ -23,7 +23,7 @@ class VipBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.3),
         boxShadow: [
           BoxShadow(
-            color: _shadowColor(vipLevel).withOpacity(0.45),
+            color: _shadowColor(vipLevel).withValues(alpha: 0.45),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

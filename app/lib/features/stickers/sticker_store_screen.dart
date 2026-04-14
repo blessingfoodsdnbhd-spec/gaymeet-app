@@ -238,7 +238,7 @@ class _PackCardState extends ConsumerState<_PackCard> {
         padding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF4CAF50).withOpacity(0.15),
+          color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Text('已购买',

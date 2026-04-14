@@ -66,9 +66,9 @@ class _HealthReminderScreenState extends ConsumerState<HealthReminderScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _teal.withOpacity(0.15),
+                      color: _teal.withValues(alpha: 0.15),
                       border:
-                          Border.all(color: _teal.withOpacity(0.4), width: 2),
+                          Border.all(color: _teal.withValues(alpha: 0.4), width: 2),
                     ),
                     child: const Center(
                         child: Text('🩺', style: TextStyle(fontSize: 36))),
@@ -198,7 +198,7 @@ class _HealthReminderScreenState extends ConsumerState<HealthReminderScreen> {
                                 child: ChoiceChip(
                                   label: Text('$m 个月'),
                                   selected: selected,
-                                  selectedColor: _teal.withOpacity(0.25),
+                                  selectedColor: _teal.withValues(alpha: 0.25),
                                   backgroundColor: Colors.white10,
                                   labelStyle: TextStyle(
                                     color: selected ? _teal : Colors.white60,
@@ -276,7 +276,7 @@ class _HealthReminderScreenState extends ConsumerState<HealthReminderScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white10),
               ),
@@ -358,9 +358,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

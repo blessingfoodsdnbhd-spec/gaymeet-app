@@ -254,7 +254,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     border: Border.all(
                       color: _pickedPhoto != null
                           ? AppTheme.primary
-                          : AppTheme.primary.withOpacity(0.3),
+                          : AppTheme.primary.withValues(alpha: 0.3),
                       width: 2,
                       strokeAlign: BorderSide.strokeAlignOutside,
                     ),

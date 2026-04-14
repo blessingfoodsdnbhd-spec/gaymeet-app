@@ -43,7 +43,7 @@ class CurrencyScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppTheme.primary.withOpacity(0.12)
+                          ? AppTheme.primary.withValues(alpha: 0.12)
                           : AppTheme.card,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(

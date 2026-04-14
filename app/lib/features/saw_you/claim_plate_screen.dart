@@ -296,7 +296,7 @@ class _PlateInputField extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD4C87A), width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -321,7 +321,7 @@ class _PlateInputField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: 'WXY 1234',
           hintStyle: TextStyle(
-            color: const Color(0xFF1A1A1A).withOpacity(0.3),
+            color: const Color(0xFF1A1A1A).withValues(alpha: 0.3),
             fontSize: 24,
             fontWeight: FontWeight.w700,
             letterSpacing: 4,
@@ -368,7 +368,7 @@ class _CarPhotoSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: uploadedUrl != null
-                ? const Color(0xFF7B2FBE).withOpacity(0.5)
+                ? const Color(0xFF7B2FBE).withValues(alpha: 0.5)
                 : const Color(0xFF3A3A6E),
             style: uploadedUrl == null ? BorderStyle.solid : BorderStyle.solid,
           ),
@@ -392,7 +392,7 @@ class _CarPhotoSection extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -441,7 +441,7 @@ class _SuccessBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0D2E1A),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.online.withOpacity(0.4)),
+        border: Border.all(color: AppTheme.online.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [

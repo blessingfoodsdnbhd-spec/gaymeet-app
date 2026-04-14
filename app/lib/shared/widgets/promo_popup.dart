@@ -81,7 +81,7 @@ class _PromoDialogState extends ConsumerState<_PromoDialog>
             decoration: BoxDecoration(
               color: AppTheme.card,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppTheme.primary.withOpacity(0.25)),
+              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -110,7 +110,7 @@ class _PromoDialogState extends ConsumerState<_PromoDialog>
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.close_rounded,
@@ -130,7 +130,7 @@ class _PromoDialogState extends ConsumerState<_PromoDialog>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Text(
@@ -220,7 +220,7 @@ class _DotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.07)
+      ..color = Colors.white.withValues(alpha: 0.07)
       ..style = PaintingStyle.fill;
 
     const spacing = 18.0;

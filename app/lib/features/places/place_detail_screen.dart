@@ -103,7 +103,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.arrow_back_ios_rounded, size: 18, color: Colors.white),
@@ -116,7 +116,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                   margin: const EdgeInsets.all(8),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
@@ -163,7 +163,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF1565C0).withOpacity(0.2),
+                                      color: const Color(0xFF1565C0).withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                           color: const Color(0xFF1976D2)),
@@ -197,7 +197,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: _liked
-                                    ? AppTheme.primary.withOpacity(0.15)
+                                    ? AppTheme.primary.withValues(alpha: 0.15)
                                     : AppTheme.card,
                                 shape: BoxShape.circle,
                                 border: Border.all(
@@ -518,7 +518,7 @@ class _InfoRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 16),
@@ -558,14 +558,14 @@ class _EventTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.accent.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.accent.withOpacity(0.12),
+              color: AppTheme.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text('🎪', style: TextStyle(fontSize: 20)),

@@ -331,7 +331,7 @@ class _TeleportCard extends StatelessWidget {
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(14),
         border: hasVirtualLocation
-            ? Border.all(color: AppTheme.primary.withOpacity(0.4))
+            ? Border.all(color: AppTheme.primary.withValues(alpha: 0.4))
             : null,
       ),
       child: Column(
@@ -344,7 +344,7 @@ class _TeleportCard extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: hasVirtualLocation
-                      ? AppTheme.primary.withOpacity(0.15)
+                      ? AppTheme.primary.withValues(alpha: 0.15)
                       : AppTheme.surface,
                   borderRadius: BorderRadius.circular(10),
                 ),

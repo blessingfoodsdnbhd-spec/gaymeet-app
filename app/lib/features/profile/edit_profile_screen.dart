@@ -485,7 +485,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close_rounded,
@@ -519,7 +519,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.4),
+            color: const Color(0xFFFFD700).withValues(alpha: 0.4),
             width: 1.5,
           ),
         ),
@@ -530,7 +530,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.15),
+                color: const Color(0xFFFFD700).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.lock_rounded,
@@ -674,7 +674,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppTheme.premium.withOpacity(0.9),
+                  color: AppTheme.premium.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -699,7 +699,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   width: 22,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.close_rounded,
@@ -720,7 +720,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.primary.withOpacity(0.4),
+            color: AppTheme.primary.withValues(alpha: 0.4),
             width: 1.5,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -821,7 +821,7 @@ class _BodyStatSlider extends StatelessWidget {
               activeTrackColor: AppTheme.primary,
               inactiveTrackColor: AppTheme.surface,
               thumbColor: AppTheme.primary,
-              overlayColor: AppTheme.primary.withOpacity(0.12),
+              overlayColor: AppTheme.primary.withValues(alpha: 0.12),
               thumbShape:
                   const RoundSliderThumbShape(enabledThumbRadius: 9),
               trackHeight: 3,
@@ -882,7 +882,7 @@ class _RoleSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: selected
-                    ? opt.color.withOpacity(0.9)
+                    ? opt.color.withValues(alpha: 0.9)
                     : AppTheme.card,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(

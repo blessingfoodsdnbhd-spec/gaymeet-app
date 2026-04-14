@@ -255,7 +255,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: AppTheme.textHint.withOpacity(0.15),
+                          color: AppTheme.textHint.withValues(alpha: 0.15),
                           width: 1,
                         ),
                       ),
@@ -355,7 +355,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                             color: AppTheme.card,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.primary.withOpacity(0.3),
+                              color: AppTheme.primary.withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -444,7 +444,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: config.accentColor.withOpacity(0.5),
+                        color: config.accentColor.withValues(alpha: 0.5),
                         blurRadius: 24,
                         spreadRadius: 2,
                       ),
@@ -557,8 +557,8 @@ class _Tab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: selected
-                        ? Colors.white.withOpacity(0.2)
-                        : AppTheme.primary.withOpacity(0.15),
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : AppTheme.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -643,7 +643,7 @@ class _TierCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected
-              ? config.accentColor.withOpacity(0.08)
+              ? config.accentColor.withValues(alpha: 0.08)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -780,7 +780,7 @@ class _FeatureGrid extends StatelessWidget {
             color: AppTheme.card,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: config.accentColor.withOpacity(0.2),
+              color: config.accentColor.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -832,7 +832,7 @@ class _PurchaseButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: config.accentColor.withOpacity(0.45),
+              color: config.accentColor.withValues(alpha: 0.45),
               blurRadius: 18,
               offset: const Offset(0, 7),
             ),

@@ -72,7 +72,7 @@ class _LookingForSheetState extends ConsumerState<LookingForSheet> {
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppTheme.primary.withOpacity(0.15)
+                        ? AppTheme.primary.withValues(alpha: 0.15)
                         : AppTheme.card,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
