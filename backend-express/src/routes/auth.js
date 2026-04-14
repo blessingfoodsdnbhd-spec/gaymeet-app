@@ -84,16 +84,11 @@ router.post('/login', async (req, res, next) => {
     const user = await User.findOne({ email: email.toLowerCase() }).select(
       '+password +loginAttempts +lockoutUntil'
     );
-    if (!user) return err(res, 'Invalid credentials', 401);
+    if (!user) return err(res, '账号不存在', 404);
 
     // ── Account lockout check ────────────────────────────────────────────────
     if (user.lockoutUntil && user.lockoutUntil > new Date()) {
-      const minutes = Math.ceil((user.lockoutUntil - new Date()) / 60000);
-      return err(
-        res,
-        `Account locked after too many failed attempts. Try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
-        423
-      );
+      return err(res, '账号已锁定，请30分钟后重试', 423);
     }
 
     // ── Password verification ────────────────────────────────────────────────
@@ -105,15 +100,10 @@ router.post('/login', async (req, res, next) => {
         user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
         user.loginAttempts = 0;
         await user.save();
-        return err(res, 'Too many failed attempts. Account locked for 30 minutes.', 423);
+        return err(res, '账号已锁定，请30分钟后重试', 423);
       }
-      const remaining = MAX_LOGIN_ATTEMPTS - user.loginAttempts;
       await user.save();
-      return err(
-        res,
-        `Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before lockout.`,
-        401
-      );
+      return err(res, '密码不正确', 401);
     }
 
     // ── Two-factor authentication (if enabled) ───────────────────────────────
