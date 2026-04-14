@@ -4,7 +4,6 @@ import '../api/api_client.dart';
 import '../api/shout_service.dart';
 import '../dummy/dummy_data.dart';
 import '../models/shout.dart';
-import 'privacy_provider.dart';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 

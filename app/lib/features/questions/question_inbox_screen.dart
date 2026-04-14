@@ -288,7 +288,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
               children: [
                 Switch(
                   value: _isPublic,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   onChanged: (v) => setState(() => _isPublic = v),
                 ),
                 Text('公开展示',

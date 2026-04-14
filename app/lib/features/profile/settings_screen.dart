@@ -327,7 +327,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(color: AppTheme.textSecondary)),
               onTap: () async {
                 final ok = await subNotifier.restore();
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(ok
                         ? (ref.read(subscriptionProvider).isPremium
@@ -451,7 +451,7 @@ class _PrivacyTile extends StatelessWidget {
       ),
       value: value,
       onChanged: enabled ? onChanged : null,
-      activeColor: AppTheme.primary,
+      activeThumbColor: AppTheme.primary,
       inactiveThumbColor: AppTheme.textHint,
       inactiveTrackColor: AppTheme.card,
     );

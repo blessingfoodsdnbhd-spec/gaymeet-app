@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../config/theme.dart';
 import 'private_photos_section.dart';
 
 class PhotoRequestsInboxScreen extends StatelessWidget {

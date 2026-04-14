@@ -518,7 +518,7 @@ class _ToggleCard extends StatelessWidget {
               ],
             ),
           ),
-          Switch(value: value, onChanged: onChanged, activeColor: AppTheme.primary),
+          Switch(value: value, onChanged: onChanged, activeThumbColor: AppTheme.primary),
         ],
       ),
     );

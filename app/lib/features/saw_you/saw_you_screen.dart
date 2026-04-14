@@ -1,4 +1,3 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -329,7 +328,7 @@ class _SawYouScreenState extends ConsumerState<SawYouScreen>
                         const SizedBox(width: 10),
                         Text(
                           limit.canSend
-                              ? '${limit.remaining}/${kFreePlateMessagesPerDay} messages left today'
+                              ? '${limit.remaining}/$kFreePlateMessagesPerDay messages left today'
                               : 'Daily limit reached — upgrade for unlimited',
                           style: TextStyle(
                             color: limit.canSend

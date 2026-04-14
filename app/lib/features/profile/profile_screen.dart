@@ -320,7 +320,7 @@ class _StatsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    String _fmtNum(int n) {
+    String fmtNum(int n) {
       if (n >= 10000) return '${(n / 10000).toStringAsFixed(1)}w';
       if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
       return n.toString();
@@ -335,24 +335,24 @@ class _StatsRow extends ConsumerWidget {
       child: Row(
         children: [
           _StatBox(
-            value: _fmtNum(user.followingCount),
+            value: fmtNum(user.followingCount),
             label: '关注',
             onTap: () => context.push('/following/${user.id}'),
           ),
           _StatDivider(),
           _StatBox(
-            value: _fmtNum(user.followersCount),
+            value: fmtNum(user.followersCount),
             label: '粉丝',
             onTap: () => context.push('/followers/${user.id}'),
           ),
           _StatDivider(),
           _StatBox(
-            value: _fmtNum(user.totalLikesReceived),
+            value: fmtNum(user.totalLikesReceived),
             label: '获赞',
           ),
           _StatDivider(),
           _StatBox(
-            value: _fmtNum(user.profileViews),
+            value: fmtNum(user.profileViews),
             label: isOwnProfile ? '访客' : '人气',
           ),
         ],

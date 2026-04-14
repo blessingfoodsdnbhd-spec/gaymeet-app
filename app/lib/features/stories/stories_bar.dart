@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/models/story.dart';
 import '../../core/providers/stories_provider.dart';
-import '../../core/theme/design_system.dart';
 
 /// Horizontal stories bar — shown at the top of the 发现 moments tab.
 class StoriesBar extends ConsumerWidget {

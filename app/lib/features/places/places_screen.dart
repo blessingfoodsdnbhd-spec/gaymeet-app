@@ -671,7 +671,7 @@ class _PinPopup extends ConsumerWidget {
 
 class PlaceCategoryBadge extends StatelessWidget {
   final String category;
-  const PlaceCategoryBadge({required this.category});
+  const PlaceCategoryBadge({super.key, required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -691,7 +691,7 @@ class PlaceCategoryBadge extends StatelessWidget {
 
 class PlaceholderPhoto extends StatelessWidget {
   final String category;
-  const PlaceholderPhoto({required this.category});
+  const PlaceholderPhoto({super.key, required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -709,7 +709,7 @@ class PlaceholderPhoto extends StatelessWidget {
 
 class PlaceTagChip extends StatelessWidget {
   final String tag;
-  const PlaceTagChip({required this.tag});
+  const PlaceTagChip({super.key, required this.tag});
 
   @override
   Widget build(BuildContext context) {
@@ -798,7 +798,7 @@ class _PromotedCard extends StatelessWidget {
 class PlaceStarRow extends StatelessWidget {
   final double rating;
   final int count;
-  const PlaceStarRow({required this.rating, required this.count});
+  const PlaceStarRow({super.key, required this.rating, required this.count});
 
   @override
   Widget build(BuildContext context) {

@@ -331,7 +331,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           .read(apiClientProvider)
           .dio
           .delete('/matches/${widget.matchId}')
-          .catchError((_) {});
+          .then((_) {}, onError: (_) {});
 
       // Optimistic local state updates — all three feeds
       ref

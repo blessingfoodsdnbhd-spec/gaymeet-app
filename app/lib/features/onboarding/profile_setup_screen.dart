@@ -112,10 +112,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() {
-        _uploadingPhoto = false;
-        _step++;
-      });
+      if (mounted) {
+        setState(() {
+          _uploadingPhoto = false;
+          _step++;
+        });
+      }
     }
   }
 

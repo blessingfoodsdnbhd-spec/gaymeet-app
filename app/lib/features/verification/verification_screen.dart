@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/verification_provider.dart';
 

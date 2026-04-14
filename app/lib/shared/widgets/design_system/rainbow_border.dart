@@ -71,8 +71,7 @@ class _StaticBorder extends StatelessWidget {
     required this.borderWidth,
     required this.borderRadius,
     this.gradientAngle = 0,
-    Key? key,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

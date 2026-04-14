@@ -317,7 +317,7 @@ class _LocationMapScreenState extends ConsumerState<LocationMapScreen> {
                       ? teleport.cityName ?? '已启用'
                       : '切换虚拟位置',
                   isActive: teleport.isActive,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   onTap: () => context.push('/teleport'),
                 ),
               ),
@@ -328,7 +328,7 @@ class _LocationMapScreenState extends ConsumerState<LocationMapScreen> {
                   title: '隐身设置',
                   subtitle: isStealthOn ? '隐身已开启' : '对附近隐藏',
                   isActive: isStealthOn,
-                  activeColor: const Color(0xFF7B61FF),
+                  activeThumbColor: const Color(0xFF7B61FF),
                   onTap: () => context.push('/stealth'),
                 ),
               ),
@@ -435,7 +435,7 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isActive;
-  final Color activeColor;
+  final Color activeThumbColor;
   final VoidCallback onTap;
 
   const _ActionCard({
@@ -443,7 +443,7 @@ class _ActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isActive,
-    required this.activeColor,
+    required this.activeThumbColor,
     required this.onTap,
   });
 
@@ -454,11 +454,11 @@ class _ActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withValues(alpha: 0.1) : AppTheme.card,
+          color: isActive ? activeThumbColor.withValues(alpha: 0.1) : AppTheme.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActive
-                ? activeColor.withValues(alpha: 0.4)
+                ? activeThumbColor.withValues(alpha: 0.4)
                 : const Color(0xFF2A2A2A),
           ),
         ),
@@ -466,11 +466,11 @@ class _ActionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon,
-                color: isActive ? activeColor : AppTheme.textHint, size: 22),
+                color: isActive ? activeThumbColor : AppTheme.textHint, size: 22),
             const SizedBox(height: 8),
             Text(title,
                 style: TextStyle(
-                  color: isActive ? activeColor : AppTheme.textPrimary,
+                  color: isActive ? activeThumbColor : AppTheme.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 )),

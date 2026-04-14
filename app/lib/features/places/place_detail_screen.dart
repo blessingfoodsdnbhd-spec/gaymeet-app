@@ -7,7 +7,7 @@ import '../../core/models/place.dart';
 import '../../core/providers/places_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import 'rate_place_sheet.dart';
-import 'places_screen.dart' show PlaceCategoryBadge, PlaceTagChip, PlaceStarRow, PlaceholderPhoto;
+import 'places_screen.dart' show PlaceCategoryBadge, PlaceTagChip, PlaceStarRow;
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
   final Place place;

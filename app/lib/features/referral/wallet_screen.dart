@@ -545,7 +545,7 @@ class _TxTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCommission = tx.type == 'commission';
     final coins = (tx.amount.abs() * 10).toInt();
-    final amountStr = isCommission ? '+${coins}🪙' : '-${coins}🪙';
+    final amountStr = isCommission ? '+$coins🪙' : '-$coins🪙';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),

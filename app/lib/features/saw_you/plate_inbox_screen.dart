@@ -407,15 +407,19 @@ class _ReportSheetState extends State<_ReportSheet> {
                   fontSize: 17,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
-          ..._reportReasons.map((r) => RadioListTile<String>(
-                value: r.$2,
-                groupValue: _selected,
-                onChanged: (v) => setState(() => _selected = v),
-                title: Text(r.$1,
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                activeColor: AppTheme.primary,
-                dense: true,
-              )),
+          RadioGroup<String>(
+            groupValue: _selected,
+            onChanged: (v) => setState(() => _selected = v),
+            child: Column(
+              children: _reportReasons.map((r) => RadioListTile<String>(
+                    value: r.$2,
+                    title: Text(r.$1,
+                        style: TextStyle(color: AppTheme.textPrimary)),
+                    activeColor: AppTheme.primary,
+                    dense: true,
+                  )).toList(),
+            ),
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

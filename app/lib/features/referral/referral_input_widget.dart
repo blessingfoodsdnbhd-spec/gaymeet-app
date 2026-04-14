@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
-import '../../core/providers/referral_provider.dart';
 
 /// Collapsible "Have a referral code?" widget for the registration screen.
 class ReferralInputWidget extends ConsumerStatefulWidget {

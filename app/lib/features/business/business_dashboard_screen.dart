@@ -244,11 +244,11 @@ class _BusinessDashboardScreenState extends ConsumerState<BusinessDashboardScree
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !context.mounted) return;
     final err = await ref.read(businessProvider.notifier).promote(plan);
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(err != null ? err : '推广已开通 🎉'),
+      content: Text(err ?? '推广已开通 🎉'),
     ));
   }
 
@@ -341,7 +341,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                   'phone': _phoneCtrl.text.trim(),
                   'openingHours': _hoursCtrl.text.trim(),
                 });
-                if (!mounted) return;
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(err ?? '更新成功 ✓')),

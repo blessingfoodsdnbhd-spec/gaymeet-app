@@ -27,7 +27,6 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   late int _groupIndex;
   int _storyIndex = 0;
   late AnimationController _progressCtrl;
-  bool _isPaused = false;
 
   static const _storyDuration = Duration(seconds: 5);
 
@@ -98,12 +97,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   }
 
   void _pause() {
-    _isPaused = true;
     _progressCtrl.stop();
   }
 
   void _resume() {
-    _isPaused = false;
     _progressCtrl.forward();
   }
 

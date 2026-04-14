@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme.dart';
-import '../../core/api/api_client.dart';
 import '../../core/providers/subscription_provider.dart';
-import '../../core/theme/design_system.dart';
 
 class AskQuestionSheet extends ConsumerStatefulWidget {
   final String targetUserId;
@@ -170,7 +168,7 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                 ),
                 Switch(
                   value: _isAnonymous,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                   onChanged: (v) => setState(() => _isAnonymous = v),
                 ),
               ],

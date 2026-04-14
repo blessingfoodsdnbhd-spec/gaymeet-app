@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'config/theme.dart';
 import 'config/routes.dart';
-import 'core/api/api_client.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/likes_provider.dart';
 import 'core/providers/locale_provider.dart';
@@ -24,7 +22,6 @@ class MeetupNearbyApp extends ConsumerStatefulWidget {
 class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
   bool _maintenance = false;
   String _maintenanceMsg = '';
-  bool _statusChecked = false;
 
   @override
   void initState() {
@@ -67,12 +64,10 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
         setState(() {
           _maintenance = maintenance;
           _maintenanceMsg = message;
-          _statusChecked = true;
         });
       }
     } catch (_) {
       // If status check fails, allow the app to proceed normally
-      if (mounted) setState(() => _statusChecked = true);
     }
   }
 
@@ -88,7 +83,7 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
           'type': 'no_matches_24h',
           'delayHours': 24,
         })
-        .catchError((_) {});
+        .then((_) {}, onError: (_) {});
   }
 
   @override

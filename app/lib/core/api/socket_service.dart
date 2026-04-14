@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../config/constants.dart';
 import '../models/message.dart';
@@ -57,11 +58,11 @@ class SocketService {
     );
 
     _socket!.onConnect((_) {
-      print('Socket connected');
+      debugPrint('Socket connected');
     });
 
     _socket!.onDisconnect((_) {
-      print('Socket disconnected');
+      debugPrint('Socket disconnected');
     });
 
     _socket!.on('chat:receive', (data) {

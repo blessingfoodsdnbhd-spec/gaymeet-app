@@ -2,7 +2,6 @@ import 'package:gaymeet/core/providers/auth_provider.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/groups_service.dart';
-import '../api/api_client.dart';
 import '../api/socket_service.dart';
 import '../models/group_chat.dart';
 

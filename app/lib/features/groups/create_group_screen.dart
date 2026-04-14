@@ -126,7 +126,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       fontSize: 12, color: AppTheme.textSecondary),
                 ),
                 value: _isPublic,
-                activeColor: AppTheme.primary,
+                activeThumbColor: AppTheme.primary,
                 onChanged: (v) => setState(() => _isPublic = v),
               ),
             ),

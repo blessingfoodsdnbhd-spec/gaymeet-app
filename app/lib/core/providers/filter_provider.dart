@@ -45,8 +45,9 @@ class DiscoveryFilter {
   int get activeCount {
     if (!filtersEnabled) return 0;
     int n = 0;
-    if (ageEnabled && (ageMin != defaults.ageMin || ageMax != defaults.ageMax))
+    if (ageEnabled && (ageMin != defaults.ageMin || ageMax != defaults.ageMax)) {
       n++;
+    }
     if (heightEnabled) n++;
     if (weightEnabled) n++;
     if (maxDistanceKm != defaults.maxDistanceKm) n++;
@@ -112,9 +113,9 @@ class DiscoveryFilter {
   }) {
     if (!filtersEnabled) return true;
     if (heightEnabled && height != null &&
-        (height < heightMin || height > heightMax)) return false;
+        (height < heightMin || height > heightMax)) { return false; }
     if (weightEnabled && weight != null &&
-        (weight < weightMin || weight > weightMax)) return false;
+        (weight < weightMin || weight > weightMax)) { return false; }
     if (ageEnabled && age != null && (age < ageMin || age > ageMax)) {
       return false;
     }

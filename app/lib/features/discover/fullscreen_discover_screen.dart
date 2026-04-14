@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,7 +33,6 @@ class _FullscreenDiscoverScreenState
     extends ConsumerState<FullscreenDiscoverScreen>
     with TickerProviderStateMixin {
   final _pageController = PageController();
-  int _currentPage = 0;
   _FeedMode _mode = _FeedMode.recommended;
   List<UserModel> _dummyUsers = [];
   bool _showHint = true;
@@ -130,7 +127,6 @@ class _FullscreenDiscoverScreenState
     if (_mode == mode) return;
     setState(() {
       _mode = mode;
-      _currentPage = 0;
     });
     _pageController.jumpToPage(0);
     _loadDummy();
@@ -141,7 +137,6 @@ class _FullscreenDiscoverScreenState
     _loadDummy();
     _loadRemote();
     if (_pageController.hasClients) _pageController.jumpToPage(0);
-    setState(() => _currentPage = 0);
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -234,7 +229,6 @@ class _FullscreenDiscoverScreenState
                 itemCount: users.length,
                 onPageChanged: (i) {
                   setState(() {
-                    _currentPage = i;
                     _showHint = false;
                   });
                   // Preload ±2 pages worth of images is handled automatically

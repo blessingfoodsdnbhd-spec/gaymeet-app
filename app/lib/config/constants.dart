@@ -14,7 +14,7 @@ class AppConstants {
   );
 
   static const String apiBaseUrl = '$_apiUrl/api';
-  static const String wsUrl = '$_apiUrl';
+  static const String wsUrl = _apiUrl;
 
   // Storage keys
   static const String accessTokenKey = 'access_token';

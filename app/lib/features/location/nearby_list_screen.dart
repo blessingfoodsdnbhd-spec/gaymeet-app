@@ -82,24 +82,24 @@ class _NearbyListScreenState extends ConsumerState<NearbyListScreen> {
     // Build a flat list interleaving promo banners every 5 user rows.
     // Items at indices that are multiples of 6 (0-based: 5, 11, 17…) are
     // promo banners when a banner promotion is active.
-    const _promoEvery = 5; // insert banner after every N users
-    int _totalItems(int userCount) {
+    const promoEvery = 5; // insert banner after every N users
+    int totalItems(int userCount) {
       if (!hasBannerPromo) return userCount;
-      return userCount + (userCount ~/ _promoEvery);
+      return userCount + (userCount ~/ promoEvery);
     }
 
-    Widget _itemAt(int index, List<UserModel> users) {
+    Widget itemAt(int index, List<UserModel> users) {
       if (!hasBannerPromo) return _NearbyRow(user: users[index]);
-      // Every (_promoEvery + 1) items the banner slot appears.
-      final slot = _promoEvery + 1;
+      // Every (promoEvery + 1) items the banner slot appears.
+      final slot = promoEvery + 1;
       final rem = index % slot;
-      if (rem == _promoEvery) return const PromoBanner();
-      final userIdx = (index ~/ slot) * _promoEvery + rem;
+      if (rem == promoEvery) return const PromoBanner();
+      final userIdx = (index ~/ slot) * promoEvery + rem;
       if (userIdx >= users.length) return const SizedBox.shrink();
       return _NearbyRow(user: users[userIdx]);
     }
 
-    final total = _totalItems(users.length);
+    final total = totalItems(users.length);
 
     return RefreshIndicator(
       color: AppTheme.primary,
@@ -115,9 +115,9 @@ class _NearbyListScreenState extends ConsumerState<NearbyListScreen> {
         itemCount: total,
         separatorBuilder: (_, i) {
           // No divider before/after a promo banner slot
-          final slot = _promoEvery + 1;
+          final slot = promoEvery + 1;
           final rem = i % slot;
-          if (!hasBannerPromo || (rem != _promoEvery - 1 && rem != _promoEvery)) {
+          if (!hasBannerPromo || (rem != promoEvery - 1 && rem != promoEvery)) {
             return Divider(
               height: 1,
               thickness: 0.5,
@@ -127,7 +127,7 @@ class _NearbyListScreenState extends ConsumerState<NearbyListScreen> {
           }
           return const SizedBox.shrink();
         },
-        itemBuilder: (_, i) => _itemAt(i, users),
+        itemBuilder: (_, i) => itemAt(i, users),
       ),
     );
   }

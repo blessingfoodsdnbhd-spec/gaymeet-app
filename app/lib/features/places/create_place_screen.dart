@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
-import '../../core/models/place.dart';
 import '../../core/providers/places_provider.dart';
 import '../../shared/widgets/gradient_button.dart';
 
@@ -47,7 +46,7 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
   String _category = 'bar';
   String _city = 'Kuala Lumpur';
   String _priceRange = '\$\$';
-  List<String> _tags = [];
+  final List<String> _tags = [];
   bool _isLoading = false;
 
   @override

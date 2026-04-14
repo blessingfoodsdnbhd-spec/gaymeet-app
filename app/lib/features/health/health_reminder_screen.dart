@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../config/theme.dart';
 import '../../core/providers/health_reminder_provider.dart';
 
 class HealthReminderScreen extends ConsumerStatefulWidget {
@@ -16,7 +15,6 @@ class _HealthReminderScreenState extends ConsumerState<HealthReminderScreen> {
   // Teal color palette — calming, not the usual pink
   static const _teal = Color(0xFF00B4D8);
   static const _tealLight = Color(0xFF90E0EF);
-  static const _tealDark = Color(0xFF0077B6);
   static const _bg = Color(0xFF0A1628);
   static const _surface = Color(0xFF112240);
 
@@ -172,7 +170,7 @@ class _HealthReminderScreenState extends ConsumerState<HealthReminderScreen> {
                       style: TextStyle(color: Colors.white54, fontSize: 12),
                     ),
                     value: state.reminderEnabled,
-                    activeColor: _teal,
+                    activeThumbColor: _teal,
                     inactiveThumbColor: Colors.white38,
                     inactiveTrackColor: Colors.white12,
                     onChanged: (v) => ref

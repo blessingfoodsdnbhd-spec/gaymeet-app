@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
-import '../../core/theme/design_system.dart';
 
 class MaintenanceScreen extends StatefulWidget {
   final String message;

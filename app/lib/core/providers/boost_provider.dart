@@ -100,7 +100,7 @@ class BoostNotifier extends StateNotifier<BoostState> {
     _scheduleExpiry(expiresAt);
 
     // Fire-and-forget — best effort; local state is already updated
-    _api.dio.post('/users/boost').catchError((_) {});
+    _api.dio.post('/users/boost').then((_) {}, onError: (_) {});
   }
 
   void _scheduleExpiry(DateTime expiresAt) {

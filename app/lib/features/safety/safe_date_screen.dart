@@ -2,15 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../core/dummy/dummy_data.dart';
 import '../../core/models/user.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/providers/match_provider.dart';
 import '../../core/providers/safe_date_provider.dart';
-import '../../core/theme/design_system.dart';
 
 class SafeDateScreen extends ConsumerStatefulWidget {
   const SafeDateScreen({super.key});

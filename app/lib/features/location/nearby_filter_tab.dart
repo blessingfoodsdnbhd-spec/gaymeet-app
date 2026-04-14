@@ -223,7 +223,7 @@ class _MasterToggle extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primary,
+            activeThumbColor: AppTheme.primary,
           ),
         ],
       ),
@@ -304,7 +304,7 @@ class _FilterSection extends StatelessWidget {
                 Switch(
                   value: enabled,
                   onChanged: onToggle,
-                  activeColor: AppTheme.primary,
+                  activeThumbColor: AppTheme.primary,
                 ),
               ],
             ),

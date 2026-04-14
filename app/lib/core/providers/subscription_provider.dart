@@ -125,7 +125,7 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
       // Fire-and-forget notify backend (best-effort)
       _api.dio
           .post('/subscriptions/purchase', data: {'productId': productId})
-          .catchError((_) {});
+          .then((_) {}, onError: (_) {});
 
       state = state.copyWith(isPremium: true, isLoading: false);
       _prefs.setBool(_kIsPremium, true);

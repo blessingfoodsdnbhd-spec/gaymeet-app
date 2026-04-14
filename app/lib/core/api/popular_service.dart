@@ -1,4 +1,3 @@
-import '../models/user.dart';
 import 'api_client.dart';
 
 class PopularService {
