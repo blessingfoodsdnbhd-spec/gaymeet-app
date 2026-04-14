@@ -7,7 +7,7 @@ import '../../core/models/place.dart';
 import '../../core/providers/places_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import 'rate_place_sheet.dart';
-import 'places_screen.dart' show _CategoryBadge, _TagChip, _StarRow, _PlaceholderPhoto;
+import 'places_screen.dart' show PlaceCategoryBadge, PlaceTagChip, PlaceStarRow, PlaceholderPhoto;
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
   final Place place;
@@ -156,7 +156,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                _CategoryBadge(category: place.category),
+                                PlaceCategoryBadge(category: place.category),
                                 if (place.isVerified) ...[
                                   const SizedBox(width: 6),
                                   Container(
@@ -227,7 +227,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                   ),
 
                   const SizedBox(height: 12),
-                  _StarRow(rating: place.averageRating, count: place.totalReviews),
+                  PlaceStarRow(rating: place.averageRating, count: place.totalReviews),
 
                   if (place.description.isNotEmpty) ...[
                     const SizedBox(height: 14),
@@ -284,7 +284,7 @@ class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
-                      children: place.tags.map((t) => _TagChip(tag: t)).toList(),
+                      children: place.tags.map((t) => PlaceTagChip(tag: t)).toList(),
                     ),
                   ],
 

@@ -1,3 +1,4 @@
+import 'package:gaymeet/core/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/safe_date_service.dart';
 import '../api/api_client.dart';

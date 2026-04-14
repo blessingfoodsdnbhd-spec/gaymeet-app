@@ -249,9 +249,8 @@ class _MessageCard extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: ImageFilter.blur(
-                          sigmaX: 6,
-                          sigmaY: 6,
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),

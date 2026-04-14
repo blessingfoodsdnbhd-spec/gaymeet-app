@@ -4,7 +4,7 @@ import '../api/api_client.dart';
 import '../api/popular_service.dart';
 import '../dummy/dummy_data.dart';
 import '../models/user.dart';
-import 'shout_provider.dart'; // re-uses kUseDummyData
+import 'shout_provider.dart' hide kUseDummyData; // avoid ambiguous import
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 

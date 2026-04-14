@@ -353,8 +353,8 @@ class PlaceCard extends ConsumerWidget {
                     color: AppTheme.surface,
                     child: place.photos.isNotEmpty
                         ? Image.network(place.photos.first, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _PlaceholderPhoto(category: place.category))
-                        : _PlaceholderPhoto(category: place.category),
+                            errorBuilder: (_, __, ___) => PlaceholderPhoto(category: place.category))
+                        : PlaceholderPhoto(category: place.category),
                   ),
                   // Gradient overlay
                   Positioned.fill(
@@ -372,7 +372,7 @@ class PlaceCard extends ConsumerWidget {
                   Positioned(
                     top: 12,
                     left: 12,
-                    child: _CategoryBadge(category: place.category),
+                    child: PlaceCategoryBadge(category: place.category),
                   ),
                   // Verified badge
                   if (place.isVerified)
@@ -429,7 +429,7 @@ class PlaceCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _StarRow(rating: place.averageRating, count: place.totalReviews),
+                      PlaceStarRow(rating: place.averageRating, count: place.totalReviews),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -466,7 +466,7 @@ class PlaceCard extends ConsumerWidget {
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: place.tags.take(4).map((t) => _TagChip(tag: t)).toList(),
+                      children: place.tags.take(4).map((t) => PlaceTagChip(tag: t)).toList(),
                     ),
                   ],
                 ],
@@ -646,7 +646,7 @@ class _PinPopup extends ConsumerWidget {
                   ],
                 ),
               ),
-              _StarRow(rating: place.averageRating, count: place.totalReviews),
+              PlaceStarRow(rating: place.averageRating, count: place.totalReviews),
             ],
           ),
           const SizedBox(height: 12),
@@ -669,9 +669,9 @@ class _PinPopup extends ConsumerWidget {
 
 // ── Shared small widgets ──────────────────────────────────────────────────────
 
-class _CategoryBadge extends StatelessWidget {
+class PlaceCategoryBadge extends StatelessWidget {
   final String category;
-  const _CategoryBadge({required this.category});
+  const PlaceCategoryBadge({required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -689,9 +689,9 @@ class _CategoryBadge extends StatelessWidget {
   }
 }
 
-class _PlaceholderPhoto extends StatelessWidget {
+class PlaceholderPhoto extends StatelessWidget {
   final String category;
-  const _PlaceholderPhoto({required this.category});
+  const PlaceholderPhoto({required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -707,9 +707,9 @@ class _PlaceholderPhoto extends StatelessWidget {
   }
 }
 
-class _TagChip extends StatelessWidget {
+class PlaceTagChip extends StatelessWidget {
   final String tag;
-  const _TagChip({required this.tag});
+  const PlaceTagChip({required this.tag});
 
   @override
   Widget build(BuildContext context) {
@@ -795,10 +795,10 @@ class _PromotedCard extends StatelessWidget {
   }
 }
 
-class _StarRow extends StatelessWidget {
+class PlaceStarRow extends StatelessWidget {
   final double rating;
   final int count;
-  const _StarRow({required this.rating, required this.count});
+  const PlaceStarRow({required this.rating, required this.count});
 
   @override
   Widget build(BuildContext context) {

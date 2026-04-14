@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
+import '../../core/api/referral_service.dart';
 import '../../core/providers/referral_provider.dart';
 
 // Gold/orange gradient for rewards UI

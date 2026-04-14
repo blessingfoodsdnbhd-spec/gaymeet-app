@@ -123,7 +123,7 @@ class Place {
     this.openingHours,
     this.photos = const [],
     this.tags = const [],
-    this.priceRange = '$$',
+    this.priceRange = r'$$',
     this.isVerified = false,
     this.ratings = const [],
     this.averageRating = 0,
@@ -166,7 +166,7 @@ class Place {
       openingHours: j['openingHours'],
       photos: List<String>.from(j['photos'] ?? []),
       tags: List<String>.from(j['tags'] ?? []),
-      priceRange: j['priceRange'] ?? '$$',
+      priceRange: j['priceRange'] ?? r'$$',
       isVerified: j['isVerified'] ?? false,
       ratings: (j['ratings'] as List<dynamic>? ?? [])
           .map((r) => PlaceRating.fromJson(r as Map<String, dynamic>))

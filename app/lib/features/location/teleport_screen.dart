@@ -359,8 +359,7 @@ class _TeleportScreenState extends ConsumerState<TeleportScreen> {
                               color: AppTheme.textHint, size: 18)
                           : Icon(Icons.lock_rounded,
                               color: AppTheme.textHint, size: 16),
-                ),
-              );
+                );
               },
             ),
           ),
