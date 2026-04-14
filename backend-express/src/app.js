@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const env = require('./config/env');
+const { globalLimiter, authLimiter } = require('./middleware/rateLimit');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -28,6 +29,9 @@ const stickersRoutes = require('./routes/stickers');
 const secretCodesRoutes = require('./routes/secret-codes');
 const referralsRoutes = require('./routes/referrals');
 const placesRoutes = require('./routes/places');
+const twoFactorRoutes = require('./routes/two-factor');
+const accountRoutes = require('./routes/account');
+const calendarRoutes = require('./routes/calendar');
 
 const app = express();
 
@@ -46,6 +50,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+// ── Rate limiting ──────────────────────────────────────────────────────────────
+app.use(globalLimiter);
+
 // ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 
@@ -53,7 +60,7 @@ app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // ── API routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/users', photosRoutes);
 app.use('/api/swipes', swipesRoutes);
@@ -77,6 +84,9 @@ app.use('/api/stickers', stickersRoutes);
 app.use('/api/codes', secretCodesRoutes);
 app.use('/api/referrals', referralsRoutes);
 app.use('/api/places', placesRoutes);
+app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

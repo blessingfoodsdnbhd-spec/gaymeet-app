@@ -49,6 +49,9 @@ import '../features/places/places_screen.dart';
 import '../features/places/place_detail_screen.dart';
 import '../features/places/create_place_screen.dart';
 import '../core/models/place.dart';
+import '../features/security/security_screen.dart';
+import '../features/settings/currency_screen.dart';
+import '../features/calendar/calendar_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -132,8 +135,13 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(path: '/secret-code', builder: (_, __) => const SecretCodeScreen()),
 
       // ── Settings sub-screens ─────────────────────────────────────────────
+      GoRoute(path: '/settings/security', builder: (_, __) => const SecurityScreen()),
+      GoRoute(path: '/settings/currency', builder: (_, __) => const CurrencyScreen()),
       GoRoute(path: '/settings/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/settings/theme', builder: (_, __) => const ThemeScreen()),
+
+      // ── Calendar ──────────────────────────────────────────────────────────
+      GoRoute(path: '/calendar', builder: (_, __) => const CalendarScreen()),
       GoRoute(path: '/health-reminder', builder: (_, __) => const HealthReminderScreen()),
 
       // ── Referral & Wallet ─────────────────────────────────────────────────

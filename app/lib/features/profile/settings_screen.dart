@@ -155,8 +155,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // ── Security ───────────────────────────────────────────────────────
+          const _SectionHeader(title: 'SECURITY'),
+          ListTile(
+            leading: const Icon(Icons.security_rounded, color: Color(0xFF7C4DFF)),
+            title: const Text('Security & 2FA'),
+            subtitle: Text('Two-factor auth, data export, account deletion',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/security'),
+          ),
+
+          const Divider(),
+
           // ── Personalisation ────────────────────────────────────────────────
           const _SectionHeader(title: 'PERSONALISATION'),
+          ListTile(
+            leading: Icon(Icons.currency_exchange_rounded, color: AppTheme.accent),
+            title: const Text('货币 / Currency'),
+            subtitle: Text('Display prices in your currency',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/currency'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_month_rounded, color: Color(0xFF2196F3)),
+            title: const Text('Calendar / 日历'),
+            subtitle: Text('Your dates and reminders',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/calendar'),
+          ),
           ListTile(
             leading: Icon(Icons.translate_rounded, color: AppTheme.primary),
             title: const Text('语言 / Language'),
