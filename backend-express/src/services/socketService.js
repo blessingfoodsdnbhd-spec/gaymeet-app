@@ -5,6 +5,8 @@ const User = require('../models/User');
 const Match = require('../models/Match');
 const Message = require('../models/Message');
 const CallLog = require('../models/CallLog');
+const GroupChat = require('../models/GroupChat');
+const GroupMessage = require('../models/GroupMessage');
 
 let io;
 
@@ -157,6 +159,50 @@ function initSocket(server) {
 
       // Notify the other party that messages were read
       io.to(`match:${matchId}`).emit('chat:read', { matchId, readBy: userId });
+    });
+
+    // ── group:join ────────────────────────────────────────────────────────────
+    // Client sends when opening a group chat screen.
+    socket.on('group:join', async ({ groupId } = {}) => {
+      if (!groupId) return;
+      const group = await GroupChat.findOne({
+        _id: groupId,
+        'members.user': userId,
+      }).lean();
+      if (!group) return;
+      socket.join(`group:${groupId}`);
+    });
+
+    // ── group:leave_room ──────────────────────────────────────────────────────
+    socket.on('group:leave_room', ({ groupId } = {}) => {
+      if (groupId) socket.leave(`group:${groupId}`);
+    });
+
+    // ── group:send ────────────────────────────────────────────────────────────
+    // Payload: { groupId, content, type? }
+    socket.on('group:send', async ({ groupId, content, type = 'text' } = {}) => {
+      if (!groupId || !content?.trim()) return;
+      if (content.length > 2000) return;
+
+      const group = await GroupChat.findOne({
+        _id: groupId,
+        'members.user': userId,
+      });
+      if (!group) return;
+
+      const msg = await GroupMessage.create({
+        group: groupId,
+        sender: userId,
+        content: content.trim(),
+        type: ['text', 'sticker', 'image'].includes(type) ? type : 'text',
+      });
+
+      group.lastMessage = content.trim().slice(0, 100);
+      group.lastMessageAt = new Date();
+      await group.save();
+
+      const populated = await msg.populate('sender', 'nickname avatarUrl level');
+      io.to(`group:${groupId}`).emit('group:receive', populated.toObject());
     });
 
     // ── call:initiate ─────────────────────────────────────────────────────────

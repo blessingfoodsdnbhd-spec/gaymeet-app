@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
 import '../../core/api/photo_service.dart';
+import '../../core/api/private_photos_service.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../shared/widgets/looking_for_badge.dart';
 import 'looking_for_sheet.dart';
@@ -27,6 +28,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   // Photo grid state — mirrors the live list on the server
   late List<String> _photos;
 
+  // Private photos
+  late List<String> _privatePhotos;
+  bool _privatePhotoUploading = false;
+  final _privatePhotoDeleting = <String>{};
+
   // Track which photo slots are currently uploading/deleting
   final _loadingSlots = <int>{};
   bool _saving = false;
@@ -34,6 +40,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   // Body stats
   late int _height; // cm
   late int _weight; // kg
+  String? _role;
 
   static const _maxPhotos = 6;
 
@@ -46,8 +53,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _tagsController =
         TextEditingController(text: user?.tags.join(', ') ?? '');
     _photos = List<String>.from(user?.photos ?? []);
+    _privatePhotos = List<String>.from(user?.privatePhotos ?? []);
     _height = user?.height ?? 170;
     _weight = user?.weight ?? 65;
+    _role = user?.role;
   }
 
   @override
@@ -240,6 +249,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'tags': tags,
         'height': _height,
         'weight': _weight,
+        'role': _role,
       });
 
       await ref.read(authStateProvider.notifier).checkAuth();
@@ -320,11 +330,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
             const SizedBox(height: 24),
 
+            // ── Private Photos ──
+            const SizedBox(height: 8),
+            _buildPrivatePhotosSection(),
+            const SizedBox(height: 32),
+
             // ── Looking For ──
             const Text('正在找',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             _LookingForTile(),
+            const SizedBox(height: 24),
+
+            // ── Role ──
+            const Text('角色 (Role)',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _RoleSelector(
+              value: _role,
+              onChanged: (v) => setState(() => _role = v),
+            ),
             const SizedBox(height: 24),
 
             // ── Body stats ──
@@ -358,6 +383,205 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
       ),
     );
+  }
+
+  // ── Private Photos section ─────────────────────────────────────────────────
+
+  Widget _buildPrivatePhotosSection() {
+    const maxPrivate = 5;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.lock_rounded, size: 15, color: Color(0xFFFFD700)),
+            const SizedBox(width: 6),
+            const Text('私密照片',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            Text(
+              '(${_privatePhotos.length}/$maxPrivate)',
+              style: TextStyle(color: AppTheme.textHint, fontSize: 13),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '私密照片需要对方申请后才能查看。',
+          style: TextStyle(color: AppTheme.textHint, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1,
+          ),
+          itemCount: maxPrivate,
+          itemBuilder: (_, index) {
+            if (index < _privatePhotos.length) {
+              return _buildPrivateFilledSlot(index);
+            }
+            if (index == _privatePhotos.length && !_privatePhotoUploading) {
+              return _buildPrivateAddSlot(maxPrivate);
+            }
+            if (index == _privatePhotos.length && _privatePhotoUploading) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.card,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            }
+            return Container(
+              decoration: BoxDecoration(
+                color: AppTheme.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2A2A2A), width: 1),
+              ),
+              child: const Center(
+                child: Icon(Icons.lock_rounded,
+                    color: Color(0xFF3A3A3A), size: 20),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrivateFilledSlot(int index) {
+    final url = _privatePhotos[index];
+    final isDeleting = _privatePhotoDeleting.contains(url);
+
+    return GestureDetector(
+      onTap: isDeleting ? null : () => _deletePrivatePhoto(url),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(url, fit: BoxFit.cover),
+          ),
+          if (isDeleting)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                color: Colors.black54,
+                child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+            ),
+          if (!isDeleting)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close_rounded,
+                    color: Colors.white, size: 14),
+              ),
+            ),
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Icon(Icons.lock_rounded,
+                  color: Color(0xFFFFD700), size: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivateAddSlot(int maxPrivate) {
+    if (_privatePhotos.length >= maxPrivate) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: _addPrivatePhoto,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withOpacity(0.4),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.lock_rounded,
+                  color: Color(0xFFFFD700), size: 18),
+            ),
+            const SizedBox(height: 6),
+            Text('添加私密',
+                style: TextStyle(
+                    color: AppTheme.textHint, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addPrivatePhoto() async {
+    final service = ref.read(privatePhotosServiceProvider);
+    final file = await service.pickImage();
+    if (file == null || !mounted) return;
+
+    setState(() => _privatePhotoUploading = true);
+    try {
+      final url = await service.uploadPrivatePhoto(file);
+      if (!mounted) return;
+      setState(() => _privatePhotos.add(url));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Upload failed.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _privatePhotoUploading = false);
+    }
+  }
+
+  Future<void> _deletePrivatePhoto(String url) async {
+    setState(() => _privatePhotoDeleting.add(url));
+    try {
+      await ref.read(privatePhotosServiceProvider).deletePrivatePhoto(url);
+      if (!mounted) return;
+      setState(() => _privatePhotos.remove(url));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to remove photo.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _privatePhotoDeleting.remove(url));
+    }
   }
 
   Widget _buildPhotoSection() {
@@ -626,6 +850,69 @@ class _BodyStatSlider extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Role selector ─────────────────────────────────────────────────────────────
+
+class _RoleSelector extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  const _RoleSelector({required this.value, required this.onChanged});
+
+  static const _options = [
+    _RoleOption('top', 'Top', Color(0xFF1565C0)),
+    _RoleOption('versatile', 'Versatile', Color(0xFF6A1B9A)),
+    _RoleOption('bottom', 'Bottom', Color(0xFFAD1457)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: _options.map((opt) {
+        final selected = value == opt.key;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(selected ? null : opt.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              margin: EdgeInsets.only(
+                right: opt.key == 'bottom' ? 0 : 8,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: selected
+                    ? opt.color.withOpacity(0.9)
+                    : AppTheme.card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected ? opt.color : const Color(0xFF2A2A2A),
+                  width: 1.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                opt.label,
+                style: TextStyle(
+                  color: selected ? Colors.white : AppTheme.textSecondary,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _RoleOption {
+  final String key;
+  final String label;
+  final Color color;
+  const _RoleOption(this.key, this.label, this.color);
 }
 
 // ── Looking For inline tile ───────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme.dart';
 import '../../core/providers/filter_provider.dart';
-import 'nearby_list_screen.dart';
+import 'nearby_grid_screen.dart';
 import 'calling_screen.dart';
 import 'popular_screen.dart';
 import 'location_map_screen.dart';
@@ -124,7 +124,7 @@ class _LocationHubScreenState extends ConsumerState<LocationHubScreen>
         controller: _tabController,
         physics: const NeverScrollableScrollPhysics(),
         children: const [
-          NearbyListScreen(),
+          NearbyGridScreen(),
           CallingScreen(),
           PopularScreen(),
           LocationMapScreen(),

@@ -18,7 +18,16 @@ class ChatListScreen extends ConsumerWidget {
         : ref.watch(matchesProvider).valueOrNull ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
+      appBar: AppBar(
+        title: const Text('Messages'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.group_rounded),
+            tooltip: '群组',
+            onPressed: () => context.push('/groups'),
+          ),
+        ],
+      ),
       body: matches.isEmpty
           ? Center(
               child: Column(

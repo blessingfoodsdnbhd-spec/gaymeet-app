@@ -28,6 +28,14 @@ const stickersRoutes = require('./routes/stickers');
 const secretCodesRoutes = require('./routes/secret-codes');
 const referralsRoutes = require('./routes/referrals');
 const placesRoutes = require('./routes/places');
+const energyRoutes = require('./routes/energy');
+const privatePhotosRoutes = require('./routes/private-photos');
+const followsRoutes = require('./routes/follows');
+const storiesRoutes = require('./routes/stories');
+const groupsRoutes = require('./routes/groups');
+const statusRoutes = require('./routes/status');
+const questionsRoutes = require('./routes/questions');
+const safeDateRoutes = require('./routes/safe-date');
 
 const app = express();
 
@@ -51,6 +59,20 @@ app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+// ── Status (public — no auth, no maintenance block) ───────────────────────────
+app.use('/api/status', statusRoutes);
+
+// ── Maintenance middleware — blocks all API routes except /api/status ─────────
+app.use('/api', (req, res, next) => {
+  if (env.MAINTENANCE_MODE) {
+    return res.status(503).json({
+      error: 'maintenance',
+      message: env.MAINTENANCE_MESSAGE || '系统维护中，请稍后再试',
+    });
+  }
+  next();
+});
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -77,6 +99,15 @@ app.use('/api/stickers', stickersRoutes);
 app.use('/api/codes', secretCodesRoutes);
 app.use('/api/referrals', referralsRoutes);
 app.use('/api/places', placesRoutes);
+app.use('/api/energy', energyRoutes);
+app.use('/api/users', privatePhotosRoutes);
+app.use('/api/photo-requests', privatePhotosRoutes);
+app.use('/api/users', followsRoutes);
+app.use('/api/stories', storiesRoutes);
+app.use('/api/groups', groupsRoutes);
+app.use('/api/users', questionsRoutes);
+app.use('/api/questions', questionsRoutes);
+app.use('/api/safe-date', safeDateRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

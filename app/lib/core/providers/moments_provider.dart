@@ -74,15 +74,18 @@ class MomentsState {
 
 class MomentsNotifier extends StateNotifier<MomentsState> {
   final MomentsService _service;
+  final String _feed; // 'discover' or 'following'
 
-  MomentsNotifier(this._service) : super(const MomentsState()) {
+  MomentsNotifier(this._service, [this._feed = 'discover'])
+      : super(const MomentsState()) {
     fetchFeed();
   }
 
   Future<void> fetchFeed({String? userId}) async {
     state = state.copyWith(isLoading: true, page: 1, error: null);
     try {
-      final moments = await _service.getFeed(page: 1, userId: userId);
+      final moments =
+          await _service.getFeed(page: 1, userId: userId, feed: _feed);
       state = state.copyWith(
         moments: moments,
         isLoading: false,
@@ -91,7 +94,7 @@ class MomentsNotifier extends StateNotifier<MomentsState> {
       );
     } catch (_) {
       state = state.copyWith(
-        moments: _dummyMoments,
+        moments: _feed == 'discover' ? _dummyMoments : [],
         isLoading: false,
         hasMore: false,
       );
@@ -102,7 +105,7 @@ class MomentsNotifier extends StateNotifier<MomentsState> {
     if (state.isLoadingMore || !state.hasMore) return;
     state = state.copyWith(isLoadingMore: true);
     try {
-      final more = await _service.getFeed(page: state.page);
+      final more = await _service.getFeed(page: state.page, feed: _feed);
       state = state.copyWith(
         moments: [...state.moments, ...more],
         isLoadingMore: false,
@@ -180,7 +183,14 @@ final _momentsServiceProvider = Provider<MomentsService>(
   (ref) => MomentsService(ref.watch(apiClientProvider)),
 );
 
+// Default provider — 'discover' feed (used by create/detail screens)
 final momentsProvider =
     StateNotifierProvider<MomentsNotifier, MomentsState>((ref) {
-  return MomentsNotifier(ref.watch(_momentsServiceProvider));
+  return MomentsNotifier(ref.watch(_momentsServiceProvider), 'discover');
+});
+
+// Separate state for the 'following' feed tab
+final followingMomentsProvider =
+    StateNotifierProvider<MomentsNotifier, MomentsState>((ref) {
+  return MomentsNotifier(ref.watch(_momentsServiceProvider), 'following');
 });

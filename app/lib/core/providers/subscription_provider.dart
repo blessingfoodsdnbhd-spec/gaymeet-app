@@ -21,12 +21,14 @@ const int kPremiumSuperLikesPerDay = 5;
 
 class SubscriptionState {
   final bool isPremium;
+  final int vipLevel; // 0 = free, 1–3 = VIP tier
   final bool isLoading;
   final int swipesUsedToday;
   final int superLikesUsedToday;
 
   const SubscriptionState({
     this.isPremium = false,
+    this.vipLevel = 0,
     this.isLoading = false,
     this.swipesUsedToday = 0,
     this.superLikesUsedToday = 0,
@@ -41,12 +43,14 @@ class SubscriptionState {
 
   SubscriptionState copyWith({
     bool? isPremium,
+    int? vipLevel,
     bool? isLoading,
     int? swipesUsedToday,
     int? superLikesUsedToday,
   }) =>
       SubscriptionState(
         isPremium: isPremium ?? this.isPremium,
+        vipLevel: vipLevel ?? this.vipLevel,
         isLoading: isLoading ?? this.isLoading,
         swipesUsedToday: swipesUsedToday ?? this.swipesUsedToday,
         superLikesUsedToday: superLikesUsedToday ?? this.superLikesUsedToday,
@@ -83,8 +87,8 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
   }
 
   /// Called from app.dart after auth resolves — syncs premium status from server.
-  void syncFromUser(bool isPremium) {
-    state = state.copyWith(isPremium: isPremium);
+  void syncFromUser(bool isPremium, {int vipLevel = 0}) {
+    state = state.copyWith(isPremium: isPremium, vipLevel: vipLevel);
     _prefs.setBool(_kIsPremium, isPremium);
   }
 

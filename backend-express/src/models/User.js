@@ -84,6 +84,22 @@ const userSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
 
+    // VIP tier system (0=free, 1=VIP1 RM19, 2=VIP2 RM39, 3=VIP3 RM69)
+    vipLevel: { type: Number, default: 0, min: 0, max: 3 },
+    vipExpiresAt: { type: Date, default: null },
+
+    // Energy / Level system
+    level: { type: Number, default: 1 },
+    currentExp: { type: Number, default: 0 },
+    totalExpReceived: { type: Number, default: 0 },
+
+    // Private photos (locked, require request to view)
+    privatePhotos: [{ type: String }],
+
+    // Daily energy sends (for free-user rate limiting)
+    dailyEnergySends: { type: Number, default: 0 },
+    dailyEnergySendsDate: { type: String, default: null },
+
     // Looking For status
     lookingFor: {
       type: String,
@@ -91,8 +107,23 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Sexual role preference
+    role: {
+      type: String,
+      enum: ['top', 'bottom', 'versatile', null],
+      default: null,
+    },
+
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // Follow system
+    followersCount: { type: Number, default: 0 },
+    followingCount: { type: Number, default: 0 },
+
+    // Social stats
+    totalLikesReceived: { type: Number, default: 0 },
+    profileViews: { type: Number, default: 0 },
 
     // Referral system
     referralCode: { type: String, unique: true, sparse: true, uppercase: true },
@@ -150,8 +181,13 @@ userSchema.methods.toPublicJSON = function (distanceMeters) {
     obj.isBoosted = false;
   }
 
-  // Expire premium
-  if (obj.isPremium && obj.premiumExpiresAt && new Date() > obj.premiumExpiresAt) {
+  // Compute isPremium from vipLevel (new tier system) OR legacy isPremium field
+  const vipActive =
+    (obj.vipLevel > 0) &&
+    (!obj.vipExpiresAt || new Date() < new Date(obj.vipExpiresAt));
+  if (vipActive) {
+    obj.isPremium = true;
+  } else if (obj.isPremium && obj.premiumExpiresAt && new Date() > obj.premiumExpiresAt) {
     obj.isPremium = false;
   }
 

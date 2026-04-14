@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../config/constants.dart';
 import '../models/message.dart';
+import '../models/group_chat.dart';
 
 class IncomingCallData {
   final String callId;
@@ -30,6 +31,8 @@ class SocketService {
   final _callDeclinedController = StreamController<String>.broadcast(); // callId
   final _callEndedController = StreamController<Map<String, dynamic>>.broadcast();
   final _callBusyController = StreamController<String>.broadcast(); // receiverId
+  // ── Group chat streams ───────────────────────────────────────────────────────
+  final _groupMessageController = StreamController<GroupMessage>.broadcast();
 
   Stream<MessageModel> get onMessage => _messageController.stream;
   Stream<Map<String, dynamic>> get onRead => _readController.stream;
@@ -39,6 +42,7 @@ class SocketService {
   Stream<String> get onCallDeclined => _callDeclinedController.stream;
   Stream<Map<String, dynamic>> get onCallEnded => _callEndedController.stream;
   Stream<String> get onCallBusy => _callBusyController.stream;
+  Stream<GroupMessage> get onGroupMessage => _groupMessageController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -108,6 +112,12 @@ class SocketService {
       _callBusyController.add(d['receiverId'] ?? '');
     });
 
+    // ── Group chat events ────────────────────────────────────────────────────
+    _socket!.on('group:receive', (data) {
+      final msg = GroupMessage.fromJson(Map<String, dynamic>.from(data));
+      _groupMessageController.add(msg);
+    });
+
     _socket!.connect();
   }
 
@@ -140,6 +150,23 @@ class SocketService {
     _socket?.emit('call:end', {'callId': callId, 'duration': duration});
   }
 
+  // ── Group chat methods ───────────────────────────────────────────────────────
+  void joinGroupRoom(String groupId) {
+    _socket?.emit('group:join', {'groupId': groupId});
+  }
+
+  void leaveGroupRoom(String groupId) {
+    _socket?.emit('group:leave_room', {'groupId': groupId});
+  }
+
+  void sendGroupMessage(String groupId, String content, {String type = 'text'}) {
+    _socket?.emit('group:send', {
+      'groupId': groupId,
+      'content': content,
+      'type': type,
+    });
+  }
+
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();
@@ -156,5 +183,6 @@ class SocketService {
     _callDeclinedController.close();
     _callEndedController.close();
     _callBusyController.close();
+    _groupMessageController.close();
   }
 }

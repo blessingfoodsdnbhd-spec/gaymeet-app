@@ -5,9 +5,14 @@ class MomentsService {
   final ApiClient _client;
   MomentsService(this._client);
 
-  Future<List<Moment>> getFeed({int page = 1, String? userId}) async {
+  Future<List<Moment>> getFeed({
+    int page = 1,
+    String? userId,
+    String feed = 'discover',
+  }) async {
     final params = <String, dynamic>{'page': page, 'limit': 20};
     if (userId != null) params['userId'] = userId;
+    if (feed != 'discover') params['feed'] = feed;
     final res = await _client.dio.get('/moments', queryParameters: params);
     final list = (res.data['data'] ?? res.data) as List;
     return list.map((j) => Moment.fromJson(j as Map<String, dynamic>)).toList();

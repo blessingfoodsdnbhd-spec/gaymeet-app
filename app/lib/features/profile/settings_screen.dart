@@ -155,6 +155,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // ── Notifications / Requests ───────────────────────────────────────
+          const _SectionHeader(title: 'REQUESTS'),
+          ListTile(
+            leading: const Icon(Icons.lock_rounded, color: Color(0xFFFFD700)),
+            title: const Text('私密照片申请'),
+            subtitle: Text('查看别人发来的照片解锁申请',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/photo-requests/inbox'),
+          ),
+
+          const Divider(),
+
           // ── Personalisation ────────────────────────────────────────────────
           const _SectionHeader(title: 'PERSONALISATION'),
           ListTile(
@@ -285,6 +298,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: TextStyle(color: AppTheme.textSecondary)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/secret-code'),
+          ),
+
+          const Divider(),
+
+          ListTile(
+            leading: const Text('📬', style: TextStyle(fontSize: 22)),
+            title: const Text('我的提问箱'),
+            subtitle: Text('查看别人匿名发来的提问',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/questions/inbox'),
+          ),
+          ListTile(
+            leading: const Text('🛡️', style: TextStyle(fontSize: 22)),
+            title: const Text('安全约会'),
+            subtitle: Text('约会时实时分享位置给可信联系人',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/safe-date'),
           ),
 
           const Divider(),

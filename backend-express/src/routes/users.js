@@ -17,7 +17,7 @@ router.get('/me', auth, async (req, res, next) => {
 router.patch('/me', auth, async (req, res, next) => {
   try {
     const allowed = [
-      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'countryCode', 'lookingFor',
+      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'countryCode', 'lookingFor', 'role',
     ];
     const updates = {};
     for (const key of allowed) {
@@ -95,6 +95,23 @@ router.patch('/me/stealth', auth, async (req, res, next) => {
       'preferences.hideFromNearby': !!enabled,
     });
     ok(res, { success: true, stealthMode: !!enabled });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/users/:id ───────────────────────────────────────────────────────
+router.get('/:id', auth, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return err(res, 'User not found', 404);
+
+    // Increment profileViews unless the user is viewing their own profile
+    if (req.params.id !== req.user._id.toString()) {
+      await User.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
+    }
+
+    ok(res, user.toPublicJSON());
   } catch (e) {
     next(e);
   }
