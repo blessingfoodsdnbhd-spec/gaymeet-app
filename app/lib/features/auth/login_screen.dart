@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../config/theme.dart';
+import '../../config/constants.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../shared/widgets/design_system/rainbow_border.dart';
 
@@ -46,6 +48,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         .read(authStateProvider.notifier)
         .login(_emailC.text.trim(), _passC.text);
     if (ok && mounted) context.go('/home');
+  }
+
+  void _showForgotPasswordSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _ForgotPasswordSheet(),
+    );
   }
 
   @override
@@ -173,6 +184,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                   ),
 
+                  // ── Forgot password ───────────────────────────────────────────
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => _showForgotPasswordSheet(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        '忘记密码?',
+                        style: TextStyle(
+                          color: AppColors.hotPink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
                   // ── Error ─────────────────────────────────────────────────────
                   if (auth.error != null) ...[
                     const SizedBox(height: 14),
@@ -297,6 +329,210 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Forgot Password Bottom Sheet ─────────────────────────────────────────────
+
+class _ForgotPasswordSheet extends StatefulWidget {
+  const _ForgotPasswordSheet();
+
+  @override
+  State<_ForgotPasswordSheet> createState() => _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
+  // Steps: 0 = enter email, 1 = enter code + new password
+  int _step = 0;
+  bool _loading = false;
+  String? _error;
+  String? _email;
+
+  final _emailC = TextEditingController();
+  final _codeC = TextEditingController();
+  final _newPassC = TextEditingController();
+  bool _obscureNew = true;
+
+  @override
+  void dispose() {
+    _emailC.dispose();
+    _codeC.dispose();
+    _newPassC.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendCode() async {
+    final email = _emailC.text.trim();
+    if (!email.contains('@')) {
+      setState(() => _error = 'Enter a valid email');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      final dio = Dio();
+      await dio.post(
+        '${AppConstants.apiBaseUrl}/auth/forgot-password',
+        data: {'email': email},
+      );
+      setState(() { _step = 1; _email = email; });
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error'];
+      setState(() => _error = msg ?? 'Failed to send code');
+    } catch (_) {
+      setState(() => _error = 'Network error — check connection');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final code = _codeC.text.trim();
+    final newPass = _newPassC.text;
+    if (code.length != 6) {
+      setState(() => _error = 'Enter the 6-digit code');
+      return;
+    }
+    if (newPass.length < 6) {
+      setState(() => _error = 'Password must be at least 6 characters');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      final dio = Dio();
+      await dio.post(
+        '${AppConstants.apiBaseUrl}/auth/reset-password',
+        data: {'email': _email, 'code': code, 'newPassword': newPass},
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset successfully — please log in')),
+        );
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error'];
+      setState(() => _error = msg ?? 'Failed to reset password');
+    } catch (_) {
+      setState(() => _error = 'Network error — check connection');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 20, 24, bottom + 24),
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textHint.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _step == 0 ? '忘记密码' : '重置密码',
+            style: const TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _step == 0
+                ? '输入您的电子邮件，我们将发送验证码'
+                : '输入验证码和新密码',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+          const SizedBox(height: 20),
+
+          if (_step == 0) ...[
+            TextField(
+              controller: _emailC,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              style: AppTypography.body,
+              decoration: const InputDecoration(
+                hintText: 'Email address',
+                prefixIcon: Icon(Icons.mail_outline_rounded, size: 20),
+              ),
+            ),
+          ] else ...[
+            TextField(
+              controller: _codeC,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              maxLength: 6,
+              style: AppTypography.body,
+              decoration: const InputDecoration(
+                hintText: '6-digit code',
+                prefixIcon: Icon(Icons.pin_outlined, size: 20),
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _newPassC,
+              obscureText: _obscureNew,
+              style: AppTypography.body,
+              decoration: InputDecoration(
+                hintText: 'New password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureNew ? Icons.visibility_off : Icons.visibility,
+                    size: 20, color: AppColors.textHint,
+                  ),
+                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                ),
+              ),
+            ),
+          ],
+
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+          ],
+
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: _loading ? null : (_step == 0 ? _sendCode : _resetPassword),
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: AppColors.pinkPurpleGradient,
+                borderRadius: AppRadius.lgRadius,
+              ),
+              child: Center(
+                child: _loading
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(
+                        _step == 0 ? '发送验证码' : '重置密码',
+                        style: const TextStyle(
+                          color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -31,6 +31,8 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     password: { type: String, required: true, select: false },
+    resetCode: { type: String, select: false },
+    resetCodeExpiry: { type: Date, select: false },
     nickname: { type: String, required: true, trim: true },
     bio: { type: String, default: '' },
     tags: [{ type: String }],

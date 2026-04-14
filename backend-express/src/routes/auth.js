@@ -249,3 +249,54 @@ router.delete('/devices/:deviceId', auth, async (req, res, next) => {
 });
 
 module.exports = router;
+
+// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return err(res, 'email is required');
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    // Always return success to avoid user enumeration
+    if (!user) return ok(res, { success: true });
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    await User.findByIdAndUpdate(user._id, {
+      resetCode: code,
+      resetCodeExpiry: expiry,
+    });
+
+    // TODO: send real email — for now log to console
+    console.log(`[RESET CODE] ${email} -> ${code} (expires ${expiry.toISOString()})`);
+
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/reset-password ────────────────────────────────────────────
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) return err(res, 'email, code and newPassword are required');
+    if (newPassword.length < 6) return err(res, 'Password must be at least 6 characters');
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() })
+      .select('+resetCode +resetCodeExpiry');
+    if (!user) return err(res, 'Invalid or expired code');
+    if (!user.resetCode || user.resetCode !== code) return err(res, 'Invalid or expired code');
+    if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) return err(res, 'Code has expired — request a new one');
+
+    user.password = newPassword;
+    user.resetCode = undefined;
+    user.resetCodeExpiry = undefined;
+    await user.save();
+
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
