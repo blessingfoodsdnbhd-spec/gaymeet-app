@@ -1,10 +1,13 @@
 const router = require('express').Router();
 const User = require('../models/User');
 const Referral = require('../models/Referral');
+const TwoFactorAuth = require('../models/TwoFactorAuth');
+const speakeasy = require('speakeasy');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
+const { supported: supportedCurrencies } = require('../utils/currency');
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res, next) => {
@@ -72,7 +75,7 @@ router.post('/register', async (req, res, next) => {
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId, deviceName, twoFactorCode } = req.body;
     if (!email || !password) return err(res, 'email and password are required');
 
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
@@ -80,6 +83,59 @@ router.post('/login', async (req, res, next) => {
 
     const valid = await user.comparePassword(password);
     if (!valid) return err(res, 'Invalid credentials', 401);
+
+    // Check 2FA
+    const tfa = await TwoFactorAuth.findOne({ user: user._id });
+    if (tfa && tfa.isEnabled) {
+      if (!twoFactorCode) {
+        return res.status(202).json({ requiresTwoFactor: true });
+      }
+      // Try TOTP code first, then backup codes
+      const totpValid = speakeasy.totp.verify({
+        secret: tfa.secret,
+        encoding: 'base32',
+        token: twoFactorCode,
+        window: 1,
+      });
+
+      if (!totpValid) {
+        // Check backup codes
+        const backupIndex = tfa.backupCodes.findIndex(
+          (b) => !b.used && b.code === twoFactorCode
+        );
+        if (backupIndex === -1) {
+          return err(res, 'Invalid two-factor code', 401);
+        }
+        // Mark backup code as used
+        tfa.backupCodes[backupIndex].used = true;
+        await tfa.save();
+      }
+    }
+
+    // Track device
+    const resolvedDeviceId = deviceId || `device-${Date.now()}`;
+    const resolvedDeviceName = deviceName || req.headers['user-agent'] || 'Unknown Device';
+    const ip = req.ip || req.connection?.remoteAddress || null;
+
+    const existingIdx = user.devices.findIndex((d) => d.deviceId === resolvedDeviceId);
+    if (existingIdx >= 0) {
+      user.devices[existingIdx].lastUsed = new Date();
+      user.devices[existingIdx].deviceName = resolvedDeviceName;
+      user.devices[existingIdx].ip = ip;
+    } else {
+      user.devices.push({
+        deviceId: resolvedDeviceId,
+        deviceName: resolvedDeviceName,
+        lastUsed: new Date(),
+        ip,
+        refreshToken: null,
+      });
+      // Keep max 5 devices — remove oldest
+      if (user.devices.length > 5) {
+        user.devices.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+        user.devices = user.devices.slice(0, 5);
+      }
+    }
 
     // Update online status
     user.isOnline = true;
@@ -134,6 +190,44 @@ router.post('/logout', auth, async (req, res, next) => {
 // Alias here for convenience
 router.get('/me', auth, (req, res) => {
   ok(res, req.user.toPublicJSON());
+});
+
+// ── PATCH /api/auth/currency ──────────────────────────────────────────────────
+router.patch('/currency', auth, async (req, res, next) => {
+  try {
+    const { currency } = req.body;
+    if (!currency) return err(res, 'currency is required');
+    if (!supportedCurrencies.includes(currency)) {
+      return err(res, `Unsupported currency. Use one of: ${supportedCurrencies.join(', ')}`);
+    }
+
+    await User.findByIdAndUpdate(req.user._id, { currency });
+    ok(res, { success: true, currency });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/auth/devices ─────────────────────────────────────────────────────
+router.get('/devices', auth, async (req, res, next) => {
+  try {
+    ok(res, { devices: req.user.devices || [] });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/auth/devices/:deviceId ───────────────────────────────────────
+router.delete('/devices/:deviceId', auth, async (req, res, next) => {
+  try {
+    const { deviceId } = req.params;
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { devices: { deviceId } },
+    });
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
 });
 
 module.exports = router;

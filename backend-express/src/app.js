@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 const env = require('./config/env');
 
 const authRoutes = require('./routes/auth');
@@ -38,11 +40,20 @@ const questionsRoutes = require('./routes/questions');
 const safeDateRoutes = require('./routes/safe-date');
 const dateRoomsRoutes = require('./routes/date-rooms');
 const businessRoutes = require('./routes/business');
+const twoFactorRoutes = require('./routes/two-factor');
+const accountRoutes = require('./routes/account');
+const calendarRoutes = require('./routes/calendar');
 
 const app = express();
 
 // ── Security & parsing ────────────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// Global rate limiting
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false }));
+
+// Input sanitization
+app.use(mongoSanitize());
 
 const corsOrigin = env.CLIENT_URL === '*'
   ? '*'
@@ -112,6 +123,9 @@ app.use('/api/questions', questionsRoutes);
 app.use('/api/safe-date', safeDateRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

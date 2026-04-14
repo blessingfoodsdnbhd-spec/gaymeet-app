@@ -194,6 +194,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/health-reminder'),
           ),
+          ListTile(
+            leading: const Text('💰', style: TextStyle(fontSize: 22)),
+            title: const Text('货币 / Currency'),
+            subtitle: Text('当前货币设置',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/currency'),
+          ),
+          ListTile(
+            leading: const Text('📅', style: TextStyle(fontSize: 22)),
+            title: const Text('活动日历'),
+            subtitle: Text('Pride活动·节日·社区聚会',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/calendar'),
+          ),
 
           const Divider(),
 
@@ -319,6 +335,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => context.push('/safe-date'),
           ),
           ListTile(
+            leading: const Text('🔐', style: TextStyle(fontSize: 22)),
+            title: const Text('安全中心'),
+            subtitle: Text('双重验证·设备管理·数据导出',
+                style: TextStyle(color: AppTheme.textSecondary)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/security'),
+          ),
+          ListTile(
             leading: const Text('💑', style: TextStyle(fontSize: 22)),
             title: const Text('虚拟约会房间'),
             subtitle: Text('与心仪对象开启专属虚拟约会',
@@ -348,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => context.push('/business/dashboard'),
           ),
 
-          const Divider();
+          const Divider(),
 
           // ── Danger zone ────────────────────────────────────────────────────
           const _SectionHeader(title: 'ACCOUNT ACTIONS'),

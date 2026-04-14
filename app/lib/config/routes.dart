@@ -61,6 +61,11 @@ import '../features/safety/panic_alert_screen.dart';
 import '../features/date_room/date_room_screen.dart';
 import '../features/business/business_register_screen.dart';
 import '../features/business/business_dashboard_screen.dart';
+import '../features/security/security_screen.dart';
+import '../features/security/two_factor_screen.dart';
+import '../features/security/devices_screen.dart';
+import '../features/settings/currency_screen.dart';
+import '../features/calendar/calendar_screen.dart';
 import '../core/models/place.dart';
 import '../core/models/user.dart';
 import '../core/models/story.dart';
@@ -233,6 +238,17 @@ GoRouter createRouter({required bool isLoggedIn}) {
       // ── Business ──────────────────────────────────────────────────────────
       GoRoute(path: '/business/register', builder: (_, __) => const BusinessRegisterScreen()),
       GoRoute(path: '/business/dashboard', builder: (_, __) => const BusinessDashboardScreen()),
+
+      // ── Security ──────────────────────────────────────────────────────────
+      GoRoute(path: '/security', builder: (_, __) => const SecurityScreen()),
+      GoRoute(path: '/security/2fa', builder: (_, __) => const TwoFactorScreen()),
+      GoRoute(path: '/security/devices', builder: (_, __) => const DevicesScreen()),
+
+      // ── Settings sub-screens (additional) ─────────────────────────────────
+      GoRoute(path: '/settings/currency', builder: (_, __) => const CurrencyScreen()),
+
+      // ── Calendar ──────────────────────────────────────────────────────────
+      GoRoute(path: '/calendar', builder: (_, __) => const CalendarScreen()),
 
       // ── Events ───────────────────────────────────────────────────────────
       GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),

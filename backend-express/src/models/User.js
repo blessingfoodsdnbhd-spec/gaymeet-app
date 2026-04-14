@@ -130,6 +130,21 @@ const userSchema = new mongoose.Schema(
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     referralCount: { type: Number, default: 0 },
     deviceFingerprint: { type: String, default: null },
+
+    // Device/session management
+    devices: [{
+      deviceId: { type: String },
+      deviceName: { type: String, default: 'Unknown Device' },
+      lastUsed: { type: Date, default: Date.now },
+      ip: { type: String, default: null },
+      refreshToken: { type: String, default: null },
+    }],
+    // Multi-currency
+    currency: { type: String, enum: ['MYR', 'SGD', 'THB', 'USD'], default: 'MYR' },
+    // Account status
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deleteScheduledAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
