@@ -48,7 +48,28 @@ import '../features/referral/wallet_screen.dart';
 import '../features/places/places_screen.dart';
 import '../features/places/place_detail_screen.dart';
 import '../features/places/create_place_screen.dart';
+import '../features/profile/photo_requests_inbox_screen.dart';
+import '../features/profile/followers_screen.dart';
+import '../features/stories/story_viewer_screen.dart';
+import '../features/stories/create_story_screen.dart';
+import '../features/groups/groups_screen.dart';
+import '../features/groups/group_chat_screen.dart';
+import '../features/groups/create_group_screen.dart';
+import '../features/questions/question_inbox_screen.dart';
+import '../features/safety/safe_date_screen.dart';
+import '../features/safety/panic_alert_screen.dart';
+import '../features/date_room/date_room_screen.dart';
+import '../features/business/business_register_screen.dart';
+import '../features/business/business_dashboard_screen.dart';
+import '../features/security/security_screen.dart';
+import '../features/security/two_factor_screen.dart';
+import '../features/security/devices_screen.dart';
+import '../features/settings/currency_screen.dart';
+import '../features/calendar/calendar_screen.dart';
 import '../core/models/place.dart';
+import '../core/models/user.dart';
+import '../core/models/story.dart';
+import '../core/models/group_chat.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -86,6 +107,27 @@ GoRouter createRouter({required bool isLoggedIn}) {
         },
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(
+        path: '/user/:id',
+        builder: (_, state) {
+          final user = state.extra as UserModel?;
+          return ProfileScreen(viewedUser: user);
+        },
+      ),
+      GoRoute(
+        path: '/followers/:id',
+        builder: (_, state) => FollowersScreen(
+          userId: state.pathParameters['id']!,
+          type: 'followers',
+        ),
+      ),
+      GoRoute(
+        path: '/following/:id',
+        builder: (_, state) => FollowersScreen(
+          userId: state.pathParameters['id']!,
+          type: 'following',
+        ),
+      ),
       GoRoute(path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
@@ -136,6 +178,9 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(path: '/settings/theme', builder: (_, __) => const ThemeScreen()),
       GoRoute(path: '/health-reminder', builder: (_, __) => const HealthReminderScreen()),
 
+      // ── Photo requests ────────────────────────────────────────────────────
+      GoRoute(path: '/photo-requests/inbox', builder: (_, __) => const PhotoRequestsInboxScreen()),
+
       // ── Referral & Wallet ─────────────────────────────────────────────────
       GoRoute(path: '/referral', builder: (_, __) => const ReferralScreen()),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
@@ -152,6 +197,58 @@ GoRouter createRouter({required bool isLoggedIn}) {
           return const PlacesScreen();
         },
       ),
+
+      // ── Stories ──────────────────────────────────────────────────────────
+      GoRoute(path: '/stories/create', builder: (_, __) => const CreateStoryScreen()),
+      GoRoute(
+        path: '/stories/view/:userId',
+        builder: (_, state) {
+          final groups = state.extra as List<StoryGroup>? ?? [];
+          return StoryViewerScreen(
+            userId: state.pathParameters['userId']!,
+            groups: groups,
+          );
+        },
+      ),
+
+      // ── Groups ────────────────────────────────────────────────────────────
+      GoRoute(path: '/groups', builder: (_, __) => const GroupsScreen()),
+      GoRoute(path: '/groups/create', builder: (_, __) => const CreateGroupScreen()),
+      GoRoute(
+        path: '/groups/:id',
+        builder: (_, state) {
+          final group = state.extra as GroupChat?;
+          return GroupChatScreen(
+            groupId: state.pathParameters['id']!,
+            groupName: group?.name ?? '群组',
+          );
+        },
+      ),
+
+      // ── Questions ────────────────────────────────────────────────────────
+      GoRoute(path: '/questions/inbox', builder: (_, __) => const QuestionInboxScreen()),
+
+      // ── Safe Date ─────────────────────────────────────────────────────────
+      GoRoute(path: '/safe-date', builder: (_, __) => const SafeDateScreen()),
+      GoRoute(path: '/safe-date/alerts', builder: (_, __) => const PanicAlertScreen()),
+
+      // ── Virtual Date Room ─────────────────────────────────────────────────
+      GoRoute(path: '/date-room', builder: (_, __) => const DateRoomScreen()),
+
+      // ── Business ──────────────────────────────────────────────────────────
+      GoRoute(path: '/business/register', builder: (_, __) => const BusinessRegisterScreen()),
+      GoRoute(path: '/business/dashboard', builder: (_, __) => const BusinessDashboardScreen()),
+
+      // ── Security ──────────────────────────────────────────────────────────
+      GoRoute(path: '/security', builder: (_, __) => const SecurityScreen()),
+      GoRoute(path: '/security/2fa', builder: (_, __) => const TwoFactorScreen()),
+      GoRoute(path: '/security/devices', builder: (_, __) => const DevicesScreen()),
+
+      // ── Settings sub-screens (additional) ─────────────────────────────────
+      GoRoute(path: '/settings/currency', builder: (_, __) => const CurrencyScreen()),
+
+      // ── Calendar ──────────────────────────────────────────────────────────
+      GoRoute(path: '/calendar', builder: (_, __) => const CalendarScreen()),
 
       // ── Events ───────────────────────────────────────────────────────────
       GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),

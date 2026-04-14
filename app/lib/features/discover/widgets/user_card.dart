@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../config/theme.dart';
 import '../../../core/models/user.dart';
+import '../../../shared/widgets/level_badge.dart';
 import '../../../shared/widgets/looking_for_badge.dart';
 
 class UserCard extends StatelessWidget {
@@ -151,6 +152,8 @@ class UserCard extends StatelessWidget {
                         const Icon(Icons.verified_rounded,
                             size: 18, color: Color(0xFF42A5F5)),
                       ],
+                      const SizedBox(width: 8),
+                      LevelBadge(level: user.level, size: 36),
                     ],
                   ),
 

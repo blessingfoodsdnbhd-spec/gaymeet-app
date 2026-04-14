@@ -6,10 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/dummy/dummy_data.dart';
 import '../../core/models/user.dart';
-import '../../core/providers/user_provider.dart';
 import '../../core/providers/filter_provider.dart';
-import '../../shared/widgets/filter_sheet.dart';
-import '../../shared/widgets/looking_for_badge.dart';
+import '../../core/providers/user_provider.dart';
+import '../../shared/widgets/level_badge.dart';
 
 class NearbyGridScreen extends ConsumerStatefulWidget {
   const NearbyGridScreen({super.key});
@@ -19,6 +18,9 @@ class NearbyGridScreen extends ConsumerStatefulWidget {
 }
 
 class _NearbyGridScreenState extends ConsumerState<NearbyGridScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,15 @@ class _NearbyGridScreenState extends ConsumerState<NearbyGridScreen> {
         ref.read(nearbyUsersProvider.notifier).fetchNearby(filter: filter);
       });
     }
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,32 +49,137 @@ class _NearbyGridScreenState extends ConsumerState<NearbyGridScreen> {
       }
     });
 
-    final users = kUseDummyData
+    final filter = ref.watch(filterProvider);
+    final allUsers = kUseDummyData
         ? DummyData.users
         : ref.watch(nearbyUsersProvider).valueOrNull ?? [];
 
-    if (users.isEmpty) {
-      return Center(
-        child: Text('No one nearby',
-            style: TextStyle(color: AppTheme.textSecondary)),
-      );
+    // Apply filter
+    var users = kUseDummyData
+        ? allUsers.where((u) => filter.matchesUser(
+              height: u.height,
+              weight: u.weight,
+              age: u.age,
+            )).toList()
+        : allUsers;
+
+    // Apply search
+    if (_searchQuery.isNotEmpty) {
+      users = users
+          .where((u) => u.nickname.toLowerCase().contains(_searchQuery))
+          .toList();
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(10),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.72,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: users.length,
-      itemBuilder: (_, i) => _GridTile(user: users[i]),
+    return Column(
+      children: [
+        // Search bar
+        _SearchBar(controller: _searchController),
+
+        // Grid
+        Expanded(
+          child: users.isEmpty
+              ? _EmptyState(filter: filter)
+              : RefreshIndicator(
+                  color: AppTheme.primary,
+                  onRefresh: () async {
+                    if (!kUseDummyData) {
+                      ref.read(nearbyUsersProvider.notifier).fetchNearby(
+                            filter: ref.read(filterProvider),
+                          );
+                    }
+                  },
+                  child: GridView.builder(
+                    padding: EdgeInsets.zero,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 1.5,
+                      mainAxisSpacing: 1.5,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: users.length,
+                    itemBuilder: (_, i) => _GridTile(user: users[i]),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }
 
-// ── 3-column tile ─────────────────────────────────────────────────────────────
+// ── Search bar ────────────────────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  const _SearchBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.bg,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: '搜索附近的人...',
+          hintStyle: TextStyle(color: AppTheme.textHint, fontSize: 14),
+          prefixIcon:
+              Icon(Icons.search_rounded, color: AppTheme.textHint, size: 20),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (_, value, __) => value.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: controller.clear,
+                    child: Icon(Icons.close_rounded,
+                        color: AppTheme.textHint, size: 18),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          filled: true,
+          fillColor: AppTheme.card,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyState extends ConsumerWidget {
+  final DiscoveryFilter filter;
+  const _EmptyState({required this.filter});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.location_off_rounded, size: 48, color: AppTheme.textHint),
+          const SizedBox(height: 12),
+          Text('附近没有人',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15)),
+          if (filter.filtersEnabled && filter.activeCount > 0) ...[
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => ref.read(filterProvider.notifier).reset(),
+              child: const Text('重置过滤'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Grid tile ─────────────────────────────────────────────────────────────────
 
 class _GridTile extends StatelessWidget {
   final UserModel user;
@@ -73,111 +189,218 @@ class _GridTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push('/user/${user.id}', extra: user),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: AppTheme.card,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (user.avatarUrl != null)
-              CachedNetworkImage(
-                imageUrl: user.avatarUrl!,
-                fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                errorWidget: (_, __, ___) =>
-                    const Center(child: Icon(Icons.person_rounded, size: 32)),
-              )
-            else
-              const Center(child: Icon(Icons.person_rounded, size: 32)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Photo / placeholder
+          _Photo(user: user),
 
-            const DecoratedBox(
-              decoration: BoxDecoration(gradient: AppTheme.cardGradient),
+          // Bottom gradient scrim
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                stops: [0.0, 0.55],
+                colors: [Colors.black87, Colors.transparent],
+              ),
             ),
+          ),
 
-            // Online dot
-            if (user.isOnline)
-              Positioned(
-                top: 7,
-                right: 7,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.online,
-                    border: Border.all(color: AppTheme.bg, width: 1.5),
-                  ),
-                ),
-              ),
-
-            // Country flag
-            if (user.countryCode != null)
-              Positioned(
-                top: 6,
-                left: 6,
-                child: Text(
-                  _flagEmoji(user.countryCode!),
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ),
-
+          // Online dot — top-right
+          if (user.isOnline)
             Positioned(
-              left: 6,
+              top: 6,
               right: 6,
-              bottom: 6,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          user.nickname,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (user.isVerified)
-                        const Icon(Icons.verified_rounded,
-                            size: 12, color: Color(0xFF42A5F5)),
-                    ],
-                  ),
-                  if (user.distanceLabel != null)
-                    Text(
-                      user.distanceLabel!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white.withOpacity(0.75),
-                      ),
-                    ),
-                  if (user.lookingFor != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: LookingForBadge(
-                          status: user.lookingFor!, small: true),
-                    ),
-                ],
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.online,
+                  border: Border.all(color: Colors.black54, width: 1.5),
+                ),
               ),
             ),
-          ],
+
+          // Level badge — top-left
+          Positioned(
+            top: 5,
+            left: 5,
+            child: user.isBoosted
+                ? Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Icon(Icons.bolt_rounded,
+                        size: 10, color: Colors.black),
+                  )
+                : LevelBadge(level: user.level, compact: true),
+          ),
+
+          // Bottom row: distance (left) + role (right)
+          Positioned(
+            left: 5,
+            right: 5,
+            bottom: 5,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Distance label
+                if (user.distanceLabel != null)
+                  _DistanceBadge(label: user.distanceLabel!),
+
+                const Spacer(),
+
+                // Role badge
+                if (user.role != null) _RoleBadge(role: user.role!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Photo widget ──────────────────────────────────────────────────────────────
+
+class _Photo extends StatelessWidget {
+  final UserModel user;
+  const _Photo({required this.user});
+
+  // Generate a deterministic placeholder color from the user id
+  Color _placeholderColor() {
+    final colors = [
+      const Color(0xFF1976D2),
+      const Color(0xFF7B1FA2),
+      const Color(0xFF388E3C),
+      const Color(0xFFE64A19),
+      const Color(0xFF0097A7),
+      const Color(0xFFC2185B),
+    ];
+    final hash = user.id.codeUnits.fold(0, (a, b) => a + b);
+    return colors[hash % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (user.avatarUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: user.avatarUrl!,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(color: AppTheme.card),
+        errorWidget: (_, __, ___) => _InitialsPlaceholder(
+          initials: _initials(),
+          color: _placeholderColor(),
+        ),
+      );
+    }
+    return _InitialsPlaceholder(
+      initials: _initials(),
+      color: _placeholderColor(),
+    );
+  }
+
+  String _initials() {
+    final parts = user.nickname.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return user.nickname.isNotEmpty
+        ? user.nickname[0].toUpperCase()
+        : '?';
+  }
+}
+
+class _InitialsPlaceholder extends StatelessWidget {
+  final String initials;
+  final Color color;
+  const _InitialsPlaceholder({required this.initials, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: color,
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
+}
 
-  String _flagEmoji(String code) {
-    final base = 0x1F1E6 - 0x41;
-    return String.fromCharCode(base + code.codeUnitAt(0)) +
-        String.fromCharCode(base + code.codeUnitAt(1));
+// ── Distance badge ────────────────────────────────────────────────────────────
+
+class _DistanceBadge extends StatelessWidget {
+  final String label;
+  const _DistanceBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Role badge ────────────────────────────────────────────────────────────────
+
+class _RoleBadge extends StatelessWidget {
+  final String role;
+  const _RoleBadge({required this.role});
+
+  static const _labels = {
+    'top': 'Top',
+    'bottom': 'Bot',
+    'versatile': 'Ver',
+  };
+
+  static const _colors = {
+    'top': Color(0xFF1565C0),       // blue
+    'bottom': Color(0xFFAD1457),    // pink
+    'versatile': Color(0xFF6A1B9A), // purple
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _labels[role] ?? role;
+    final color = _colors[role] ?? AppTheme.card;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.88),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }

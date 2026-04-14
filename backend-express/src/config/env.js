@@ -57,4 +57,8 @@ module.exports = {
   UPLOAD_DIR:           process.env.UPLOAD_DIR || './uploads',
   MAX_FILE_SIZE_MB:     parseInt(process.env.MAX_FILE_SIZE_MB || '5', 10),
   CLIENT_URL:           process.env.CLIENT_URL || '*',
+  // ── Maintenance mode ─────────────────────────────────────────────────────────
+  MAINTENANCE_MODE:     process.env.MAINTENANCE_MODE === 'true',
+  MAINTENANCE_MESSAGE:  process.env.MAINTENANCE_MESSAGE || '',
+  MIN_APP_VERSION:      process.env.MIN_APP_VERSION || '1.0.0',
 };

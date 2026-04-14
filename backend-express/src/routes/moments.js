@@ -8,11 +8,20 @@ const { hasProfanity } = require('../utils/profanityFilter');
 // ── GET /api/moments ──────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res, next) => {
   try {
-    const { userId, page = 1, limit = 20 } = req.query;
+    const { userId, feed, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const filter = { isActive: true, visibility: 'public' };
-    if (userId) filter.user = userId;
+    if (userId) {
+      filter.user = userId;
+    } else if (feed === 'following') {
+      const Follow = require('../models/Follow');
+      const followDocs = await Follow.find({ follower: req.user._id })
+        .select('following')
+        .lean();
+      const followingIds = followDocs.map((f) => f.following);
+      filter.user = { $in: followingIds };
+    }
 
     const moments = await Moment.find(filter)
       .sort({ createdAt: -1 })

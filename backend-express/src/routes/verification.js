@@ -77,4 +77,79 @@ router.post('/submit', auth, upload.single('selfie'), async (req, res, next) => 
   }
 });
 
+// ── GET /api/verification/phrases ─────────────────────────────────────────────
+// Returns a random spoken phrase for video verification
+const VIDEO_PHRASES = [
+  '我叫我自己最帅',
+  '今天天气真好',
+  '加油加油加油',
+  '我在认证我的真实身份',
+  '这个应用叫GayMeet',
+];
+
+router.get('/phrase', auth, (req, res) => {
+  const phrase = VIDEO_PHRASES[Math.floor(Math.random() * VIDEO_PHRASES.length)];
+  ok(res, { phrase });
+});
+
+// ── POST /api/verification/submit-video ───────────────────────────────────────
+router.post(
+  '/submit-video',
+  auth,
+  upload.single('video'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return err(res, 'No video uploaded', 400);
+
+      // Check premium status
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id).lean();
+      if (!user.isPremium) {
+        return err(res, '视频认证需要会员权限', 403);
+      }
+
+      const { pose } = req.body;
+      if (!pose) return err(res, 'pose is required', 400);
+
+      const videoUrl = `/uploads/${req.file.filename}`;
+
+      const record = await Verification.findOneAndUpdate(
+        { user: req.user._id },
+        {
+          user: req.user._id,
+          videoUrl,
+          selfieUrl: videoUrl, // reuse selfieUrl field for backward compat
+          pose,
+          verificationType: 'video',
+          status: 'pending',
+          reviewedAt: null,
+          rejectedReason: null,
+        },
+        { upsert: true, new: true }
+      );
+
+      // Auto-approve after 5 seconds for video
+      setTimeout(async () => {
+        try {
+          await Verification.findByIdAndUpdate(record._id, {
+            status: 'approved',
+            reviewedAt: new Date(),
+          });
+          await User.findByIdAndUpdate(req.user._id, {
+            isVerified: true,
+            isVideoVerified: true,
+            verifiedAt: new Date(),
+          });
+        } catch (autoErr) {
+          console.error('Video auto-approve error:', autoErr);
+        }
+      }, 5000);
+
+      ok(res, { status: 'pending', verificationType: 'video' });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
 module.exports = router;

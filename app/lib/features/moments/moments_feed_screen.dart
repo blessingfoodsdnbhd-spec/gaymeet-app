@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/models/moment.dart';
 import '../../core/providers/moments_provider.dart';
+import '../stories/stories_bar.dart';
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 class MomentsFeedScreen extends ConsumerStatefulWidget {
   const MomentsFeedScreen({super.key});
@@ -14,32 +17,44 @@ class MomentsFeedScreen extends ConsumerStatefulWidget {
   ConsumerState<MomentsFeedScreen> createState() => _MomentsFeedScreenState();
 }
 
-class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen> {
-  final _scrollC = ScrollController();
+class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _discoverScrollC = ScrollController();
+  final _followingScrollC = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _scrollC.addListener(_onScroll);
+    _tabController = TabController(length: 2, vsync: this);
+    _discoverScrollC.addListener(_onDiscoverScroll);
+    _followingScrollC.addListener(_onFollowingScroll);
   }
 
   @override
   void dispose() {
-    _scrollC.dispose();
+    _tabController.dispose();
+    _discoverScrollC.dispose();
+    _followingScrollC.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollC.position.pixels >=
-        _scrollC.position.maxScrollExtent - 200) {
+  void _onDiscoverScroll() {
+    if (_discoverScrollC.position.pixels >=
+        _discoverScrollC.position.maxScrollExtent - 200) {
       ref.read(momentsProvider.notifier).loadMore();
+    }
+  }
+
+  void _onFollowingScroll() {
+    if (_followingScrollC.position.pixels >=
+        _followingScrollC.position.maxScrollExtent - 200) {
+      ref.read(followingMomentsProvider.notifier).loadMore();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(momentsProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('动态'),
@@ -50,6 +65,16 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen> {
             onPressed: () => context.push('/events'),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppTheme.primary,
+          labelColor: AppTheme.primary,
+          unselectedLabelColor: AppTheme.textSecondary,
+          tabs: const [
+            Tab(text: '发现'),
+            Tab(text: '关注'),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -61,49 +86,116 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen> {
         backgroundColor: AppTheme.primary,
         child: const Icon(Icons.add_rounded, color: Colors.white),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.moments.isEmpty
-              ? _buildEmpty()
-              : RefreshIndicator(
-                  color: AppTheme.primary,
-                  onRefresh: () =>
-                      ref.read(momentsProvider.notifier).fetchFeed(),
-                  child: ListView.builder(
-                    controller: _scrollC,
-                    itemCount:
-                        state.moments.length + (state.isLoadingMore ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (i == state.moments.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                              child: CircularProgressIndicator()),
-                        );
-                      }
-                      return _MomentCard(moment: state.moments[i]);
-                    },
-                  ),
-                ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _FeedTab(
+            providerNotifier: momentsProvider,
+            scrollController: _discoverScrollC,
+            emptyMessage: '还没有动态',
+            emptyAction: true,
+            showStoriesBar: true,
+          ),
+          _FeedTab(
+            providerNotifier: followingMomentsProvider,
+            scrollController: _followingScrollC,
+            emptyMessage: '去关注一些人，这里会显示他们的动态',
+            emptyAction: false,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Feed tab ──────────────────────────────────────────────────────────────────
+
+class _FeedTab extends ConsumerWidget {
+  final StateNotifierProvider<MomentsNotifier, MomentsState> providerNotifier;
+  final ScrollController scrollController;
+  final String emptyMessage;
+  final bool emptyAction;
+  final bool showStoriesBar;
+
+  const _FeedTab({
+    required this.providerNotifier,
+    required this.scrollController,
+    required this.emptyMessage,
+    required this.emptyAction,
+    this.showStoriesBar = false,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(providerNotifier);
+
+    if (state.isLoading && state.moments.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.moments.isEmpty) {
+      return Column(
+        children: [
+          if (showStoriesBar) const StoriesBar(),
+          if (showStoriesBar)
+            const Divider(height: 1, color: Color(0xFF1E1E1E)),
+          Expanded(child: _buildEmpty(context)),
+        ],
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppTheme.primary,
+      onRefresh: () => ref.read(providerNotifier.notifier).fetchFeed(),
+      child: ListView.builder(
+        controller: scrollController,
+        // +1 for stories bar header, +1 for loading spinner
+        itemCount: state.moments.length +
+            (showStoriesBar ? 1 : 0) +
+            (state.isLoadingMore ? 1 : 0),
+        itemBuilder: (_, i) {
+          if (showStoriesBar) {
+            if (i == 0) {
+              return Column(
+                children: [
+                  const StoriesBar(),
+                  const Divider(height: 1, color: Color(0xFF1E1E1E)),
+                ],
+              );
+            }
+            i -= 1;
+          }
+          if (i == state.moments.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return _MomentCard(moment: state.moments[i]);
+        },
+      ),
     );
   }
 
-  Widget _buildEmpty() => Center(
+  Widget _buildEmpty(BuildContext context) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.photo_library_outlined,
                 size: 52, color: AppTheme.textHint),
             const SizedBox(height: 12),
-            Text('还没有动态',
-                style:
-                    TextStyle(color: AppTheme.textSecondary, fontSize: 15)),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/moments/create'),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('发布第一条动态'),
-            ),
+            Text(emptyMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: AppTheme.textSecondary, fontSize: 15)),
+            if (emptyAction) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => context.push('/moments/create'),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('发布第一条动态'),
+              ),
+            ],
           ],
         ),
       );
@@ -327,7 +419,8 @@ class _Avatar extends StatelessWidget {
 
   static final _placeholder = Container(
     color: AppTheme.card,
-    child: const Icon(Icons.person_rounded, color: Color(0xFF3A3A3A), size: 22),
+    child: const Icon(Icons.person_rounded,
+        color: Color(0xFF3A3A3A), size: 22),
   );
 }
 
@@ -349,13 +442,16 @@ class _PhotoGrid extends StatelessWidget {
     if (images.length == 2) {
       return Row(
         children: [
-          Expanded(child: AspectRatio(aspectRatio: 1, child: _Img(url: images[0]))),
+          Expanded(
+              child: AspectRatio(
+                  aspectRatio: 1, child: _Img(url: images[0]))),
           const SizedBox(width: 3),
-          Expanded(child: AspectRatio(aspectRatio: 1, child: _Img(url: images[1]))),
+          Expanded(
+              child: AspectRatio(
+                  aspectRatio: 1, child: _Img(url: images[1]))),
         ],
       );
     }
-    // 3+: 3-column grid
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -403,8 +499,9 @@ class _Img extends StatelessWidget {
         imageUrl: url,
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(color: AppTheme.card),
-        errorWidget: (_, __, ___) =>
-            Container(color: AppTheme.card, child: const Icon(Icons.broken_image_rounded)),
+        errorWidget: (_, __, ___) => Container(
+            color: AppTheme.card,
+            child: const Icon(Icons.broken_image_rounded)),
       ),
     );
   }

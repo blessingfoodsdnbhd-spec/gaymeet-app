@@ -22,6 +22,24 @@ class UserModel {
   // ── Verification & social ─────────────────────────────────────────────────
   final bool isVerified;
   final String? lookingFor;
+  // Sexual role: 'top', 'bottom', 'versatile', or null
+  final String? role;
+  // Energy / level system
+  final int level;
+  final int currentExp;
+  final int totalExpReceived;
+  // Private photos (URLs, only visible to approved requesters)
+  final List<String> privatePhotos;
+  // Follow system
+  final int followersCount;
+  final int followingCount;
+  // Social stats
+  final int totalLikesReceived;
+  final int profileViews;
+  // VIP tier: 0 = free, 1 = silver, 2 = gold, 3 = rainbow
+  final int vipLevel;
+  // Premium expiry (for VIP banner display)
+  final DateTime? premiumExpiresAt;
 
   UserModel({
     required this.id,
@@ -45,6 +63,17 @@ class UserModel {
     this.countryCode,
     this.isVerified = false,
     this.lookingFor,
+    this.role,
+    this.level = 1,
+    this.currentExp = 0,
+    this.totalExpReceived = 0,
+    this.privatePhotos = const [],
+    this.followersCount = 0,
+    this.followingCount = 0,
+    this.totalLikesReceived = 0,
+    this.profileViews = 0,
+    this.vipLevel = 0,
+    this.premiumExpiresAt,
   });
 
   /// Computed age from birthday (null if birthday unknown)
@@ -103,6 +132,21 @@ class UserModel {
       countryCode: json['countryCode'] as String?,
       isVerified: json['isVerified'] ?? false,
       lookingFor: json['lookingFor'] as String?,
+      role: json['role'] as String?,
+      level: (json['level'] as num?)?.toInt() ?? 1,
+      currentExp: (json['currentExp'] as num?)?.toInt() ?? 0,
+      totalExpReceived: (json['totalExpReceived'] as num?)?.toInt() ?? 0,
+      privatePhotos: json['privatePhotos'] != null
+          ? List<String>.from(json['privatePhotos'] as List)
+          : const [],
+      followersCount: (json['followersCount'] as num?)?.toInt() ?? 0,
+      followingCount: (json['followingCount'] as num?)?.toInt() ?? 0,
+      totalLikesReceived: (json['totalLikesReceived'] as num?)?.toInt() ?? 0,
+      profileViews: (json['profileViews'] as num?)?.toInt() ?? 0,
+      vipLevel: (json['vipLevel'] as num?)?.toInt() ?? 0,
+      premiumExpiresAt: json['premiumExpiresAt'] != null
+          ? DateTime.tryParse(json['premiumExpiresAt'])
+          : null,
     );
   }
 
@@ -114,6 +158,7 @@ class UserModel {
         'height': height,
         'weight': weight,
         'countryCode': countryCode,
+        'role': role,
       };
 
   UserModel copyWith({
@@ -127,6 +172,17 @@ class UserModel {
     String? countryCode,
     bool? isVerified,
     String? lookingFor,
+    String? role,
+    int? level,
+    int? currentExp,
+    int? totalExpReceived,
+    List<String>? privatePhotos,
+    int? followersCount,
+    int? followingCount,
+    int? totalLikesReceived,
+    int? profileViews,
+    int? vipLevel,
+    DateTime? premiumExpiresAt,
   }) {
     final newPhotos = photos ?? this.photos;
     final newAvatarUrl = photos != null
@@ -155,6 +211,17 @@ class UserModel {
       countryCode: countryCode ?? this.countryCode,
       isVerified: isVerified ?? this.isVerified,
       lookingFor: lookingFor ?? this.lookingFor,
+      role: role ?? this.role,
+      level: level ?? this.level,
+      currentExp: currentExp ?? this.currentExp,
+      totalExpReceived: totalExpReceived ?? this.totalExpReceived,
+      privatePhotos: privatePhotos ?? this.privatePhotos,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      totalLikesReceived: totalLikesReceived ?? this.totalLikesReceived,
+      profileViews: profileViews ?? this.profileViews,
+      vipLevel: vipLevel ?? this.vipLevel,
+      premiumExpiresAt: premiumExpiresAt ?? this.premiumExpiresAt,
     );
   }
 }

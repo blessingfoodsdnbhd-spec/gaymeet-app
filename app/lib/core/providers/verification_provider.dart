@@ -8,12 +8,14 @@ enum VerificationStatus { none, pending, approved, rejected }
 class VerificationState {
   final VerificationStatus status;
   final String? currentPose;
+  final String? currentPhrase;
   final bool isLoading;
   final String? error;
 
   const VerificationState({
     this.status = VerificationStatus.none,
     this.currentPose,
+    this.currentPhrase,
     this.isLoading = false,
     this.error,
   });
@@ -21,12 +23,14 @@ class VerificationState {
   VerificationState copyWith({
     VerificationStatus? status,
     String? currentPose,
+    String? currentPhrase,
     bool? isLoading,
     String? error,
   }) =>
       VerificationState(
         status: status ?? this.status,
         currentPose: currentPose ?? this.currentPose,
+        currentPhrase: currentPhrase ?? this.currentPhrase,
         isLoading: isLoading ?? this.isLoading,
         error: error ?? this.error,
       );
@@ -56,11 +60,33 @@ class VerificationNotifier extends StateNotifier<VerificationState> {
     return pose;
   }
 
+  Future<String> fetchPhrase() async {
+    final phrase = await _service.getPhrase();
+    state = state.copyWith(currentPhrase: phrase);
+    return phrase;
+  }
+
   Future<bool> submit(File selfie) async {
     if (state.currentPose == null) return false;
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _service.submit(selfie: selfie, pose: state.currentPose!);
+      state = state.copyWith(
+        isLoading: false,
+        status: VerificationStatus.pending,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> submitVideo(File video) async {
+    if (state.currentPose == null) return false;
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _service.submitVideo(video: video, pose: state.currentPose!);
       state = state.copyWith(
         isLoading: false,
         status: VerificationStatus.pending,

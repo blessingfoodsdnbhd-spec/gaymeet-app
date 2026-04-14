@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
+import 'core/api/api_client.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/likes_provider.dart';
 import 'core/providers/locale_provider.dart';
@@ -10,6 +11,7 @@ import 'core/providers/promotion_provider.dart';
 import 'core/providers/subscription_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
+import 'features/maintenance/maintenance_screen.dart';
 import 'shared/widgets/promo_popup.dart';
 
 class MeetupNearbyApp extends ConsumerStatefulWidget {
@@ -20,10 +22,17 @@ class MeetupNearbyApp extends ConsumerStatefulWidget {
 }
 
 class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
+  bool _maintenance = false;
+  String _maintenanceMsg = '';
+  bool _statusChecked = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
+      // Check maintenance status before doing anything else
+      await _checkStatus();
+
       await ref.read(authStateProvider.notifier).checkAuth();
       final user = ref.read(authStateProvider).user;
       if (user != null) {
@@ -46,6 +55,25 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
         _scheduleNoMatchNotification();
       }
     });
+  }
+
+  Future<void> _checkStatus() async {
+    try {
+      final res = await ref.read(apiClientProvider).dio.get('/status');
+      final data = res.data as Map<String, dynamic>;
+      final maintenance = data['maintenance'] as bool? ?? false;
+      final message = data['message'] as String? ?? '';
+      if (mounted) {
+        setState(() {
+          _maintenance = maintenance;
+          _maintenanceMsg = message;
+          _statusChecked = true;
+        });
+      }
+    } catch (_) {
+      // If status check fails, allow the app to proceed normally
+      if (mounted) setState(() => _statusChecked = true);
+    }
   }
 
   /// Asks the backend to schedule a push notification for the user if they
@@ -98,6 +126,16 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        // Maintenance overlay — shown before routing if status says so
+        if (_maintenance) {
+          return MaintenanceScreen(
+            message: _maintenanceMsg,
+            onRetry: () => _checkStatus(),
+          );
+        }
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }
