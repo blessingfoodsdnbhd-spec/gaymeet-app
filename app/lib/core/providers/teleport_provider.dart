@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'privacy_provider.dart'; // re-uses sharedPreferencesProvider
+import '../api/api_client.dart';
+import 'auth_provider.dart';    // for apiClientProvider
 
 // ── Prefs keys ────────────────────────────────────────────────────────────────
 
@@ -43,8 +45,9 @@ class TeleportState {
 
 class TeleportNotifier extends StateNotifier<TeleportState> {
   final SharedPreferences _prefs;
+  final ApiClient _api;
 
-  TeleportNotifier(this._prefs) : super(const TeleportState()) {
+  TeleportNotifier(this._prefs, this._api) : super(const TeleportState()) {
     _seed();
   }
 
@@ -60,7 +63,8 @@ class TeleportNotifier extends StateNotifier<TeleportState> {
   }
 
   /// Activate teleport to the given coordinates + city label.
-  void activate(double lat, double lng, String cityName) {
+  /// Updates local state immediately, then persists to server.
+  Future<void> activate(double lat, double lng, String cityName) async {
     state = TeleportState(
       isActive: true,
       virtualLat: lat,
@@ -71,19 +75,38 @@ class TeleportNotifier extends StateNotifier<TeleportState> {
     _prefs.setDouble(_kTeleportLat, lat);
     _prefs.setDouble(_kTeleportLng, lng);
     _prefs.setString(_kTeleportCity, cityName);
+
+    // Persist virtual location to server so nearby/discover queries use it
+    try {
+      await _api.dio.post('/users/me/teleport', data: {
+        'latitude': lat,
+        'longitude': lng,
+        'label': cityName,
+      });
+    } catch (_) {
+      // Best-effort — local state is already updated
+    }
   }
 
   /// Deactivate and revert to real GPS.
-  void deactivate() {
+  Future<void> deactivate() async {
     state = const TeleportState();
     _prefs.setBool(_kTeleportActive, false);
     _prefs.remove(_kTeleportLat);
     _prefs.remove(_kTeleportLng);
     _prefs.remove(_kTeleportCity);
+
+    // Clear virtual location on server
+    try {
+      await _api.dio.delete('/users/me/teleport');
+    } catch (_) {}
   }
 }
 
 final teleportProvider =
     StateNotifierProvider<TeleportNotifier, TeleportState>((ref) {
-  return TeleportNotifier(ref.watch(sharedPreferencesProvider));
+  return TeleportNotifier(
+    ref.watch(sharedPreferencesProvider),
+    ref.watch(apiClientProvider),
+  );
 });
