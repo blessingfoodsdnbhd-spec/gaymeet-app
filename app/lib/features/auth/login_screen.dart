@@ -240,33 +240,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                   const SizedBox(height: 20),
 
-                  // ── Divider ───────────────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: AppColors.pink500.withValues(alpha: 0.2))),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('or',
-                            style: TextStyle(
-                                color: AppColors.textHint, fontSize: 13)),
-                      ),
-                      Expanded(child: Divider(color: AppColors.pink500.withValues(alpha: 0.2))),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Social buttons ────────────────────────────────────────────
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
-                    label: const Text('Continue with Google'),
-                  ),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.apple_rounded, size: 20),
-                    label: const Text('Continue with Apple'),
-                  ),
+                  // Social login buttons hidden until Firebase/OAuth configured
+                  // OutlinedButton.icon(Google), OutlinedButton.icon(Apple)
 
                   const SizedBox(height: 32),
 
