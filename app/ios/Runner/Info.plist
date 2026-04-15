@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Permission usage descriptions (required by iOS for runtime access) -->
+	<key>NSCameraUsageDescription</key>
+	<string>需要访问相机来拍摄个人资料照片</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>需要访问相册来选择个人资料照片</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>需要保存照片到相册</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>需要您的位置来显示附近的用户</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>需要您的位置来显示附近的用户</string>
+
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
