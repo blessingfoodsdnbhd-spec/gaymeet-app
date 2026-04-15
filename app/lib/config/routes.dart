@@ -35,6 +35,7 @@ import '../features/events/event_detail_screen.dart';
 import '../features/events/create_event_screen.dart';
 import '../core/models/moment.dart';
 import '../core/models/event.dart';
+import '../core/models/user.dart';
 import '../features/verification/verification_screen.dart';
 import '../features/dm/dm_inbox_screen.dart';
 import '../features/call/call_history_screen.dart';
@@ -89,6 +90,13 @@ GoRouter createRouter({required bool isLoggedIn}) {
         },
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(
+        path: '/user/:id',
+        builder: (_, state) {
+          final user = state.extra as UserModel?;
+          return ProfileScreen(viewedUser: user);
+        },
+      ),
       GoRoute(path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
