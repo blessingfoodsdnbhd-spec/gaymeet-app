@@ -27,6 +27,12 @@ const configured = !!(
   process.env.R2_PUBLIC_URL
 );
 
+// Strip accidental angle brackets from R2_PUBLIC_URL (e.g. <https://...>)
+// and trailing slashes so we always build clean URLs.
+const R2_PUBLIC_URL = configured
+  ? process.env.R2_PUBLIC_URL.replace(/^<|>$/g, '').replace(/\/+$/, '')
+  : '';
+
 let s3 = null;
 if (configured) {
   s3 = new S3Client({
@@ -53,7 +59,7 @@ async function uploadFile(buffer, key, contentType) {
       ContentType: contentType || 'image/jpeg',
     })
   );
-  return `${process.env.R2_PUBLIC_URL}/${key}`;
+  return `${R2_PUBLIC_URL}/${key}`;
 }
 
 /**
@@ -75,9 +81,10 @@ async function deleteFile(key) {
  */
 function keyFromUrl(url) {
   if (!configured || !url) return null;
-  const base = process.env.R2_PUBLIC_URL;
-  if (!url.startsWith(base)) return null;
-  return url.slice(base.length).replace(/^\//, '');
+  // Strip any accidental angle brackets from the stored URL before matching
+  const clean = url.replace(/[<>]/g, '');
+  if (!clean.startsWith(R2_PUBLIC_URL)) return null;
+  return clean.slice(R2_PUBLIC_URL.length).replace(/^\//, '');
 }
 
 module.exports = { configured, uploadFile, deleteFile, keyFromUrl };
