@@ -20,6 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passC = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  bool _isSubmitting = false;
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
 
@@ -43,11 +44,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _login() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref
-        .read(authStateProvider.notifier)
-        .login(_emailC.text.trim(), _passC.text);
-    if (ok && mounted) context.go('/home');
+    setState(() => _isSubmitting = true);
+    try {
+      final ok = await ref
+          .read(authStateProvider.notifier)
+          .login(_emailC.text.trim(), _passC.text);
+      if (ok && mounted) context.go('/home');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _showForgotPasswordSheet(BuildContext context) {
