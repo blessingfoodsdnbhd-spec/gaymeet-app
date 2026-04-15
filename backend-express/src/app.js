@@ -32,6 +32,15 @@ const placesRoutes = require('./routes/places');
 const twoFactorRoutes = require('./routes/two-factor');
 const accountRoutes = require('./routes/account');
 const calendarRoutes = require('./routes/calendar');
+const storiesRoutes = require('./routes/stories');
+const followsRoutes = require('./routes/follows');
+const energyRoutes = require('./routes/energy');
+const questionsRoutes = require('./routes/questions');
+const groupsRoutes = require('./routes/groups');
+const privatePhotosRoutes = require('./routes/private-photos');
+const safeRoutesRoutes = require('./routes/safe-date');
+const businessRoutes = require('./routes/business');
+const dateRoomsRoutes = require('./routes/date-rooms');
 
 const app = express();
 
@@ -87,6 +96,15 @@ app.use('/api/places', placesRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/stories', storiesRoutes);
+app.use('/api/users', followsRoutes);       // /:id/follow, /:id/followers, /:id/following
+app.use('/api/energy', energyRoutes);
+app.use('/api/users', questionsRoutes);     // /:id/questions, /inbox, /:id/answer
+app.use('/api/groups', groupsRoutes);
+app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-photos, /:id/private-photos
+app.use('/api/safe-dates', safeRoutesRoutes);
+app.use('/api/business', businessRoutes);
+app.use('/api/date-rooms', dateRoomsRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

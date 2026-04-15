@@ -100,23 +100,6 @@ router.patch('/me/stealth', auth, async (req, res, next) => {
   }
 });
 
-// ── GET /api/users/:id ───────────────────────────────────────────────────────
-router.get('/:id', auth, async (req, res, next) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return err(res, 'User not found', 404);
-
-    // Increment profileViews unless the user is viewing their own profile
-    if (req.params.id !== req.user._id.toString()) {
-      await User.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
-    }
-
-    ok(res, user.toPublicJSON());
-  } catch (e) {
-    next(e);
-  }
-});
-
 // ── GET /api/users/nearby ─────────────────────────────────────────────────────
 router.get('/nearby', auth, async (req, res, next) => {
   try {
