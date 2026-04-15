@@ -9,9 +9,10 @@ class ApiClient {
   ApiClient() {
     dio = Dio(BaseOptions(
       baseUrl: AppConstants.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      headers: {'Content-Type': 'application/json'},
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
+      // Note: do NOT set Content-Type here — Dio sets it per-request based
+      // on data type (application/json vs multipart/form-data for FormData).
     ));
 
     dio.interceptors.add(InterceptorsWrapper(

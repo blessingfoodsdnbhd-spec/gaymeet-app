@@ -103,10 +103,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       setState(() => _photos.add(url));
       ref.read(authStateProvider.notifier).updatePhotos(List.from(_photos));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[PhotoUpload] ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload failed. Please try again.')),
+          SnackBar(content: Text('Upload failed: $e')),
         );
       }
     } finally {
