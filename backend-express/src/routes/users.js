@@ -54,6 +54,27 @@ router.patch('/settings', auth, async (req, res, next) => {
   }
 });
 
+// ── PUT /api/users/me/location ────────────────────────────────────────────────
+router.put('/me/location', auth, async (req, res, next) => {
+  try {
+    const { latitude, longitude } = req.body;
+    if (latitude == null || longitude == null) {
+      return err(res, 'latitude and longitude required');
+    }
+    await User.findByIdAndUpdate(req.user._id, {
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+      },
+      lastActiveAt: new Date(),
+      isOnline: true,
+    });
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/users/me/teleport ───────────────────────────────────────────────
 router.post('/me/teleport', auth, async (req, res, next) => {
   try {

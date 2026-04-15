@@ -1,4 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+
 import '../api/api_client.dart';
 import '../api/socket_service.dart';
 import '../api/push_notification_service.dart';
@@ -61,8 +64,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final response = await _api.dio.get('/users/me');
         final user = UserModel.fromJson(response.data['data']);
         _socket.connect(token);
-        _push.initialize(); // Register FCM token with backend
+        _push.initialize();
         state = AuthState(isLoggedIn: true, user: user);
+        _tryUpdateLocation(); // best-effort, fire-and-forget
       } catch (_) {
         await _api.clearTokens();
         state = const AuthState(isLoggedIn: false);
@@ -87,12 +91,44 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _socket.connect(data['accessToken']);
       _push.initialize();
       state = AuthState(isLoggedIn: true, user: user);
+      _tryUpdateLocation();
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _parseError(e));
       return false;
     }
   }
+
+  // ── Social / OTP login helper ─────────────────────────────────────────────
+  Future<bool> _socialLogin(String path, Map<String, dynamic> data) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await _api.dio.post(path, data: data);
+      final d = response.data['data'];
+      await _api.saveTokens(d['accessToken'], d['refreshToken']);
+      final user = UserModel.fromJson(d['user']);
+      _socket.connect(d['accessToken']);
+      _push.initialize();
+      state = AuthState(isLoggedIn: true, user: user);
+      _tryUpdateLocation();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _parseError(e));
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle(String idToken) =>
+      _socialLogin('/auth/google', {'idToken': idToken});
+
+  Future<bool> loginWithApple(String identityToken, {String? name}) =>
+      _socialLogin('/auth/apple', {
+        'identityToken': identityToken,
+        if (name != null && name.isNotEmpty) 'name': name,
+      });
+
+  Future<bool> loginWithOtp(String email, String code) =>
+      _socialLogin('/auth/verify-otp', {'email': email, 'code': code});
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -107,6 +143,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _socket.connect(data['accessToken']);
       _push.initialize();
       state = AuthState(isLoggedIn: true, user: user);
+      _tryUpdateLocation();
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _parseError(e));
@@ -114,9 +151,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Optimistically update the local photos list without a round-trip to the
-  /// server. Call after upload/delete/reorder so the UI reflects changes
-  /// immediately.
+  /// Fire-and-forget: request location permission and push real coords to
+  /// the backend so the user appears correctly in nearby results.
+  Future<void> _tryUpdateLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) { return; }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) { return; }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      await _api.dio.put('/users/me/location', data: {
+        'latitude': pos.latitude,
+        'longitude': pos.longitude,
+      });
+    } catch (_) {
+      // Location is best-effort; never block login flow
+    }
+  }
+
+  /// Optimistically update the local photos list without a round-trip.
   void updatePhotos(List<String> photos) {
     final user = state.user;
     if (user == null) return;
@@ -146,6 +211,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _parseError(dynamic e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map) {
+        final msg = data['error'] ?? data['message'];
+        if (msg is String && msg.isNotEmpty) return msg;
+      }
+    }
     if (e is Exception) {
       return e.toString().replaceAll('Exception: ', '');
     }
