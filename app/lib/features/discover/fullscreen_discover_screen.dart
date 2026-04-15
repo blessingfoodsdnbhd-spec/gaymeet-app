@@ -42,6 +42,7 @@ class _FullscreenDiscoverScreenState
 
   // Horizontal swipe state (current page only)
   double _swipeDx = 0.0;
+  int _currentPage = 0;
 
   // Double-tap heart animation
   late final AnimationController _heartCtrl;
@@ -256,6 +257,7 @@ class _FullscreenDiscoverScreenState
                   setState(() {
                     _showHint = false;
                     _swipeDx = 0.0;
+                    _currentPage = i;
                   });
                   // Preload ±2 pages worth of images is handled automatically
                   // by CachedNetworkImage's cache. Nothing extra needed.
