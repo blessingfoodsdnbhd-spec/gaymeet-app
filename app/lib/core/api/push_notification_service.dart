@@ -18,18 +18,29 @@ import '../api/api_client.dart';
 ///   - Backend: set FIREBASE_SERVICE_ACCOUNT env var
 class PushNotificationService {
   final ApiClient _api;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Null when Firebase is not configured (no google-services.json).
+  // Accessing FirebaseMessaging.instance throws if Firebase.initializeApp()
+  // was never called, so we guard it here rather than at the field level.
+  FirebaseMessaging? _messaging;
 
   // Callbacks for UI
   Function(String matchId, String userName)? onMatchNotification;
   Function(String matchId, String senderId)? onMessageNotification;
 
-  PushNotificationService(this._api);
+  PushNotificationService(this._api) {
+    try {
+      _messaging = FirebaseMessaging.instance;
+    } catch (e) {
+      debugPrint('FirebaseMessaging unavailable: push notifications disabled');
+    }
+  }
 
   /// Call once after Firebase.initializeApp()
   Future<void> initialize() async {
+    if (_messaging == null) return; // Firebase not configured — skip silently
+
     // 1. Request permission (iOS shows dialog, Android auto-grants)
-    final settings = await _messaging.requestPermission(
+    final settings = await _messaging!.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -42,13 +53,13 @@ class PushNotificationService {
     }
 
     // 2. Get FCM token and register with backend
-    final token = await _messaging.getToken();
+    final token = await _messaging!.getToken();
     if (token != null) {
       await _registerToken(token);
     }
 
     // 3. Listen for token refresh
-    _messaging.onTokenRefresh.listen(_registerToken);
+    _messaging!.onTokenRefresh.listen(_registerToken);
 
     // 4. Handle foreground messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -57,7 +68,7 @@ class PushNotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
     // 6. Check if app was opened from a terminated state notification
-    final initialMessage = await _messaging.getInitialMessage();
+    final initialMessage = await _messaging!.getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationTap(initialMessage);
     }
