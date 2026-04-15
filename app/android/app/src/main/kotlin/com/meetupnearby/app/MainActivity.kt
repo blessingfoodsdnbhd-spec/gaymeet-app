@@ -1,4 +1,4 @@
-package com.gaymeet.gaymeet
+package com.meetupnearby.app
 
 import io.flutter.embedding.android.FlutterActivity
 
