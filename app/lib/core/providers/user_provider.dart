@@ -49,7 +49,7 @@ class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final myId = _ref.read(authProvider).user?.id ?? '';
+      final myId = _ref.read(authStateProvider).user?.id ?? '';
       final users = data
           .map((u) => UserModel.fromJson(u))
           .where((u) => u.id != myId)
@@ -94,7 +94,7 @@ class DiscoverUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final myId = _ref.read(authProvider).user?.id ?? '';
+      final myId = _ref.read(authStateProvider).user?.id ?? '';
       final users = data
           .map((u) => UserModel.fromJson(u))
           .where((u) => u.id != myId)
