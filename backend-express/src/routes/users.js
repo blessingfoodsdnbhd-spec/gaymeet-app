@@ -147,7 +147,6 @@ router.get('/nearby', auth, async (req, res, next) => {
     const blockedByOthers = usersWhoBlockedMe.map((u) => u._id.toString());
 
     const excludeIds = [
-      me._id,
       ...blockedByMe,
       ...blockedByOthers,
     ].map((id) => new mongoose.Types.ObjectId(id.toString()));
@@ -234,7 +233,6 @@ router.get('/discover', auth, async (req, res, next) => {
     ).lean();
 
     const excludeIds = [
-      me._id,
       ...swipedIds,
       ...blockedByMe,
       ...usersWhoBlockedMe.map((u) => u._id),
