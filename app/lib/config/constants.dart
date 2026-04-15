@@ -20,6 +20,14 @@ class AppConstants {
   static const String accessTokenKey = 'access_token';
   static const String refreshTokenKey = 'refresh_token';
 
+  // ── Social auth ──────────────────────────────────────────────────────────────
+  // Set GOOGLE_CLIENT_ID via --dart-define when building, or leave empty to
+  // disable Google Sign-In (button shows error snackbar if unconfigured).
+  static const String googleClientId = String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+    defaultValue: '',
+  );
+
   // Defaults
   static const double defaultSearchRadius = 10.0; // km
   static const int nearbyPageSize = 20;

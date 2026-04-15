@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../shared/widgets/design_system/rainbow_border.dart';
+import 'otp_login_sheet.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -55,6 +59,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _googleSignIn() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: AppConstants.googleClientId,
+      );
+      final account = await googleSignIn.signIn();
+      if (account == null) return; // user cancelled
+      final googleAuth = await account.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Google 登录失败，请稍后再试')),
+          );
+        }
+        return;
+      }
+      final ok = await ref.read(authStateProvider.notifier).loginWithGoogle(idToken);
+      if (ok && mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google 登录失败: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _appleSignIn() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+      final identityToken = credential.identityToken;
+      if (identityToken == null) return;
+      final name = [credential.givenName, credential.familyName]
+          .where((s) => s != null && s.isNotEmpty)
+          .join(' ');
+      final ok = await ref
+          .read(authStateProvider.notifier)
+          .loginWithApple(identityToken, name: name.isNotEmpty ? name : null);
+      if (ok && mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Apple 登录失败: $e')),
+        );
+      }
+    }
+  }
+
+  void _showOtpSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const OtpLoginSheet(),
+    );
   }
 
   void _showForgotPasswordSheet(BuildContext context) {
@@ -295,16 +362,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   const SizedBox(height: 20),
 
                   // ── Social buttons ────────────────────────────────────────────
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
-                    label: const Text('Continue with Google'),
+                  // Google
+                  _SocialLoginButton(
+                    onTap: _googleSignIn,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEA4335), Color(0xFFFF6B6B)],
+                    ),
+                    shadowColor: const Color(0xFFEA4335),
+                    icon: Icons.g_mobiledata_rounded,
+                    label: '使用 Google 登录',
                   ),
                   const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.apple_rounded, size: 20),
-                    label: const Text('Continue with Apple'),
+                  // Apple — iOS only (App Store requirement)
+                  if (Platform.isIOS) ...[
+                    _SocialLoginButton(
+                      onTap: _appleSignIn,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1C1C1E), Color(0xFF3A3A3C)],
+                      ),
+                      shadowColor: Colors.black,
+                      icon: Icons.apple_rounded,
+                      label: '使用 Apple 登录',
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  // OTP email
+                  _SocialLoginButton(
+                    onTap: _showOtpSheet,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFFAB5CF7)],
+                    ),
+                    shadowColor: const Color(0xFF7C3AED),
+                    icon: Icons.mark_email_unread_outlined,
+                    label: '使用邮箱验证码登录',
                   ),
 
                   const SizedBox(height: 32),
@@ -335,6 +425,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Reusable social login button ─────────────────────────────────────────────
+
+class _SocialLoginButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final LinearGradient gradient;
+  final Color shadowColor;
+  final IconData icon;
+  final String label;
+
+  const _SocialLoginButton({
+    required this.onTap,
+    required this.gradient,
+    required this.shadowColor,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: AppRadius.lgRadius,
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor.withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

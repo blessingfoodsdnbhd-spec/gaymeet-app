@@ -95,6 +95,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // ── Social / OTP login helper ─────────────────────────────────────────────
+  Future<bool> _socialLogin(String path, Map<String, dynamic> data) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await _api.dio.post(path, data: data);
+      final d = response.data['data'];
+      await _api.saveTokens(d['accessToken'], d['refreshToken']);
+      final user = UserModel.fromJson(d['user']);
+      _socket.connect(d['accessToken']);
+      _push.initialize();
+      state = AuthState(isLoggedIn: true, user: user);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _parseError(e));
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle(String idToken) =>
+      _socialLogin('/auth/google', {'idToken': idToken});
+
+  Future<bool> loginWithApple(String identityToken, {String? name}) =>
+      _socialLogin('/auth/apple', {
+        'identityToken': identityToken,
+        if (name != null && name.isNotEmpty) 'name': name,
+      });
+
+  Future<bool> loginWithOtp(String email, String code) =>
+      _socialLogin('/auth/verify-otp', {'email': email, 'code': code});
+
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
