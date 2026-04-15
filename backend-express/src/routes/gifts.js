@@ -180,7 +180,8 @@ router.get('/sent', auth, async (req, res, next) => {
 });
 
 // ── GET /api/coins/balance ────────────────────────────────────────────────────
-router.get('/coins/balance', auth, async (req, res, next) => {
+// Mounted at /api/coins → /balance; also reachable at /api/gifts/balance
+router.get('/balance', auth, async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id, 'coins').lean();
     ok(res, { balance: user.coins ?? 0 });
@@ -190,7 +191,7 @@ router.get('/coins/balance', auth, async (req, res, next) => {
 });
 
 // ── POST /api/coins/purchase ──────────────────────────────────────────────────
-router.post('/coins/purchase', auth, async (req, res, next) => {
+router.post('/purchase', auth, async (req, res, next) => {
   try {
     const { package: pkg } = req.body;
     const found = COIN_PACKAGES.find((p) => p.id === pkg);
@@ -217,7 +218,7 @@ router.post('/coins/purchase', auth, async (req, res, next) => {
 });
 
 // Expose packages list
-router.get('/coins/packages', auth, (req, res) => {
+router.get('/packages', auth, (req, res) => {
   ok(res, COIN_PACKAGES);
 });
 

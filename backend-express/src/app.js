@@ -99,9 +99,10 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/stories', storiesRoutes);
 app.use('/api/users', followsRoutes);       // /:id/follow, /:id/followers, /:id/following
 app.use('/api/energy', energyRoutes);
-app.use('/api/users', questionsRoutes);     // /:id/questions, /inbox, /:id/answer
+app.use('/api/questions', questionsRoutes);  // /inbox, /ask/:id, /:id/answer, /user/:id/public
 app.use('/api/groups', groupsRoutes);
 app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-photos, /:id/private-photos
+app.use('/api/photo-requests', privatePhotosRoutes); // /inbox, /sent, /:id/respond
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);

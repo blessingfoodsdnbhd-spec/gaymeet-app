@@ -30,6 +30,18 @@ router.post('/:id/block', auth, async (req, res, next) => {
   }
 });
 
+// ── DELETE /api/users/:id/block — unblock ────────────────────────────────────
+router.delete('/:id/block', auth, async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { blockedUsers: req.params.id },
+    });
+    ok(res, {});
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/users/:id/report ────────────────────────────────────────────────
 router.post('/:id/report', auth, async (req, res, next) => {
   try {

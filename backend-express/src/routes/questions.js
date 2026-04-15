@@ -15,9 +15,10 @@ async function checkDailyLimit(senderUser) {
   return count < 3;
 }
 
-// ── POST /api/users/:id/questions ─────────────────────────────────────────────
+// ── POST /api/questions/ask/:id ───────────────────────────────────────────────
 // Send a question to a user (optionally anonymous).
-router.post('/:id/questions', auth, async (req, res, next) => {
+// Previously: POST /api/users/:id/questions
+router.post('/ask/:id', auth, async (req, res, next) => {
   try {
     const { content, isAnonymous = true } = req.body;
     if (!content || !content.trim()) return err(res, 'Content is required');
@@ -101,9 +102,10 @@ router.delete('/:id', auth, async (req, res, next) => {
   }
 });
 
-// ── GET /api/users/:id/questions/public ───────────────────────────────────────
-// Public answered Q&A shown on user profile.
-router.get('/:id/questions/public', auth, async (req, res, next) => {
+// ── GET /api/questions/user/:id/public ────────────────────────────────────────
+// Public answered Q&A shown on a user's profile.
+// Previously: GET /api/users/:id/questions/public
+router.get('/user/:id/public', auth, async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);

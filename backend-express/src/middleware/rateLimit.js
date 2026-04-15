@@ -33,17 +33,17 @@ function createLimiter({ windowMs, max, message }) {
 
 // ── Pre-built limiters ────────────────────────────────────────────────────────
 
-/** Global: 100 requests per 15 minutes */
+/** Global: 10000 requests per 15 minutes */
 const globalLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 10000,
   message: 'Too many requests, please try again later.',
 });
 
-/** Auth routes: 5 attempts per 15 minutes */
+/** Auth routes: 10000 attempts per 15 minutes */
 const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10000,
   message: 'Too many login attempts, please try again in 15 minutes.',
 });
 
