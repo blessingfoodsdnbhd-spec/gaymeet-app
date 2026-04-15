@@ -3,6 +3,7 @@ const Place = require('../models/Place');
 const PlaceEvent = require('../models/PlaceEvent');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const { ok, created, err } = require('../utils/respond');
 
 const FREE_PLACE_LIMIT = 3;
@@ -286,6 +287,25 @@ router.post('/:id/events', auth, async (req, res, next) => {
     });
 
     created(res, { event });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/places/:id/photos ───────────────────────────────────────────────
+router.post('/:id/photos', auth, upload.array('photos', 5), async (req, res, next) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) return err(res, 'Place not found', 404);
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const newUrls = (req.files || []).map((f) => `${host}/uploads/${f.filename}`);
+
+    const combined = [...place.photos, ...newUrls].slice(0, 5);
+    place.photos = combined;
+    await place.save();
+
+    ok(res, { photos: place.photos });
   } catch (e) {
     next(e);
   }

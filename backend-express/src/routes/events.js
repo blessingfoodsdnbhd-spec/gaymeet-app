@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Event = require('../models/Event');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const { ok, created, err } = require('../utils/respond');
 
 // ── GET /api/events ───────────────────────────────────────────────────────────
@@ -306,6 +307,27 @@ router.delete('/:id/leave', auth, async (req, res, next) => {
 
     await event.save();
     ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/events/:id/cover ────────────────────────────────────────────────
+router.post('/:id/cover', auth, upload.single('cover'), async (req, res, next) => {
+  try {
+    if (!req.file) return err(res, 'No file uploaded');
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const url = `${host}/uploads/${req.file.filename}`;
+
+    const event = await Event.findByIdAndUpdate(
+      req.params.id,
+      { coverImage: url },
+      { new: true }
+    );
+    if (!event) return err(res, 'Event not found', 404);
+
+    ok(res, { coverImage: url });
   } catch (e) {
     next(e);
   }
