@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
 import '../../core/providers/popular_provider.dart';
-import '../../core/providers/subscription_provider.dart';
 
 String _todayHeader() {
   final now = DateTime.now();
@@ -47,34 +46,28 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
     );
   }
 
-  void _showUseTicketSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _UseTicketSheet(
-        onUse: () async {
-          Navigator.pop(context);
-          await ref.read(popularProvider.notifier).useTicket();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('你已出现在人气榜！'),
-                backgroundColor: AppTheme.primary,
-              ),
-            );
-          }
-        },
-      ),
-    );
+  Future<void> _voteFor(String userId, String nickname) async {
+    final state = ref.read(popularProvider);
+    if (state.myTickets <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('今日票已用完，明天再来！')),
+      );
+      return;
+    }
+    final success = await ref.read(popularProvider.notifier).useTicketFor(userId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? '已为 $nickname 投票！' : '投票失败，请重试'),
+          backgroundColor: success ? AppTheme.primary : AppTheme.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(popularProvider);
-    final isPremium = ref.watch(subscriptionProvider).isPremium;
 
     return RefreshIndicator(
       color: AppTheme.primary,
@@ -83,7 +76,7 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
         slivers: [
           // Header banner
           SliverToBoxAdapter(
-            child: _buildHeader(isPremium),
+            child: _buildHeader(),
           ),
 
           if (state.isLoading && state.entries.isEmpty)
@@ -110,7 +103,14 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
                   mainAxisSpacing: 8,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (_, i) => _PopularTile(entry: state.entries[i]),
+                  (_, i) => _PopularTile(
+                    entry: state.entries[i],
+                    onVote: state.myTickets > 0
+                        ? () => _voteFor(
+                            state.entries[i].user.id,
+                            state.entries[i].user.nickname)
+                        : null,
+                  ),
                   childCount: state.entries.length,
                 ),
               ),
@@ -120,7 +120,8 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
     );
   }
 
-  Widget _buildHeader(bool isPremium) {
+  Widget _buildHeader() {
+    final state = ref.watch(popularProvider);
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
@@ -149,11 +150,28 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
                 ),
               ),
               const Spacer(),
-              const Text(
-                '每日更新',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
+              // ── My ticket count ──────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.confirmation_number_rounded,
+                        color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '我的票：${state.myTickets}/${state.maxTickets}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -179,43 +197,25 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
               ),
               const SizedBox(width: 8),
               const Text(
-                '今日人气榜 • 购买票上榜',
+                '为喜欢的人投票上榜',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showPurchaseSheet,
-                  icon: const Icon(Icons.confirmation_number_outlined,
-                      size: 16, color: Colors.white),
-                  label: const Text('购买人气票',
-                      style: TextStyle(color: Colors.white, fontSize: 13)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _showPurchaseSheet,
+              icon: const Icon(Icons.confirmation_number_outlined,
+                  size: 16, color: Colors.white),
+              label: const Text('购买人气票',
+                  style: TextStyle(color: Colors.white, fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white54),
+                padding: const EdgeInsets.symmetric(vertical: 10),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _showUseTicketSheet,
-                  icon: const Icon(Icons.rocket_launch_rounded,
-                      size: 16, color: Colors.black),
-                  label: const Text('使用票',
-                      style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -227,7 +227,8 @@ class _PopularScreenState extends ConsumerState<PopularScreen> {
 
 class _PopularTile extends StatelessWidget {
   final PopularEntry entry;
-  const _PopularTile({required this.entry});
+  final VoidCallback? onVote;
+  const _PopularTile({required this.entry, this.onVote});
 
   @override
   Widget build(BuildContext context) {
@@ -330,6 +331,33 @@ class _PopularTile extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.75),
                       ),
                     ),
+                  if (onVote != null) ...[
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: onVote,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.confirmation_number_rounded,
+                                size: 10, color: Colors.white),
+                            SizedBox(width: 3),
+                            Text('投票',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -414,55 +442,3 @@ class _PurchaseTicketSheet extends StatelessWidget {
   }
 }
 
-class _UseTicketSheet extends StatelessWidget {
-  final VoidCallback onUse;
-  const _UseTicketSheet({required this.onUse});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppTheme.textHint,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Icon(Icons.rocket_launch_rounded,
-              color: AppTheme.primary, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            '使用人气票',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '你的资料将出现在今日人气榜，\n有效期至今天结束。',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.5),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onUse,
-              icon: const Icon(Icons.rocket_launch_rounded, size: 18),
-              label: const Text('立即上榜！'),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}

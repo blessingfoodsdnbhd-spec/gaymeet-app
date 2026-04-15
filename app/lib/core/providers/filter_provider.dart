@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Sentinel used in copyWith to distinguish "not provided" from explicit null.
+const Object _sentinel = Object();
+
 /// Immutable model representing the user's current discovery filter selections.
 class DiscoveryFilter {
   // ── Existing filters ──────────────────────────────────────────────────────
@@ -24,6 +27,13 @@ class DiscoveryFilter {
   // ── Age filter (separate enabled flag; ageMin/ageMax reused above) ────────
   final bool ageEnabled;
 
+  // ── Personality / profile filters ─────────────────────────────────────────
+  final String? role;
+  final String? zodiac;
+  final String? mbti;
+  final String? bloodType;
+  final List<String> kinks;
+
   const DiscoveryFilter({
     this.ageMin = 18,
     this.ageMax = 80,
@@ -37,6 +47,11 @@ class DiscoveryFilter {
     this.weightMin = 30,
     this.weightMax = 150,
     this.ageEnabled = false,
+    this.role,
+    this.zodiac,
+    this.mbti,
+    this.bloodType,
+    this.kinks = const [],
   });
 
   static const DiscoveryFilter defaults = DiscoveryFilter();
@@ -51,6 +66,11 @@ class DiscoveryFilter {
     if (weightEnabled) n++;
     if (maxDistanceKm != defaults.maxDistanceKm) n++;
     if (tags.isNotEmpty) n++;
+    if (role != null) n++;
+    if (zodiac != null) n++;
+    if (mbti != null) n++;
+    if (bloodType != null) n++;
+    if (kinks.isNotEmpty) n++;
     return n;
   }
 
@@ -69,6 +89,11 @@ class DiscoveryFilter {
     int? weightMin,
     int? weightMax,
     bool? ageEnabled,
+    Object? role = _sentinel,
+    Object? zodiac = _sentinel,
+    Object? mbti = _sentinel,
+    Object? bloodType = _sentinel,
+    List<String>? kinks,
   }) {
     return DiscoveryFilter(
       ageMin: ageMin ?? this.ageMin,
@@ -83,6 +108,11 @@ class DiscoveryFilter {
       weightMin: weightMin ?? this.weightMin,
       weightMax: weightMax ?? this.weightMax,
       ageEnabled: ageEnabled ?? this.ageEnabled,
+      role: identical(role, _sentinel) ? this.role : role as String?,
+      zodiac: identical(zodiac, _sentinel) ? this.zodiac : zodiac as String?,
+      mbti: identical(mbti, _sentinel) ? this.mbti : mbti as String?,
+      bloodType: identical(bloodType, _sentinel) ? this.bloodType : bloodType as String?,
+      kinks: kinks ?? this.kinks,
     );
   }
 
@@ -102,6 +132,11 @@ class DiscoveryFilter {
         if (heightEnabled) 'heightMax': heightMax,
         if (weightEnabled) 'weightMin': weightMin,
         if (weightEnabled) 'weightMax': weightMax,
+        if (role != null) 'role': role,
+        if (zodiac != null) 'zodiac': zodiac,
+        if (mbti != null) 'mbti': mbti,
+        if (bloodType != null) 'bloodType': bloodType,
+        if (kinks.isNotEmpty) 'kinks': kinks.join(','),
       };
 
   /// Apply this filter to a local list of users (used for dummy-data mode).
@@ -137,13 +172,19 @@ class DiscoveryFilter {
         other.weightEnabled == weightEnabled &&
         other.weightMin == weightMin &&
         other.weightMax == weightMax &&
-        other.ageEnabled == ageEnabled;
+        other.ageEnabled == ageEnabled &&
+        other.role == role &&
+        other.zodiac == zodiac &&
+        other.mbti == mbti &&
+        other.bloodType == bloodType &&
+        other.kinks.length == kinks.length;
   }
 
   @override
   int get hashCode => Object.hash(ageMin, ageMax, maxDistanceKm, tags.length,
       filtersEnabled, heightEnabled, heightMin, heightMax,
-      weightEnabled, weightMin, weightMax, ageEnabled);
+      weightEnabled, weightMin, weightMax, ageEnabled,
+      role, zodiac, mbti, bloodType, kinks.length);
 }
 
 class FilterNotifier extends StateNotifier<DiscoveryFilter> {

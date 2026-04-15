@@ -37,6 +37,12 @@ class _SendDmSheetState extends ConsumerState<SendDmSheet> {
   }
 
   int get _balance {
+    // Read coins directly from auth state (populated from /users/me response).
+    // giftsProvider.coinBalance may be 0 while still loading, causing false
+    // "insufficient" blocks.
+    final authCoins = ref.read(authStateProvider).user?.coins ?? 0;
+    if (authCoins > 0) return authCoins;
+    // Fallback: giftsProvider (if auth state hasn't loaded coins yet)
     return ref.read(giftsProvider).coinBalance;
   }
 
