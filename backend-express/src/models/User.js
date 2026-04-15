@@ -30,9 +30,15 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true, select: false },
+    password: { type: String, select: false },
     resetCode: { type: String, select: false },
     resetCodeExpiry: { type: Date, select: false },
+    // Social login
+    googleId: { type: String, select: false, sparse: true },
+    appleId:  { type: String, select: false, sparse: true },
+    // OTP email login
+    otpCode:   { type: String, select: false },
+    otpExpiry: { type: Date,   select: false },
     nickname: { type: String, required: true, trim: true },
     bio: { type: String, default: '' },
     tags: [{ type: String }],
@@ -159,6 +165,8 @@ userSchema.index({ location: '2dsphere' });
 userSchema.index({ email: 1 });
 userSchema.index({ isBoosted: 1, lastActiveAt: -1 });
 userSchema.index({ referralCode: 1 });
+userSchema.index({ googleId: 1 }, { sparse: true });
+userSchema.index({ appleId: 1 }, { sparse: true });
 
 // ── Virtuals ──────────────────────────────────────────────────────────────────
 userSchema.virtual('distanceLabel').get(function () {
@@ -167,7 +175,7 @@ userSchema.virtual('distanceLabel').get(function () {
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
-  if (this.isModified('password')) {
+  if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(this.password, 12);
   }
   next();

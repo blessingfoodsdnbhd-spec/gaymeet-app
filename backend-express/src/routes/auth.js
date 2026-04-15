@@ -3,11 +3,19 @@ const User = require('../models/User');
 const Referral = require('../models/Referral');
 const TwoFactorAuth = require('../models/TwoFactorAuth');
 const speakeasy = require('speakeasy');
+const { OAuth2Client } = require('google-auth-library');
+const appleSignin = require('apple-signin-auth');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// In-memory OTP store: normalizedEmail → { code, expiry }
+// Fine for single-instance; replace with Redis for multi-instance.
+const otpStore = new Map();
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res, next) => {
@@ -21,18 +29,15 @@ router.post('/register', async (req, res, next) => {
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return err(res, 'Email already registered', 409);
 
-    // Auto-generate a unique referral code for this new user
     const myReferralCode = await generateUniqueReferralCode();
 
-    // Resolve referrer if a code was provided
     let referredBy = null;
     let referrerDoc = null;
     if (referralCode) {
       referrerDoc = await User.findOne({ referralCode: referralCode.toUpperCase() }).select('_id deviceFingerprint');
       if (referrerDoc) {
-        // Fraud: same device fingerprint
         if (deviceFingerprint && referrerDoc.deviceFingerprint === deviceFingerprint) {
-          referredBy = null; // silently ignore — don't block registration
+          referredBy = null;
         } else {
           referredBy = referrerDoc._id;
         }
@@ -48,25 +53,20 @@ router.post('/register', async (req, res, next) => {
       deviceFingerprint: deviceFingerprint || null,
     });
 
-    // Create pending referral relationship
     if (referredBy) {
       await Referral.create({
         referrer: referredBy,
         referred: user._id,
         referralCode: referralCode.toUpperCase(),
         status: 'pending',
-      }).catch(() => {}); // ignore duplicate errors
+      }).catch(() => {});
       await User.findByIdAndUpdate(referredBy, { $inc: { referralCount: 1 } });
     }
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
 
-    created(res, {
-      accessToken,
-      refreshToken,
-      user: user.toPublicJSON(),
-    });
+    created(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
     next(e);
   }
@@ -74,7 +74,7 @@ router.post('/register', async (req, res, next) => {
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
 const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
 
 router.post('/login', async (req, res, next) => {
   try {
@@ -86,12 +86,10 @@ router.post('/login', async (req, res, next) => {
     );
     if (!user) return err(res, '账号不存在', 404);
 
-    // ── Account lockout check ────────────────────────────────────────────────
     if (user.lockoutUntil && user.lockoutUntil > new Date()) {
       return err(res, '账号已锁定，请30分钟后重试', 423);
     }
 
-    // ── Password verification ────────────────────────────────────────────────
     const valid = await user.comparePassword(password);
 
     if (!valid) {
@@ -106,7 +104,6 @@ router.post('/login', async (req, res, next) => {
       return err(res, '密码不正确', 401);
     }
 
-    // ── Two-factor authentication (if enabled) ───────────────────────────────
     const tfa = await TwoFactorAuth.findOne({ user: user._id });
     if (tfa && tfa.isEnabled) {
       if (!twoFactorCode) {
@@ -126,7 +123,6 @@ router.post('/login', async (req, res, next) => {
       }
     }
 
-    // ── Track device ─────────────────────────────────────────────────────────
     const resolvedDeviceId = deviceId || `device-${Date.now()}`;
     const resolvedDeviceName = deviceName || req.headers['user-agent'] || 'Unknown Device';
     const ip = req.ip || req.connection?.remoteAddress || null;
@@ -143,7 +139,6 @@ router.post('/login', async (req, res, next) => {
       }
     }
 
-    // ── Reset lockout counters on success ────────────────────────────────────
     user.loginAttempts = 0;
     user.lockoutUntil = null;
     user.isOnline = true;
@@ -153,6 +148,165 @@ router.post('/login', async (req, res, next) => {
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
 
+    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/google ─────────────────────────────────────────────────────
+// Body: { idToken: string }
+// Verifies Google ID token, finds or creates user, returns JWT.
+router.post('/google', async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return err(res, 'idToken is required');
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return err(res, 'Google Sign-In not configured on server', 501);
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      return err(res, 'Google 身份验证失败', 401);
+    }
+
+    const { sub: googleId, email, name } = payload;
+
+    // Try find by googleId first, then by email (link accounts)
+    let user = await User.findOne({ googleId }).select('+googleId');
+    if (!user && email) {
+      user = await User.findOne({ email: email.toLowerCase() });
+      if (user) {
+        await User.findByIdAndUpdate(user._id, { googleId });
+      }
+    }
+    if (!user) {
+      const myReferralCode = await generateUniqueReferralCode();
+      user = await User.create({
+        email: email ? email.toLowerCase() : `google_${googleId}@placeholder.local`,
+        googleId,
+        nickname: name || (email ? email.split('@')[0] : `用户${Date.now()}`),
+        referralCode: myReferralCode,
+      });
+    }
+
+    const accessToken = signAccess(user._id.toString());
+    const refreshToken = signRefresh(user._id.toString());
+    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/apple ──────────────────────────────────────────────────────
+// Body: { identityToken: string, name?: string }
+// Required for App Store. Verifies Apple identity token, finds or creates user.
+router.post('/apple', async (req, res, next) => {
+  try {
+    const { identityToken, name } = req.body;
+    if (!identityToken) return err(res, 'identityToken is required');
+
+    let payload;
+    try {
+      payload = await appleSignin.verifyIdToken(identityToken, {
+        audience: process.env.APPLE_BUNDLE_ID || 'com.meetupnearby.app',
+        ignoreExpiration: false,
+      });
+    } catch {
+      return err(res, 'Apple 身份验证失败', 401);
+    }
+
+    const { sub: appleId, email } = payload;
+
+    let user = await User.findOne({ appleId }).select('+appleId');
+    if (!user && email) {
+      user = await User.findOne({ email: email.toLowerCase() });
+      if (user) {
+        await User.findByIdAndUpdate(user._id, { appleId });
+      }
+    }
+    if (!user) {
+      const myReferralCode = await generateUniqueReferralCode();
+      const nickname = name || (email ? email.split('@')[0] : `用户${Date.now()}`);
+      user = await User.create({
+        email: email ? email.toLowerCase() : `apple_${appleId}@placeholder.local`,
+        appleId,
+        nickname,
+        referralCode: myReferralCode,
+      });
+    }
+
+    const accessToken = signAccess(user._id.toString());
+    const refreshToken = signRefresh(user._id.toString());
+    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/send-otp ───────────────────────────────────────────────────
+// Body: { email: string }
+// Generates a 6-digit OTP valid for 10 minutes and logs it to console.
+// TODO: replace console.log with a real email transport (nodemailer/SES/Resend).
+router.post('/send-otp', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) return err(res, '请输入有效的邮箱地址');
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiry = Date.now() + 10 * 60 * 1000;
+
+    otpStore.set(normalizedEmail, { code, expiry });
+
+    // TODO: send real email
+    console.log(`[OTP] ${normalizedEmail} → ${code} (expires in 10 min)`);
+
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/verify-otp ─────────────────────────────────────────────────
+// Body: { email: string, code: string }
+// Verifies OTP, finds or creates user, returns JWT.
+router.post('/verify-otp', async (req, res, next) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) return err(res, 'email and code are required');
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const stored = otpStore.get(normalizedEmail);
+
+    if (!stored) return err(res, '验证码无效或已过期', 401);
+    if (Date.now() > stored.expiry) {
+      otpStore.delete(normalizedEmail);
+      return err(res, '验证码已过期，请重新获取', 401);
+    }
+    if (stored.code !== code.trim()) return err(res, '验证码不正确', 401);
+
+    otpStore.delete(normalizedEmail); // one-time use
+
+    let user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      const myReferralCode = await generateUniqueReferralCode();
+      user = await User.create({
+        email: normalizedEmail,
+        nickname: normalizedEmail.split('@')[0],
+        referralCode: myReferralCode,
+      });
+    }
+
+    const accessToken = signAccess(user._id.toString());
+    const refreshToken = signRefresh(user._id.toString());
     ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
     next(e);
@@ -194,8 +348,7 @@ router.post('/logout', auth, async (req, res, next) => {
   }
 });
 
-// ── GET /api/auth/me (Flutter calls GET /users/me — handled in users.js) ──────
-// Alias here for convenience
+// ── GET /api/auth/me ──────────────────────────────────────────────────────────
 router.get('/me', auth, (req, res) => {
   ok(res, req.user.toPublicJSON());
 });
@@ -208,7 +361,6 @@ router.patch('/currency', auth, async (req, res, next) => {
     if (!supportedCurrencies.includes(currency)) {
       return err(res, `Unsupported currency. Use one of: ${supportedCurrencies.join(', ')}`);
     }
-
     await User.findByIdAndUpdate(req.user._id, { currency });
     ok(res, { success: true, currency });
   } catch (e) {
@@ -238,8 +390,6 @@ router.delete('/devices/:deviceId', auth, async (req, res, next) => {
   }
 });
 
-module.exports = router;
-
 // ── POST /api/auth/forgot-password ───────────────────────────────────────────
 router.post('/forgot-password', async (req, res, next) => {
   try {
@@ -247,20 +397,14 @@ router.post('/forgot-password', async (req, res, next) => {
     if (!email) return err(res, 'email is required');
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    // Always return success to avoid user enumeration
-    if (!user) return ok(res, { success: true });
+    if (!user) return ok(res, { success: true }); // avoid enumeration
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    await User.findByIdAndUpdate(user._id, {
-      resetCode: code,
-      resetCodeExpiry: expiry,
-    });
+    await User.findByIdAndUpdate(user._id, { resetCode: code, resetCodeExpiry: expiry });
 
-    // TODO: send real email — for now log to console
-    console.log(`[RESET CODE] ${email} -> ${code} (expires ${expiry.toISOString()})`);
-
+    console.log(`[RESET CODE] ${email} → ${code} (expires ${expiry.toISOString()})`);
     ok(res, { success: true });
   } catch (e) {
     next(e);
@@ -276,8 +420,7 @@ router.post('/reset-password', async (req, res, next) => {
 
     const user = await User.findOne({ email: email.toLowerCase().trim() })
       .select('+resetCode +resetCodeExpiry');
-    if (!user) return err(res, 'Invalid or expired code');
-    if (!user.resetCode || user.resetCode !== code) return err(res, 'Invalid or expired code');
+    if (!user || !user.resetCode || user.resetCode !== code) return err(res, 'Invalid or expired code');
     if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) return err(res, 'Code has expired — request a new one');
 
     user.password = newPassword;
@@ -290,3 +433,5 @@ router.post('/reset-password', async (req, res, next) => {
     next(e);
   }
 });
+
+module.exports = router;
