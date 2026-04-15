@@ -1,8 +1,13 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/moments_provider.dart';
 
 class CreateMomentScreen extends ConsumerStatefulWidget {
@@ -18,6 +23,8 @@ class _CreateMomentScreenState extends ConsumerState<CreateMomentScreen> {
   final List<String> _images = [];
   String _visibility = 'public';
   bool _isPosting = false;
+  bool _isUploadingPhoto = false;
+  final _picker = ImagePicker();
 
   static const _visibilityOptions = [
     ('public', '公开', Icons.public_rounded),
@@ -141,6 +148,7 @@ class _CreateMomentScreenState extends ConsumerState<CreateMomentScreen> {
             images: _images,
             onAdd: _addPhoto,
             onRemove: (url) => setState(() => _images.remove(url)),
+            isUploading: _isUploadingPhoto,
           ),
 
           const SizedBox(height: 16),
@@ -188,13 +196,29 @@ class _CreateMomentScreenState extends ConsumerState<CreateMomentScreen> {
     );
   }
 
-  void _addPhoto() {
-    // Simulated photo add (in production use image_picker)
+  Future<void> _addPhoto() async {
     if (_images.length >= 9) return;
-    setState(() {
-      _images.add(
-          'https://picsum.photos/seed/${DateTime.now().millisecond}/400/400');
-    });
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path, filename: file.name),
+      });
+      final res = await api.dio.post('/upload', data: formData);
+      final url = res.data['data']?['url'] as String?;
+      if (url != null && mounted) setState(() => _images.add(url));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('图片上传失败，请重试')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
   }
 
   void _showVisibilityPicker() {
@@ -241,11 +265,13 @@ class _PhotoPickerGrid extends StatelessWidget {
   final List<String> images;
   final VoidCallback onAdd;
   final void Function(String) onRemove;
+  final bool isUploading;
 
   const _PhotoPickerGrid({
     required this.images,
     required this.onAdd,
     required this.onRemove,
+    this.isUploading = false,
   });
 
   @override
@@ -263,7 +289,7 @@ class _PhotoPickerGrid extends StatelessWidget {
       itemBuilder: (_, i) {
         if (items[i] == 'add') {
           return GestureDetector(
-            onTap: onAdd,
+            onTap: isUploading ? null : onAdd,
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.card,
@@ -271,17 +297,25 @@ class _PhotoPickerGrid extends StatelessWidget {
                 border: Border.all(
                     color: const Color(0xFF3A3A3A), style: BorderStyle.solid),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_photo_alternate_rounded,
-                      color: AppTheme.textHint, size: 28),
-                  const SizedBox(height: 4),
-                  Text('${images.length}/9',
-                      style: TextStyle(
-                          color: AppTheme.textHint, fontSize: 11)),
-                ],
-              ),
+              child: isUploading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate_rounded,
+                            color: AppTheme.textHint, size: 28),
+                        const SizedBox(height: 4),
+                        Text('${images.length}/9',
+                            style: TextStyle(
+                                color: AppTheme.textHint, fontSize: 11)),
+                      ],
+                    ),
             ),
           );
         }

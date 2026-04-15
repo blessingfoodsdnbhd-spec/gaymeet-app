@@ -36,10 +36,17 @@ class UserModel {
   // Social stats
   final int totalLikesReceived;
   final int profileViews;
+  // Personality / profile fields
+  final String? zodiac;
+  final String? mbti;
+  final String? bloodType;
+  final List<String> kinks;
   // VIP tier: 0 = free, 1 = silver, 2 = gold, 3 = rainbow
   final int vipLevel;
   // Premium expiry (for VIP banner display)
   final DateTime? premiumExpiresAt;
+  // Coin balance (kept in sync from auth/me responses)
+  final int coins;
 
   UserModel({
     required this.id,
@@ -72,8 +79,13 @@ class UserModel {
     this.followingCount = 0,
     this.totalLikesReceived = 0,
     this.profileViews = 0,
+    this.zodiac,
+    this.mbti,
+    this.bloodType,
+    this.kinks = const [],
     this.vipLevel = 0,
     this.premiumExpiresAt,
+    this.coins = 0,
   });
 
   /// Computed age from birthday (null if birthday unknown)
@@ -143,10 +155,15 @@ class UserModel {
       followingCount: (json['followingCount'] as num?)?.toInt() ?? 0,
       totalLikesReceived: (json['totalLikesReceived'] as num?)?.toInt() ?? 0,
       profileViews: (json['profileViews'] as num?)?.toInt() ?? 0,
+      zodiac: json['zodiac'] as String?,
+      mbti: json['mbti'] as String?,
+      bloodType: json['bloodType'] as String?,
+      kinks: json['kinks'] != null ? List<String>.from(json['kinks'] as List) : const [],
       vipLevel: (json['vipLevel'] as num?)?.toInt() ?? 0,
       premiumExpiresAt: json['premiumExpiresAt'] != null
           ? DateTime.tryParse(json['premiumExpiresAt'])
           : null,
+      coins: (json['coins'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -159,6 +176,10 @@ class UserModel {
         'weight': weight,
         'countryCode': countryCode,
         'role': role,
+        'zodiac': zodiac,
+        'mbti': mbti,
+        'bloodType': bloodType,
+        'kinks': kinks,
       };
 
   UserModel copyWith({
@@ -173,6 +194,10 @@ class UserModel {
     bool? isVerified,
     String? lookingFor,
     String? role,
+    String? zodiac,
+    String? mbti,
+    String? bloodType,
+    List<String>? kinks,
     int? level,
     int? currentExp,
     int? totalExpReceived,
@@ -183,6 +208,7 @@ class UserModel {
     int? profileViews,
     int? vipLevel,
     DateTime? premiumExpiresAt,
+    int? coins,
   }) {
     final newPhotos = photos ?? this.photos;
     final newAvatarUrl = photos != null
@@ -212,6 +238,10 @@ class UserModel {
       isVerified: isVerified ?? this.isVerified,
       lookingFor: lookingFor ?? this.lookingFor,
       role: role ?? this.role,
+      zodiac: zodiac ?? this.zodiac,
+      mbti: mbti ?? this.mbti,
+      bloodType: bloodType ?? this.bloodType,
+      kinks: kinks ?? this.kinks,
       level: level ?? this.level,
       currentExp: currentExp ?? this.currentExp,
       totalExpReceived: totalExpReceived ?? this.totalExpReceived,
@@ -222,6 +252,7 @@ class UserModel {
       profileViews: profileViews ?? this.profileViews,
       vipLevel: vipLevel ?? this.vipLevel,
       premiumExpiresAt: premiumExpiresAt ?? this.premiumExpiresAt,
+      coins: coins ?? this.coins,
     );
   }
 }

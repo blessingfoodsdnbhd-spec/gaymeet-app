@@ -2,6 +2,8 @@ const router = require('express').Router();
 const Event = require('../models/Event');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { uploadMem, uploadDir } = require('../middleware/upload');
+const r2 = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
 
 // ── GET /api/events ───────────────────────────────────────────────────────────
@@ -306,6 +308,34 @@ router.delete('/:id/leave', auth, async (req, res, next) => {
 
     await event.save();
     ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/events/:id/cover ────────────────────────────────────────────────
+router.post('/:id/cover', auth, uploadMem.single('cover'), async (req, res, next) => {
+  try {
+    if (!req.file) return err(res, 'No file uploaded');
+
+    const path = require('path');
+    const fs = require('fs');
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
+    const key = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    let url = await r2.uploadFile(req.file.buffer, key, req.file.mimetype);
+    if (!url) {
+      await fs.promises.writeFile(path.join(uploadDir, key), req.file.buffer);
+      url = `${req.protocol}://${req.get('host')}/uploads/${key}`;
+    }
+
+    const event = await Event.findByIdAndUpdate(
+      req.params.id,
+      { coverImage: url },
+      { new: true }
+    );
+    if (!event) return err(res, 'Event not found', 404);
+
+    ok(res, { coverImage: url });
   } catch (e) {
     next(e);
   }

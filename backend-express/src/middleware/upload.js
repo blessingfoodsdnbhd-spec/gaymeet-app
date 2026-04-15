@@ -28,4 +28,12 @@ const upload = multer({
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
 });
 
-module.exports = { upload };
+// Memory-storage variant — used when R2 is configured so the buffer
+// is available before any disk write occurs.
+const uploadMem = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
+});
+
+module.exports = { upload, uploadMem, uploadDir };

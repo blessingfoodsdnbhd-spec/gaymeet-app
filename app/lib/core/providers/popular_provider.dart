@@ -18,18 +18,21 @@ final popularServiceProvider = Provider(
 class PopularEntry {
   final int rank;
   final String source; // 'system' | 'ticket'
+  final int ticketCount;
   final UserModel user;
 
   const PopularEntry({
     required this.rank,
     required this.source,
     required this.user,
+    this.ticketCount = 0,
   });
 
   factory PopularEntry.fromJson(Map<String, dynamic> json) {
     return PopularEntry(
-      rank: json['rank'] as int,
+      rank: (json['rank'] as num?)?.toInt() ?? 0,
       source: json['source'] as String? ?? 'system',
+      ticketCount: (json['ticketCount'] as num?)?.toInt() ?? 0,
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
     );
   }
@@ -40,12 +43,16 @@ class PopularState {
   final bool isLoading;
   final String? error;
   final bool ticketPurchaseSuccess;
+  final int myTickets;
+  final int maxTickets;
 
   const PopularState({
     this.entries = const [],
     this.isLoading = false,
     this.error,
     this.ticketPurchaseSuccess = false,
+    this.myTickets = 5,
+    this.maxTickets = 5,
   });
 
   PopularState copyWith({
@@ -53,6 +60,8 @@ class PopularState {
     bool? isLoading,
     String? error,
     bool? ticketPurchaseSuccess,
+    int? myTickets,
+    int? maxTickets,
   }) =>
       PopularState(
         entries: entries ?? this.entries,
@@ -60,6 +69,8 @@ class PopularState {
         error: error,
         ticketPurchaseSuccess:
             ticketPurchaseSuccess ?? this.ticketPurchaseSuccess,
+        myTickets: myTickets ?? this.myTickets,
+        maxTickets: maxTickets ?? this.maxTickets,
       );
 }
 
@@ -70,6 +81,17 @@ class PopularNotifier extends StateNotifier<PopularState> {
 
   PopularNotifier(this._service) : super(const PopularState()) {
     fetchPopular();
+    _fetchMyTickets();
+  }
+
+  Future<void> _fetchMyTickets() async {
+    try {
+      final data = await _service.getMyTickets();
+      state = state.copyWith(
+        myTickets: (data['remaining'] as num?)?.toInt() ?? 5,
+        maxTickets: (data['max'] as num?)?.toInt() ?? 5,
+      );
+    } catch (_) {}
   }
 
   Future<void> fetchPopular({String countryCode = 'MY'}) async {
@@ -77,7 +99,6 @@ class PopularNotifier extends StateNotifier<PopularState> {
     try {
       if (kUseDummyData) {
         await Future.delayed(const Duration(milliseconds: 400));
-        // Build dummy entries from popularUsers
         final entries = DummyData.popularUsers.asMap().entries.map((e) {
           return PopularEntry(
             rank: e.key + 1,
@@ -88,7 +109,7 @@ class PopularNotifier extends StateNotifier<PopularState> {
         state = state.copyWith(entries: entries, isLoading: false);
         return;
       }
-      final raw = await _service.getPopular(countryCode);
+      final raw = await _service.getTodayLeaderboard();
       final entries = raw.map(PopularEntry.fromJson).toList();
       state = state.copyWith(entries: entries, isLoading: false);
     } catch (e) {
@@ -105,10 +126,20 @@ class PopularNotifier extends StateNotifier<PopularState> {
     state = state.copyWith(ticketPurchaseSuccess: true);
   }
 
-  Future<void> useTicket({String countryCode = 'MY'}) async {
-    if (kUseDummyData) return;
-    await _service.useTicket(countryCode);
-    await fetchPopular(countryCode: countryCode);
+  Future<bool> useTicketFor(String targetUserId) async {
+    if (kUseDummyData) {
+      state = state.copyWith(myTickets: (state.myTickets - 1).clamp(0, state.maxTickets));
+      return true;
+    }
+    try {
+      final result = await _service.useTicketFor(targetUserId);
+      final remaining = (result['remaining'] as num?)?.toInt();
+      if (remaining != null) state = state.copyWith(myTickets: remaining);
+      await fetchPopular();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

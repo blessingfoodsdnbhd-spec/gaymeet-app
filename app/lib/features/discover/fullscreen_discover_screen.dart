@@ -40,6 +40,9 @@ class _FullscreenDiscoverScreenState
   // Like state
   final Set<String> _liked = {};
 
+  // Horizontal swipe state (current page only)
+  double _swipeDx = 0.0;
+
   // Double-tap heart animation
   late final AnimationController _heartCtrl;
   late final Animation<double> _heartScale;
@@ -141,13 +144,35 @@ class _FullscreenDiscoverScreenState
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
+  void _advancePage() {
+    if (_pageController.hasClients) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   void _doLike(UserModel user) {
     if (_liked.contains(user.id)) return;
     HapticFeedback.lightImpact();
-    setState(() => _liked.add(user.id));
+    setState(() {
+      _liked.add(user.id);
+      _swipeDx = 0.0;
+    });
     if (!kUseDummyData) {
       ref.read(matchesProvider.notifier).swipe(user.id, 'like');
     }
+    _advancePage();
+  }
+
+  void _doPass(UserModel user) {
+    HapticFeedback.lightImpact();
+    setState(() => _swipeDx = 0.0);
+    if (!kUseDummyData) {
+      ref.read(matchesProvider.notifier).swipe(user.id, 'pass');
+    }
+    _advancePage();
   }
 
   void _doDoubleTap(UserModel user) {
@@ -230,13 +255,17 @@ class _FullscreenDiscoverScreenState
                 onPageChanged: (i) {
                   setState(() {
                     _showHint = false;
+                    _swipeDx = 0.0;
                   });
                   // Preload ±2 pages worth of images is handled automatically
                   // by CachedNetworkImage's cache. Nothing extra needed.
                 },
                 itemBuilder: (context, i) {
                   final user = users[i];
-                  return _UserPage(
+                  final isActive = i == _currentPage;
+                  final dx = isActive ? _swipeDx : 0.0;
+
+                  final page = _UserPage(
                     key: ValueKey(user.id),
                     user: user,
                     isLiked: _liked.contains(user.id),
@@ -277,6 +306,93 @@ class _FullscreenDiscoverScreenState
                     onPrivatePhotos: () =>
                         context.push('/user/${user.id}', extra: user),
                     onMore: () => _showMoreSheet(user),
+                  );
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragUpdate: (d) {
+                      if (isActive) setState(() => _swipeDx += d.delta.dx);
+                    },
+                    onHorizontalDragEnd: (d) {
+                      if (!isActive) return;
+                      final vel = d.primaryVelocity ?? 0;
+                      // Flick gesture: use velocity; slow drag: use offset
+                      final decision = vel.abs() > 300 ? vel : _swipeDx;
+                      setState(() => _swipeDx = 0.0);
+                      if (decision < -60) {
+                        _doLike(user); // ← left = like
+                      } else if (decision > 60) {
+                        _doPass(user); // → right = pass
+                      }
+                    },
+                    onHorizontalDragCancel: () {
+                      if (isActive) setState(() => _swipeDx = 0.0);
+                    },
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Transform.translate(
+                          offset: Offset(dx * 0.25, 0),
+                          child: page,
+                        ),
+                        // ← Left swipe = LIKE overlay
+                        if (dx < -20)
+                          IgnorePointer(
+                            child: Positioned.fill(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 28),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppTheme.primary.withValues(
+                                          alpha: (dx.abs().clamp(20, 120) - 20) / 100 * 0.45),
+                                    ),
+                                    child: Icon(
+                                      Icons.favorite_rounded,
+                                      color: AppTheme.primary,
+                                      size: 52,
+                                      shadows: const [
+                                        Shadow(color: Colors.black54, blurRadius: 10)
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        // → Right swipe = PASS overlay
+                        if (dx > 20)
+                          IgnorePointer(
+                            child: Positioned.fill(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 28),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withValues(
+                                          alpha: (dx.clamp(20, 120) - 20) / 100 * 0.25),
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: Colors.white70,
+                                      size: 52,
+                                      shadows: [
+                                        Shadow(color: Colors.black54, blurRadius: 10)
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -902,7 +1018,7 @@ class _SwipeHintState extends State<_SwipeHint>
             const Icon(Icons.keyboard_arrow_up_rounded,
                 color: Colors.white54, size: 28),
             Text(
-              '向上滑动',
+              '向上滑 · 左滑 ❤️ · 右滑 ✗',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,

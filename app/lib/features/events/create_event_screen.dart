@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/events_provider.dart';
 
 class CreateEventScreen extends ConsumerStatefulWidget {
@@ -23,7 +28,10 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
   int _maxAttendees = 20;
   double _price = 0;
   String _category = 'hangout';
+  XFile? _coverImage;
   bool _creating = false;
+
+  final _picker = ImagePicker();
 
   static const _categories = [
     ('makan', '聚餐', '🍜'),
@@ -40,6 +48,14 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
     _venueC.dispose();
     _addressC.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickCover() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked != null) setState(() => _coverImage = picked);
   }
 
   Future<void> _create() async {
@@ -62,6 +78,19 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
         'price': _price,
         'category': _category,
       });
+      if (mounted && created != null && _coverImage != null) {
+        // Upload cover image to newly created event
+        final api = ref.read(apiClientProvider);
+        final formData = FormData.fromMap({
+          'cover': await MultipartFile.fromFile(
+            _coverImage!.path,
+            filename: _coverImage!.name,
+          ),
+        });
+        try {
+          await api.dio.post('/events/${created.id}/cover', data: formData);
+        } catch (_) {}
+      }
       if (mounted && created != null) {
         context.pop(true);
       } else if (mounted) {
@@ -112,6 +141,57 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ── Cover image ────────────────────────────────────────────────
+          GestureDetector(
+            onTap: _pickCover,
+            child: Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: AppTheme.card,
+                borderRadius: BorderRadius.circular(16),
+                image: _coverImage != null
+                    ? DecorationImage(
+                        image: FileImage(File(_coverImage!.path)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: _coverImage == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate_rounded,
+                            color: AppTheme.primary, size: 36),
+                        const SizedBox(height: 8),
+                        Text('添加封面图片',
+                            style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    )
+                  : Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _coverImage = null),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // ── Category selector ──────────────────────────────────────────
           const Text('活动类型',
               style:

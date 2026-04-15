@@ -3,7 +3,19 @@ const Place = require('../models/Place');
 const PlaceEvent = require('../models/PlaceEvent');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { uploadMem, uploadDir } = require('../middleware/upload');
+const r2 = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
+
+async function storePhoto(file, req) {
+  const ext = require('path').extname(file.originalname || '').toLowerCase() || '.jpg';
+  const key = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+  const r2Url = await r2.uploadFile(file.buffer, key, file.mimetype);
+  if (r2Url) return r2Url;
+  const fs = require('fs');
+  await fs.promises.writeFile(require('path').join(uploadDir, key), file.buffer);
+  return `${req.protocol}://${req.get('host')}/uploads/${key}`;
+}
 
 const FREE_PLACE_LIMIT = 3;
 const PAGE_SIZE = 20;
@@ -286,6 +298,26 @@ router.post('/:id/events', auth, async (req, res, next) => {
     });
 
     created(res, { event });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/places/:id/photos ───────────────────────────────────────────────
+router.post('/:id/photos', auth, uploadMem.array('photos', 5), async (req, res, next) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) return err(res, 'Place not found', 404);
+
+    const newUrls = await Promise.all(
+      (req.files || []).map((f) => storePhoto(f, req))
+    );
+
+    const combined = [...place.photos, ...newUrls].slice(0, 5);
+    place.photos = combined;
+    await place.save();
+
+    ok(res, { photos: place.photos });
   } catch (e) {
     next(e);
   }

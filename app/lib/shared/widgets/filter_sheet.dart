@@ -86,6 +86,31 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   late double _maxDistance;
   late Set<String> _tags;
 
+  // Personality filters
+  String? _zodiac;
+  String? _mbti;
+  String? _bloodType;
+  late Set<String> _kinks;
+
+  static const _kZodiacValues = [
+    'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
+    'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+  ];
+  static const _kZodiacLabels = [
+    '白羊', '金牛', '双子', '巨蟹', '狮子', '处女',
+    '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼',
+  ];
+  static const _kMbtiValues = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  ];
+  static const _kBloodTypeValues = ['A', 'B', 'AB', 'O'];
+  static const _kCommonKinks = [
+    '皮革', 'SM', '捆绑', '角色扮演', '食物', '按摩',
+  ];
+
   static const _sliderThemeBase = SliderThemeData(
     trackHeight: 3,
     thumbColor: Colors.white,
@@ -104,6 +129,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     );
     _maxDistance = current.maxDistanceKm;
     _tags = Set.from(current.tags);
+    _zodiac = current.zodiac;
+    _mbti = current.mbti;
+    _bloodType = current.bloodType;
+    _kinks = Set.from(current.kinks);
   }
 
   // ── Draft helpers ─────────────────────────────────────────────────────────
@@ -113,6 +142,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         ageMax: _ageRange.end.round(),
         maxDistanceKm: _maxDistance,
         tags: Set.from(_tags),
+        zodiac: _zodiac,
+        mbti: _mbti,
+        bloodType: _bloodType,
+        kinks: _kinks.toList(),
       );
 
   void _apply() {
@@ -203,6 +236,14 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     _buildDistanceSection(),
                     _buildDivider(),
                     _buildTagsSection(),
+                    _buildDivider(),
+                    _buildZodiacSection(),
+                    _buildDivider(),
+                    _buildMbtiSection(),
+                    _buildDivider(),
+                    _buildBloodTypeSection(),
+                    _buildDivider(),
+                    _buildKinksSection(),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -380,6 +421,227 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           const SizedBox(height: 10),
           Text(
             '${_tags.length} selected',
+            style: TextStyle(color: AppTheme.textHint, fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Zodiac ────────────────────────────────────────────────────────────────
+
+  Widget _buildZodiacSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('星座 (Zodiac)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (_zodiac != null)
+              GestureDetector(
+                onTap: () => setState(() => _zodiac = null),
+                child: Text('Clear',
+                    style: TextStyle(color: AppTheme.textHint, fontSize: 13)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_kZodiacValues.length, (i) {
+            final val = _kZodiacValues[i];
+            final label = _kZodiacLabels[i];
+            final selected = _zodiac == val;
+            return FilterChip(
+              label: Text(label),
+              selected: selected,
+              onSelected: (_) =>
+                  setState(() => _zodiac = selected ? null : val),
+              selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+              checkmarkColor: AppTheme.primary,
+              side: BorderSide(
+                  color:
+                      selected ? AppTheme.primary : const Color(0xFF3A3A3A)),
+              backgroundColor: AppTheme.card,
+              labelStyle: TextStyle(
+                color: selected ? AppTheme.primary : AppTheme.textSecondary,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 13,
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  // ── MBTI ──────────────────────────────────────────────────────────────────
+
+  Widget _buildMbtiSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('MBTI',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (_mbti != null)
+              GestureDetector(
+                onTap: () => setState(() => _mbti = null),
+                child: Text('Clear',
+                    style: TextStyle(color: AppTheme.textHint, fontSize: 13)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _kMbtiValues.map((val) {
+            final selected = _mbti == val;
+            return FilterChip(
+              label: Text(val),
+              selected: selected,
+              onSelected: (_) =>
+                  setState(() => _mbti = selected ? null : val),
+              selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+              checkmarkColor: AppTheme.primary,
+              side: BorderSide(
+                  color:
+                      selected ? AppTheme.primary : const Color(0xFF3A3A3A)),
+              backgroundColor: AppTheme.card,
+              labelStyle: TextStyle(
+                color: selected ? AppTheme.primary : AppTheme.textSecondary,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 13,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // ── Blood Type ────────────────────────────────────────────────────────────
+
+  Widget _buildBloodTypeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('血型 (Blood Type)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (_bloodType != null)
+              GestureDetector(
+                onTap: () => setState(() => _bloodType = null),
+                child: Text('Clear',
+                    style: TextStyle(color: AppTheme.textHint, fontSize: 13)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: _kBloodTypeValues.map((val) {
+            final selected = _bloodType == val;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(val),
+                selected: selected,
+                onSelected: (_) =>
+                    setState(() => _bloodType = selected ? null : val),
+                selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppTheme.primary,
+                side: BorderSide(
+                    color: selected
+                        ? AppTheme.primary
+                        : const Color(0xFF3A3A3A)),
+                backgroundColor: AppTheme.card,
+                labelStyle: TextStyle(
+                  color:
+                      selected ? AppTheme.primary : AppTheme.textSecondary,
+                  fontWeight:
+                      selected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // ── Kinks ─────────────────────────────────────────────────────────────────
+
+  Widget _buildKinksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('标签 (Kinks)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (_kinks.isNotEmpty)
+              GestureDetector(
+                onTap: () => setState(() => _kinks.clear()),
+                child: Text('Clear',
+                    style: TextStyle(color: AppTheme.textHint, fontSize: 13)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _kCommonKinks.map((tag) {
+            final selected = _kinks.contains(tag);
+            return GestureDetector(
+              onTap: () => setState(() {
+                if (selected) {
+                  _kinks.remove(tag);
+                } else {
+                  _kinks.add(tag);
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  gradient: selected ? AppTheme.brandGradient : null,
+                  color: selected ? null : AppTheme.card,
+                  borderRadius: BorderRadius.circular(24),
+                  border: selected
+                      ? null
+                      : Border.all(color: const Color(0xFF3A3A3A)),
+                ),
+                child: Text(
+                  tag,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected ? Colors.white : AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        if (_kinks.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            '${_kinks.length} selected',
             style: TextStyle(color: AppTheme.textHint, fontSize: 12),
           ),
         ],

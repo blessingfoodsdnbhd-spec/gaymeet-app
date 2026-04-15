@@ -1,7 +1,13 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../config/theme.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/places_provider.dart';
 import '../../shared/widgets/gradient_button.dart';
 
@@ -46,8 +52,11 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
   String _category = 'bar';
   String _city = 'Kuala Lumpur';
   String _priceRange = '\$\$';
-  final List<String> _tags = [];
+  List<String> _tags = [];
+  List<XFile> _photos = [];
   bool _isLoading = false;
+
+  final _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -70,6 +79,15 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
 
   void _removeTag(String tag) => setState(() => _tags.remove(tag));
 
+  Future<void> _pickPhoto() async {
+    if (_photos.length >= 5) return;
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked != null) setState(() => _photos.add(picked));
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -87,7 +105,23 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
       'priceRange': _priceRange,
     };
 
-    final error = await ref.read(placesProvider.notifier).createPlace(data);
+    final (placeId, error) = await ref.read(placesProvider.notifier).createPlace(data);
+    if (!mounted) return;
+
+    if (placeId != null && _photos.isNotEmpty) {
+      // Upload photos to the newly created place
+      final api = ref.read(apiClientProvider);
+      final formData = FormData.fromMap({
+        'photos': await Future.wait(
+          _photos.map((f) => MultipartFile.fromFile(f.path,
+              filename: f.name)),
+        ),
+      });
+      try {
+        await api.dio.post('/places/$placeId/photos', data: formData);
+      } catch (_) {}
+    }
+
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -122,6 +156,79 @@ class _CreatePlaceScreenState extends ConsumerState<CreatePlaceScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            // ── Photos ──────────────────────────────────────────────────
+            _SectionLabel(label: '地点照片（最多5张）'),
+            SizedBox(
+              height: 90,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemCount: _photos.length < 5 ? _photos.length + 1 : _photos.length,
+                itemBuilder: (_, i) {
+                  if (i == _photos.length) {
+                    return GestureDetector(
+                      onTap: _pickPhoto,
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: AppTheme.card,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.4),
+                            style: BorderStyle.solid,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_rounded,
+                                color: AppTheme.primary, size: 28),
+                            const SizedBox(height: 4),
+                            Text('添加',
+                                style: TextStyle(
+                                    color: AppTheme.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(_photos[i].path),
+                          width: 90,
+                          height: 90,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _photos.removeAt(i)),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+
             // ── Name ────────────────────────────────────────────────────
             _SectionLabel(label: '地点名称 *'),
             TextFormField(

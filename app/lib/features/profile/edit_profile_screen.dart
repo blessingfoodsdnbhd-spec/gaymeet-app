@@ -1,4 +1,3 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +40,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late int _weight; // kg
   String? _role;
 
+  // Personality fields
+  String? _zodiac;
+  String? _mbti;
+  String? _bloodType;
+  late List<String> _kinks;
+  final _kinkController = TextEditingController();
+
   static const _maxPhotos = 6;
 
   @override
@@ -56,6 +62,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _height = user?.height ?? 170;
     _weight = user?.weight ?? 65;
     _role = user?.role;
+    _zodiac = user?.zodiac;
+    _mbti = user?.mbti;
+    _bloodType = user?.bloodType;
+    _kinks = List<String>.from(user?.kinks ?? []);
   }
 
   @override
@@ -63,6 +73,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nicknameController.dispose();
     _bioController.dispose();
     _tagsController.dispose();
+    _kinkController.dispose();
     super.dispose();
   }
 
@@ -235,23 +246,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      final api = ref.read(apiClientProvider);
       final tags = _tagsController.text
           .split(',')
           .map((t) => t.trim())
           .where((t) => t.isNotEmpty)
           .toList();
 
-      await api.dio.patch('/users/me', data: {
+      final updates = <String, dynamic>{
         'nickname': _nicknameController.text.trim(),
         'bio': _bioController.text.trim(),
         'tags': tags,
         'height': _height,
         'weight': _weight,
         'role': _role,
-      });
+        'kinks': _kinks,
+      };
+      if (_zodiac != null) updates['zodiac'] = _zodiac;
+      if (_mbti != null) updates['mbti'] = _mbti;
+      if (_bloodType != null) updates['bloodType'] = _bloodType;
 
-      await ref.read(authStateProvider.notifier).checkAuth();
+      await ref.read(authStateProvider.notifier).updateProfile(updates);
       if (mounted) context.pop();
     } catch (_) {
       if (mounted) {
@@ -349,6 +363,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               value: _role,
               onChanged: (v) => setState(() => _role = v),
             ),
+            const SizedBox(height: 24),
+
+            // ── Zodiac ──
+            const Text('星座 (Zodiac)',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _buildZodiacSelector(),
+            const SizedBox(height: 24),
+
+            // ── MBTI ──
+            const Text('MBTI',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _buildMbtiSelector(),
+            const SizedBox(height: 24),
+
+            // ── Blood Type ──
+            const Text('血型 (Blood Type)',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _buildBloodTypeSelector(),
+            const SizedBox(height: 24),
+
+            // ── Kinks ──
+            const Text('标签 (Kinks)',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _buildKinksSection(),
             const SizedBox(height: 24),
 
             // ── Body stats ──
@@ -581,6 +623,185 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } finally {
       if (mounted) setState(() => _privatePhotoDeleting.remove(url));
     }
+  }
+
+  // ── Zodiac selector ────────────────────────────────────────────────────────
+
+  static const _zodiacValues = [
+    'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
+    'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+  ];
+  static const _zodiacLabels = [
+    '白羊', '金牛', '双子', '巨蟹', '狮子', '处女',
+    '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼',
+  ];
+
+  Widget _buildZodiacSelector() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: List.generate(_zodiacValues.length, (i) {
+        final val = _zodiacValues[i];
+        final label = _zodiacLabels[i];
+        final selected = _zodiac == val;
+        return FilterChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => setState(() => _zodiac = selected ? null : val),
+          selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+          checkmarkColor: AppTheme.primary,
+          side: BorderSide(
+            color: selected ? AppTheme.primary : const Color(0xFF3A3A3A),
+          ),
+          backgroundColor: AppTheme.card,
+          labelStyle: TextStyle(
+            color: selected ? AppTheme.primary : AppTheme.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 13,
+          ),
+        );
+      }),
+    );
+  }
+
+  // ── MBTI selector ──────────────────────────────────────────────────────────
+
+  static const _mbtiValues = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  ];
+
+  Widget _buildMbtiSelector() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _mbtiValues.map((val) {
+        final selected = _mbti == val;
+        return FilterChip(
+          label: Text(val),
+          selected: selected,
+          onSelected: (_) => setState(() => _mbti = selected ? null : val),
+          selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+          checkmarkColor: AppTheme.primary,
+          side: BorderSide(
+            color: selected ? AppTheme.primary : const Color(0xFF3A3A3A),
+          ),
+          backgroundColor: AppTheme.card,
+          labelStyle: TextStyle(
+            color: selected ? AppTheme.primary : AppTheme.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 13,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Blood type selector ────────────────────────────────────────────────────
+
+  static const _bloodTypeValues = ['A', 'B', 'AB', 'O'];
+
+  Widget _buildBloodTypeSelector() {
+    return Row(
+      children: _bloodTypeValues.map((val) {
+        final selected = _bloodType == val;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: FilterChip(
+            label: Text(val),
+            selected: selected,
+            onSelected: (_) =>
+                setState(() => _bloodType = selected ? null : val),
+            selectedColor: AppTheme.primary.withValues(alpha: 0.2),
+            checkmarkColor: AppTheme.primary,
+            side: BorderSide(
+              color: selected ? AppTheme.primary : const Color(0xFF3A3A3A),
+            ),
+            backgroundColor: AppTheme.card,
+            labelStyle: TextStyle(
+              color: selected ? AppTheme.primary : AppTheme.textSecondary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              fontSize: 13,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Kinks section ──────────────────────────────────────────────────────────
+
+  static const _maxKinks = 10;
+  static const _maxKinkLength = 20;
+
+  Widget _buildKinksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _kinks.map((kink) {
+            return ActionChip(
+              label: Text(kink),
+              avatar: const Icon(Icons.close_rounded, size: 14),
+              onPressed: () => setState(() => _kinks.remove(kink)),
+              backgroundColor: AppTheme.card,
+              side: const BorderSide(color: Color(0xFF3A3A3A)),
+              labelStyle: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+              ),
+            );
+          }).toList(),
+        ),
+        if (_kinks.length < _maxKinks) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _kinkController,
+                  maxLength: _maxKinkLength,
+                  decoration: InputDecoration(
+                    hintText: '添加标签 (${_kinks.length}/$_maxKinks)',
+                    counterText: '',
+                  ),
+                  onSubmitted: _addKink,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _addKink(_kinkController.text),
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                color: AppTheme.primary,
+              ),
+            ],
+          ),
+        ],
+        if (_kinks.length >= _maxKinks)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '最多 $_maxKinks 个标签',
+              style: TextStyle(color: AppTheme.textHint, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _addKink(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    if (_kinks.length >= _maxKinks) return;
+    if (_kinks.contains(trimmed)) return;
+    setState(() {
+      _kinks.add(trimmed);
+      _kinkController.clear();
+    });
   }
 
   Widget _buildPhotoSection() {

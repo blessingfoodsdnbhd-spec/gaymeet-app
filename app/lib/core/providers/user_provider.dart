@@ -49,11 +49,7 @@ class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final myId = _ref.read(authStateProvider).user?.id ?? '';
-      final users = data
-          .map((u) => UserModel.fromJson(u))
-          .where((u) => u.id != myId)
-          .toList();
+      final users = data.map((u) => UserModel.fromJson(u)).toList();
       state = AsyncValue.data(users);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -82,7 +78,6 @@ class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
 
 class DiscoverUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
   final ApiClient _api;
-
   final Ref _ref;
 
   DiscoverUsersNotifier(this._api, this._ref) : super(const AsyncValue.loading());
@@ -94,11 +89,7 @@ class DiscoverUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final myId = _ref.read(authStateProvider).user?.id ?? '';
-      final users = data
-          .map((u) => UserModel.fromJson(u))
-          .where((u) => u.id != myId)
-          .toList();
+      final users = data.map((u) => UserModel.fromJson(u)).toList();
       state = AsyncValue.data(users);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

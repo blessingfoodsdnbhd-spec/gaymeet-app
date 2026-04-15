@@ -134,13 +134,14 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
     } catch (_) {}
   }
 
-  Future<String?> createPlace(Map<String, dynamic> data) async {
+  /// Returns (placeId, errorMessage). placeId is non-null on success.
+  Future<(String?, String?)> createPlace(Map<String, dynamic> data) async {
     try {
       final place = await _service.createPlace(data);
       state = state.copyWith(places: [place, ...state.places]);
-      return null;
+      return (place.id, null);
     } catch (e) {
-      return _parseError(e);
+      return (null, _parseError(e));
     }
   }
 

@@ -51,6 +51,8 @@ router.post('/register', async (req, res, next) => {
       referralCode: myReferralCode,
       referredBy,
       deviceFingerprint: deviceFingerprint || null,
+      // Default to KL centre so new users appear in nearby immediately
+      location: { type: 'Point', coordinates: [101.6869, 3.1390] },
     });
 
     if (referredBy) {
