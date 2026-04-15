@@ -5,29 +5,19 @@ const { ok, err } = require('../utils/respond');
 
 const DAILY_FREE_TICKETS = 5;
 
-// ── GET /api/popular ──────────────────────────────────────────────────────────
-// Returns top users sorted by real popularityScore.
-router.get('/', auth, async (req, res, next) => {
-  try {
-    const { countryCode } = req.query;
-    const me = req.user;
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
-    const filter = {
-      _id: { $ne: me._id },
-      'preferences.hideFromNearby': { $ne: true },
-      'preferences.stealthMode': { $ne: true },
-    };
-    if (countryCode) filter.countryCode = countryCode;
-
-    const users = await User.find(filter)
-      .sort({ popularityScore: -1, isBoosted: -1, lastActiveAt: -1 })
-      .limit(50)
-      .select('nickname avatarUrl countryCode isBoosted isPremium lastActiveAt age height popularityScore')
-      .lean();
-
-    const result = users.map((u, i) => ({
-      rank: i + 1,
-      userId: u._id,
+// Serialize a User doc to the nested { user, rank, source, ticketCount } shape.
+function toEntry(u, rank, source = 'system') {
+  return {
+    rank,
+    source,
+    ticketCount: u.dailyTicketsReceived ?? 0,
+    user: {
+      _id: u._id,
+      id: u._id.toString(),
       nickname: u.nickname,
       avatarUrl: u.avatarUrl,
       countryCode: u.countryCode,
@@ -35,51 +25,100 @@ router.get('/', auth, async (req, res, next) => {
       isPremium: u.isPremium,
       age: u.age,
       height: u.height,
-      ticketCount: u.popularityScore ?? 0,
-    }));
+      popularityScore: u.popularityScore ?? 0,
+    },
+  };
+}
 
-    ok(res, result);
+// ── GET /api/popular/today ─────────────────────────────────────────────────────
+// Daily leaderboard: top 10 users by tickets received today.
+// Computed on-demand; fills remaining slots with highly-active users if < 10.
+router.get('/today', auth, async (req, res, next) => {
+  try {
+    const today = todayStr();
+
+    // Users who received tickets today, sorted by count desc
+    const topByTickets = await User.find({
+      dailyTicketsDate: today,
+      dailyTicketsReceived: { $gt: 0 },
+      'preferences.hideFromNearby': { $ne: true },
+    })
+      .sort({ dailyTicketsReceived: -1 })
+      .limit(10)
+      .select('nickname avatarUrl countryCode isBoosted isPremium age height popularityScore dailyTicketsReceived')
+      .lean();
+
+    let entries = topByTickets.map((u, i) => toEntry(u, i + 1, 'ticket'));
+
+    // Fill remaining spots up to 10 with popular users not already listed
+    if (entries.length < 10) {
+      const excludeIds = topByTickets.map((u) => u._id);
+      const filler = await User.find({
+        _id: { $nin: excludeIds },
+        'preferences.hideFromNearby': { $ne: true },
+        'preferences.stealthMode': { $ne: true },
+      })
+        .sort({ popularityScore: -1, lastActiveAt: -1 })
+        .limit(10 - entries.length)
+        .select('nickname avatarUrl countryCode isBoosted isPremium age height popularityScore dailyTicketsReceived')
+        .lean();
+
+      filler.forEach((u, i) =>
+        entries.push(toEntry(u, entries.length + 1, 'system'))
+      );
+    }
+
+    ok(res, entries);
   } catch (e) {
     next(e);
   }
 });
 
+// ── GET /api/popular ──────────────────────────────────────────────────────────
+// Alias to /today for the main leaderboard.
+router.get('/', auth, async (req, res, next) => {
+  req.url = '/today';
+  router.handle(req, res, next);
+});
+
 // ── GET /api/popular/my-tickets ───────────────────────────────────────────────
-// Returns the caller's remaining ticket balance for today.
 router.get('/my-tickets', auth, async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).select('ticketBalance ticketRefillDate').lean();
+    const today = todayStr();
+    let user = await User.findById(req.user._id).select('ticketBalance ticketRefillDate').lean();
 
     // Refill daily tickets if it's a new day
-    const today = new Date().toISOString().slice(0, 10);
     if (user.ticketRefillDate !== today) {
       await User.findByIdAndUpdate(req.user._id, {
         ticketBalance: DAILY_FREE_TICKETS,
         ticketRefillDate: today,
       });
-      return ok(res, { remaining: DAILY_FREE_TICKETS, refillDate: today });
+      return ok(res, { remaining: DAILY_FREE_TICKETS, max: DAILY_FREE_TICKETS });
     }
 
-    ok(res, { remaining: user.ticketBalance ?? DAILY_FREE_TICKETS });
+    ok(res, {
+      remaining: user.ticketBalance ?? DAILY_FREE_TICKETS,
+      max: DAILY_FREE_TICKETS,
+    });
   } catch (e) {
     next(e);
   }
 });
 
 // ── POST /api/popular/ticket/use ──────────────────────────────────────────────
-// Vote for a user: deduct one ticket from caller, increment target's popularityScore.
+// Vote for a user: caller spends 1 ticket, target gains daily popularity.
 router.post('/ticket/use', auth, async (req, res, next) => {
   try {
-    const { targetUserId, countryCode } = req.body;
+    const { targetUserId } = req.body;
     if (!targetUserId) return err(res, 'targetUserId is required', 400);
     if (targetUserId === req.user._id.toString()) {
       return err(res, 'Cannot vote for yourself', 400);
     }
 
-    // Refresh daily ticket balance if new day
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();
     const sender = await User.findById(req.user._id).select('ticketBalance ticketRefillDate');
 
+    // Refill if new day
     if (sender.ticketRefillDate !== today) {
       sender.ticketBalance = DAILY_FREE_TICKETS;
       sender.ticketRefillDate = today;
@@ -89,16 +128,24 @@ router.post('/ticket/use', auth, async (req, res, next) => {
       return err(res, '今日人气票已用完，明天再来', 429);
     }
 
-    // Deduct ticket from sender
     sender.ticketBalance -= 1;
     await sender.save();
 
-    // Increment target's popularity score
+    // Increment target's daily ticket count (reset if new day) + overall score
+    const target = await User.findById(targetUserId).select('dailyTicketsReceived dailyTicketsDate');
+    if (!target) return err(res, 'User not found', 404);
+
+    if (target.dailyTicketsDate !== today) {
+      target.dailyTicketsReceived = 1;
+      target.dailyTicketsDate = today;
+    } else {
+      target.dailyTicketsReceived += 1;
+    }
+    await target.save();
     await User.findByIdAndUpdate(targetUserId, { $inc: { popularityScore: 1 } });
 
     ok(res, {
       success: true,
-      countryCode: countryCode ?? null,
       remaining: sender.ticketBalance,
     });
   } catch (e) {

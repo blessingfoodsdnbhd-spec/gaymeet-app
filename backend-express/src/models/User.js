@@ -85,6 +85,8 @@ const userSchema = new mongoose.Schema(
     popularityScore: { type: Number, default: 0 },  // incremented when others vote
     ticketBalance: { type: Number, default: 5 },     // votes the user can cast today
     ticketRefillDate: { type: String, default: null }, // YYYY-MM-DD of last refill
+    dailyTicketsReceived: { type: Number, default: 0 },  // tickets received today (reset daily)
+    dailyTicketsDate: { type: String, default: null },    // YYYY-MM-DD of dailyTicketsReceived
 
     // Daily free gift tracking (premium users)
     dailyFreeGiftsDate: { type: String, default: null },
@@ -126,6 +128,24 @@ const userSchema = new mongoose.Schema(
       enum: ['top', 'bottom', 'versatile', null],
       default: null,
     },
+
+    // Personality / profile fields
+    zodiac: {
+      type: String,
+      enum: ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces', null],
+      default: null,
+    },
+    mbti: {
+      type: String,
+      enum: ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP', null],
+      default: null,
+    },
+    bloodType: {
+      type: String,
+      enum: ['A', 'B', 'AB', 'O', null],
+      default: null,
+    },
+    kinks: { type: [String], default: [] },
 
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

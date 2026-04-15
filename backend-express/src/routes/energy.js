@@ -35,21 +35,33 @@ router.post('/send', auth, async (req, res, next) => {
     if (!receiver) return err(res, 'User not found', 404);
 
     const today = todayStr();
+    const startOfDay = new Date(today + 'T00:00:00.000Z');
+    const endOfDay = new Date(today + 'T23:59:59.999Z');
 
-    // Reset daily counter if it's a new day
-    if (sender.dailyEnergySendsDate !== today) {
-      sender.dailyEnergySends = 0;
-      sender.dailyEnergySendsDate = today;
-    }
+    // Count distinct receivers this sender has sent to today
+    const distinctReceiversToday = await Energy.distinct('receiver', {
+      sender: sender._id,
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
 
-    // Rate-limit free users (after FREE_DAILY_SENDS costs coins)
-    if (!sender.isPremium && sender.dailyEnergySends >= FREE_DAILY_SENDS) {
+    const isNewReceiver = !distinctReceiversToday.some(
+      (id) => id.toString() === receiverId
+    );
+
+    // Rate-limit free users: 3 NEW distinct receivers per day.
+    // Sending again to an existing receiver is always free.
+    if (!sender.isPremium && isNewReceiver && distinctReceiversToday.length >= FREE_DAILY_SENDS) {
       if (sender.coins < OVER_LIMIT_COIN_COST) {
         return err(res, 'Daily free limit reached. Need 5 coins to continue.', 402);
       }
       sender.coins -= OVER_LIMIT_COIN_COST;
     }
 
+    // Keep dailyEnergySends as a convenience total (not used for limiting)
+    if (sender.dailyEnergySendsDate !== today) {
+      sender.dailyEnergySends = 0;
+      sender.dailyEnergySendsDate = today;
+    }
     sender.dailyEnergySends += 1;
 
     // Give EXP to receiver and recalculate level

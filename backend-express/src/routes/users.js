@@ -18,6 +18,7 @@ router.patch('/me', auth, async (req, res, next) => {
   try {
     const allowed = [
       'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'countryCode', 'lookingFor', 'role',
+      'zodiac', 'mbti', 'bloodType', 'kinks',
     ];
     const updates = {};
     for (const key of allowed) {
@@ -109,6 +110,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       minHeight, maxHeight,
       minWeight, maxWeight,
       tags,
+      role, zodiac, mbti, bloodType, kinks,
       maxDistance = 50000, // metres — default 50 km
       limit = 50,
     } = req.query;
@@ -177,6 +179,14 @@ router.get('/nearby', auth, async (req, res, next) => {
       const tagList = Array.isArray(tags) ? tags : [tags];
       if (tagList.length) matchStage.tags = { $in: tagList };
     }
+    if (role) matchStage.role = role;
+    if (zodiac) matchStage.zodiac = zodiac;
+    if (mbti) matchStage.mbti = mbti;
+    if (bloodType) matchStage.bloodType = bloodType;
+    if (kinks) {
+      const kinkList = Array.isArray(kinks) ? kinks : [kinks];
+      if (kinkList.length) matchStage.kinks = { $in: kinkList };
+    }
 
     const pipeline = [
       {
@@ -222,6 +232,7 @@ router.get('/discover', auth, async (req, res, next) => {
   try {
     const Swipe = require('../models/Swipe');
     const me = req.user;
+    const { role, zodiac, mbti, bloodType, kinks } = req.query;
 
     const alreadySwiped = await Swipe.find({ fromUser: me._id }, { toUser: 1 }).lean();
     const swipedIds = alreadySwiped.map((s) => s.toUser);
@@ -254,6 +265,11 @@ router.get('/discover', auth, async (req, res, next) => {
             _id: { $nin: excludeIds },
             'preferences.hideFromNearby': { $ne: true },
             'preferences.stealthMode': { $ne: true },
+            ...(role ? { role } : {}),
+            ...(zodiac ? { zodiac } : {}),
+            ...(mbti ? { mbti } : {}),
+            ...(bloodType ? { bloodType } : {}),
+            ...(kinks ? { kinks: { $in: Array.isArray(kinks) ? kinks : [kinks] } } : {}),
           },
         },
       },
