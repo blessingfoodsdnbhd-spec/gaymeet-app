@@ -14,7 +14,7 @@ final nearbyUsersProvider =
 final discoverUsersProvider =
     StateNotifierProvider<DiscoverUsersNotifier, AsyncValue<List<UserModel>>>(
         (ref) {
-  return DiscoverUsersNotifier(ref.watch(apiClientProvider));
+  return DiscoverUsersNotifier(ref.watch(apiClientProvider), ref);
 });
 
 class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
@@ -49,7 +49,11 @@ class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final users = data.map((u) => UserModel.fromJson(u)).toList();
+      final myId = _ref.read(authProvider).user?.id ?? '';
+      final users = data
+          .map((u) => UserModel.fromJson(u))
+          .where((u) => u.id != myId)
+          .toList();
       state = AsyncValue.data(users);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -79,19 +83,22 @@ class NearbyUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
 class DiscoverUsersNotifier extends StateNotifier<AsyncValue<List<UserModel>>> {
   final ApiClient _api;
 
-  DiscoverUsersNotifier(this._api) : super(const AsyncValue.loading());
+  final Ref _ref;
+
+  DiscoverUsersNotifier(this._api, this._ref) : super(const AsyncValue.loading());
 
   Future<void> fetchDiscoverUsers({DiscoveryFilter? filter}) async {
     state = const AsyncValue.loading();
     try {
-      final response = await _api.dio.get('/users/nearby', queryParameters: {
-        'radius': 50,
-        'page': 1,
-        'limit': 50,
+      final response = await _api.dio.get('/users/discover', queryParameters: {
         if (filter != null) ...filter.toQueryParams(),
       });
       final List<dynamic> data = response.data['data'];
-      final users = data.map((u) => UserModel.fromJson(u)).toList();
+      final myId = _ref.read(authProvider).user?.id ?? '';
+      final users = data
+          .map((u) => UserModel.fromJson(u))
+          .where((u) => u.id != myId)
+          .toList();
       state = AsyncValue.data(users);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

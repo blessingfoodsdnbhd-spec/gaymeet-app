@@ -17,12 +17,10 @@ router.post('/photos', auth, upload.single('photo'), async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
     user.photos.push(url);
-
-    // First photo becomes avatar
-    if (!user.avatarUrl) user.avatarUrl = url;
+    user.avatarUrl = user.photos[0]; // always keep avatarUrl = photos[0]
 
     await user.save();
-    ok(res, { url });
+    ok(res, { url, avatarUrl: user.avatarUrl, photos: user.photos });
   } catch (e) {
     next(e);
   }

@@ -105,7 +105,7 @@ class UserModel {
         (photos.isNotEmpty ? photos[0] : null);
 
     return UserModel(
-      id: json['id'] ?? '',
+      id: ((json['id'] ?? json['_id']) ?? '').toString(),
       email: json['email'],
       nickname: json['nickname'] ?? '',
       avatarUrl: avatarUrl,

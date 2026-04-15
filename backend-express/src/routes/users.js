@@ -198,6 +198,7 @@ router.get('/nearby', auth, async (req, res, next) => {
           dailySwipesDate: 0, blockedUsers: 0, __v: 0,
         },
       },
+      { $addFields: { id: { $toString: '$_id' } } },
     ];
 
     const users = await User.aggregate(pipeline);
@@ -265,6 +266,7 @@ router.get('/discover', auth, async (req, res, next) => {
           dailySwipesDate: 0, blockedUsers: 0, __v: 0,
         },
       },
+      { $addFields: { id: { $toString: '$_id' } } },
     ];
 
     const users = await User.aggregate(pipeline);

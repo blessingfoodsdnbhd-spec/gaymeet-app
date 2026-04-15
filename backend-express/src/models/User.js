@@ -81,6 +81,11 @@ const userSchema = new mongoose.Schema(
     // Virtual currency
     coins: { type: Number, default: 0 },
 
+    // Popularity leaderboard
+    popularityScore: { type: Number, default: 0 },  // incremented when others vote
+    ticketBalance: { type: Number, default: 5 },     // votes the user can cast today
+    ticketRefillDate: { type: String, default: null }, // YYYY-MM-DD of last refill
+
     // Daily free gift tracking (premium users)
     dailyFreeGiftsDate: { type: String, default: null },
     dailyFreeGiftsUsed: { type: Number, default: 0 },
@@ -188,6 +193,7 @@ userSchema.methods.comparePassword = function (plain) {
 
 userSchema.methods.toPublicJSON = function (distanceMeters) {
   const obj = this.toObject({ virtuals: false });
+  obj.id = obj._id.toString(); // Flutter reads 'id', not '_id'
   delete obj.password;
   delete obj.blockedUsers;
   delete obj.fcmToken;
