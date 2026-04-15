@@ -73,36 +73,16 @@ router.post('/register', async (req, res, next) => {
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
-
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password, deviceId, deviceName, twoFactorCode } = req.body;
     if (!email || !password) return err(res, 'email and password are required');
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      '+password +loginAttempts +lockoutUntil'
-    );
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) return err(res, '账号不存在', 404);
 
-    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
-      return err(res, '账号已锁定，请30分钟后重试', 423);
-    }
-
     const valid = await user.comparePassword(password);
-
-    if (!valid) {
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
-      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
-        user.loginAttempts = 0;
-        await user.save();
-        return err(res, '账号已锁定，请30分钟后重试', 423);
-      }
-      await user.save();
-      return err(res, '密码不正确', 401);
-    }
+    if (!valid) return err(res, '密码不正确', 401);
 
     const tfa = await TwoFactorAuth.findOne({ user: user._id });
     if (tfa && tfa.isEnabled) {
@@ -139,8 +119,6 @@ router.post('/login', async (req, res, next) => {
       }
     }
 
-    user.loginAttempts = 0;
-    user.lockoutUntil = null;
     user.isOnline = true;
     user.lastActiveAt = new Date();
     await user.save();
