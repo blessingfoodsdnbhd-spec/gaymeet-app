@@ -24,6 +24,7 @@ const giftsRoutes = require('./routes/gifts');
 const eventsRoutes = require('./routes/events');
 const verificationRoutes = require('./routes/verification');
 const dmRoutes = require('./routes/direct-messages');
+const conversationsRoutes = require('./routes/conversations');
 const callsRoutes = require('./routes/calls');
 const stickersRoutes = require('./routes/stickers');
 const secretCodesRoutes = require('./routes/secret-codes');
@@ -89,6 +90,7 @@ app.use('/api/coins', giftsRoutes); // /api/coins/balance and /api/coins/purchas
 app.use('/api/events', eventsRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/dm', dmRoutes);
+app.use('/api/conversations', conversationsRoutes);
 app.use('/api/calls', callsRoutes);
 app.use('/api/stickers', stickersRoutes);
 app.use('/api/codes', secretCodesRoutes);

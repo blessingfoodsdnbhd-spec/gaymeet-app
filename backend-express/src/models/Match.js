@@ -18,6 +18,12 @@ const matchSchema = new mongoose.Schema(
       of: Number,
       default: {},
     },
+    // How the conversation was started: 'match' = mutual swipe, 'dm' = paid first message
+    source: {
+      type: String,
+      enum: ['match', 'dm'],
+      default: 'match',
+    },
   },
   { timestamps: true }
 );

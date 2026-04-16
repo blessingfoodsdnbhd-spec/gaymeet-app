@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../config/theme.dart';
 import '../../core/dummy/dummy_data.dart';
-import '../../core/providers/match_provider.dart';
+import '../../core/providers/conversations_provider.dart';
 import '../../core/models/match.dart';
 
 class ChatListScreen extends ConsumerWidget {
@@ -15,7 +15,7 @@ class ChatListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final matches = kUseDummyData
         ? DummyData.matches
-        : ref.watch(matchesProvider).valueOrNull ?? [];
+        : ref.watch(conversationsProvider).valueOrNull ?? [];
 
     return Scaffold(
       appBar: AppBar(

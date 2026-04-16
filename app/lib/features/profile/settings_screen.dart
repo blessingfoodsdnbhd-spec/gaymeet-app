@@ -282,14 +282,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 : () => context.push('/verification'),
           ),
           ListTile(
-            leading: const Icon(Icons.mark_email_unread_rounded),
-            title: const Text('私信箱'),
-            subtitle:
-                Text('收件箱', style: TextStyle(color: AppTheme.textSecondary)),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/dm/inbox'),
-          ),
-          ListTile(
             leading: const Icon(Icons.call_rounded, color: Color(0xFF4CAF50)),
             title: const Text('通话记录'),
             subtitle: Text('语音/视频通话历史',

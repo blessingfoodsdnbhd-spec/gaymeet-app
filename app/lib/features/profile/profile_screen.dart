@@ -15,7 +15,8 @@ import '../../shared/widgets/design_system/rainbow_border.dart';
 import '../../shared/widgets/level_badge.dart';
 import '../../shared/widgets/looking_for_badge.dart';
 import '../gifts/gift_sheet.dart';
-import '../dm/send_dm_sheet.dart';
+import 'package:dio/dio.dart';
+import '../../core/providers/conversations_provider.dart';
 import '../questions/ask_question_sheet.dart';
 import '../date_room/date_room_invite_sheet.dart';
 import 'looking_for_sheet.dart';
@@ -588,15 +589,7 @@ class _OtherProfileActions extends ConsumerWidget {
               child: _ActionBtn(
                 icon: Icons.chat_bubble_rounded,
                 label: '私信',
-                onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => SendDmSheet(
-                    receiverId: user.id,
-                    receiverName: user.nickname,
-                  ),
-                ),
+                onTap: () => _openDm(context, ref, user),
               ),
             ),
             const SizedBox(width: 8),
@@ -648,6 +641,67 @@ class _OtherProfileActions extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+// ── Open DM conversation ──────────────────────────────────────────────────────
+
+Future<void> _openDm(
+    BuildContext context, WidgetRef ref, UserModel user) async {
+  // Show a confirmation so users know the potential cost before API call
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('向 ${user.nickname} 发私信'),
+      content: const Text(
+        '已配对用户完全免费；\n未配对时首次开启对话需 10 🪙。',
+        style: TextStyle(height: 1.5),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('开启对话',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    final result = await ref
+        .read(conversationsProvider.notifier)
+        .openConversation(user.id);
+
+    if (!context.mounted) return;
+
+    if (result.coinsCharged > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已扣除 ${result.coinsCharged} 🪙 开启私信')),
+      );
+    }
+
+    context.push('/chat/${result.matchId}', extra: {
+      'userId': user.id,
+      'userName': user.nickname,
+      'userAvatar': user.avatarUrl,
+    });
+  } on DioException catch (e) {
+    if (!context.mounted) return;
+    final msg = e.response?.statusCode == 402 ? '金币不足，请前往充值' : '操作失败，请重试';
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('操作失败，请重试')));
   }
 }
 
