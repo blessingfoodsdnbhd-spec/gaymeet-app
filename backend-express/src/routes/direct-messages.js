@@ -15,7 +15,12 @@ router.post('/send', auth, async (req, res, next) => {
     if (content.length > 200) return err(res, 'Content too long (max 200 chars)', 400);
 
     const sender = req.user;
-    const cost = sender.isPremium ? COST_PREMIUM : COST_FREE;
+    // Use same VIP logic as toPublicJSON: vipLevel > 0 with valid expiry counts as premium
+    const vipActive =
+      (sender.vipLevel > 0) &&
+      (!sender.vipExpiresAt || new Date() < new Date(sender.vipExpiresAt));
+    const isPremium = vipActive || (sender.isPremium && (!sender.premiumExpiresAt || new Date() < new Date(sender.premiumExpiresAt)));
+    const cost = isPremium ? COST_PREMIUM : COST_FREE;
 
     if (sender.coins < cost) {
       return err(res, `Insufficient coins. Need ${cost} coins.`, 402);
