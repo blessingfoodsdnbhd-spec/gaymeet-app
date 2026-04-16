@@ -12,7 +12,6 @@ import '../location/location_hub_screen.dart';
 import '../matches/matches_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../moments/moments_feed_screen.dart';
-import '../saw_you/saw_you_screen.dart';
 import '../profile/profile_screen.dart';
 import '../places/places_screen.dart';
 
@@ -57,7 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ChatListScreen(),
     MomentsFeedScreen(),
     PlacesScreen(),
-    SawYouScreen(),
     ProfileScreen(),
   ];
 
@@ -140,10 +138,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.storefront_rounded),
               label: '找店',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.remove_red_eye_rounded),
-              label: 'sawYou'.tr(locale),
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.person_rounded),

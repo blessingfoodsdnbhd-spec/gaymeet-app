@@ -8,7 +8,6 @@ import '../../core/api/block_report_service.dart';
 import '../../core/dummy/dummy_data.dart';
 import '../../core/models/message.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/providers/chat_limit_provider.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/providers/match_provider.dart';
 import '../../core/providers/subscription_provider.dart';
@@ -90,21 +89,6 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     if (text.isEmpty) return;
 
     if (!kUseDummyData) {
-      // ── First-message gating for free users ──────────────────────────────
-      final sub = ref.read(subscriptionProvider);
-      if (!sub.isPremium) {
-        final messages = ref.read(chatProvider).valueOrNull ?? [];
-        final isFirstMessage = messages.isEmpty;
-        if (isFirstMessage) {
-          final limit = ref.read(chatLimitProvider);
-          if (!limit.canStartNewConversation) {
-            _showFirstMessageLimitSheet();
-            return;
-          }
-          // Record before sending
-          ref.read(chatLimitProvider.notifier).recordFirstMessage();
-        }
-      }
       ref.read(chatProvider.notifier).sendMessage(widget.matchId, text);
       _msgC.clear();
       return;
@@ -144,92 +128,6 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
         ),
       );
     });
-  }
-
-  void _showFirstMessageLimitSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: AppTheme.textHint,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppTheme.card,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Icon(Icons.chat_bubble_outline_rounded,
-                  color: AppTheme.primary, size: 30),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Upgrade to send unlimited messages",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'You\'ve used all $kFreeFirstMessagesPerDay free conversation starts today.\nUpgrade to message everyone without limits.',
-              style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            GestureDetector(
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/premium');
-              },
-              child: Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: AppTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
-                ),
-                child: const Center(
-                  child: Text(
-                    'Unlock Now 🔥',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Maybe later',
-                  style: TextStyle(color: AppTheme.textSecondary)),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // ── Options menu ──────────────────────────────────────────────────────────

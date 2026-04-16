@@ -271,9 +271,9 @@ router.get('/discover', auth, async (req, res, next) => {
     ];
 
     const lat =
-      me.preferences?.virtualLat ?? me.location?.coordinates?.[1] ?? 3.1390;
+      me.preferences?.virtualLat || me.location?.coordinates?.[1] || 3.1390;
     const lng =
-      me.preferences?.virtualLng ?? me.location?.coordinates?.[0] ?? 101.6869;
+      me.preferences?.virtualLng || me.location?.coordinates?.[0] || 101.6869;
 
     const pipeline = [
       {
