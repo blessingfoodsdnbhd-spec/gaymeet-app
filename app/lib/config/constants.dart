@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'Meetup Nearby';
+  static const String appName = 'Meyou';
 
   // ── API base URL ─────────────────────────────────────────────────────────────
   // To switch between environments use --dart-define when running:

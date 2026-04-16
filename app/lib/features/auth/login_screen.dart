@@ -92,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       shaderCallback: (bounds) =>
                           AppColors.rainbowGradient.createShader(bounds),
                       child: const Text(
-                        'Meetup Nearby',
+                        'Meyou',
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,

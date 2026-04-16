@@ -410,7 +410,7 @@ class _HowItWorksCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _Step(n: '1', text: '分享你的邀请码给朋友'),
-          _Step(n: '2', text: '朋友用你的码注册Meetup Nearby'),
+          _Step(n: '2', text: '朋友用你的码注册Meyou'),
           _Step(n: '3', text: '朋友完成注册后，双方各获得金币奖励'),
           _Step(n: '4', text: '金币可兑换Premium会员或其他特权'),
         ],
