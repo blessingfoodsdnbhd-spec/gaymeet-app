@@ -92,7 +92,7 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
     final router = createRouter(isLoggedIn: authState.isLoggedIn);
 
     return MaterialApp.router(
-      title: 'Meetup Nearby',
+      title: 'Meyou',
       debugShowCheckedModeBanner: false,
       theme: AppThemeLight.lightTheme,
       darkTheme: AppTheme.darkTheme,
