@@ -86,6 +86,11 @@ class _FullscreenDiscoverScreenState
     });
 
     _loadDummy();
+    // Fetch remote users on first mount — without this the provider stays
+    // in AsyncValue.loading() until the user manually pulls to refresh.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadRemote();
+    });
   }
 
   @override
