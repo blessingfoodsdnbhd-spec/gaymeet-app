@@ -545,29 +545,6 @@ class _OtherProfileActions extends ConsumerWidget {
 
 Future<void> _openDm(
     BuildContext context, WidgetRef ref, UserModel user) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('向 ${user.nickname} 发私信'),
-      content: const Text('发送私信完全免费。'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('开启对话',
-              style: TextStyle(fontWeight: FontWeight.w700)),
-        ),
-      ],
-    ),
-  );
-
-  if (confirmed != true || !context.mounted) return;
-
   try {
     final result = await ref
         .read(conversationsProvider.notifier)

@@ -122,6 +122,10 @@ class SocketService {
     _socket!.connect();
   }
 
+  void joinRoom(String matchId) {
+    _socket?.emit('join_room', {'matchId': matchId});
+  }
+
   void sendMessage(String matchId, String content, {String type = 'text'}) {
     _socket?.emit('chat:send', {
       'matchId': matchId,
