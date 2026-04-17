@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/routes.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/providers/conversations_provider.dart';
 import 'core/providers/likes_provider.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/providers/privacy_provider.dart';
@@ -99,9 +100,10 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
             .read(subscriptionProvider.notifier)
             .syncFromUser(next.user!.isPremium);
 
-        // Re-fetch likes when user logs in (prev was null → just signed in)
+        // Re-fetch likes and conversations when user logs in
         if (prev?.user == null) {
           ref.read(likesProvider.notifier).fetchLikes();
+          ref.read(conversationsProvider.notifier).fetchConversations();
           _scheduleNoMatchNotification();
         }
       }
