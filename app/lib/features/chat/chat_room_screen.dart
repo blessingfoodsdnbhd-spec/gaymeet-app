@@ -12,10 +12,8 @@ import '../../core/providers/chat_provider.dart';
 import '../../core/providers/match_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/user_provider.dart';
-import '../gifts/gift_sheet.dart';
 import '../call/active_call_screen.dart';
 import '../stickers/sticker_picker.dart';
-import '../date_room/date_room_invite_sheet.dart';
 import '../../core/providers/call_provider.dart';
 import '../../core/models/sticker.dart';
 
@@ -491,17 +489,6 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                     builder: (_) => const ActiveCallScreen()));
               },
             ),
-            // Virtual date room
-            IconButton(
-              icon: const Text('💑', style: TextStyle(fontSize: 18)),
-              tooltip: '虚拟约会',
-              onPressed: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const DateRoomInviteSheet(),
-              ),
-            ),
             IconButton(
               icon: const Icon(Icons.more_vert_rounded, size: 20),
               onPressed: _showOptions,
@@ -595,30 +582,6 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       ),
       child: Row(
         children: [
-          // Gift button
-          GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => GiftSheet(
-                receiverId: widget.otherUserId,
-                receiverName: widget.otherUserName,
-              ),
-            ),
-            child: Container(
-              width: 36,
-              height: 36,
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.card,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Center(
-                child: Text('🎁', style: TextStyle(fontSize: 16)),
-              ),
-            ),
-          ),
           // Sticker button
           GestureDetector(
             onTap: () async {

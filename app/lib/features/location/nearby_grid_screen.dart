@@ -8,7 +8,6 @@ import '../../core/dummy/dummy_data.dart';
 import '../../core/models/user.dart';
 import '../../core/providers/filter_provider.dart';
 import '../../core/providers/user_provider.dart';
-import '../../shared/widgets/level_badge.dart';
 
 class NearbyGridScreen extends ConsumerStatefulWidget {
   const NearbyGridScreen({super.key});
@@ -237,7 +236,7 @@ class _GridTile extends StatelessWidget {
                     child: const Icon(Icons.bolt_rounded,
                         size: 10, color: Colors.black),
                   )
-                : LevelBadge(level: user.level, compact: true),
+                : const SizedBox.shrink(),
           ),
 
           // Bottom row: distance (left) + role (right)

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../api/api_client.dart';
 import '../models/match.dart';
 import 'auth_provider.dart';
@@ -50,20 +49,12 @@ class ConversationsNotifier
     }
   }
 
-  /// Open or find a conversation with [targetUserId].
-  /// If no mutual match exists, deducts [FIRST_MESSAGE_COST] coins.
-  /// Throws [DioException] with statusCode 402 on insufficient coins.
   Future<OpenConversationResult> openConversation(String targetUserId) async {
     final response =
         await _api.dio.post('/conversations/open/$targetUserId');
     final result =
         OpenConversationResult.fromJson(response.data['data']);
-
-    // Refresh the conversations list if a new conversation was created
-    if (result.coinsCharged > 0) {
-      await fetchConversations();
-    }
-
+    await fetchConversations();
     return result;
   }
 

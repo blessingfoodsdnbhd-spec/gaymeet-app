@@ -8,17 +8,12 @@ import '../../core/dummy/dummy_data.dart';
 import '../../core/models/user.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/boost_provider.dart';
-import '../../core/providers/energy_provider.dart';
 import '../../core/providers/follow_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../shared/widgets/design_system/rainbow_border.dart';
-import '../../shared/widgets/level_badge.dart';
 import '../../shared/widgets/looking_for_badge.dart';
-import '../gifts/gift_sheet.dart';
 import 'package:dio/dio.dart';
 import '../../core/providers/conversations_provider.dart';
-import '../questions/ask_question_sheet.dart';
-import '../date_room/date_room_invite_sheet.dart';
 import 'looking_for_sheet.dart';
 import 'private_photos_section.dart';
 import 'public_qa_section.dart';
@@ -137,8 +132,6 @@ class ProfileScreen extends ConsumerWidget {
                         const Icon(Icons.verified_rounded,
                             size: 22, color: Color(0xFF1976D2)),
                       ],
-                      const SizedBox(width: 8),
-                      LevelBadge(level: user.level, size: 38),
                     ],
                   ),
                   if (isOwnProfile) ...[
@@ -243,56 +236,6 @@ class ProfileScreen extends ConsumerWidget {
                     ref.read(followProvider(user.id).notifier).toggle(),
               ),
 
-            // ── Other profile action buttons ──────────────────────────────────
-            if (!isOwnProfile) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => AskQuestionSheet(
-                          targetUserId: user.id,
-                          targetNickname: user.nickname,
-                        ),
-                      ),
-                      icon: const Text('📬', style: TextStyle(fontSize: 14)),
-                      label: const Text('提问箱'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textSecondary,
-                        side: const BorderSide(color: Colors.white24),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const DateRoomInviteSheet(),
-                      ),
-                      icon: const Text('💑', style: TextStyle(fontSize: 14)),
-                      label: const Text('虚拟约会'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primary,
-                        side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.5)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
 
             // ── Private Photos (own profile only) ─────────────────────────────
             const SizedBox(height: 32),
@@ -568,7 +511,6 @@ class _OtherProfileActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isFollowing = followState?.isFollowing ?? false;
     final isLoadingFollow = followState?.isLoading ?? false;
-    final energyState = ref.watch(energyProvider);
 
     return Column(
       children: [
@@ -592,51 +534,6 @@ class _OtherProfileActions extends ConsumerWidget {
                 onTap: () => _openDm(context, ref, user),
               ),
             ),
-            const SizedBox(width: 8),
-            // Gift
-            Expanded(
-              child: _ActionBtn(
-                emoji: '🎁',
-                label: '送礼',
-                onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => GiftSheet(
-                    receiverId: user.id,
-                    receiverName: user.nickname,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Energy
-            Expanded(
-              child: _ActionBtn(
-                emoji: '⚡',
-                label: energyState.freeRemaining > 0
-                    ? '能量 ×${energyState.freeRemaining}'
-                    : '能量',
-                labelColor: const Color(0xFFFFD700),
-                borderColor: const Color(0xFFFFD700),
-                onTap: energyState.isSending
-                    ? null
-                    : () async {
-                        final error = await ref
-                            .read(energyProvider.notifier)
-                            .sendEnergy(user.id);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(
-                                error == null ? '已送出能量 ⚡' : '发送失败: $error'),
-                            backgroundColor: error == null
-                                ? AppTheme.surface
-                                : AppTheme.error,
-                          ));
-                        }
-                      },
-              ),
-            ),
           ],
         ),
       ],
@@ -648,17 +545,13 @@ class _OtherProfileActions extends ConsumerWidget {
 
 Future<void> _openDm(
     BuildContext context, WidgetRef ref, UserModel user) async {
-  // Show a confirmation so users know the potential cost before API call
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text('向 ${user.nickname} 发私信'),
-      content: const Text(
-        '已配对用户完全免费；\n未配对时首次开启对话需 10 🪙。',
-        style: TextStyle(height: 1.5),
-      ),
+      content: const Text('发送私信完全免费。'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
@@ -682,22 +575,15 @@ Future<void> _openDm(
 
     if (!context.mounted) return;
 
-    if (result.coinsCharged > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已扣除 ${result.coinsCharged} 🪙 开启私信')),
-      );
-    }
-
     context.push('/chat/${result.matchId}', extra: {
       'userId': user.id,
       'userName': user.nickname,
       'userAvatar': user.avatarUrl,
     });
-  } on DioException catch (e) {
+  } on DioException catch (_) {
     if (!context.mounted) return;
-    final msg = e.response?.statusCode == 402 ? '金币不足，请前往充值' : '操作失败，请重试';
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+        .showSnackBar(const SnackBar(content: Text('操作失败，请重试')));
   } catch (_) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
@@ -773,28 +659,19 @@ class _FollowBtn extends StatelessWidget {
 
 class _ActionBtn extends StatelessWidget {
   final IconData? icon;
-  final String? emoji;
   final String label;
-  final Color? labelColor;
-  final Color? borderColor;
   final VoidCallback? onTap;
   final bool primary;
 
   const _ActionBtn({
     this.icon,
-    this.emoji,
     required this.label,
     required this.onTap,
-    this.labelColor,
-    this.borderColor,
     this.primary = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fgColor = labelColor ?? AppTheme.textPrimary;
-    final bdColor = borderColor ?? AppColors.bgCard;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -805,16 +682,14 @@ class _ActionBtn extends StatelessWidget {
               ? AppTheme.primary.withValues(alpha: 0.12)
               : AppTheme.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: bdColor, width: 1),
+          border: Border.all(color: AppColors.bgCard, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (emoji != null)
-              Text(emoji!, style: const TextStyle(fontSize: 15))
-            else if (icon != null)
-              Icon(icon!, size: 16, color: primary ? AppTheme.primary : fgColor),
+            if (icon != null)
+              Icon(icon!, size: 16, color: primary ? AppTheme.primary : AppTheme.textPrimary),
             const SizedBox(width: 5),
             Flexible(
               child: Text(
@@ -824,7 +699,7 @@ class _ActionBtn extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: primary ? AppTheme.primary : fgColor,
+                  color: primary ? AppTheme.primary : AppTheme.textPrimary,
                 ),
               ),
             ),
