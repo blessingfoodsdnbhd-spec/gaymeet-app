@@ -219,7 +219,6 @@ router.get('/nearby', auth, async (req, res, next) => {
           query: matchStage,
         },
       },
-      { $sort: { distanceMeters: 1 } },
       { $limit: parseInt(limit) },
       {
         $project: {
@@ -231,6 +230,9 @@ router.get('/nearby', auth, async (req, res, next) => {
     ];
 
     const users = await User.aggregate(pipeline);
+    // $sort inside the aggregation pipeline is unreliable after $geoNear on Atlas M0;
+    // sort in JS to guarantee ascending distance order.
+    users.sort((a, b) => (a.distanceMeters || 0) - (b.distanceMeters || 0));
 
     const result = users.map((u) => {
       const dm = u.distanceMeters;
