@@ -206,6 +206,22 @@ class _GridTile extends StatelessWidget {
             ),
           ),
 
+          // Online dot — top-right
+          if (user.isOnline)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.online,
+                  border: Border.all(color: Colors.black54, width: 1.5),
+                ),
+              ),
+            ),
+
           // Distance label — bottom-left
           if (user.distanceLabel != null)
             Positioned(

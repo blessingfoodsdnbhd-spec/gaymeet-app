@@ -219,8 +219,7 @@ router.get('/nearby', auth, async (req, res, next) => {
           query: matchStage,
         },
       },
-      // Boosted users first, then by distance
-      { $sort: { isBoosted: -1, distanceMeters: 1 } },
+      { $sort: { distanceMeters: 1 } },
       { $limit: parseInt(limit) },
       {
         $project: {
