@@ -541,9 +541,11 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                       final isMe = msg.senderId == 'me' ||
                           msg.senderId ==
                               ref.read(authStateProvider).user?.id;
+                      final msgDay = msg.createdAt.toLocal();
+                      final prevDay = messages[i + 1].createdAt.toLocal();
                       final showDate = i == messages.length - 1 ||
-                          messages[i + 1].createdAt.day !=
-                              msg.createdAt.day;
+                          DateTime(prevDay.year, prevDay.month, prevDay.day) !=
+                              DateTime(msgDay.year, msgDay.month, msgDay.day);
 
                       return Column(
                         children: [
@@ -648,10 +650,13 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   }
 
   String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
     final now = DateTime.now();
-    if (dt.day == now.day && dt.month == now.month) return 'Today';
-    if (dt.day == now.day - 1) return 'Yesterday';
-    return DateFormat.MMMd().format(dt);
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    if (day == today) return 'Today';
+    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    return DateFormat.MMMd().format(local);
   }
 }
 

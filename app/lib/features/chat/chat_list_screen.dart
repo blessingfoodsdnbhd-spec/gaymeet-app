@@ -13,9 +13,9 @@ class ChatListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final matches = kUseDummyData
-        ? DummyData.matches
-        : ref.watch(conversationsProvider).valueOrNull ?? [];
+    final conversationsAsync = kUseDummyData
+        ? AsyncValue.data(DummyData.matches)
+        : ref.watch(conversationsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,24 +28,49 @@ class ChatListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: matches.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.chat_bubble_outline_rounded,
-                      size: 56, color: AppTheme.textHint),
-                  const SizedBox(height: 16),
-                  Text('No conversations yet',
-                      style: TextStyle(color: AppTheme.textSecondary)),
-                ],
+      body: conversationsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.wifi_off_rounded, size: 48, color: AppTheme.textHint),
+              const SizedBox(height: 12),
+              Text('Failed to load',
+                  style: TextStyle(color: AppTheme.textSecondary)),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () =>
+                    ref.read(conversationsProvider.notifier).fetchConversations(),
+                child: const Text('Retry'),
               ),
-            )
-          : ListView.separated(
-              itemCount: matches.length,
-              separatorBuilder: (_, __) => const Divider(indent: 76),
-              itemBuilder: (_, i) => _ChatTile(match: matches[i]),
-            ),
+            ],
+          ),
+        ),
+        data: (matches) => matches.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chat_bubble_outline_rounded,
+                        size: 56, color: AppTheme.textHint),
+                    const SizedBox(height: 16),
+                    Text('No conversations yet',
+                        style: TextStyle(color: AppTheme.textSecondary)),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: () => ref
+                    .read(conversationsProvider.notifier)
+                    .fetchConversations(),
+                child: ListView.separated(
+                  itemCount: matches.length,
+                  separatorBuilder: (_, __) => const Divider(indent: 76),
+                  itemBuilder: (_, i) => _ChatTile(match: matches[i]),
+                ),
+              ),
+      ),
     );
   }
 }

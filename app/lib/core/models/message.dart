@@ -30,7 +30,7 @@ class MessageModel {
       content: json['content'] ?? '',
       type: json['type'] ?? 'text',
       isRead: json['isRead'] ?? false,
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      createdAt: (DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now()).toLocal(),
     );
   }
 }
