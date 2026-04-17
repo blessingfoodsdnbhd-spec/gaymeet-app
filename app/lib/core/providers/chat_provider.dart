@@ -22,7 +22,7 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
   ChatNotifier(this._api, this._socket)
       : super(const AsyncValue.data([]));
 
-  void openChat(String matchId) {
+  void openChat(String matchId, String otherUserId) {
     _currentMatchId = matchId;
     _messageSub?.cancel();
     _messageSub = _socket.onMessage.listen((msg) {
@@ -32,29 +32,20 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
         });
       }
     });
-    fetchMessages(matchId);
+    _socket.joinRoom(matchId);
+    fetchMessages(matchId, otherUserId);
     _socket.markRead(matchId);
   }
 
-  Future<void> fetchMessages(String matchId, {int page = 1}) async {
-    if (page == 1) state = const AsyncValue.loading();
+  Future<void> fetchMessages(String matchId, String otherUserId) async {
+    state = const AsyncValue.loading();
     try {
-      final response = await _api.dio.get('/chat/$matchId/messages', queryParameters: {
-        'page': page,
-      });
-      final data = response.data['data'];
-      final List<dynamic> msgs = data['messages'];
+      final response = await _api.dio.get('/conversations/$otherUserId/messages');
+      final List<dynamic> msgs = response.data['data'] as List<dynamic>;
       final messages = msgs.map((m) => MessageModel.fromJson(m)).toList();
-
-      if (page == 1) {
-        state = AsyncValue.data(messages);
-      } else {
-        state.whenData((existing) {
-          state = AsyncValue.data([...existing, ...messages]);
-        });
-      }
+      state = AsyncValue.data(messages);
     } catch (e, st) {
-      if (page == 1) state = AsyncValue.error(e, st);
+      state = AsyncValue.error(e, st);
     }
   }
 

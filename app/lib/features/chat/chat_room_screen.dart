@@ -68,7 +68,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       _messages = DummyData.messagesFor(widget.matchId);
     } else {
       Future.microtask(
-          () => ref.read(chatProvider.notifier).openChat(widget.matchId));
+          () => ref.read(chatProvider.notifier).openChat(widget.matchId, widget.otherUserId));
     }
   }
 
