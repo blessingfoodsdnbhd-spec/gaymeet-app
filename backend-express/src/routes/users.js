@@ -243,7 +243,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       return { ...u, distanceLabel: label };
     });
 
-    ok(res, result);
+    res.json({ data: result, _v: 'js-sort-v2', _count: result.length });
   } catch (e) {
     next(e);
   }
