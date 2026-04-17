@@ -87,25 +87,12 @@ router.post('/open/:userId', auth, async (req, res, next) => {
       return ok(res, { matchId: existing._id.toString(), coinsCharged: 0 });
     }
 
-    // No conversation yet — charge coins to open one
-    if (req.user.coins < FIRST_MESSAGE_COST) {
-      return err(
-        res,
-        `Insufficient coins. Need ${FIRST_MESSAGE_COST} coins to start a conversation.`,
-        402
-      );
-    }
-
-    await User.findByIdAndUpdate(senderId, {
-      $inc: { coins: -FIRST_MESSAGE_COST },
-    });
-
     const match = await Match.create({
       users: [senderId, targetUserId],
       source: 'dm',
     });
 
-    ok(res, { matchId: match._id.toString(), coinsCharged: FIRST_MESSAGE_COST }, 201);
+    ok(res, { matchId: match._id.toString(), coinsCharged: 0 }, 201);
   } catch (e) {
     next(e);
   }

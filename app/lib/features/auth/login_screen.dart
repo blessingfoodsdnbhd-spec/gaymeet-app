@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../config/theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../shared/widgets/design_system/rainbow_border.dart';
@@ -46,6 +48,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         .read(authStateProvider.notifier)
         .login(_emailC.text.trim(), _passC.text);
     if (ok && mounted) context.go('/home');
+  }
+
+  Future<void> _loginWithGoogle() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        clientId: '208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com',
+      );
+      final account = await googleSignIn.signIn();
+      if (account == null) return;
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        if (mounted) _showSnack('Google sign-in failed: no ID token');
+        return;
+      }
+      final ok = await ref.read(authStateProvider.notifier).loginWithGoogle(idToken);
+      if (ok && mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) _showSnack('Google sign-in error: $e');
+    }
+  }
+
+  Future<void> _loginWithApple() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+      );
+      final name = [credential.givenName, credential.familyName]
+          .where((s) => s != null && s.isNotEmpty)
+          .join(' ');
+      final ok = await ref.read(authStateProvider.notifier).loginWithApple(
+            credential.identityToken!,
+            name: name.isEmpty ? null : name,
+          );
+      if (ok && mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) _showSnack('Apple sign-in error: $e');
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
+    );
   }
 
   @override
@@ -240,8 +286,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                   const SizedBox(height: 20),
 
-                  // Social login buttons hidden until Firebase/OAuth configured
-                  // OutlinedButton.icon(Google), OutlinedButton.icon(Apple)
+                  // ── Divider ───────────────────────────────────────────────
+                  Row(children: [
+                    Expanded(child: Divider(color: AppColors.textHint.withValues(alpha: 0.3))),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('or', style: TextStyle(color: AppColors.textHint, fontSize: 13)),
+                    ),
+                    Expanded(child: Divider(color: AppColors.textHint.withValues(alpha: 0.3))),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  // ── Google button ─────────────────────────────────────────
+                  GestureDetector(
+                    onTap: _loginWithGoogle,
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: AppRadius.lgRadius,
+                        border: Border.all(color: const Color(0xFFDADADA)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _GoogleIcon(),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Continue with Google',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Apple button ──────────────────────────────────────────
+                  GestureDetector(
+                    onTap: _loginWithApple,
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: AppRadius.lgRadius,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.apple, color: Colors.white, size: 22),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Continue with Apple',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 32),
 
@@ -275,4 +387,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       ),
     );
   }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _GoogleGPainter()),
+    );
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final r = size.width / 2;
+    final center = Offset(r, r);
+
+    final segments = [
+      (0.0, 0.5, const Color(0xFF4285F4)),
+      (0.5, 1.0, const Color(0xFF34A853)),
+      (1.0, 1.5, const Color(0xFFFBBC05)),
+      (1.5, 2.0, const Color(0xFFEA4335)),
+    ];
+
+    for (final (startT, endT, color) in segments) {
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.22;
+      final startAngle = (startT - 0.25) * 3.14159 * 2;
+      final sweepAngle = (endT - startT) * 3.14159 * 2;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: r * 0.78),
+        startAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
+    }
+
+    // horizontal bar for "G"
+    final barPaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = size.width * 0.22;
+    canvas.drawLine(
+      Offset(r * 0.78, r),
+      Offset(r * 1.78, r),
+      barPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
