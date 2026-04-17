@@ -22,35 +22,39 @@ router.get('/', auth, async (req, res, next) => {
       )
       .lean();
 
-    const result = matches.map((m) => {
-      const other = m.users.find(
-        (u) => u._id.toString() !== req.user._id.toString()
-      );
-      const unread = m.unreadCounts?.get
-        ? (m.unreadCounts.get(req.user._id.toString()) || 0)
-        : (m.unreadCounts?.[req.user._id.toString()] || 0);
+    const result = matches
+      .map((m) => {
+        // populate() returns null for deleted/missing users — skip those slots
+        const validUsers = m.users.filter(Boolean);
+        const other = validUsers.find(
+          (u) => u._id.toString() !== req.user._id.toString()
+        );
 
-      return {
-        matchId: m._id.toString(),
-        matchedAt: m.createdAt.toISOString(),
-        user: other
-          ? {
-              id: other._id.toString(),
-              nickname: other.nickname,
-              avatarUrl: other.avatarUrl ?? null,
-              isOnline: other.isOnline ?? false,
-              isPremium: other.isPremium ?? false,
-              isBoosted: other.isBoosted ?? false,
-              isVerified: other.isVerified ?? false,
-              countryCode: other.countryCode ?? null,
-            }
-          : null,
-        lastMessage: m.lastMessage ?? null,
-        lastMessageAt: m.lastMessageAt ? m.lastMessageAt.toISOString() : null,
-        unreadCount: unread,
-        source: m.source ?? 'match',
-      };
-    });
+        // Skip conversations where the other user no longer exists
+        if (!other) return null;
+
+        const unread = m.unreadCounts?.[req.user._id.toString()] || 0;
+
+        return {
+          matchId: m._id.toString(),
+          matchedAt: m.createdAt.toISOString(),
+          user: {
+            id: other._id.toString(),
+            nickname: other.nickname,
+            avatarUrl: other.avatarUrl ?? null,
+            isOnline: other.isOnline ?? false,
+            isPremium: other.isPremium ?? false,
+            isBoosted: other.isBoosted ?? false,
+            isVerified: other.isVerified ?? false,
+            countryCode: other.countryCode ?? null,
+          },
+          lastMessage: m.lastMessage ?? null,
+          lastMessageAt: m.lastMessageAt ? m.lastMessageAt.toISOString() : null,
+          unreadCount: unread,
+          source: m.source ?? 'match',
+        };
+      })
+      .filter(Boolean); // remove nulls from skipped entries
 
     ok(res, result);
   } catch (e) {
