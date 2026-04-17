@@ -206,42 +206,13 @@ class _GridTile extends StatelessWidget {
             ),
           ),
 
-          // Online dot — top-right
-          if (user.isOnline)
+          // Distance label — bottom-left
+          if (user.distanceLabel != null)
             Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.online,
-                  border: Border.all(color: Colors.black54, width: 1.5),
-                ),
-              ),
+              left: 5,
+              bottom: 5,
+              child: _DistanceBadge(label: user.distanceLabel!),
             ),
-
-          // Bottom row: distance (left) + role (right)
-          Positioned(
-            left: 5,
-            right: 5,
-            bottom: 5,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Distance label
-                if (user.distanceLabel != null)
-                  _DistanceBadge(label: user.distanceLabel!),
-
-                const Spacer(),
-
-                // Role badge
-                if (user.role != null) _RoleBadge(role: user.role!),
-              ],
-            ),
-          ),
         ],
       ),
     );
