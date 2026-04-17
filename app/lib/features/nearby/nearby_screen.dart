@@ -156,21 +156,6 @@ class _NearbyTile extends StatelessWidget {
               ),
             ),
 
-          if (user.isBoosted)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppTheme.boost,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.bolt_rounded,
-                    size: 12, color: Colors.black),
-              ),
-            ),
-
           Positioned(
             left: 10,
             right: 10,
