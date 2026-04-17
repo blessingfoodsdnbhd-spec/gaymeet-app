@@ -222,23 +222,6 @@ class _GridTile extends StatelessWidget {
               ),
             ),
 
-          // Level badge — top-left
-          Positioned(
-            top: 5,
-            left: 5,
-            child: user.isBoosted
-                ? Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Icon(Icons.bolt_rounded,
-                        size: 10, color: Colors.black),
-                  )
-                : const SizedBox.shrink(),
-          ),
-
           // Bottom row: distance (left) + role (right)
           Positioned(
             left: 5,

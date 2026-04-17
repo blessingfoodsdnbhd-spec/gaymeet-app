@@ -104,9 +104,9 @@ class UserModel {
   String? get distanceLabel {
     if (distance == null) return null;
     if (distance! < 1.0) {
-      return '${(distance! * 1000).round()} m';
+      return '${(distance! * 1000).round()}m';
     }
-    return '${distance!.toStringAsFixed(1)} km';
+    return '${distance!.toStringAsFixed(1)}km';
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
