@@ -189,9 +189,9 @@ class _NearbyTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (user.distance != null)
+                if (user.distanceLabel != null)
                   Text(
-                    '${user.distance!.toStringAsFixed(1)} km',
+                    user.distanceLabel!,
                     style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withValues(alpha: 0.7)),

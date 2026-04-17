@@ -135,7 +135,9 @@ class UserModel {
           : null,
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
-      distance: json['distance']?.toDouble(),
+      distance: json['distanceMeters'] != null
+          ? (json['distanceMeters'] as num).toDouble() / 1000.0
+          : json['distance']?.toDouble(),
       preferences: json['preferences'] != null
           ? UserPreferences.fromJson(json['preferences'])
           : null,

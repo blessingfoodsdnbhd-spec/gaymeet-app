@@ -42,7 +42,10 @@ class ConversationsNotifier
     try {
       final response = await _api.dio.get('/conversations');
       final List<dynamic> data = response.data['data'];
-      final conversations = data.map((m) => MatchModel.fromJson(m)).toList();
+      final conversations = data
+          .where((m) => m['user'] != null)
+          .map((m) => MatchModel.fromJson(m))
+          .toList();
       state = AsyncValue.data(conversations);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

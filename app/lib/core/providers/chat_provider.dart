@@ -53,15 +53,21 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
   }
 
   Future<void> fetchMessages(String matchId, String otherUserId) async {
+    final existing = state.valueOrNull ?? [];
     state = const AsyncValue.loading();
     try {
       final response = await _api.dio.get('/conversations/$otherUserId/messages');
       final List<dynamic> raw = response.data['data'] as List<dynamic>;
-      final messages = raw.map((m) => MessageModel.fromJson(m)).toList();
-      for (final m in messages) {
+      final httpMessages = raw.map((m) => MessageModel.fromJson(m)).toList();
+      for (final m in httpMessages) {
         _seenIds.add(m.id);
       }
-      state = AsyncValue.data(messages);
+      final httpIds = httpMessages.map((m) => m.id).toSet();
+      // Preserve any socket messages that arrived during the HTTP load
+      final extra = existing
+          .where((m) => !httpIds.contains(m.id) && !m.id.startsWith('temp:'))
+          .toList();
+      state = AsyncValue.data([...extra, ...httpMessages]);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

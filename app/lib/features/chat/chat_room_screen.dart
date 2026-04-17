@@ -542,10 +542,15 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                           msg.senderId ==
                               ref.read(authStateProvider).user?.id;
                       final msgDay = msg.createdAt.toLocal();
-                      final prevDay = messages[i + 1].createdAt.toLocal();
-                      final showDate = i == messages.length - 1 ||
-                          DateTime(prevDay.year, prevDay.month, prevDay.day) !=
-                              DateTime(msgDay.year, msgDay.month, msgDay.day);
+                      final bool showDate;
+                      if (i == messages.length - 1) {
+                        showDate = true;
+                      } else {
+                        final prevDay = messages[i + 1].createdAt.toLocal();
+                        showDate =
+                            DateTime(prevDay.year, prevDay.month, prevDay.day) !=
+                                DateTime(msgDay.year, msgDay.month, msgDay.day);
+                      }
 
                       return Column(
                         children: [
