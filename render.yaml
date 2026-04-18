@@ -3,7 +3,7 @@ services:
     name: gaymeet-backend
     runtime: node
     rootDir: backend-express
-    buildCommand: npm install
+    buildCommand: npm ci --omit=dev
     startCommand: node server.js
     plan: free
     healthCheckPath: /health
