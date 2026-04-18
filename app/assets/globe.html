@@ -6,13 +6,13 @@
 <title>Globe</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a12; overflow: hidden; width: 100vw; height: 100vh; }
+  body { background: #060a14; overflow: hidden; width: 100vw; height: 100vh; }
   canvas { display: block; }
   #loading {
     position: fixed; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; color: #fff;
     font-family: -apple-system, sans-serif; font-size: 14px; gap: 12px;
-    background: #0a0a12;
+    background: #060a14; z-index: 10;
   }
   .spinner {
     width: 36px; height: 36px; border: 3px solid rgba(255,105,180,0.2);
@@ -22,17 +22,19 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   #tooltip {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: rgba(255,105,180,0.9); color: #fff; padding: 6px 14px;
+    background: rgba(255,105,180,0.95); color: #fff; padding: 6px 16px;
     border-radius: 20px; font-family: -apple-system, sans-serif; font-size: 13px;
     font-weight: 600; pointer-events: none; opacity: 0;
-    transition: opacity 0.2s; white-space: nowrap; max-width: 220px;
+    transition: opacity 0.2s; white-space: nowrap; max-width: 240px;
     overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 4px 16px rgba(255,105,180,0.4);
   }
   #count {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.7);
-    padding: 4px 12px; border-radius: 12px;
-    font-family: -apple-system, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.7); padding: 4px 14px;
+    border-radius: 12px; font-family: -apple-system, sans-serif; font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
   }
 </style>
 </head>
@@ -43,95 +45,140 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ── Scene setup ──────────────────────────────────────────────────────────────
 const W = window.innerWidth, H = window.innerHeight;
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
-camera.position.set(0, 0, 2.8);
+const RADIUS = 1.0;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+// ── Scene ─────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060a14);
+
+const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 1000);
+camera.position.set(0, 0, 2.9);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(W, H);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x0a0a12, 1);
 document.body.appendChild(renderer.domElement);
 
-// ── Lights ───────────────────────────────────────────────────────────────────
-const ambient = new THREE.AmbientLight(0x334466, 1.2);
-scene.add(ambient);
-const sunLight = new THREE.DirectionalLight(0x6699ff, 2.0);
-sunLight.position.set(5, 3, 5);
-scene.add(sunLight);
+// ── Lights ────────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x1a2a4a, 0.6));          // dim, cool fill
 
-// ── Globe ────────────────────────────────────────────────────────────────────
-const RADIUS = 1.0;
-const globeGroup = new THREE.Group();
-scene.add(globeGroup);
+const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+sun.position.set(5, 3, 4);
+scene.add(sun);
 
-// Ocean sphere
-const oceanGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
+const rimLight = new THREE.DirectionalLight(0x4488ff, 0.8);
+rimLight.position.set(-4, -2, -3);
+scene.add(rimLight);
+
+// ── Globe group ───────────────────────────────────────────────────────────────
+const globe = new THREE.Group();
+scene.add(globe);
+
+// ── Ocean sphere ─────────────────────────────────────────────────────────────
 const oceanMat = new THREE.MeshPhongMaterial({
-  color: 0x0d1b3e,
-  shininess: 60,
-  specular: new THREE.Color(0x2244aa),
+  color: 0x0b1f3d,
+  shininess: 80,
+  specular: new THREE.Color(0x224488),
+  emissive: new THREE.Color(0x020810),
+  emissiveIntensity: 1,
 });
-const ocean = new THREE.Mesh(oceanGeo, oceanMat);
-globeGroup.add(ocean);
+globe.add(new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 64, 64), oceanMat));
 
-// Wireframe overlay (subtle grid)
-const wireGeo = new THREE.SphereGeometry(RADIUS * 1.001, 24, 24);
-const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x1a3a6a,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.18,
-});
-globeGroup.add(new THREE.Mesh(wireGeo, wireMat));
+// ── Lat / lng grid lines (visible, bright) ────────────────────────────────────
+function makeGraticule(color, opacity) {
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+  const group = new THREE.Group();
+  const R = RADIUS * 1.002;
 
-// Atmosphere glow (additive shell)
-const atmoGeo = new THREE.SphereGeometry(RADIUS * 1.12, 64, 64);
-const atmoMat = new THREE.MeshPhongMaterial({
-  color: 0x1155cc,
-  transparent: true,
-  opacity: 0.18,
-  side: THREE.BackSide,
-});
-globeGroup.add(new THREE.Mesh(atmoGeo, atmoMat));
+  // Latitude lines every 30°
+  for (let lat = -60; lat <= 60; lat += 30) {
+    const pts = [];
+    const phi = (90 - lat) * Math.PI / 180;
+    for (let lng = 0; lng <= 360; lng += 4) {
+      const theta = lng * Math.PI / 180;
+      pts.push(new THREE.Vector3(
+        -R * Math.sin(phi) * Math.cos(theta),
+         R * Math.cos(phi),
+         R * Math.sin(phi) * Math.sin(theta)
+      ));
+    }
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+  }
 
-// Thin rim glow
-const rimGeo = new THREE.SphereGeometry(RADIUS * 1.04, 64, 64);
-const rimMat = new THREE.MeshBasicMaterial({
-  color: 0x3377ff,
-  transparent: true,
-  opacity: 0.07,
-  side: THREE.BackSide,
-});
-globeGroup.add(new THREE.Mesh(rimGeo, rimMat));
+  // Longitude lines every 30°
+  for (let lng = 0; lng < 360; lng += 30) {
+    const pts = [];
+    const theta = lng * Math.PI / 180;
+    for (let lat = -90; lat <= 90; lat += 3) {
+      const phi = (90 - lat) * Math.PI / 180;
+      pts.push(new THREE.Vector3(
+        -R * Math.sin(phi) * Math.cos(theta),
+         R * Math.cos(phi),
+         R * Math.sin(phi) * Math.sin(theta)
+      ));
+    }
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+  }
 
-// ── Stars ────────────────────────────────────────────────────────────────────
-const starVerts = [];
-for (let i = 0; i < 2000; i++) {
-  const r = 80 + Math.random() * 20;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
-  starVerts.push(
-    r * Math.sin(phi) * Math.cos(theta),
-    r * Math.cos(phi),
-    r * Math.sin(phi) * Math.sin(theta)
-  );
+  return group;
 }
-const starGeo = new THREE.BufferGeometry();
-starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
-const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.6 });
-scene.add(new THREE.Points(starGeo, starMat));
 
-// ── User dots ────────────────────────────────────────────────────────────────
-const DOT_R = RADIUS * 1.012;
-const users = [];         // { id, nickname, mesh, ring }
-const raycaster = new THREE.Raycaster();
-raycaster.params.Points = { threshold: 0.05 };
-const dotObjects = [];    // THREE.Mesh refs for raycasting
+globe.add(makeGraticule(0x1e4a8a, 0.55));   // dim grid
+globe.add(makeGraticule(0x2a6acc, 0.20));   // glow layer
 
-function latLngToVec3(lat, lng, r) {
+// Equator highlighted
+(function() {
+  const pts = [];
+  const R = RADIUS * 1.003;
+  for (let lng = 0; lng <= 360; lng += 2) {
+    const theta = lng * Math.PI / 180;
+    pts.push(new THREE.Vector3(-R * Math.cos(theta), 0, R * Math.sin(theta)));
+  }
+  const mat = new THREE.LineBasicMaterial({ color: 0x3a7aff, transparent: true, opacity: 0.7 });
+  globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
+})();
+
+// ── Outer atmosphere ─────────────────────────────────────────────────────────
+const atmo = new THREE.Mesh(
+  new THREE.SphereGeometry(RADIUS * 1.10, 64, 64),
+  new THREE.MeshPhongMaterial({
+    color: 0x1155cc, transparent: true, opacity: 0.12, side: THREE.BackSide,
+    emissive: 0x1155cc, emissiveIntensity: 0.4,
+  })
+);
+globe.add(atmo);
+
+const rim = new THREE.Mesh(
+  new THREE.SphereGeometry(RADIUS * 1.04, 64, 64),
+  new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.06, side: THREE.BackSide })
+);
+globe.add(rim);
+
+// ── Stars ─────────────────────────────────────────────────────────────────────
+(function() {
+  const verts = [];
+  for (let i = 0; i < 2500; i++) {
+    const r = 80 + Math.random() * 30;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    verts.push(
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.55 })));
+})();
+
+// ── User dot helpers ──────────────────────────────────────────────────────────
+const DOT_R = RADIUS * 1.014;
+const users = [];
+const hitObjects = [];   // for raycasting
+
+function latLng(lat, lng, r) {
   const phi   = (90 - lat)  * Math.PI / 180;
   const theta = (lng + 180) * Math.PI / 180;
   return new THREE.Vector3(
@@ -141,157 +188,132 @@ function latLngToVec3(lat, lng, r) {
   );
 }
 
-function addUserDot(user) {
-  const pos = latLngToVec3(user.lat, user.lng, DOT_R);
+function addDot(user) {
+  const pos = latLng(user.lat, user.lng, DOT_R);
 
-  // Glowing sphere
-  const geo  = new THREE.SphereGeometry(0.018, 8, 8);
-  const mat  = new THREE.MeshBasicMaterial({ color: 0xff69b4 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(pos);
-  mesh.userData = { userId: user.id, nickname: user.nickname };
-  globeGroup.add(mesh);
-  dotObjects.push(mesh);
+  // Core dot
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.019, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff69b4 })
+  );
+  dot.position.copy(pos);
+  dot.userData = { userId: user.id, nickname: user.nickname };
+  globe.add(dot);
+  hitObjects.push(dot);
 
-  // Halo ring around dot
-  const ringGeo = new THREE.RingGeometry(0.022, 0.030, 16);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0xff69b4, transparent: true, opacity: 0.45, side: THREE.DoubleSide,
-  });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
+  // Halo ring
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.024, 0.034, 16),
+    new THREE.MeshBasicMaterial({ color: 0xff69b4, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+  );
   ring.position.copy(pos);
   ring.lookAt(new THREE.Vector3(0, 0, 0));
   ring.rotateX(Math.PI / 2);
-  globeGroup.add(ring);
+  globe.add(ring);
 
-  users.push({ ...user, mesh, ring });
+  users.push({ ...user, dot, ring });
 }
 
-// ── Interaction ──────────────────────────────────────────────────────────────
-let isDragging = false;
-let prevMouse  = { x: 0, y: 0 };
-let autoRotate = true;
-let autoTimer  = null;
-const tooltip  = document.getElementById('tooltip');
+// ── Interaction ───────────────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const tooltip   = document.getElementById('tooltip');
+let isDragging  = false, dragMoved = false;
+let prevX = 0, prevY = 0;
+let autoRotate  = true, autoTimer = null;
+let velX = 0, velY = 0;
 
-function showTooltip(name) {
-  tooltip.textContent = name;
-  tooltip.style.opacity = '1';
-}
-function hideTooltip() {
-  tooltip.style.opacity = '0';
-}
-
-function getEventXY(e) {
-  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  return { x: e.clientX, y: e.clientY };
-}
-
-function getNDC(x, y) {
+function ndc(x, y) {
   return new THREE.Vector2(
-    (x / window.innerWidth)  * 2 - 1,
-   -(y / window.innerHeight) * 2 + 1
+     (x / window.innerWidth)  * 2 - 1,
+    -(y / window.innerHeight) * 2 + 1
   );
 }
 
-function hitTest(x, y) {
-  raycaster.setFromCamera(getNDC(x, y), camera);
-  const hits = raycaster.intersectObjects(dotObjects);
-  return hits.length > 0 ? hits[0].object : null;
+function hit(x, y) {
+  raycaster.setFromCamera(ndc(x, y), camera);
+  const hits = raycaster.intersectObjects(hitObjects);
+  return hits.length ? hits[0].object : null;
 }
 
 renderer.domElement.addEventListener('pointerdown', e => {
-  const { x, y } = getEventXY(e);
-  isDragging = true;
-  prevMouse  = { x, y };
-  autoRotate = false;
-  clearTimeout(autoTimer);
+  isDragging = true; dragMoved = false;
+  prevX = e.clientX; prevY = e.clientY;
+  velX = 0; velY = 0;
+  autoRotate = false; clearTimeout(autoTimer);
 });
 
 renderer.domElement.addEventListener('pointermove', e => {
-  const { x, y } = getEventXY(e);
   if (isDragging) {
-    const dx = (x - prevMouse.x) * 0.005;
-    const dy = (y - prevMouse.y) * 0.005;
-    globeGroup.rotation.y += dx;
-    globeGroup.rotation.x += dy;
-    globeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, globeGroup.rotation.x));
-    prevMouse = { x, y };
-    hideTooltip();
+    const dx = e.clientX - prevX, dy = e.clientY - prevY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) dragMoved = true;
+    velX = dx * 0.005; velY = dy * 0.005;
+    globe.rotation.y += velX;
+    globe.rotation.x = Math.max(-1.3, Math.min(1.3, globe.rotation.x + velY));
+    prevX = e.clientX; prevY = e.clientY;
+    tooltip.style.opacity = '0';
   } else {
-    const hit = hitTest(x, y);
-    if (hit) showTooltip(hit.userData.nickname);
-    else hideTooltip();
+    const h = hit(e.clientX, e.clientY);
+    tooltip.textContent = h ? h.userData.nickname : '';
+    tooltip.style.opacity = h ? '1' : '0';
   }
 });
 
 renderer.domElement.addEventListener('pointerup', e => {
-  const { x, y } = getEventXY(e);
-  const hit = hitTest(x, y);
-  if (hit && !isDragging) {
-    const id = hit.userData.userId;
-    try {
-      if (window.UserTapped) window.UserTapped.postMessage(id);
-      else if (window.flutter_inappwebview) window.flutter_inappwebview.callHandler('UserTapped', id);
-    } catch (_) {}
+  if (!dragMoved) {
+    const h = hit(e.clientX, e.clientY);
+    if (h) {
+      try { if (window.UserTapped) window.UserTapped.postMessage(h.userData.userId); } catch(_) {}
+    }
   }
   isDragging = false;
-  autoTimer = setTimeout(() => { autoRotate = true; }, 3000);
-});
-
-renderer.domElement.addEventListener('click', e => {
-  const hit = hitTest(e.clientX, e.clientY);
-  if (hit) {
-    try { if (window.UserTapped) window.UserTapped.postMessage(hit.userData.userId); } catch (_) {}
-  }
+  autoTimer = setTimeout(() => { autoRotate = true; velX = 0; }, 3000);
 });
 
 window.addEventListener('resize', () => {
   const w = window.innerWidth, h = window.innerHeight;
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+  camera.aspect = w / h; camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 });
 
-// ── Pulse animation for dots ──────────────────────────────────────────────────
+// ── Render loop ───────────────────────────────────────────────────────────────
 let tick = 0;
-
-// ── Render loop ──────────────────────────────────────────────────────────────
 function animate() {
   requestAnimationFrame(animate);
   tick += 0.02;
 
-  if (autoRotate) globeGroup.rotation.y += 0.002;
+  if (autoRotate) {
+    globe.rotation.y += 0.0018;
+  } else if (!isDragging && Math.abs(velX) > 0.0001) {
+    // momentum
+    globe.rotation.y += velX;
+    globe.rotation.x = Math.max(-1.3, Math.min(1.3, globe.rotation.x + velY));
+    velX *= 0.94; velY *= 0.94;
+  }
 
-  // Pulse dot opacity
   users.forEach((u, i) => {
-    const p = 0.4 + 0.4 * Math.sin(tick + i * 0.7);
-    u.ring.material.opacity = p * 0.5;
+    const p = 0.35 + 0.35 * Math.sin(tick * 1.4 + i * 0.9);
+    u.ring.material.opacity = p * 0.6;
   });
 
   renderer.render(scene, camera);
 }
 animate();
 
-// ── Public API called by Flutter ──────────────────────────────────────────────
+// ── Flutter bridge ────────────────────────────────────────────────────────────
 window.loadUsers = function(jsonStr) {
   document.getElementById('loading').style.display = 'none';
   try {
     const list = JSON.parse(jsonStr);
-    list.forEach(u => {
-      if (u.lat != null && u.lng != null) addUserDot(u);
-    });
+    list.forEach(u => { if (u.lat != null && u.lng != null) addDot(u); });
     const el = document.getElementById('count');
     if (el) el.textContent = list.length + ' 位用户';
-  } catch(e) {
-    console.error('loadUsers error', e);
-  }
+  } catch(e) { console.error('loadUsers:', e); }
 };
 
 window.showEmpty = function() {
   document.getElementById('loading').style.display = 'none';
   const el = document.getElementById('count');
-  if (el) el.textContent = '暂无用户位置数据';
+  if (el) el.textContent = '暂无位置数据';
 };
 </script>
 </body>

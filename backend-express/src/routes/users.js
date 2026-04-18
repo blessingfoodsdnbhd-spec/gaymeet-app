@@ -313,18 +313,17 @@ router.get('/discover', auth, async (req, res, next) => {
 });
 
 // ── GET /api/users/locations ──────────────────────────────────────────────────
-// Returns all non-stealth users who have a real location, for the globe view.
+// Returns all non-stealth users with coordinates, for the 3-D globe view.
+// IMPORTANT: must stay before GET /:id to avoid "locations" being cast as ObjectId.
 router.get('/locations', auth, async (req, res, next) => {
   try {
     const users = await User.find(
       {
         'location.coordinates': { $exists: true, $ne: null },
-        'preferences.stealthMode': { $ne: true },
+        'preferences.stealthMode':    { $ne: true },
         'preferences.hideFromNearby': { $ne: true },
       },
-      {
-        _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
-      }
+      { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1 }
     ).lean();
 
     const result = users.map((u) => ({
