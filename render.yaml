@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: gaymeet-backend
+    name: gaymeet-api
     runtime: node
     rootDir: backend-express
     buildCommand: npm install
