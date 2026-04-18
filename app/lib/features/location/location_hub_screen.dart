@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../core/providers/filter_provider.dart';
@@ -43,6 +44,13 @@ class _LocationHubScreenState extends ConsumerState<LocationHubScreen>
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 16,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.public_rounded),
+            tooltip: '全球用户',
+            onPressed: () => context.push('/location/globe'),
+          ),
+        ],
         title: Row(
           children: [
             Text(
