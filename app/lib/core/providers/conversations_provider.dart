@@ -37,7 +37,7 @@ class ConversationsNotifier
     fetchConversations();
   }
 
-  Future<void> fetchConversations() async {
+  Future<void> fetchConversations({bool retry = true}) async {
     state = const AsyncValue.loading();
     try {
       final response = await _api.dio.get('/conversations');
@@ -48,6 +48,11 @@ class ConversationsNotifier
           .toList();
       state = AsyncValue.data(conversations);
     } catch (e, st) {
+      if (retry) {
+        // One automatic retry after 3 s — handles Render cold-start timeouts
+        await Future.delayed(const Duration(seconds: 3));
+        return fetchConversations(retry: false);
+      }
       state = AsyncValue.error(e, st);
     }
   }

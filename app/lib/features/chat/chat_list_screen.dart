@@ -30,7 +30,7 @@ class ChatListScreen extends ConsumerWidget {
       ),
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
+        error: (e, __) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -38,6 +38,18 @@ class ChatListScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Text('Failed to load',
                   style: TextStyle(color: AppTheme.textSecondary)),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  e.toString().replaceAll('DioException [', '').split(']').first,
+                  style: TextStyle(
+                      color: AppTheme.textHint, fontSize: 11),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () =>
