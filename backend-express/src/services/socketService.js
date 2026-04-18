@@ -133,10 +133,10 @@ function initSocket(server) {
         readBy: [userId],
       };
 
-      // Broadcast to everyone in the room (including sender for confirmation)
-      io.to(`match:${matchId}`).emit('chat:receive', payload);
-
-      // If the other user is not in the room, push to their personal room
+      // Exactly one delivery each: sender gets confirmation, receiver gets the message.
+      // Using personal rooms avoids the double-delivery that occurred when the receiver
+      // was in both the match room AND their personal user room simultaneously.
+      io.to(`user:${userId}`).emit('chat:receive', payload);
       io.to(`user:${otherId}`).emit('chat:receive', payload);
     });
 
