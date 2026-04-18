@@ -311,6 +311,35 @@ router.get('/discover', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/users/locations ──────────────────────────────────────────────────
+// Returns all non-stealth users who have a real location, for the globe view.
+router.get('/locations', auth, async (req, res, next) => {
+  try {
+    const users = await User.find(
+      {
+        'location.coordinates': { $exists: true, $ne: null },
+        'preferences.stealthMode': { $ne: true },
+        'preferences.hideFromNearby': { $ne: true },
+      },
+      {
+        _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
+      }
+    ).lean();
+
+    const result = users.map((u) => ({
+      id: u._id.toString(),
+      nickname: u.nickname || '用户',
+      lat: u.location?.coordinates?.[1],
+      lng: u.location?.coordinates?.[0],
+      avatar: u.photos?.[0] ?? null,
+    })).filter((u) => u.lat != null && u.lng != null);
+
+    ok(res, result);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/users/likes ──────────────────────────────────────────────────────
 router.get('/likes', auth, async (req, res, next) => {
   try {

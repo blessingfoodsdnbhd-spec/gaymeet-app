@@ -25,6 +25,7 @@ import '../features/saw_you/plate_inbox_screen.dart';
 import '../features/saw_you/claim_plate_screen.dart';
 import '../features/location/teleport_screen.dart';
 import '../features/location/stealth_settings_screen.dart';
+import '../features/location/globe_screen.dart';
 import '../features/moments/moments_feed_screen.dart';
 import '../features/moments/create_moment_screen.dart';
 import '../features/moments/moment_detail_screen.dart';
@@ -111,6 +112,7 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(path: '/saw-you/claim', builder: (_, __) => const ClaimPlateScreen()),
       GoRoute(path: '/teleport', builder: (_, __) => const TeleportScreen()),
       GoRoute(path: '/stealth', builder: (_, __) => const StealthSettingsScreen()),
+      GoRoute(path: '/location/globe', builder: (_, __) => const GlobeScreen()),
 
       // ── Moments ──────────────────────────────────────────────────────────
       GoRoute(path: '/moments', builder: (_, __) => const MomentsFeedScreen()),
