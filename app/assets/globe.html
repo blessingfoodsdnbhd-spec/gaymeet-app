@@ -41,12 +41,34 @@
     display: flex; flex-direction: column; gap: 6px;
     font-family: -apple-system, sans-serif; font-size: 11px;
   }
-  .legend-item {
-    display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7);
+  .legend-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Cluster badges ───────────────────────────────────────────────────────── */
+  .cluster-badge {
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.9);
+    color: #fff; font-family: -apple-system, sans-serif;
+    font-weight: 700; cursor: pointer; line-height: 1;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.55);
+    transition: transform 0.12s;
+    pointer-events: all;
+    /* Outer ring pulse */
+    position: relative;
   }
-  .legend-dot {
-    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  .cluster-badge::before {
+    content: ''; position: absolute; inset: -5px;
+    border-radius: 50%; border: 2px solid rgba(255,105,180,0.35);
+    animation: pulse 2s ease-out infinite;
   }
+  @keyframes pulse {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .cluster-badge:active { transform: scale(0.88); }
+  .cluster-sm { width: 38px; height: 38px; font-size: 12px; background: rgba(255,105,180,0.88); }
+  .cluster-md { width: 50px; height: 50px; font-size: 15px; background: rgba(220,40,150,0.92); }
+  .cluster-lg { width: 62px; height: 62px; font-size: 18px; background: rgba(175,15,115,0.96); }
 </style>
 </head>
 <body>
@@ -67,25 +89,30 @@
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 let myGlobe = null;
-let rawPoints = [];        // all raw data points
-let scIndex = null;        // Supercluster index
-const flashSet = new Set(); // ids currently flashing white
+let rawPoints = [];
+let scIndex = null;
+const flashSet = new Set();
 const tooltip = document.getElementById('tooltip');
 const countEl = document.getElementById('count');
 
-// ── Heat score for post points ─────────────────────────────────────────────────
+// ── Altitude thresholds for zoom levels ──────────────────────────────────────
+// Level 1 (city clusters):        altitude > 2.0
+// Level 2 (neighbourhood):  0.5 < altitude ≤ 2.0
+// Level 3 (individual dots):      altitude ≤ 0.5
+const LVL2_ALT = 2.0;
+const LVL3_ALT = 0.5;
+
+// ── Heat score ────────────────────────────────────────────────────────────────
 function heatScore(p) {
-  const ageMs = Date.now() - new Date(p.createdAt).getTime();
-  const ageMin = ageMs / 60000;
+  const ageMin = (Date.now() - new Date(p.createdAt).getTime()) / 60000;
   return (p.likeCount || 0) * 2 + (p.commentsCount || 0) * 3 + (ageMin < 10 ? 50 : 0);
 }
 
-// ── Privacy jitter (±0.02 degrees) ───────────────────────────────────────────
+// ── Privacy jitter ────────────────────────────────────────────────────────────
 function jitter(v) { return v + (Math.random() - 0.5) * 0.04; }
 
-// ── Point color accessor ──────────────────────────────────────────────────────
+// ── Individual point styling ──────────────────────────────────────────────────
 function pointColor(d) {
-  if (d.cluster) return 'rgba(255,255,255,0.9)';
   if (flashSet.has(d.id)) return '#ffffff';
   switch (d.type) {
     case 'user':  return d.isOnline ? '#00ffcc' : '#555555';
@@ -94,10 +121,7 @@ function pointColor(d) {
     default:      return '#ffffff';
   }
 }
-
-// ── Point radius accessor ─────────────────────────────────────────────────────
 function pointRadius(d) {
-  if (d.cluster) return Math.min(2.5, 0.5 + Math.log2(d.count + 1) * 0.3);
   switch (d.type) {
     case 'user':  return 0.3;
     case 'post':  return 0.4;
@@ -105,20 +129,28 @@ function pointRadius(d) {
     default:      return 0.3;
   }
 }
-
-// ── Point label for tooltip ───────────────────────────────────────────────────
 function pointLabel(d) {
-  if (d.cluster) return `${d.count} 个点`;
   if (d.type === 'user')  return d.nickname || '用户';
   if (d.type === 'post')  return d.content  || '动态';
   if (d.type === 'place') return d.name     || '地点';
   return '';
 }
 
-// ── Rebuild Supercluster index from rawPoints ─────────────────────────────────
+// ── altitude → Supercluster zoom ─────────────────────────────────────────────
+// Cluster mode (alt > LVL3_ALT): low zoom → big city clusters
+// Dot mode    (alt ≤ LVL3_ALT): high zoom → individual points visible
+function altToZoom(alt) {
+  if (alt <= LVL3_ALT) {
+    // Scale from zoom 10 at LVL3_ALT down to zoom 14 at alt 0
+    return Math.min(14, Math.round(10 + (LVL3_ALT - alt) * 10));
+  }
+  return Math.max(0, Math.min(9, Math.round(7 - alt * 2.2)));
+}
+
+// ── Rebuild Supercluster index ────────────────────────────────────────────────
 function rebuildIndex() {
   if (typeof Supercluster === 'undefined') return;
-  scIndex = new Supercluster({ radius: 40, maxZoom: 12 });
+  scIndex = new Supercluster({ radius: 55, maxZoom: 14, minPoints: 2 });
   scIndex.load(rawPoints.map((p) => ({
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
@@ -126,40 +158,61 @@ function rebuildIndex() {
   })));
 }
 
-// ── Convert altitude to rough zoom level for Supercluster ────────────────────
-function altToZoom(alt) {
-  return Math.max(0, Math.min(12, Math.round(10 - alt * 2.5)));
+// ── Build cluster HTML badge element ─────────────────────────────────────────
+function makeClusterEl(d) {
+  const count = d.count;
+  const cls = count >= 50 ? 'cluster-lg' : count >= 10 ? 'cluster-md' : 'cluster-sm';
+  const label = count >= 1000 ? (count / 1000).toFixed(1) + 'k' : String(count);
+  const el = document.createElement('div');
+  el.className = `cluster-badge ${cls}`;
+  el.textContent = label;
+  el.title = `${count} 个点`;
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    zoomToCluster(d);
+  });
+  return el;
 }
 
-// ── Refresh globe points based on current camera altitude ─────────────────────
-function refreshPoints() {
+// ── Zoom into a cluster (click handler) ──────────────────────────────────────
+function zoomToCluster(cluster) {
   if (!myGlobe) return;
-  let mapped;
-  if (scIndex) {
-    const { altitude } = myGlobe.pointOfView();
-    const zoom = altToZoom(altitude);
-    const clusters = scIndex.getClusters([-180, -85, 180, 85], zoom);
-    mapped = clusters.map((c) => {
-      if (c.properties.cluster) {
-        return {
-          lat: c.geometry.coordinates[1],
-          lng: c.geometry.coordinates[0],
-          id: 'c_' + c.id,
-          type: 'cluster',
-          cluster: true,
-          count: c.properties.point_count,
-        };
-      }
-      return {
-        lat: c.geometry.coordinates[1],
-        lng: c.geometry.coordinates[0],
-        ...c.properties,
-      };
-    });
+  const { altitude } = myGlobe.pointOfView();
+  // Each click zooms in by 60%
+  const newAlt = Math.max(0.25, altitude * 0.4);
+  myGlobe.pointOfView({ lat: cluster.lat, lng: cluster.lng, altitude: newAlt }, 800);
+}
+
+// ── Refresh globe display based on current altitude ───────────────────────────
+let _refreshing = false;
+function refreshPoints() {
+  if (!myGlobe || !scIndex || _refreshing) return;
+  _refreshing = true;
+
+  const { altitude } = myGlobe.pointOfView();
+  const zoom = altToZoom(altitude);
+  const features = scIndex.getClusters([-180, -85, 180, 85], zoom);
+
+  const clusterData = [];
+  const pointData = [];
+
+  features.forEach((f) => {
+    const [lng, lat] = f.geometry.coordinates;
+    if (f.properties.cluster) {
+      clusterData.push({ lat, lng, clusterId: f.id, count: f.properties.point_count });
+    } else {
+      pointData.push({ lat, lng, ...f.properties });
+    }
+  });
+
+  if (altitude > LVL3_ALT) {
+    myGlobe.pointsData([]);
+    myGlobe.htmlElementsData(clusterData);
   } else {
-    mapped = rawPoints;
+    myGlobe.htmlElementsData([]);
+    myGlobe.pointsData(pointData);
   }
-  myGlobe.pointsData(mapped);
+  _refreshing = false;
 }
 
 // ── Init globe.gl ─────────────────────────────────────────────────────────────
@@ -171,6 +224,8 @@ function initGlobe() {
     .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
     .atmosphereColor('#1a6eff')
     .atmosphereAltitude(0.15)
+
+    // ── Individual points (Level 3) ──────────────────────────────────────────
     .pointsData([])
     .pointLat((d) => d.lat)
     .pointLng((d) => d.lng)
@@ -178,7 +233,7 @@ function initGlobe() {
     .pointRadius(pointRadius)
     .pointAltitude(0.01)
     .onPointClick((point) => {
-      if (!point || point.cluster) return;
+      if (!point) return;
       tooltip.style.opacity = '0';
       try {
         if (point.type === 'user'  && window.UserTapped)  window.UserTapped.postMessage(point.id);
@@ -189,16 +244,21 @@ function initGlobe() {
     .onPointHover((point) => {
       tooltip.textContent = point ? pointLabel(point) : '';
       tooltip.style.opacity = point ? '1' : '0';
-    });
+    })
 
-  // Re-cluster whenever camera moves
+    // ── Cluster HTML badges (Levels 1 & 2) ──────────────────────────────────
+    .htmlElementsData([])
+    .htmlLat((d) => d.lat)
+    .htmlLng((d) => d.lng)
+    .htmlAltitude(0.02)
+    .htmlElement(makeClusterEl);
+
+  // Re-cluster on camera move
   myGlobe.controls().addEventListener('change', refreshPoints);
 
-  // Auto-rotate slowly
+  // Auto-rotate
   myGlobe.controls().autoRotate = true;
   myGlobe.controls().autoRotateSpeed = 0.4;
-
-  // Stop auto-rotate on user interaction
   myGlobe.controls().addEventListener('start', () => {
     myGlobe.controls().autoRotate = false;
   });
@@ -208,7 +268,6 @@ function initGlobe() {
   });
 }
 
-// Initialize as soon as CDN scripts are ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initGlobe);
 } else {
@@ -216,8 +275,6 @@ if (document.readyState === 'loading') {
 }
 
 // ── Flutter → JS bridge ───────────────────────────────────────────────────────
-
-// Called with { users, posts, places, userLat, userLng }
 window.loadPoints = function(jsonStr) {
   document.getElementById('loading').style.display = 'none';
   try {
@@ -225,23 +282,19 @@ window.loadPoints = function(jsonStr) {
     const { users = [], posts = [], places = [], userLat, userLng } = data;
 
     const userPoints = users.map((u) => ({
-      ...u,
-      type: 'user',
+      ...u, type: 'user',
       lat: u.privacy === 'blur' ? jitter(u.lat) : u.lat,
       lng: u.privacy === 'blur' ? jitter(u.lng) : u.lng,
     }));
-
-    const postPoints = posts.map((p) => ({ ...p, type: 'post' }));
+    const postPoints  = posts.map((p)  => ({ ...p,  type: 'post'  }));
     const placePoints = places.map((pl) => ({ ...pl, type: 'place' }));
 
     rawPoints = [...userPoints, ...postPoints, ...placePoints];
     rebuildIndex();
     refreshPoints();
 
-    countEl.textContent =
-      `${users.length} 用户 · ${posts.length} 动态 · ${places.length} 地点`;
+    countEl.textContent = `${users.length} 用户 · ${posts.length} 动态 · ${places.length} 地点`;
 
-    // Auto-focus camera on user's own location
     if (userLat != null && userLng != null && myGlobe) {
       myGlobe.pointOfView({ lat: userLat, lng: userLng, altitude: 2 }, 1200);
     }
@@ -250,7 +303,7 @@ window.loadPoints = function(jsonStr) {
   }
 };
 
-// Legacy: called with array of user objects (old API)
+// Legacy: array of user objects
 window.loadUsers = function(jsonStr) {
   document.getElementById('loading').style.display = 'none';
   try {
@@ -271,14 +324,14 @@ window.showEmpty = function() {
   countEl.textContent = '暂无位置数据';
 };
 
-// Flash a point white for 800ms (called when new socket data arrives)
+// Flash a point white for 800ms on live socket push
 window.flashPoint = function(id) {
   flashSet.add(id);
   refreshPoints();
   setTimeout(() => { flashSet.delete(id); refreshPoints(); }, 800);
 };
 
-// Add a single new point live (from socket push)
+// Add a single new point live
 window.addPoint = function(jsonStr) {
   try {
     const p = JSON.parse(jsonStr);
