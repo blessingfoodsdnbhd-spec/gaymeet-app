@@ -20,6 +20,11 @@ import GoogleSignIn
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
-    return GIDSignIn.sharedInstance.handle(url)
+    // Google Sign-In owns its own scheme
+    if GIDSignIn.sharedInstance.handle(url) {
+      return true
+    }
+    // meyou:// deep links — let Flutter plugins (home_widget) handle them
+    return super.application(app, open: url, options: options)
   }
 }

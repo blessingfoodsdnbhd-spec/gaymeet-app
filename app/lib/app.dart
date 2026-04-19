@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'config/routes.dart';
+import 'package:go_router/go_router.dart';
+import 'package:home_widget/home_widget.dart';
+import 'config/routes.dart' show createRouter, rootNavigatorKey;
 import 'core/providers/auth_provider.dart';
+import 'core/services/widget_service.dart';
 import 'core/providers/conversations_provider.dart';
 import 'core/providers/likes_provider.dart';
 import 'core/providers/locale_provider.dart';
@@ -26,6 +29,8 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
   @override
   void initState() {
     super.initState();
+    WidgetService.init();
+    _listenWidgetTaps();
     Future.microtask(() async {
       // Check maintenance status before doing anything else
       await _checkStatus();
@@ -48,8 +53,35 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
         // Schedule "no new matches" push notification if 24 h pass without
         // a match. Backend picks this up and sends FCM at the right time.
         _scheduleNoMatchNotification();
+
+        // Refresh widget data after successful auth
+        WidgetService.refresh(ref.read(apiClientProvider));
       }
     });
+  }
+
+  void _listenWidgetTaps() {
+    HomeWidget.widgetClicked.listen((uri) {
+      if (uri == null) return;
+      final path = _uriToPath(uri);
+      if (path == null) return;
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        ctx.go(path);
+      }
+    });
+  }
+
+  String? _uriToPath(Uri uri) {
+    // meyou://nearby  → /nearby
+    // meyou://chats   → /chats
+    // meyou://chat/id → /chats  (match lookup not available from widget context)
+    switch (uri.host) {
+      case 'nearby': return '/nearby';
+      case 'chats':  return '/chats';
+      case 'chat':   return '/chats';
+      default:       return null;
+    }
   }
 
   Future<void> _checkStatus() async {

@@ -2,7 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Permission usage descriptions (required by iOS for runtime access) -->
 	<key>NSCameraUsageDescription</key>
 	<string>需要访问相机来拍摄个人资料照片</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -22,6 +21,16 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.208538145733-ccuidhniu111ssc70ri9kjrdv6095obs</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.meetupnearby.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>meyou</string>
 			</array>
 		</dict>
 	</array>
@@ -89,17 +98,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.208538145733-ccuidhniu111ssc70ri9kjrdv6095obs</string>
-			</array>
-		</dict>
 	</array>
 </dict>
 </plist>

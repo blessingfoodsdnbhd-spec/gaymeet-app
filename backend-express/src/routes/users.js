@@ -379,6 +379,70 @@ router.get('/likes', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/users/widget-data ────────────────────────────────────────────────
+router.get('/widget-data', auth, async (req, res, next) => {
+  try {
+    const me = req.user;
+    const Match = require('../models/Match');
+
+    const effectiveLng = me.preferences?.virtualLng ?? me.location?.coordinates?.[0] ?? 101.6869;
+    const effectiveLat = me.preferences?.virtualLat ?? me.location?.coordinates?.[1] ?? 3.1390;
+
+    // Nearby online users within 50 km
+    const nearbyUsers = await User.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [effectiveLng, effectiveLat] },
+          distanceField: 'dist',
+          maxDistance: 50000,
+          spherical: true,
+        },
+      },
+      {
+        $match: {
+          _id: { $ne: me._id },
+          isOnline: true,
+          'preferences.stealthMode': { $ne: true },
+          'preferences.hideFromNearby': { $ne: true },
+        },
+      },
+      { $project: { dist: 1 } },
+    ]);
+
+    const nearbyOnline = nearbyUsers.length;
+    let closestDistance = '--';
+    if (nearbyUsers.length > 0) {
+      const m = nearbyUsers[0].dist;
+      closestDistance = m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`;
+    }
+
+    // Recent conversations
+    const matches = await Match.find({ users: me._id, isActive: true })
+      .sort({ lastMessageAt: -1 })
+      .limit(3)
+      .populate('users', 'nickname avatarUrl isOnline')
+      .lean();
+
+    const recentChats = matches
+      .map((m) => {
+        const other = m.users.find((u) => u && u._id.toString() !== me._id.toString());
+        if (!other) return null;
+        return {
+          userId: other._id.toString(),
+          name: other.nickname,
+          avatar: other.avatarUrl ?? '',
+          isOnline: other.isOnline ?? false,
+          unread: m.unreadCounts?.[me._id.toString()] ?? 0,
+        };
+      })
+      .filter(Boolean);
+
+    ok(res, { nearbyOnline, closestDistance, recentChats });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/users/:id ────────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res, next) => {
   try {

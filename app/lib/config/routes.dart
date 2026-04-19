@@ -56,11 +56,11 @@ import '../features/security/security_screen.dart';
 import '../features/settings/currency_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter({required bool isLoggedIn}) {
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: isLoggedIn ? '/home' : '/login',
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
