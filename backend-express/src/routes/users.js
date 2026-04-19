@@ -334,7 +334,7 @@ router.get('/locations', auth, async (req, res, next) => {
       lng: u.location?.coordinates?.[0],
       avatar: u.photos?.[0] ?? null,
       isOnline: u.isOnline ?? false,
-      lastActive: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
+      lastActive: u.lastActiveAt ?? null,
       privacy: u.preferences?.hideDistance ? 'blur' : 'normal',
     })).filter((u) => u.lat != null && u.lng != null);
 
