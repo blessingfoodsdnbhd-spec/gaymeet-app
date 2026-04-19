@@ -89,7 +89,6 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
   }
 
   void sendMessage(String matchId, String content) {
-    _socket.sendMessage(matchId, content);
     _addOptimistic(MessageModel(
       id: 'temp:${DateTime.now().millisecondsSinceEpoch}',
       matchId: matchId,
@@ -98,10 +97,14 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
       type: 'text',
       createdAt: DateTime.now(),
     ));
+    if (_socket.isConnected) {
+      _socket.sendMessage(matchId, content);
+    } else {
+      _sendViaHttp(matchId, content, 'text');
+    }
   }
 
   void sendSticker(String matchId, String emoji) {
-    _socket.sendMessage(matchId, emoji, type: 'sticker');
     _addOptimistic(MessageModel(
       id: 'temp:${DateTime.now().millisecondsSinceEpoch}',
       matchId: matchId,
@@ -110,6 +113,20 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
       type: 'sticker',
       createdAt: DateTime.now(),
     ));
+    if (_socket.isConnected) {
+      _socket.sendMessage(matchId, emoji, type: 'sticker');
+    } else {
+      _sendViaHttp(matchId, emoji, 'sticker');
+    }
+  }
+
+  Future<void> _sendViaHttp(String matchId, String content, String type) async {
+    try {
+      await _api.dio.post(
+        '/conversations/$matchId/send',
+        data: {'content': content, 'type': type},
+      );
+    } catch (_) {}
   }
 
   void closeChat() {

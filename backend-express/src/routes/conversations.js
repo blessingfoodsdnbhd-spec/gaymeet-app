@@ -98,6 +98,68 @@ router.post('/open/:userId', auth, async (req, res, next) => {
   }
 });
 
+// ── POST /api/conversations/:matchId/send ─────────────────────────────────────
+// HTTP fallback for sending a message (used when socket is disconnected).
+// Also emits via Socket.io so the receiver gets real-time delivery if online.
+router.post('/:matchId/send', auth, async (req, res, next) => {
+  try {
+    const { content, type = 'text' } = req.body;
+    if (!content?.trim()) return err(res, 'content required', 400);
+    if (content.length > 2000) return err(res, 'message too long', 400);
+
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const msgType = ['text', 'sticker'].includes(type) ? type : 'text';
+    const message = await Message.create({
+      matchId: match._id,
+      senderId: req.user._id,
+      content: content.trim(),
+      type: msgType,
+      readBy: [req.user._id],
+    });
+
+    const otherId = match.users
+      .find((u) => u.toString() !== req.user._id.toString())
+      ?.toString();
+
+    await Match.findByIdAndUpdate(match._id, {
+      lastMessage: content.trim().slice(0, 100),
+      lastMessageAt: new Date(),
+      lastMessageBy: req.user._id,
+      ...(otherId ? { $inc: { [`unreadCounts.${otherId}`]: 1 } } : {}),
+    });
+
+    const payload = {
+      id: message._id.toString(),
+      matchId: match._id.toString(),
+      senderId: req.user._id.toString(),
+      content: message.content,
+      type: message.type,
+      createdAt: message.createdAt.toISOString(),
+      readBy: [req.user._id.toString()],
+    };
+
+    // Push via socket if server instance is available
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        io.to(`user:${req.user._id.toString()}`).emit('chat:receive', payload);
+        if (otherId) io.to(`user:${otherId}`).emit('chat:receive', payload);
+      }
+    } catch (_) {}
+
+    ok(res, payload, 201);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/conversations/:userId/messages ────────────────────────────────────
 // Message history with a specific user (by their userId, not matchId)
 router.get('/:userId/messages', auth, async (req, res, next) => {

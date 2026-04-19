@@ -63,7 +63,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       try {
         final response = await _api.dio.get('/users/me');
         final user = UserModel.fromJson(response.data['data']);
-        _socket.connect(token);
+        // Re-read token: Dio interceptor may have refreshed it during /users/me
+        final freshToken = await _api.getAccessToken() ?? token;
+        _socket.connect(freshToken);
         _push.initialize();
         state = AuthState(isLoggedIn: true, user: user);
         _tryUpdateLocation(); // best-effort, fire-and-forget
