@@ -95,6 +95,7 @@ html,body { width:100vw; height:100vh; overflow:hidden; background:#050a14; }
 }
 @keyframes orbPulse { 0%{transform:scale(1);opacity:.55} 100%{transform:scale(1.65);opacity:0} }
 
+
 /* Legend */
 .legend {
   position:fixed; bottom:28px; right:14px; z-index:10;
@@ -148,6 +149,8 @@ let rawUsers = [];
 let scIndex  = null;
 const flashSet = new Set();
 let _refreshing = false;
+let _inOnlineMode = false;
+let _pulsePhase = 0; // 0..1, updated by animation loop
 
 // DOM refs
 const countEl  = document.getElementById('count');
@@ -158,10 +161,14 @@ function isRecentlyActive(ts) {
   return ts && (Date.now() - new Date(ts).getTime()) < 3_600_000;
 }
 function userStyle(u) {
-  if (flashSet.has(u.id))               return { color:'#ffffff', r:1.6 };
-  if (u.isOnline)                        return { color:'#00ffcc', r:1.4 };
-  if (isRecentlyActive(u.lastActive))    return { color:'#ffcc00', r:1.0 };
-  return { color:'#333344', r:0.55 };
+  if (flashSet.has(u.id))            return { color:'#ffffff', r:1.6 };
+  if (u.isOnline) {
+    // pulse: radius oscillates 1.0 → 1.5 → 1.0 driven by _pulsePhase
+    const pulse = 1.0 + 0.5 * Math.sin(_pulsePhase * Math.PI * 2);
+    return { color:'#00ffcc', r: pulse };
+  }
+  if (isRecentlyActive(u.lastActive)) return { color:'#ffcc00', r:1.0 };
+  return { color:'#666666', r:0.8 };
 }
 
 // ── Privacy jitter ────────────────────────────────────────────────────────────
@@ -251,6 +258,7 @@ function refreshPoints() {
 
   if (altitude >= ALT_CLUSTER && scIndex) {
     // CLUSTER MODE
+    _inOnlineMode = false;
     const zoom = altToZoom(altitude);
     const features = scIndex.getClusters([-180,-85,180,85], zoom);
     const clusterData = features.map((f) => {
@@ -268,6 +276,7 @@ function refreshPoints() {
 
   } else if (altitude < ALT_DETAIL && scIndex) {
     // DETAIL MODE — initials elements
+    _inOnlineMode = false;
     const zoom = altToZoom(altitude);
     const features = scIndex.getClusters([-180,-85,180,85], zoom);
     const pts = features.filter((f) => !f.properties.cluster).map((f) => ({
@@ -277,9 +286,10 @@ function refreshPoints() {
     myGlobe.htmlElementsData(pts);
 
   } else {
-    // ONLINE MODE — colored point dots
+    // ONLINE MODE — point dots; pulse driven by _pulsePhase animation loop
     myGlobe.htmlElementsData([]);
     myGlobe.pointsData(rawUsers);
+    _inOnlineMode = true;
   }
 
   _refreshing = false;
@@ -341,7 +351,7 @@ function initGlobe() {
     .pointLat((d) => d.lat)
     .pointLng((d) => d.lng)
     .pointColor((d) => userStyle(d).color)
-    .pointRadius((d) => userStyle(d).r * .32)
+    .pointRadius((d) => userStyle(d).r * .55)
     .pointAltitude(0.01)
     .onPointClick((pt) => { if (pt) openCard(pt); })
     .onPointHover((pt) => { document.body.style.cursor = pt ? 'pointer' : ''; })
@@ -352,22 +362,16 @@ function initGlobe() {
     .htmlLng((d) => d.lng)
     .htmlAltitude(0.02)
     .htmlElement((d) => {
+      // cluster / single-user orbs
       if (d.clusterId !== undefined) {
         if (d.singleUser) {
-          // single-user orb — open card on tap
           const orb = makeClusterOrb(d);
-          orb.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openCard(d.singleUser);
-          }, { capture:true });
-          // override the default zoom handler added by makeClusterOrb
-          // (already wired above since makeClusterOrb adds its own listener;
-          //  single-user orbs don't need zoom — handled by capture listener above)
+          orb.addEventListener('click', (e) => { e.stopPropagation(); openCard(d.singleUser); }, { capture:true });
           return orb;
         }
         return makeClusterOrb(d);
       }
-      // detail mode: user with initials
+      // detail mode — initials
       return makeInitialsEl(d);
     });
 
@@ -376,6 +380,15 @@ function initGlobe() {
   myGlobe.controls().autoRotateSpeed = 0.3;
   myGlobe.controls().addEventListener('start', () => { myGlobe.controls().autoRotate = false; });
   window.addEventListener('resize', () => myGlobe.width(window.innerWidth).height(window.innerHeight));
+
+  // Pulse animation loop — 1.8s cycle for online dots
+  (function pulseLoop() {
+    _pulsePhase = (Date.now() % 1800) / 1800;
+    if (_inOnlineMode && myGlobe && rawUsers.length) {
+      myGlobe.pointsData(rawUsers); // re-evaluate pointRadius/pointColor accessors
+    }
+    requestAnimationFrame(pulseLoop);
+  })();
 
   // Close card on globe background tap
   document.getElementById('globe').addEventListener('click', closeCard);
@@ -386,7 +399,7 @@ function initGlobe() {
 // ── Radar scan ────────────────────────────────────────────────────────────────
 let radarCtx, radarW, radarH;
 const RADAR_SWEEP_MS = 1800;
-const RADAR_GAP_MS   = 4000;
+const RADAR_GAP_MS   = 3200;
 
 function resizeRadar() {
   const c = document.getElementById('radar');
