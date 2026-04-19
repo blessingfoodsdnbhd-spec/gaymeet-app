@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:home_widget/home_widget.dart';
 import 'config/routes.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/conversations_provider.dart';
@@ -9,6 +12,7 @@ import 'core/providers/privacy_provider.dart';
 import 'core/providers/promotion_provider.dart';
 import 'core/providers/subscription_provider.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/providers/widget_data_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/maintenance/maintenance_screen.dart';
 import 'shared/widgets/promo_popup.dart';
@@ -20,13 +24,17 @@ class MeetupNearbyApp extends ConsumerStatefulWidget {
   ConsumerState<MeetupNearbyApp> createState() => _MeetupNearbyAppState();
 }
 
-class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
+class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp>
+    with WidgetsBindingObserver {
   bool _maintenance = false;
   String _maintenanceMsg = '';
+  late GoRouter _router;
+  StreamSubscription<Uri?>? _widgetClickSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(() async {
       // Check maintenance status before doing anything else
       await _checkStatus();
@@ -51,8 +59,44 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
         // Schedule "no new matches" push notification if 24 h pass without
         // a match. Backend picks this up and sends FCM at the right time.
         _scheduleNoMatchNotification();
+
+        // Refresh widget data on first launch
+        ref.read(widgetDataProvider).refresh();
       }
+
+      // Handle widget tap that cold-launched the app
+      final launchUri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+      if (launchUri != null) _handleWidgetUri(launchUri);
+
+      // Listen for widget taps when app is already running
+      _widgetClickSub = HomeWidget.widgetClicked.listen((uri) {
+        if (uri != null) _handleWidgetUri(uri);
+      });
     });
+  }
+
+  void _handleWidgetUri(Uri uri) {
+    if (!mounted) return;
+    if (uri.host == 'nearby') {
+      _router.go('/nearby');
+    } else if (uri.host == 'chat' && uri.pathSegments.isNotEmpty) {
+      _router.go('/chats');
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final user = ref.read(authStateProvider).user;
+      if (user != null) ref.read(widgetDataProvider).refresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _widgetClickSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkStatus() async {
@@ -114,7 +158,7 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
     // localeProvider is watched here so locale changes rebuild the app
     ref.watch(localeProvider);
 
-    final router = createRouter(isLoggedIn: authState.isLoggedIn);
+    _router = createRouter(isLoggedIn: authState.isLoggedIn);
 
     return MaterialApp.router(
       title: 'Meyou - Social Media',
@@ -122,7 +166,7 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
       theme: AppThemeLight.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      routerConfig: router,
+      routerConfig: _router,
       builder: (context, child) {
         // Maintenance overlay — shown before routing if status says so
         if (_maintenance) {

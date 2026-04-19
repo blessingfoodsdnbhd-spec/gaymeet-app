@@ -6,292 +6,643 @@
 <title>Globe</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a12; overflow: hidden; width: 100vw; height: 100vh; }
-  canvas { display: block; }
+  body { background: #020510; overflow: hidden; width: 100vw; height: 100vh; }
+  #stars  { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  #globe  { position: relative; z-index: 1; width: 100vw; height: 100vh; }
+
   #loading {
     position: fixed; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; color: #fff;
     font-family: -apple-system, sans-serif; font-size: 14px; gap: 12px;
-    background: #0a0a12;
+    background: #020510; z-index: 100;
+    transition: opacity 0.5s;
   }
+  #loading.hidden { opacity: 0; pointer-events: none; }
   .spinner {
-    width: 36px; height: 36px; border: 3px solid rgba(255,105,180,0.2);
-    border-top-color: #ff69b4; border-radius: 50%;
+    width: 36px; height: 36px; border: 3px solid rgba(0,255,204,0.2);
+    border-top-color: #00ffcc; border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  #tooltip {
-    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: rgba(255,105,180,0.9); color: #fff; padding: 6px 14px;
-    border-radius: 20px; font-family: -apple-system, sans-serif; font-size: 13px;
-    font-weight: 600; pointer-events: none; opacity: 0;
-    transition: opacity 0.2s; white-space: nowrap; max-width: 220px;
-    overflow: hidden; text-overflow: ellipsis;
-  }
+
   #count {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.7);
-    padding: 4px 12px; border-radius: 12px;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.8); padding: 5px 16px;
+    border-radius: 14px; font-family: -apple-system, sans-serif; font-size: 12px;
+    border: 1px solid rgba(0,255,204,0.2); white-space: nowrap;
+    pointer-events: none; z-index: 5;
+  }
+  #mode-label {
+    position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+    color: rgba(0,255,204,0.5); font-family: -apple-system, sans-serif; font-size: 10px;
+    pointer-events: none; letter-spacing: 0.1em; text-transform: uppercase; z-index: 5;
+  }
+
+  .legend {
+    position: fixed; bottom: 24px; right: 16px;
+    display: flex; flex-direction: column; gap: 6px;
+    font-family: -apple-system, sans-serif; font-size: 11px;
+    pointer-events: none; z-index: 5;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.6); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Cluster orbs ─────────────────────────────────────────────────────── */
+  .cluster-orb {
+    border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: -apple-system, sans-serif; font-weight: 700;
+    position: relative; pointer-events: all; line-height: 1;
+  }
+  .cluster-orb:active { transform: scale(0.88); }
+
+  /* ── Detail mode user elements ───────────────────────────────────────── */
+  .u-detail {
+    display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; pointer-events: all; gap: 3px;
+  }
+  .u-detail-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, sans-serif; font-weight: 700; font-size: 14px;
+    color: #fff; border: 2px solid transparent; position: relative;
+  }
+  .u-detail-avatar.online  { border-color: #00ffcc; }
+  .u-detail-avatar.recent  { border-color: #ffcc00; }
+  .u-detail-avatar.offline { border-color: rgba(255,255,255,0.12); }
+  .u-detail-indicator {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid #020510;
+  }
+  .u-detail-label {
+    font-family: -apple-system, sans-serif; font-size: 10px;
+    color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.55);
+    padding: 1px 5px; border-radius: 6px; white-space: nowrap;
+    max-width: 80px; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ── User card overlay ───────────────────────────────────────────────── */
+  #user-card {
+    position: fixed; bottom: -300px; left: 50%; transform: translateX(-50%);
+    width: 270px; background: rgba(3,8,25,0.96); backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,255,204,0.2); border-radius: 22px;
+    padding: 22px 20px 18px; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+    font-family: -apple-system, sans-serif; color: #fff;
+    z-index: 20; transition: bottom 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 -4px 40px rgba(0,255,204,0.08);
+  }
+  #user-card.open { bottom: 32px; }
+  #card-avatar {
+    width: 68px; height: 68px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; color: #fff;
+    border: 2.5px solid #00ffcc;
+    box-shadow: 0 0 20px rgba(0,255,204,0.35);
+  }
+  #card-name { font-size: 17px; font-weight: 600; }
+  #card-info { font-size: 12px; color: rgba(255,255,255,0.5); display: flex; gap: 12px; align-items: center; }
+  .status-pill {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 2px 8px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .status-pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+  #card-chat {
+    width: 100%; padding: 12px; background: #00ffcc; color: #020510;
+    border: none; border-radius: 13px; font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-top: 2px; letter-spacing: 0.02em;
+  }
+  #card-chat:active { opacity: 0.85; }
+  #card-close {
+    position: absolute; top: 13px; right: 15px;
+    color: rgba(255,255,255,0.35); font-size: 19px; cursor: pointer;
+    background: none; border: none; line-height: 1; padding: 2px;
+  }
+
+  /* ── Online-only filter toggle ───────────────────────────────────────── */
+  #filter-btn {
+    position: fixed; top: 16px; right: 16px; z-index: 10;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.7); border: 1px solid rgba(0,255,204,0.2);
+    border-radius: 14px; padding: 5px 14px;
     font-family: -apple-system, sans-serif; font-size: 12px;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  #filter-btn.active {
+    background: rgba(0,255,204,0.15);
+    border-color: rgba(0,255,204,0.6);
+    color: #00ffcc;
   }
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><span>加载地球...</span></div>
-<div id="tooltip"></div>
+<canvas id="stars"></canvas>
+<div id="loading"><div class="spinner"></div><span>空间雷达启动中...</span></div>
+<div id="globe"></div>
 <div id="count"></div>
+<div id="mode-label"></div>
+<button id="filter-btn">全部</button>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#00ffcc;box-shadow:0 0 4px #00ffcc"></div>在线</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffcc00"></div>最近活跃</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#555"></div>离线</div>
+</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="user-card">
+  <button id="card-close">✕</button>
+  <div id="card-avatar"></div>
+  <div id="card-name"></div>
+  <div id="card-info">
+    <span id="card-dist"></span>
+    <div class="status-pill">
+      <div class="status-pill-dot" id="card-status-dot"></div>
+      <span id="card-status-text"></span>
+    </div>
+  </div>
+  <button id="card-chat">发送消息</button>
+</div>
+
+<script src="https://unpkg.com/globe.gl@2/dist/globe.gl.min.js"></script>
+<script src="https://unpkg.com/supercluster@8/dist/supercluster.min.js"></script>
 <script>
-// ── Scene setup ──────────────────────────────────────────────────────────────
-const W = window.innerWidth, H = window.innerHeight;
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
-camera.position.set(0, 0, 2.8);
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ALT_CLUSTER = 2.0;
+const ALT_ONLINE  = 0.5;
+const RECENT_MS   = 15 * 60 * 1000;
+const RADAR_MS    = 5000;
+const RING_SPEED  = 4;    // degrees / second
+const RING_MAXR   = 18;   // max radius in degrees
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(W, H);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x0a0a12, 1);
-document.body.appendChild(renderer.domElement);
+// ── State ─────────────────────────────────────────────────────────────────────
+let myGlobe    = null;
+let rawUsers   = [];
+let scIndex    = null;
+let myLat      = 3.14;
+let myLng      = 101.69;
+let radarTimer = null;
+const flashSet = new Set();
 
-// ── Lights ───────────────────────────────────────────────────────────────────
-const ambient = new THREE.AmbientLight(0x334466, 1.2);
-scene.add(ambient);
-const sunLight = new THREE.DirectionalLight(0x6699ff, 2.0);
-sunLight.position.set(5, 3, 5);
-scene.add(sunLight);
+// Pulse animation state — driven by requestAnimationFrame, not CSS.
+// CSS @keyframes do not work inside globe.gl htmlElements (rendered as canvas
+// textures per-frame). pointsData callbacks re-evaluate each time pointsData
+// is set, so the pulseLoop drives live pulse by re-setting the same array.
+let _inOnlineMode = false;
+let _pulsePhase   = 0;   // 0..1, advances each rAF
+let _currentDots  = [];  // individual dots shown in online mode
+let _onlineOnly   = false; // filter toggle: false = all users, true = online only
 
-// ── Globe ────────────────────────────────────────────────────────────────────
-const RADIUS = 1.0;
-const globeGroup = new THREE.Group();
-scene.add(globeGroup);
+const loadingEl = document.getElementById('loading');
+const countEl   = document.getElementById('count');
+const modeEl    = document.getElementById('mode-label');
 
-// Ocean sphere
-const oceanGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
-const oceanMat = new THREE.MeshPhongMaterial({
-  color: 0x0d1b3e,
-  shininess: 60,
-  specular: new THREE.Color(0x2244aa),
-});
-const ocean = new THREE.Mesh(oceanGeo, oceanMat);
-globeGroup.add(ocean);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function jitter(v) { return v + (Math.random() - 0.5) * 0.04; }
 
-// Wireframe overlay (subtle grid)
-const wireGeo = new THREE.SphereGeometry(RADIUS * 1.001, 24, 24);
-const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x1a3a6a,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.18,
-});
-globeGroup.add(new THREE.Mesh(wireGeo, wireMat));
-
-// Atmosphere glow (additive shell)
-const atmoGeo = new THREE.SphereGeometry(RADIUS * 1.12, 64, 64);
-const atmoMat = new THREE.MeshPhongMaterial({
-  color: 0x1155cc,
-  transparent: true,
-  opacity: 0.18,
-  side: THREE.BackSide,
-});
-globeGroup.add(new THREE.Mesh(atmoGeo, atmoMat));
-
-// Thin rim glow
-const rimGeo = new THREE.SphereGeometry(RADIUS * 1.04, 64, 64);
-const rimMat = new THREE.MeshBasicMaterial({
-  color: 0x3377ff,
-  transparent: true,
-  opacity: 0.07,
-  side: THREE.BackSide,
-});
-globeGroup.add(new THREE.Mesh(rimGeo, rimMat));
-
-// ── Stars ────────────────────────────────────────────────────────────────────
-const starVerts = [];
-for (let i = 0; i < 2000; i++) {
-  const r = 80 + Math.random() * 20;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2 * Math.random() - 1);
-  starVerts.push(
-    r * Math.sin(phi) * Math.cos(theta),
-    r * Math.cos(phi),
-    r * Math.sin(phi) * Math.sin(theta)
-  );
-}
-const starGeo = new THREE.BufferGeometry();
-starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
-const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.6 });
-scene.add(new THREE.Points(starGeo, starMat));
-
-// ── User dots ────────────────────────────────────────────────────────────────
-const DOT_R = RADIUS * 1.012;
-const users = [];         // { id, nickname, mesh, ring }
-const raycaster = new THREE.Raycaster();
-raycaster.params.Points = { threshold: 0.05 };
-const dotObjects = [];    // THREE.Mesh refs for raycasting
-
-function latLngToVec3(lat, lng, r) {
-  const phi   = (90 - lat)  * Math.PI / 180;
-  const theta = (lng + 180) * Math.PI / 180;
-  return new THREE.Vector3(
-    -r * Math.sin(phi) * Math.cos(theta),
-     r * Math.cos(phi),
-     r * Math.sin(phi) * Math.sin(theta)
-  );
+function isRecent(ts) {
+  return !!(ts && (Date.now() - new Date(ts).getTime()) < RECENT_MS);
 }
 
-function addUserDot(user) {
-  const pos = latLngToVec3(user.lat, user.lng, DOT_R);
-
-  // Glowing sphere
-  const geo  = new THREE.SphereGeometry(0.018, 8, 8);
-  const mat  = new THREE.MeshBasicMaterial({ color: 0xff69b4 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(pos);
-  mesh.userData = { userId: user.id, nickname: user.nickname };
-  globeGroup.add(mesh);
-  dotObjects.push(mesh);
-
-  // Halo ring around dot
-  const ringGeo = new THREE.RingGeometry(0.022, 0.030, 16);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0xff69b4, transparent: true, opacity: 0.45, side: THREE.DoubleSide,
-  });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.position.copy(pos);
-  ring.lookAt(new THREE.Vector3(0, 0, 0));
-  ring.rotateX(Math.PI / 2);
-  globeGroup.add(ring);
-
-  users.push({ ...user, mesh, ring });
+function userStatus(u) {
+  if (flashSet.has(u.id)) return 'flash';
+  if (u.isOnline)               return 'online';
+  if (isRecent(u.lastActive))   return 'recent';
+  return 'offline';
 }
 
-// ── Interaction ──────────────────────────────────────────────────────────────
-let isDragging = false;
-let prevMouse  = { x: 0, y: 0 };
-let autoRotate = true;
-let autoTimer  = null;
-const tooltip  = document.getElementById('tooltip');
-
-function showTooltip(name) {
-  tooltip.textContent = name;
-  tooltip.style.opacity = '1';
-}
-function hideTooltip() {
-  tooltip.style.opacity = '0';
+function statusColor(s) {
+  if (s === 'online' || s === 'flash') return '#00ffcc';
+  if (s === 'recent') return '#ffcc00';
+  return '#444444';
 }
 
-function getEventXY(e) {
-  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  return { x: e.clientX, y: e.clientY };
+function dotStyle(u) {
+  const s = userStatus(u);
+  if (s === 'flash')  return { color: '#ffffff', r: 1.6 };
+  if (s === 'online') {
+    const p = 1.0 + 0.5 * Math.sin(_pulsePhase * Math.PI * 2);
+    return { color: '#00ffcc', r: p };
+  }
+  if (s === 'recent') return { color: '#ffcc00', r: 1.0 };
+  return { color: '#444444', r: 0.7 };
 }
 
-function getNDC(x, y) {
-  return new THREE.Vector2(
-    (x / window.innerWidth)  * 2 - 1,
-   -(y / window.innerHeight) * 2 + 1
-  );
+function avatarBg(id) {
+  const c = ['#6d28d9','#2563eb','#0891b2','#059669','#d97706','#dc2626','#db2777'];
+  let h = 0;
+  for (let i = 0; i < (id || '').length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return c[Math.abs(h) % c.length];
 }
 
-function hitTest(x, y) {
-  raycaster.setFromCamera(getNDC(x, y), camera);
-  const hits = raycaster.intersectObjects(dotObjects);
-  return hits.length > 0 ? hits[0].object : null;
+function initials(name) { return (name || '?').charAt(0).toUpperCase(); }
+
+function haversineKm(la1, lo1, la2, lo2) {
+  const R = 6371;
+  const dLa = (la2 - la1) * Math.PI / 180;
+  const dLo = (lo2 - lo1) * Math.PI / 180;
+  const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-renderer.domElement.addEventListener('pointerdown', e => {
-  const { x, y } = getEventXY(e);
-  isDragging = true;
-  prevMouse  = { x, y };
-  autoRotate = false;
-  clearTimeout(autoTimer);
-});
+function haversineDeg(la1, lo1, la2, lo2) {
+  const dLa = (la2 - la1) * Math.PI / 180;
+  const dLo = (lo2 - lo1) * Math.PI / 180;
+  const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))) * 180 / Math.PI;
+}
 
-renderer.domElement.addEventListener('pointermove', e => {
-  const { x, y } = getEventXY(e);
-  if (isDragging) {
-    const dx = (x - prevMouse.x) * 0.005;
-    const dy = (y - prevMouse.y) * 0.005;
-    globeGroup.rotation.y += dx;
-    globeGroup.rotation.x += dy;
-    globeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, globeGroup.rotation.x));
-    prevMouse = { x, y };
-    hideTooltip();
+function fmtDist(km) { return km < 1 ? `${Math.round(km*1000)}m` : `${km.toFixed(1)}km`; }
+
+// ── Star field canvas ─────────────────────────────────────────────────────────
+function drawStars() {
+  const c = document.getElementById('stars');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#020510';
+  ctx.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < 240; i++) {
+    const x = Math.random() * c.width;
+    const y = Math.random() * c.height;
+    const r = Math.random() * 1.3;
+    const a = 0.3 + Math.random() * 0.7;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fill();
+  }
+}
+drawStars();
+window.addEventListener('resize', drawStars);
+
+// ── Supercluster index ────────────────────────────────────────────────────────
+function visibleUsers() {
+  return _onlineOnly ? rawUsers.filter(u => u.isOnline) : rawUsers;
+}
+
+function rebuildIndex() {
+  if (typeof Supercluster === 'undefined') return;
+  scIndex = new Supercluster({ radius: 55, maxZoom: 14, minPoints: 2 });
+  scIndex.load(visibleUsers().map(u => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [u.lng, u.lat] },
+    properties: u,
+  })));
+}
+
+function altToZoom(alt) {
+  if (alt <= ALT_ONLINE) return Math.min(14, Math.round(10 + (ALT_ONLINE - alt) * 10));
+  return Math.max(0, Math.min(9, Math.round(7 - alt * 2.2)));
+}
+
+// ── Cluster orb HTML element ──────────────────────────────────────────────────
+// ── Nearest-city lookup (no reverse geocoding needed) ─────────────────────────
+const CITIES = [
+  { name: 'KL',        lat:  3.14, lng: 101.69 },
+  { name: 'Penang',    lat:  5.41, lng: 100.33 },
+  { name: 'JB',        lat:  1.46, lng: 103.73 },
+  { name: 'Singapore', lat:  1.35, lng: 103.82 },
+  { name: 'Bangkok',   lat: 13.75, lng: 100.52 },
+  { name: 'Jakarta',   lat: -6.21, lng: 106.85 },
+  { name: 'Bali',      lat: -8.34, lng: 115.09 },
+  { name: 'Hanoi',     lat: 21.03, lng: 105.83 },
+  { name: 'HCMC',      lat: 10.82, lng: 106.63 },
+  { name: 'Manila',    lat: 14.60, lng: 120.97 },
+  { name: 'HK',        lat: 22.33, lng: 114.17 },
+  { name: 'Taipei',    lat: 25.04, lng: 121.56 },
+  { name: 'Shanghai',  lat: 31.23, lng: 121.47 },
+  { name: 'Beijing',   lat: 39.91, lng: 116.39 },
+  { name: 'Seoul',     lat: 37.57, lng: 126.98 },
+  { name: 'Tokyo',     lat: 35.68, lng: 139.69 },
+  { name: 'Osaka',     lat: 34.69, lng: 135.50 },
+  { name: 'Sydney',    lat:-33.87, lng: 151.21 },
+  { name: 'Melbourne', lat:-37.81, lng: 144.96 },
+  { name: 'Dubai',     lat: 25.20, lng:  55.27 },
+  { name: 'London',    lat: 51.51, lng:  -0.13 },
+  { name: 'Paris',     lat: 48.85, lng:   2.35 },
+  { name: 'NYC',       lat: 40.71, lng: -74.01 },
+  { name: 'LA',        lat: 34.05, lng:-118.24 },
+  { name: 'Toronto',   lat: 43.65, lng: -79.38 },
+];
+
+function nearestCity(lat, lng) {
+  let best = CITIES[0], bestD = Infinity;
+  for (const c of CITIES) {
+    const d = (c.lat - lat) ** 2 + (c.lng - lng) ** 2;
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  // Only label if within ~500 km (≈ 4.5° squared = 20)
+  return bestD < 20 ? best.name : null;
+}
+
+function makeClusterEl(d) {
+  let onlineCount = 0;
+  if (scIndex && d.clusterId) {
+    try { onlineCount = scIndex.getLeaves(d.clusterId, Infinity).filter(l => l.properties.isOnline).length; } catch (_) {}
+  }
+  const heat  = d.count > 0 ? onlineCount / d.count : 0;
+  const size  = d.count >= 50 ? 64 : d.count >= 10 ? 50 : 38;
+  const fs    = d.count >= 50 ? 14 : d.count >= 10 ? 12 : 11;
+
+  const r = Math.round(220 * heat + 70  * (1 - heat));
+  const g = Math.round( 90 * heat + 40  * (1 - heat));
+  const b = Math.round( 20 * heat + 160 * (1 - heat));
+  const glow  = heat > 0.4 ? 'rgba(255,120,30,0.5)' : 'rgba(70,50,200,0.4)';
+  const count = d.count >= 1000 ? (d.count / 1000).toFixed(1) + 'k' : String(d.count);
+  const city  = nearestCity(d.lat, d.lng);
+
+  const el = document.createElement('div');
+  el.className = 'cluster-orb';
+  el.style.cssText =
+    `width:${size}px;height:${size}px;` +
+    `background:radial-gradient(circle at 35% 35%,` +
+      `rgb(${Math.min(255,r+70)},${Math.min(255,g+50)},${Math.min(255,b+40)}),` +
+      `rgb(${r},${g},${b}));` +
+    `box-shadow:0 0 ${size/2}px ${glow},0 2px 10px rgba(0,0,0,0.7);`;
+  if (city) {
+    el.innerHTML =
+      `<span style="font-size:${fs}px;font-weight:700;line-height:1">${count}</span>` +
+      `<span style="font-size:9px;opacity:0.85;line-height:1;margin-top:1px">${city}</span>`;
+    el.style.flexDirection = 'column';
   } else {
-    const hit = hitTest(x, y);
-    if (hit) showTooltip(hit.userData.nickname);
-    else hideTooltip();
+    el.style.fontSize = `${fs}px`;
+    el.textContent = count;
   }
-});
+  el.title = `${d.count} 位用户`;
+  el.addEventListener('click', e => { e.stopPropagation(); zoomToCluster(d); });
+  return el;
+}
 
-renderer.domElement.addEventListener('pointerup', e => {
-  const { x, y } = getEventXY(e);
-  const hit = hitTest(x, y);
-  if (hit && !isDragging) {
-    const id = hit.userData.userId;
-    try {
-      if (window.UserTapped) window.UserTapped.postMessage(id);
-      else if (window.flutter_inappwebview) window.flutter_inappwebview.callHandler('UserTapped', id);
-    } catch (_) {}
-  }
-  isDragging = false;
-  autoTimer = setTimeout(() => { autoRotate = true; }, 3000);
-});
+// ── Detail user HTML element ──────────────────────────────────────────────────
+function makeDetailEl(u) {
+  const s   = userStatus(u);
+  const col = statusColor(s);
+  const bg  = avatarBg(u.id);
+  const dist = haversineKm(myLat, myLng, u.lat, u.lng);
+  const cls  = s === 'recent' ? 'recent' : s === 'offline' ? 'offline' : 'online';
+  const el   = document.createElement('div');
+  el.className = 'u-detail';
+  el.innerHTML =
+    `<div class="u-detail-avatar ${cls}" style="background:${bg}">` +
+      initials(u.nickname) +
+      `<div class="u-detail-indicator" style="background:${col}"></div>` +
+    `</div>` +
+    `<div class="u-detail-label">${fmtDist(dist)}</div>`;
+  el.addEventListener('click', e => { e.stopPropagation(); showCard(u); });
+  return el;
+}
 
-renderer.domElement.addEventListener('click', e => {
-  const hit = hitTest(e.clientX, e.clientY);
-  if (hit) {
-    try { if (window.UserTapped) window.UserTapped.postMessage(hit.userData.userId); } catch (_) {}
-  }
-});
+// ── Zoom to cluster on tap ────────────────────────────────────────────────────
+function zoomToCluster(d) {
+  if (!myGlobe) return;
+  const { altitude } = myGlobe.pointOfView();
+  myGlobe.pointOfView({ lat: d.lat, lng: d.lng, altitude: Math.max(0.25, altitude * 0.4) }, 800);
+}
 
-window.addEventListener('resize', () => {
-  const w = window.innerWidth, h = window.innerHeight;
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w, h);
-});
+// ── Refresh display based on altitude ────────────────────────────────────────
+let _refreshing = false;
+function refreshPoints() {
+  if (!myGlobe || !scIndex || _refreshing) return;
+  _refreshing = true;
 
-// ── Pulse animation for dots ──────────────────────────────────────────────────
-let tick = 0;
+  const { altitude } = myGlobe.pointOfView();
+  const zoom = altToZoom(altitude);
+  const features = scIndex.getClusters([-180, -85, 180, 85], zoom);
+  const clusters = [], dots = [], details = [];
 
-// ── Render loop ──────────────────────────────────────────────────────────────
-function animate() {
-  requestAnimationFrame(animate);
-  tick += 0.02;
-
-  if (autoRotate) globeGroup.rotation.y += 0.002;
-
-  // Pulse dot opacity
-  users.forEach((u, i) => {
-    const p = 0.4 + 0.4 * Math.sin(tick + i * 0.7);
-    u.ring.material.opacity = p * 0.5;
+  features.forEach(f => {
+    const [lng, lat] = f.geometry.coordinates;
+    if (f.properties.cluster) {
+      clusters.push({ lat, lng, clusterId: f.id, count: f.properties.point_count });
+    } else {
+      const u = { lat, lng, ...f.properties };
+      if (altitude <= ALT_ONLINE) details.push(u);
+      else dots.push(u);
+    }
   });
 
-  renderer.render(scene, camera);
-}
-animate();
+  if (altitude > ALT_CLUSTER) {
+    // Cluster-only view
+    _inOnlineMode = false;
+    _currentDots = [];
+    myGlobe.htmlElementsData(clusters).htmlElement(makeClusterEl);
+    myGlobe.pointsData([]);
+    modeEl.textContent = '区域模式';
+  } else if (altitude > ALT_ONLINE) {
+    // Online mode: cluster orbs via htmlElements, individual dots via WebGL
+    // pointsData. The pulseLoop re-sets pointsData each frame to animate radius.
+    _currentDots = dots;
+    _inOnlineMode = true;
+    myGlobe.htmlElementsData(clusters).htmlElement(d => makeClusterEl(d));
+    myGlobe.pointsData(dots);
+    modeEl.textContent = '在线模式';
+  } else {
+    // Detail view: initials avatars
+    _inOnlineMode = false;
+    _currentDots = [];
+    myGlobe.htmlElementsData(details).htmlElement(makeDetailEl);
+    myGlobe.pointsData([]);
+    modeEl.textContent = '详细模式';
+  }
 
-// ── Public API called by Flutter ──────────────────────────────────────────────
+  _refreshing = false;
+}
+
+// ── User card ─────────────────────────────────────────────────────────────────
+let _cardUser = null;
+const cardEl  = document.getElementById('user-card');
+
+function showCard(u) {
+  _cardUser = u;
+  const s    = userStatus(u);
+  const col  = statusColor(s);
+  const stxt = s === 'online' ? '在线' : s === 'recent' ? '最近活跃' : '离线';
+  const dist = haversineKm(myLat, myLng, u.lat, u.lng);
+  document.getElementById('card-avatar').style.background = avatarBg(u.id);
+  document.getElementById('card-avatar').textContent      = initials(u.nickname);
+  document.getElementById('card-name').textContent        = u.nickname || '用户';
+  document.getElementById('card-dist').textContent        = fmtDist(dist);
+  document.getElementById('card-status-dot').style.background = col;
+  document.getElementById('card-status-text').textContent = stxt;
+  cardEl.classList.add('open');
+}
+
+document.getElementById('card-close').addEventListener('click', () => {
+  cardEl.classList.remove('open'); _cardUser = null;
+});
+document.getElementById('card-chat').addEventListener('click', () => {
+  if (_cardUser) { try { window.UserTapped.postMessage(_cardUser.id); } catch (_) {} }
+  cardEl.classList.remove('open');
+});
+
+// ── Online-only filter toggle ─────────────────────────────────────────────────
+const filterBtn = document.getElementById('filter-btn');
+filterBtn.addEventListener('click', () => {
+  _onlineOnly = !_onlineOnly;
+  filterBtn.textContent = _onlineOnly ? '在线' : '全部';
+  filterBtn.classList.toggle('active', _onlineOnly);
+  rebuildIndex();
+  refreshPoints();
+  const shown = visibleUsers();
+  const online = shown.filter(u => u.isOnline).length;
+  countEl.textContent = _onlineOnly
+    ? `${shown.length} 在线`
+    : `${rawUsers.length} 位用户 · ${rawUsers.filter(u=>u.isOnline).length} 在线`;
+});
+
+// ── Radar scan ────────────────────────────────────────────────────────────────
+function flashSweep() {
+  rawUsers.forEach(u => {
+    const deg = haversineDeg(myLat, myLng, u.lat, u.lng);
+    if (deg > RING_MAXR) return;
+    const delay = (deg / RING_SPEED) * 1000;
+    setTimeout(() => {
+      flashSet.add(u.id);
+      refreshPoints();
+      setTimeout(() => { flashSet.delete(u.id); }, 600);
+    }, delay);
+  });
+}
+
+function startRadar() {
+  if (!myGlobe) return;
+  if (radarTimer) clearInterval(radarTimer);
+  myGlobe
+    .ringsData([{ lat: myLat, lng: myLng }])
+    .ringLat(d => d.lat)
+    .ringLng(d => d.lng)
+    .ringColor(() => t => `rgba(0,255,204,${Math.max(0, 0.9 * (1 - t))})`)
+    .ringMaxRadius(RING_MAXR)
+    .ringPropagationSpeed(RING_SPEED)
+    .ringRepeatPeriod(RADAR_MS)
+    .ringAltitude(0.003);
+  flashSweep();
+  radarTimer = setInterval(flashSweep, RADAR_MS);
+}
+
+// ── Init globe.gl ─────────────────────────────────────────────────────────────
+function initGlobe() {
+  myGlobe = Globe()
+    (document.getElementById('globe'))
+    .backgroundColor('#020510')
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .atmosphereColor('#1040ee')
+    .atmosphereAltitude(0.18)
+    // htmlElements: cluster orbs (far) + detail avatars (close)
+    .htmlElementsData([])
+    .htmlLat(d => d.lat)
+    .htmlLng(d => d.lng)
+    .htmlAltitude(0.025)
+    .htmlElement(() => { const e = document.createElement('div'); e.style.display = 'none'; return e; })
+    // pointsData: individual user dots in online mode
+    // radius/color callbacks read _pulsePhase, re-evaluated each pulseLoop tick
+    .pointsData([])
+    .pointLat(d => d.lat)
+    .pointLng(d => d.lng)
+    .pointColor(d => dotStyle(d).color)
+    .pointRadius(d => dotStyle(d).r * 0.55)
+    .pointAltitude(0.01)
+    .onPointClick(pt => { if (pt) showCard(pt); })
+    .onPointHover(pt => { document.body.style.cursor = pt ? 'pointer' : ''; })
+    // Radar rings
+    .ringsData([])
+    .ringLat(d => d.lat)
+    .ringLng(d => d.lng)
+    .ringColor(() => t => `rgba(0,255,204,${Math.max(0, 0.9*(1-t))})`)
+    .ringMaxRadius(RING_MAXR)
+    .ringPropagationSpeed(RING_SPEED)
+    .ringRepeatPeriod(RADAR_MS)
+    .ringAltitude(0.003);
+
+  myGlobe.controls().addEventListener('change', refreshPoints);
+  myGlobe.controls().autoRotate = true;
+  myGlobe.controls().autoRotateSpeed = 0.3;
+  myGlobe.controls().addEventListener('start', () => { myGlobe.controls().autoRotate = false; });
+  window.addEventListener('resize', () => { myGlobe.width(window.innerWidth).height(window.innerHeight); });
+
+  // Pulse loop: update _pulsePhase each frame and re-set pointsData so the
+  // pointRadius/pointColor callbacks fire with the new phase value.
+  (function pulseLoop() {
+    _pulsePhase = (Date.now() % 2000) / 2000;
+    if (_inOnlineMode && myGlobe && _currentDots.length) {
+      myGlobe.pointsData(_currentDots);
+    }
+    requestAnimationFrame(pulseLoop);
+  })();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGlobe);
+} else {
+  initGlobe();
+}
+
+// ── Flutter ↔ JS bridge ───────────────────────────────────────────────────────
+window.loadPoints = function(jsonStr) {
+  loadingEl.classList.add('hidden');
+  setTimeout(() => { loadingEl.style.display = 'none'; }, 600);
+  try {
+    const data = JSON.parse(jsonStr);
+    const { users = [], userLat, userLng } = data;
+    rawUsers = users
+      .filter(u => u.lat != null && u.lng != null)
+      .map(u => ({
+        ...u, type: 'user',
+        lat: u.privacy === 'blur' ? jitter(u.lat) : u.lat,
+        lng: u.privacy === 'blur' ? jitter(u.lng) : u.lng,
+      }));
+    if (userLat != null) { myLat = userLat; myLng = userLng; }
+    rebuildIndex(); refreshPoints();
+    const online = rawUsers.filter(u => u.isOnline).length;
+    countEl.textContent = `${rawUsers.length} 位用户 · ${online} 在线`;
+    if (myGlobe) {
+      if (userLat != null) myGlobe.pointOfView({ lat: myLat, lng: myLng, altitude: 2 }, 1200);
+      startRadar();
+    }
+  } catch (e) { console.error('loadPoints:', e); }
+};
+
+// Legacy: plain user array
 window.loadUsers = function(jsonStr) {
-  document.getElementById('loading').style.display = 'none';
+  loadingEl.classList.add('hidden');
+  setTimeout(() => { loadingEl.style.display = 'none'; }, 600);
   try {
     const list = JSON.parse(jsonStr);
-    list.forEach(u => {
-      if (u.lat != null && u.lng != null) addUserDot(u);
-    });
-    const el = document.getElementById('count');
-    if (el) el.textContent = list.length + ' 位用户';
-  } catch(e) {
-    console.error('loadUsers error', e);
-  }
+    rawUsers = list
+      .filter(u => u.lat != null && u.lng != null)
+      .map(u => ({ ...u, type: 'user' }));
+    rebuildIndex(); refreshPoints();
+    const online = rawUsers.filter(u => u.isOnline).length;
+    countEl.textContent = `${rawUsers.length} 位用户 · ${online} 在线`;
+    if (myGlobe) startRadar();
+  } catch (e) { console.error('loadUsers:', e); }
 };
 
 window.showEmpty = function() {
-  document.getElementById('loading').style.display = 'none';
-  const el = document.getElementById('count');
-  if (el) el.textContent = '暂无用户位置数据';
+  loadingEl.classList.add('hidden');
+  setTimeout(() => { loadingEl.style.display = 'none'; }, 600);
+  countEl.textContent = '暂无用户数据';
+};
+
+window.flashPoint = function(id) {
+  flashSet.add(id);
+  refreshPoints();
+  setTimeout(() => { flashSet.delete(id); refreshPoints(); }, 800);
+};
+
+window.addPoint = function(jsonStr) {
+  try {
+    const u = JSON.parse(jsonStr);
+    rawUsers.push(u); rebuildIndex(); window.flashPoint(u.id);
+  } catch (_) {}
+};
+
+window.setMyLocation = function(lat, lng) {
+  myLat = lat; myLng = lng;
+  if (myGlobe) {
+    myGlobe.ringsData([{ lat, lng }]);
+    startRadar();
+  }
 };
 </script>
 </body>
