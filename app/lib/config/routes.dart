@@ -12,6 +12,7 @@ import '../features/chat/chat_list_screen.dart';
 import '../features/chat/chat_room_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
+import '../features/profile/followers_screen.dart';
 import '../features/profile/settings_screen.dart';
 import '../features/premium/premium_screen.dart';
 import '../features/matches/likes_screen.dart';
@@ -99,6 +100,20 @@ GoRouter createRouter({required bool isLoggedIn}) {
         },
       ),
       GoRoute(path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
+      GoRoute(
+        path: '/followers/:userId',
+        builder: (_, state) => FollowersScreen(
+          userId: state.pathParameters['userId']!,
+          type: 'followers',
+        ),
+      ),
+      GoRoute(
+        path: '/following/:userId',
+        builder: (_, state) => FollowersScreen(
+          userId: state.pathParameters['userId']!,
+          type: 'following',
+        ),
+      ),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
       GoRoute(path: '/likes', builder: (_, __) => const LikesScreen()),

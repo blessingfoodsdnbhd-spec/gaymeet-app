@@ -5,269 +5,467 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Globe</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #060a14; overflow: hidden; width: 100vw; height: 100vh; }
-  #globe { width: 100vw; height: 100vh; }
-  #loading {
-    position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; color: #fff;
-    font-family: -apple-system, sans-serif; font-size: 14px; gap: 12px;
-    background: #060a14; z-index: 10; pointer-events: none;
-  }
-  .spinner {
-    width: 36px; height: 36px; border: 3px solid rgba(255,105,180,0.2);
-    border-top-color: #ff69b4; border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #tooltip {
-    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: rgba(255,105,180,0.95); color: #fff; padding: 6px 16px;
-    border-radius: 20px; font-family: -apple-system, sans-serif; font-size: 13px;
-    font-weight: 600; pointer-events: none; opacity: 0;
-    transition: opacity 0.2s; white-space: nowrap; max-width: 240px;
-    overflow: hidden; text-overflow: ellipsis;
-    box-shadow: 0 4px 16px rgba(255,105,180,0.4);
-  }
-  #count {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
-    color: rgba(255,255,255,0.7); padding: 4px 14px;
-    border-radius: 12px; font-family: -apple-system, sans-serif; font-size: 12px;
-    border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;
-  }
-  .legend {
-    position: fixed; bottom: 24px; right: 16px;
-    display: flex; flex-direction: column; gap: 6px;
-    font-family: -apple-system, sans-serif; font-size: 11px;
-  }
-  .legend-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100vw; height:100vh; overflow:hidden; background:#050a14; }
 
-  /* ── Cluster badges ───────────────────────────────────────────────────────── */
-  .cluster-badge {
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.9);
-    color: #fff; font-family: -apple-system, sans-serif;
-    font-weight: 700; cursor: pointer; line-height: 1;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.55);
-    transition: transform 0.12s;
-    pointer-events: all;
-    /* Outer ring pulse */
-    position: relative;
-  }
-  .cluster-badge::before {
-    content: ''; position: absolute; inset: -5px;
-    border-radius: 50%; border: 2px solid rgba(255,105,180,0.35);
-    animation: pulse 2s ease-out infinite;
-  }
-  @keyframes pulse {
-    0%   { transform: scale(1);   opacity: 0.8; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-  .cluster-badge:active { transform: scale(0.88); }
-  .cluster-sm { width: 38px; height: 38px; font-size: 12px; background: rgba(255,105,180,0.88); }
-  .cluster-md { width: 50px; height: 50px; font-size: 15px; background: rgba(220,40,150,0.92); }
-  .cluster-lg { width: 62px; height: 62px; font-size: 18px; background: rgba(175,15,115,0.96); }
+#stars-bg { position:fixed; inset:0; z-index:0; pointer-events:none; }
+#globe    { position:fixed; inset:0; z-index:1; }
+#radar    { position:fixed; inset:0; z-index:2; pointer-events:none; }
+
+/* Count pill */
+#count {
+  position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:10;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(12px);
+  color:rgba(0,255,204,0.9); padding:5px 18px; border-radius:14px;
+  font:600 12px/1 -apple-system,sans-serif; letter-spacing:.5px;
+  border:1px solid rgba(0,255,204,0.18); white-space:nowrap;
+}
+
+/* Loading */
+#loading {
+  position:fixed; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  color:#00ffcc; font:14px -apple-system,sans-serif; gap:14px;
+  background:#050a14; z-index:100; pointer-events:none;
+}
+.spinner {
+  width:40px; height:40px;
+  border:2px solid rgba(0,255,204,0.12); border-top-color:#00ffcc;
+  border-radius:50%; animation:spin .9s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* User card */
+#user-card {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:20;
+  background:rgba(4,12,28,0.96); backdrop-filter:blur(24px);
+  border:1px solid rgba(0,255,204,0.22); border-radius:22px;
+  padding:22px 26px 20px; min-width:230px; max-width:290px;
+  font-family:-apple-system,sans-serif; color:#fff; text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,0.7),0 0 0 1px rgba(0,255,204,0.08);
+  display:none; animation:slideUp .22s ease;
+}
+@keyframes slideUp {
+  from{transform:translateX(-50%) translateY(16px);opacity:0}
+  to{transform:translateX(-50%) translateY(0);opacity:1}
+}
+#card-close {
+  position:absolute; top:12px; right:14px;
+  background:none; border:none; color:rgba(255,255,255,0.35);
+  font-size:22px; line-height:1; cursor:pointer;
+}
+#card-avatar {
+  width:64px; height:64px; border-radius:50%; margin:0 auto 12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; font-weight:800; color:#050a14;
+  background:linear-gradient(135deg,#00ffcc,#0066ff);
+  border:2px solid rgba(0,255,204,0.35);
+}
+#card-name { font-size:17px; font-weight:700; margin-bottom:4px; }
+#card-status { font-size:12px; color:rgba(255,255,255,.45); margin-bottom:12px; min-height:16px; }
+#card-online {
+  display:none; align-items:center; gap:6px;
+  background:rgba(0,255,204,.1); border:1px solid rgba(0,255,204,.28);
+  border-radius:20px; padding:4px 12px; font-size:11px;
+  color:#00ffcc; font-weight:600; margin:0 auto 14px; width:fit-content;
+}
+#card-online-dot { width:6px; height:6px; border-radius:50%; background:#00ffcc; animation:blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+#card-chat {
+  width:100%; padding:12px; background:#00ffcc; border:none; border-radius:13px;
+  color:#050a14; font-size:14px; font-weight:700; cursor:pointer; letter-spacing:.3px;
+}
+#card-chat:active { opacity:.88; }
+
+/* Cluster orb */
+.c-orb {
+  border-radius:50%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer; pointer-events:all;
+  font-family:-apple-system,sans-serif; position:relative;
+  transition:transform .12s;
+}
+.c-orb:active { transform:scale(.88) !important; }
+.c-orb-count { font-weight:800; color:#fff; line-height:1; }
+.c-orb-sub   { font-size:9px; color:rgba(255,255,255,.7); margin-top:2px; line-height:1; }
+.c-orb::after {
+  content:''; position:absolute; inset:-7px; border-radius:50%;
+  border:1.5px solid currentColor; opacity:0;
+  animation:orbPulse 2.8s ease-out infinite;
+}
+@keyframes orbPulse { 0%{transform:scale(1);opacity:.55} 100%{transform:scale(1.65);opacity:0} }
+
+/* Legend */
+.legend {
+  position:fixed; bottom:28px; right:14px; z-index:10;
+  display:flex; flex-direction:column; gap:7px;
+  font:11px -apple-system,sans-serif;
+}
+.legend-row { display:flex; align-items:center; gap:7px; color:rgba(255,255,255,.55); }
+.legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><span>加载地球...</span></div>
+
+<canvas id="stars-bg"></canvas>
 <div id="globe"></div>
-<div id="tooltip"></div>
+<canvas id="radar"></canvas>
+
+<div id="loading"><div class="spinner"></div><span>扫描附近…</span></div>
 <div id="count"></div>
+
+<div id="user-card">
+  <button id="card-close">×</button>
+  <div id="card-avatar"></div>
+  <div id="card-name"></div>
+  <div id="card-status"></div>
+  <div id="card-online"><span id="card-online-dot"></span><span>在线</span></div>
+  <button id="card-chat">💬 发消息</button>
+</div>
+
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#00ffcc"></div>用户(在线)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#555"></div>用户(离线)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>热门动态</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#44bb44"></div>普通动态</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ffcc00"></div>推荐地点</div>
+  <div class="legend-row">
+    <div class="legend-dot" style="background:#00ffcc;box-shadow:0 0 5px #00ffcc66"></div>在线
+  </div>
+  <div class="legend-row">
+    <div class="legend-dot" style="background:#ffcc00"></div>最近活跃
+  </div>
+  <div class="legend-row">
+    <div class="legend-dot" style="background:#334"></div>离线
+  </div>
 </div>
 
 <script src="https://unpkg.com/globe.gl@2/dist/globe.gl.min.js"></script>
 <script src="https://unpkg.com/supercluster@8/dist/supercluster.min.js"></script>
 <script>
+// ── Thresholds ────────────────────────────────────────────────────────────────
+const ALT_CLUSTER = 1.5;  // above → cluster orbs
+const ALT_DETAIL  = 0.5;  // below → initials elements
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let myGlobe = null;
-let rawPoints = [];
-let scIndex = null;
+let rawUsers = [];
+let scIndex  = null;
 const flashSet = new Set();
-const tooltip = document.getElementById('tooltip');
-const countEl = document.getElementById('count');
+let _refreshing = false;
 
-// ── Altitude thresholds for zoom levels ──────────────────────────────────────
-// Level 1 (city clusters):        altitude > 2.0
-// Level 2 (neighbourhood):  0.5 < altitude ≤ 2.0
-// Level 3 (individual dots):      altitude ≤ 0.5
-const LVL2_ALT = 2.0;
-const LVL3_ALT = 0.5;
+// DOM refs
+const countEl  = document.getElementById('count');
+const cardEl   = document.getElementById('user-card');
 
-// ── Heat score ────────────────────────────────────────────────────────────────
-function heatScore(p) {
-  const ageMin = (Date.now() - new Date(p.createdAt).getTime()) / 60000;
-  return (p.likeCount || 0) * 2 + (p.commentsCount || 0) * 3 + (ageMin < 10 ? 50 : 0);
+// ── User status helpers ───────────────────────────────────────────────────────
+function isRecentlyActive(ts) {
+  return ts && (Date.now() - new Date(ts).getTime()) < 3_600_000;
+}
+function userStyle(u) {
+  if (flashSet.has(u.id))               return { color:'#ffffff', r:1.6 };
+  if (u.isOnline)                        return { color:'#00ffcc', r:1.4 };
+  if (isRecentlyActive(u.lastActive))    return { color:'#ffcc00', r:1.0 };
+  return { color:'#333344', r:0.55 };
 }
 
 // ── Privacy jitter ────────────────────────────────────────────────────────────
-function jitter(v) { return v + (Math.random() - 0.5) * 0.04; }
+function jitter(v) { return v + (Math.random() - .5) * .04; }
 
-// ── Individual point styling ──────────────────────────────────────────────────
-function pointColor(d) {
-  if (flashSet.has(d.id)) return '#ffffff';
-  switch (d.type) {
-    case 'user':  return d.isOnline ? '#00ffcc' : '#555555';
-    case 'post':  return heatScore(d) > 50 ? '#ff4444' : '#44bb44';
-    case 'place': return d.isPromoted ? '#ffcc00' : '#888888';
-    default:      return '#ffffff';
-  }
-}
-function pointRadius(d) {
-  switch (d.type) {
-    case 'user':  return 0.3;
-    case 'post':  return 0.4;
-    case 'place': return 0.5;
-    default:      return 0.3;
-  }
-}
-function pointLabel(d) {
-  if (d.type === 'user')  return d.nickname || '用户';
-  if (d.type === 'post')  return d.content  || '动态';
-  if (d.type === 'place') return d.name     || '地点';
-  return '';
-}
-
-// ── altitude → Supercluster zoom ─────────────────────────────────────────────
-// Cluster mode (alt > LVL3_ALT): low zoom → big city clusters
-// Dot mode    (alt ≤ LVL3_ALT): high zoom → individual points visible
-function altToZoom(alt) {
-  if (alt <= LVL3_ALT) {
-    // Scale from zoom 10 at LVL3_ALT down to zoom 14 at alt 0
-    return Math.min(14, Math.round(10 + (LVL3_ALT - alt) * 10));
-  }
-  return Math.max(0, Math.min(9, Math.round(7 - alt * 2.2)));
-}
-
-// ── Rebuild Supercluster index ────────────────────────────────────────────────
+// ── Supercluster ──────────────────────────────────────────────────────────────
 function rebuildIndex() {
-  if (typeof Supercluster === 'undefined') return;
-  scIndex = new Supercluster({ radius: 55, maxZoom: 14, minPoints: 2 });
-  scIndex.load(rawPoints.map((p) => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-    properties: p,
+  if (!rawUsers.length || typeof Supercluster === 'undefined') return;
+  scIndex = new Supercluster({ radius:60, maxZoom:14, minPoints:2 });
+  scIndex.load(rawUsers.map((u) => ({
+    type:'Feature',
+    geometry:{ type:'Point', coordinates:[u.lng, u.lat] },
+    properties: u,
   })));
 }
 
-// ── Build cluster HTML badge element ─────────────────────────────────────────
-function makeClusterEl(d) {
-  const count = d.count;
-  const cls = count >= 50 ? 'cluster-lg' : count >= 10 ? 'cluster-md' : 'cluster-sm';
-  const label = count >= 1000 ? (count / 1000).toFixed(1) + 'k' : String(count);
+function altToZoom(alt) {
+  if (alt <= ALT_DETAIL)  return Math.min(14, Math.round(10 + (ALT_DETAIL - alt) * 10));
+  if (alt >= ALT_CLUSTER) return Math.max(0,  Math.round(5  - (alt - ALT_CLUSTER) * 1.5));
+  return Math.max(0, Math.min(9, Math.round(7 - alt * 2)));
+}
+
+// ── Cluster orb element ───────────────────────────────────────────────────────
+function heatColor(heat) {
+  // heat 0..1: cold=blue → warm=orange → hot=red
+  const h = Math.max(0, Math.min(1, heat));
+  const r = Math.round(h > .5 ? 255 : h * 2 * 255);
+  const g = Math.round(h > .5 ? (1-h)*2*120 : h*2*120);
+  const b = Math.round(h < .5 ? (1-h*2)*220 : 0);
+  return `rgb(${r},${g},${b})`;
+}
+
+function makeClusterOrb(d) {
+  const count  = d.count;
+  const online = d.onlineCount || 0;
+  const heat   = online / Math.max(count, 1);
+  const col    = heatColor(heat);
+  const size   = count >= 50 ? 66 : count >= 20 ? 54 : count >= 8 ? 44 : 36;
+  const fsz    = count >= 50 ? 17 : count >= 20 ? 14 : 12;
+  const label  = count >= 1000 ? (count/1000).toFixed(1)+'k' : String(count);
+
   const el = document.createElement('div');
-  el.className = `cluster-badge ${cls}`;
-  el.textContent = label;
-  el.title = `${count} 个点`;
-  el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    zoomToCluster(d);
-  });
+  el.className = 'c-orb';
+  el.style.cssText = `
+    width:${size}px; height:${size}px; color:${col};
+    background:radial-gradient(circle at 38% 32%, ${col}cc, ${col}55);
+    box-shadow:0 0 ${Math.round(size*.55)}px ${col}55, 0 0 ${Math.round(size*.2)}px ${col}99;
+  `;
+  el.innerHTML = `
+    <span class="c-orb-count" style="font-size:${fsz}px">${label}</span>
+    ${online > 0 ? `<span class="c-orb-sub">⬤ ${online}</span>` : ''}
+  `;
+  el.addEventListener('click', (e) => { e.stopPropagation(); zoomToCluster(d); });
   return el;
 }
 
-// ── Zoom into a cluster (click handler) ──────────────────────────────────────
-function zoomToCluster(cluster) {
-  if (!myGlobe) return;
-  const { altitude } = myGlobe.pointOfView();
-  // Each click zooms in by 60%
-  const newAlt = Math.max(0.25, altitude * 0.4);
-  myGlobe.pointOfView({ lat: cluster.lat, lng: cluster.lng, altitude: newAlt }, 800);
+// ── User initials element (detail mode) ──────────────────────────────────────
+function makeInitialsEl(u) {
+  const s = userStyle(u);
+  const initials = (u.nickname || '?').slice(0,2).toUpperCase();
+  const el = document.createElement('div');
+  el.style.cssText = `
+    width:34px; height:34px; border-radius:50%; pointer-events:all; cursor:pointer;
+    background:${s.color}18; border:2.5px solid ${s.color};
+    display:flex; align-items:center; justify-content:center;
+    color:${s.color}; font:700 11px -apple-system,sans-serif;
+    box-shadow:0 0 10px ${s.color}44;
+  `;
+  el.textContent = initials;
+  el.title = u.nickname;
+  el.addEventListener('click', (e) => { e.stopPropagation(); openCard(u); });
+  return el;
 }
 
-// ── Refresh globe display based on current altitude ───────────────────────────
-let _refreshing = false;
-function refreshPoints() {
-  if (!myGlobe || !scIndex || _refreshing) return;
-  _refreshing = true;
-
+// ── Cluster zoom ──────────────────────────────────────────────────────────────
+function zoomToCluster(d) {
+  if (!myGlobe) return;
   const { altitude } = myGlobe.pointOfView();
-  const zoom = altToZoom(altitude);
-  const features = scIndex.getClusters([-180, -85, 180, 85], zoom);
+  myGlobe.pointOfView({ lat:d.lat, lng:d.lng, altitude: altitude * .35 }, 900);
+}
 
-  const clusterData = [];
-  const pointData = [];
+// ── Refresh display ───────────────────────────────────────────────────────────
+function refreshPoints() {
+  if (!myGlobe || _refreshing) return;
+  _refreshing = true;
+  const { altitude } = myGlobe.pointOfView();
 
-  features.forEach((f) => {
-    const [lng, lat] = f.geometry.coordinates;
-    if (f.properties.cluster) {
-      clusterData.push({ lat, lng, clusterId: f.id, count: f.properties.point_count });
-    } else {
-      pointData.push({ lat, lng, ...f.properties });
-    }
-  });
-
-  if (altitude > LVL3_ALT) {
+  if (altitude >= ALT_CLUSTER && scIndex) {
+    // CLUSTER MODE
+    const zoom = altToZoom(altitude);
+    const features = scIndex.getClusters([-180,-85,180,85], zoom);
+    const clusterData = features.map((f) => {
+      const [lng, lat] = f.geometry.coordinates;
+      if (f.properties.cluster) {
+        const leaves = scIndex.getLeaves(f.id, Infinity);
+        const onlineCount = leaves.filter((l) => l.properties.isOnline).length;
+        return { lat, lng, clusterId:f.id, count:f.properties.point_count, onlineCount };
+      }
+      const u = f.properties;
+      return { lat, lng, clusterId:'s_'+u.id, count:1, onlineCount:u.isOnline?1:0, singleUser:u };
+    });
     myGlobe.pointsData([]);
     myGlobe.htmlElementsData(clusterData);
+
+  } else if (altitude < ALT_DETAIL && scIndex) {
+    // DETAIL MODE — initials elements
+    const zoom = altToZoom(altitude);
+    const features = scIndex.getClusters([-180,-85,180,85], zoom);
+    const pts = features.filter((f) => !f.properties.cluster).map((f) => ({
+      lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0], ...f.properties,
+    }));
+    myGlobe.pointsData([]);
+    myGlobe.htmlElementsData(pts);
+
   } else {
+    // ONLINE MODE — colored point dots
     myGlobe.htmlElementsData([]);
-    myGlobe.pointsData(pointData);
+    myGlobe.pointsData(rawUsers);
   }
+
   _refreshing = false;
+}
+
+// ── User card ─────────────────────────────────────────────────────────────────
+function openCard(u) {
+  document.getElementById('card-avatar').textContent = (u.nickname||'?').slice(0,2).toUpperCase();
+  document.getElementById('card-name').textContent   = u.nickname || '用户';
+  document.getElementById('card-status').textContent =
+    u.isOnline ? '' : (isRecentlyActive(u.lastActive) ? '最近活跃' : '离线');
+  const onlineRow = document.getElementById('card-online');
+  onlineRow.style.display = u.isOnline ? 'flex' : 'none';
+  document.getElementById('card-chat').onclick = () => {
+    try { window.UserTapped && window.UserTapped.postMessage(u.id); } catch(_){}
+    closeCard();
+  };
+  cardEl.style.display = 'block';
+}
+function closeCard() { cardEl.style.display = 'none'; }
+
+document.getElementById('card-close').addEventListener('click', closeCard);
+
+// ── Star field (canvas) ───────────────────────────────────────────────────────
+function drawStars() {
+  const c = document.getElementById('stars-bg');
+  c.width  = window.innerWidth;
+  c.height = window.innerHeight;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#050a14';
+  ctx.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < 2000; i++) {
+    const x = Math.random() * c.width;
+    const y = Math.random() * c.height;
+    const r = Math.random() < .92 ? .6 : Math.random() * 1.2 + .6;
+    const a = .2 + Math.random() * .8;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fill();
+  }
 }
 
 // ── Init globe.gl ─────────────────────────────────────────────────────────────
 function initGlobe() {
+  drawStars();
+  window.addEventListener('resize', drawStars);
+
   myGlobe = Globe()
     (document.getElementById('globe'))
-    .backgroundColor('#060a14')
+    .backgroundColor('rgba(0,0,0,0)')   // transparent — stars show through
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
     .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-    .atmosphereColor('#1a6eff')
-    .atmosphereAltitude(0.15)
+    .atmosphereColor('#0055ff')
+    .atmosphereAltitude(0.14)
 
-    // ── Individual points (Level 3) ──────────────────────────────────────────
+    // individual dots (online mode)
     .pointsData([])
     .pointLat((d) => d.lat)
     .pointLng((d) => d.lng)
-    .pointColor(pointColor)
-    .pointRadius(pointRadius)
+    .pointColor((d) => userStyle(d).color)
+    .pointRadius((d) => userStyle(d).r * .32)
     .pointAltitude(0.01)
-    .onPointClick((point) => {
-      if (!point) return;
-      tooltip.style.opacity = '0';
-      try {
-        if (point.type === 'user'  && window.UserTapped)  window.UserTapped.postMessage(point.id);
-        if (point.type === 'post'  && window.PostTapped)  window.PostTapped.postMessage(point.id);
-        if (point.type === 'place' && window.PlaceTapped) window.PlaceTapped.postMessage(point.id);
-      } catch (_) {}
-    })
-    .onPointHover((point) => {
-      tooltip.textContent = point ? pointLabel(point) : '';
-      tooltip.style.opacity = point ? '1' : '0';
-    })
+    .onPointClick((pt) => { if (pt) openCard(pt); })
+    .onPointHover((pt) => { document.body.style.cursor = pt ? 'pointer' : ''; })
 
-    // ── Cluster HTML badges (Levels 1 & 2) ──────────────────────────────────
+    // cluster orbs + initials (cluster & detail modes)
     .htmlElementsData([])
     .htmlLat((d) => d.lat)
     .htmlLng((d) => d.lng)
     .htmlAltitude(0.02)
-    .htmlElement(makeClusterEl);
+    .htmlElement((d) => {
+      if (d.clusterId !== undefined) {
+        if (d.singleUser) {
+          // single-user orb — open card on tap
+          const orb = makeClusterOrb(d);
+          orb.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openCard(d.singleUser);
+          }, { capture:true });
+          // override the default zoom handler added by makeClusterOrb
+          // (already wired above since makeClusterOrb adds its own listener;
+          //  single-user orbs don't need zoom — handled by capture listener above)
+          return orb;
+        }
+        return makeClusterOrb(d);
+      }
+      // detail mode: user with initials
+      return makeInitialsEl(d);
+    });
 
-  // Re-cluster on camera move
   myGlobe.controls().addEventListener('change', refreshPoints);
-
-  // Auto-rotate
   myGlobe.controls().autoRotate = true;
-  myGlobe.controls().autoRotateSpeed = 0.4;
-  myGlobe.controls().addEventListener('start', () => {
-    myGlobe.controls().autoRotate = false;
-  });
+  myGlobe.controls().autoRotateSpeed = 0.3;
+  myGlobe.controls().addEventListener('start', () => { myGlobe.controls().autoRotate = false; });
+  window.addEventListener('resize', () => myGlobe.width(window.innerWidth).height(window.innerHeight));
 
-  window.addEventListener('resize', () => {
-    myGlobe.width(window.innerWidth).height(window.innerHeight);
-  });
+  // Close card on globe background tap
+  document.getElementById('globe').addEventListener('click', closeCard);
+
+  initRadar();
 }
 
+// ── Radar scan ────────────────────────────────────────────────────────────────
+let radarCtx, radarW, radarH;
+const RADAR_SWEEP_MS = 1800;
+const RADAR_GAP_MS   = 4000;
+
+function resizeRadar() {
+  const c = document.getElementById('radar');
+  radarW = c.width  = window.innerWidth;
+  radarH = c.height = window.innerHeight;
+  radarCtx = c.getContext('2d');
+}
+
+function initRadar() {
+  resizeRadar();
+  window.addEventListener('resize', resizeRadar);
+  setTimeout(sweepRadar, 2000);
+}
+
+function sweepRadar() {
+  const cx = radarW / 2;
+  const cy = radarH / 2;
+  const maxR = Math.hypot(cx, cy) * 1.1;
+  const start = performance.now();
+
+  // Precompute flash times for online users
+  const flashQueue = [];
+  if (myGlobe && rawUsers.length) {
+    const pov = myGlobe.pointOfView();
+    rawUsers.filter((u) => u.isOnline).forEach((u) => {
+      // Angular distance from current globe center
+      const dLat = u.lat - pov.lat;
+      const dLng = ((u.lng - pov.lng + 540) % 360) - 180;
+      const ang  = Math.sqrt(dLat*dLat + dLng*dLng);
+      // Map angular dist to screen radius (40° ≈ full radius)
+      const screenR = Math.min(1, ang / 42) * maxR;
+      flashQueue.push({ id:u.id, screenR });
+    });
+    flashQueue.sort((a,b) => a.screenR - b.screenR);
+  }
+  let fIdx = 0;
+
+  function frame(now) {
+    const t = Math.min((now - start) / RADAR_SWEEP_MS, 1);
+    const r = t * maxR;
+    radarCtx.clearRect(0, 0, radarW, radarH);
+
+    // Outer ring
+    const alpha = (1 - t) * .7;
+    radarCtx.beginPath();
+    radarCtx.arc(cx, cy, r, 0, Math.PI*2);
+    radarCtx.strokeStyle = `rgba(0,255,204,${alpha})`;
+    radarCtx.lineWidth = 2;
+    radarCtx.stroke();
+
+    // Inner soft glow
+    radarCtx.beginPath();
+    radarCtx.arc(cx, cy, r - 1, 0, Math.PI*2);
+    radarCtx.strokeStyle = `rgba(0,255,204,${alpha * .35})`;
+    radarCtx.lineWidth = 10;
+    radarCtx.stroke();
+
+    // Flash users as ring sweeps past them
+    let needRefresh = false;
+    while (fIdx < flashQueue.length && flashQueue[fIdx].screenR <= r) {
+      const id = flashQueue[fIdx].id;
+      flashSet.add(id);
+      setTimeout(() => { flashSet.delete(id); refreshPoints(); }, 480);
+      needRefresh = true;
+      fIdx++;
+    }
+    if (needRefresh) refreshPoints();
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      radarCtx.clearRect(0, 0, radarW, radarH);
+      setTimeout(sweepRadar, RADAR_GAP_MS);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initGlobe);
 } else {
@@ -278,67 +476,47 @@ if (document.readyState === 'loading') {
 window.loadPoints = function(jsonStr) {
   document.getElementById('loading').style.display = 'none';
   try {
-    const data = JSON.parse(jsonStr);
-    const { users = [], posts = [], places = [], userLat, userLng } = data;
-
-    const userPoints = users.map((u) => ({
-      ...u, type: 'user',
+    const { users=[], posts=[], places=[], userLat, userLng } = JSON.parse(jsonStr);
+    rawUsers = users.map((u) => ({
+      ...u, type:'user',
       lat: u.privacy === 'blur' ? jitter(u.lat) : u.lat,
       lng: u.privacy === 'blur' ? jitter(u.lng) : u.lng,
     }));
-    const postPoints  = posts.map((p)  => ({ ...p,  type: 'post'  }));
-    const placePoints = places.map((pl) => ({ ...pl, type: 'place' }));
-
-    rawPoints = [...userPoints, ...postPoints, ...placePoints];
     rebuildIndex();
     refreshPoints();
-
-    countEl.textContent = `${users.length} 用户 · ${posts.length} 动态 · ${places.length} 地点`;
-
-    if (userLat != null && userLng != null && myGlobe) {
-      myGlobe.pointOfView({ lat: userLat, lng: userLng, altitude: 2 }, 1200);
-    }
-  } catch (e) {
-    console.error('loadPoints:', e);
-  }
+    const online = rawUsers.filter((u) => u.isOnline).length;
+    countEl.textContent = `${rawUsers.length} 用户  ·  ${online} 在线`;
+    if (userLat != null && userLng != null && myGlobe)
+      myGlobe.pointOfView({ lat:userLat, lng:userLng, altitude:1.8 }, 1200);
+  } catch(e) { console.error('loadPoints:', e); }
 };
 
-// Legacy: array of user objects
 window.loadUsers = function(jsonStr) {
   document.getElementById('loading').style.display = 'none';
   try {
     const list = JSON.parse(jsonStr);
-    rawPoints = list
-      .filter((u) => u.lat != null && u.lng != null)
-      .map((u) => ({ ...u, type: 'user' }));
-    rebuildIndex();
-    refreshPoints();
-    countEl.textContent = list.length + ' 位用户';
-  } catch (e) {
-    console.error('loadUsers:', e);
-  }
+    rawUsers = list.filter((u) => u.lat!=null && u.lng!=null).map((u) => ({...u, type:'user'}));
+    rebuildIndex(); refreshPoints();
+    countEl.textContent = rawUsers.length + ' 位用户';
+  } catch(e) { console.error('loadUsers:', e); }
 };
 
 window.showEmpty = function() {
   document.getElementById('loading').style.display = 'none';
-  countEl.textContent = '暂无位置数据';
+  countEl.textContent = '暂无附近用户';
 };
 
-// Flash a point white for 800ms on live socket push
 window.flashPoint = function(id) {
-  flashSet.add(id);
-  refreshPoints();
+  flashSet.add(id); refreshPoints();
   setTimeout(() => { flashSet.delete(id); refreshPoints(); }, 800);
 };
 
-// Add a single new point live
 window.addPoint = function(jsonStr) {
   try {
     const p = JSON.parse(jsonStr);
-    rawPoints.push(p);
-    rebuildIndex();
-    window.flashPoint(p.id);
-  } catch (e) {}
+    rawUsers.push({...p, type:'user'});
+    rebuildIndex(); window.flashPoint(p.id);
+  } catch(_) {}
 };
 </script>
 </body>

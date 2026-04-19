@@ -324,7 +324,7 @@ router.get('/locations', auth, async (req, res, next) => {
         'preferences.hideFromNearby': { $ne: true },
       },
       { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
-        isOnline: 1, 'preferences.hideDistance': 1 }
+        isOnline: 1, lastActiveAt: 1, 'preferences.hideDistance': 1 }
     ).lean();
 
     const result = users.map((u) => ({
@@ -334,6 +334,7 @@ router.get('/locations', auth, async (req, res, next) => {
       lng: u.location?.coordinates?.[0],
       avatar: u.photos?.[0] ?? null,
       isOnline: u.isOnline ?? false,
+      lastActive: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
       privacy: u.preferences?.hideDistance ? 'blur' : 'normal',
     })).filter((u) => u.lat != null && u.lng != null);
 
