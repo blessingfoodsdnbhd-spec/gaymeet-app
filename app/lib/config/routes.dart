@@ -55,6 +55,7 @@ import '../core/models/place.dart';
 import '../features/security/security_screen.dart';
 import '../features/settings/currency_screen.dart';
 import '../features/calendar/calendar_screen.dart';
+import '../features/stories/create_story_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -128,6 +129,9 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(path: '/teleport', builder: (_, __) => const TeleportScreen()),
       GoRoute(path: '/stealth', builder: (_, __) => const StealthSettingsScreen()),
       GoRoute(path: '/location/globe', builder: (_, __) => const GlobeScreen()),
+
+      // ── Stories ──────────────────────────────────────────────────────────
+      GoRoute(path: '/stories/create', builder: (_, __) => const CreateStoryScreen()),
 
       // ── Moments ──────────────────────────────────────────────────────────
       GoRoute(path: '/moments', builder: (_, __) => const MomentsFeedScreen()),
