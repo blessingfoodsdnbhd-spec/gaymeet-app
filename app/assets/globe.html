@@ -274,30 +274,78 @@ function altToZoom(alt) {
 }
 
 // ── Cluster orb HTML element ──────────────────────────────────────────────────
+// ── Nearest-city lookup (no reverse geocoding needed) ─────────────────────────
+const CITIES = [
+  { name: 'KL',        lat:  3.14, lng: 101.69 },
+  { name: 'Penang',    lat:  5.41, lng: 100.33 },
+  { name: 'JB',        lat:  1.46, lng: 103.73 },
+  { name: 'Singapore', lat:  1.35, lng: 103.82 },
+  { name: 'Bangkok',   lat: 13.75, lng: 100.52 },
+  { name: 'Jakarta',   lat: -6.21, lng: 106.85 },
+  { name: 'Bali',      lat: -8.34, lng: 115.09 },
+  { name: 'Hanoi',     lat: 21.03, lng: 105.83 },
+  { name: 'HCMC',      lat: 10.82, lng: 106.63 },
+  { name: 'Manila',    lat: 14.60, lng: 120.97 },
+  { name: 'HK',        lat: 22.33, lng: 114.17 },
+  { name: 'Taipei',    lat: 25.04, lng: 121.56 },
+  { name: 'Shanghai',  lat: 31.23, lng: 121.47 },
+  { name: 'Beijing',   lat: 39.91, lng: 116.39 },
+  { name: 'Seoul',     lat: 37.57, lng: 126.98 },
+  { name: 'Tokyo',     lat: 35.68, lng: 139.69 },
+  { name: 'Osaka',     lat: 34.69, lng: 135.50 },
+  { name: 'Sydney',    lat:-33.87, lng: 151.21 },
+  { name: 'Melbourne', lat:-37.81, lng: 144.96 },
+  { name: 'Dubai',     lat: 25.20, lng:  55.27 },
+  { name: 'London',    lat: 51.51, lng:  -0.13 },
+  { name: 'Paris',     lat: 48.85, lng:   2.35 },
+  { name: 'NYC',       lat: 40.71, lng: -74.01 },
+  { name: 'LA',        lat: 34.05, lng:-118.24 },
+  { name: 'Toronto',   lat: 43.65, lng: -79.38 },
+];
+
+function nearestCity(lat, lng) {
+  let best = CITIES[0], bestD = Infinity;
+  for (const c of CITIES) {
+    const d = (c.lat - lat) ** 2 + (c.lng - lng) ** 2;
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  // Only label if within ~500 km (≈ 4.5° squared = 20)
+  return bestD < 20 ? best.name : null;
+}
+
 function makeClusterEl(d) {
   let onlineCount = 0;
   if (scIndex && d.clusterId) {
     try { onlineCount = scIndex.getLeaves(d.clusterId, Infinity).filter(l => l.properties.isOnline).length; } catch (_) {}
   }
-  const heat = d.count > 0 ? onlineCount / d.count : 0;
-  const size = d.count >= 50 ? 60 : d.count >= 10 ? 46 : 34;
-  const fs   = d.count >= 50 ? 16 : d.count >= 10 ? 13 : 11;
+  const heat  = d.count > 0 ? onlineCount / d.count : 0;
+  const size  = d.count >= 50 ? 64 : d.count >= 10 ? 50 : 38;
+  const fs    = d.count >= 50 ? 14 : d.count >= 10 ? 12 : 11;
 
   const r = Math.round(220 * heat + 70  * (1 - heat));
   const g = Math.round( 90 * heat + 40  * (1 - heat));
   const b = Math.round( 20 * heat + 160 * (1 - heat));
-  const glow = heat > 0.4 ? 'rgba(255,120,30,0.5)' : 'rgba(70,50,200,0.4)';
-  const label = d.count >= 1000 ? (d.count / 1000).toFixed(1) + 'k' : String(d.count);
+  const glow  = heat > 0.4 ? 'rgba(255,120,30,0.5)' : 'rgba(70,50,200,0.4)';
+  const count = d.count >= 1000 ? (d.count / 1000).toFixed(1) + 'k' : String(d.count);
+  const city  = nearestCity(d.lat, d.lng);
 
   const el = document.createElement('div');
   el.className = 'cluster-orb';
   el.style.cssText =
-    `width:${size}px;height:${size}px;font-size:${fs}px;` +
+    `width:${size}px;height:${size}px;` +
     `background:radial-gradient(circle at 35% 35%,` +
       `rgb(${Math.min(255,r+70)},${Math.min(255,g+50)},${Math.min(255,b+40)}),` +
       `rgb(${r},${g},${b}));` +
     `box-shadow:0 0 ${size/2}px ${glow},0 2px 10px rgba(0,0,0,0.7);`;
-  el.textContent = label;
+  if (city) {
+    el.innerHTML =
+      `<span style="font-size:${fs}px;font-weight:700;line-height:1">${count}</span>` +
+      `<span style="font-size:9px;opacity:0.85;line-height:1;margin-top:1px">${city}</span>`;
+    el.style.flexDirection = 'column';
+  } else {
+    el.style.fontSize = `${fs}px`;
+    el.textContent = count;
+  }
   el.title = `${d.count} 位用户`;
   el.addEventListener('click', e => { e.stopPropagation(); zoomToCluster(d); });
   return el;
