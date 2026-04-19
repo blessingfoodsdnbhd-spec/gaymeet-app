@@ -243,7 +243,6 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
-				AA0000010000000000000010 /* Embed App Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				49DE04E86E3AB2B6ACD37417 /* [CP] Embed Pods Frameworks */,
 				7000C997FCCDB66C384387F6 /* [CP] Copy Pods Resources */,
@@ -251,7 +250,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				AA0000010000000000000012 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
