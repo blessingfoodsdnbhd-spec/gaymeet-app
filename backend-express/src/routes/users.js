@@ -234,7 +234,22 @@ router.get('/nearby', auth, async (req, res, next) => {
     // sort in JS to guarantee ascending distance order.
     users.sort((a, b) => (a.distanceMeters || 0) - (b.distanceMeters || 0));
 
-    const result = users.map((u) => {
+    // Remove self from aggregation results (may appear with non-zero GPS jitter distance),
+    // then re-insert at position 0 with exact 0 m distance.
+    const selfId = me._id.toString();
+    const others = users.filter((u) => u._id.toString() !== selfId);
+
+    const selfEntry = {
+      ...me.toObject(),
+      id: selfId,
+      distanceMeters: 0,
+      distanceLabel: '0 m',
+    };
+
+    const combined = [selfEntry, ...others];
+
+    const result = combined.map((u) => {
+      if (u.distanceMeters === 0 && u.distanceLabel) return u; // self entry already formatted
       const dm = u.distanceMeters;
       const label =
         dm < 1000

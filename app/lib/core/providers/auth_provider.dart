@@ -153,8 +153,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Fire-and-forget: request location permission and push real coords to
-  /// the backend so the user appears correctly in nearby results.
+  /// Fire-and-forget: push GPS location to backend on login/resume.
+  /// Uses last-known position first (instant) then refines with fresh fix.
   Future<void> _tryUpdateLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -167,17 +167,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) { return; }
 
-      final pos = await Geolocator.getCurrentPosition(
+      Future<void> sendLoc(Position pos) async {
+        await _api.dio.put('/users/me/location', data: {
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+        });
+      }
+
+      // Push last-known immediately so the user appears in nearby right away.
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) { await sendLoc(last); }
+
+      // Refine with a fresh GPS fix (up to 10 s).
+      final fresh = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
           timeLimit: Duration(seconds: 10),
         ),
       );
-
-      await _api.dio.put('/users/me/location', data: {
-        'latitude': pos.latitude,
-        'longitude': pos.longitude,
-      });
+      await sendLoc(fresh);
     } catch (_) {
       // Location is best-effort; never block login flow
     }
