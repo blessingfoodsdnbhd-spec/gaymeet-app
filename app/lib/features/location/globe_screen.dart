@@ -1,21 +1,23 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/api/api_client.dart';
+import '../../core/providers/auth_provider.dart';
 
-class GlobeScreen extends StatefulWidget {
+class GlobeScreen extends ConsumerStatefulWidget {
   const GlobeScreen({super.key});
 
   @override
-  State<GlobeScreen> createState() => _GlobeScreenState();
+  ConsumerState<GlobeScreen> createState() => _GlobeScreenState();
 }
 
-class _GlobeScreenState extends State<GlobeScreen> {
+class _GlobeScreenState extends ConsumerState<GlobeScreen> {
   late final WebViewController _controller;
   bool _webReady = false;
   bool _dataLoaded = false;
-  List<Map<String, dynamic>> _pendingUsers = [];
+  Map<String, dynamic>? _pendingData;
 
   @override
   void initState() {
@@ -26,56 +28,53 @@ class _GlobeScreenState extends State<GlobeScreen> {
         'UserTapped',
         onMessageReceived: (msg) => _onUserTapped(msg.message),
       )
+      ..addJavaScriptChannel(
+        'PostTapped',
+        onMessageReceived: (msg) => _onPostTapped(msg.message),
+      )
+      ..addJavaScriptChannel(
+        'PlaceTapped',
+        onMessageReceived: (msg) => _onPlaceTapped(msg.message),
+      )
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
           setState(() => _webReady = true);
-          _maybeInjectUsers();
+          _maybeInject();
         },
       ))
       ..loadFlutterAsset('assets/globe.html');
 
-    _fetchLocations();
+    _fetchPoints();
   }
 
-  Future<void> _fetchLocations() async {
+  Future<void> _fetchPoints() async {
     try {
-      final api = ApiClient();
-      final resp = await api.dio.get('/api/users/locations');
+      final api = ref.read(apiClientProvider);
+      final resp = await api.dio.get('/globe/points');
       final body = resp.data;
-      final List raw = body is Map ? (body['data'] ?? body['users'] ?? []) : (body as List);
-      final users = raw.map<Map<String, dynamic>>((u) {
-        final coords = u['location']?['coordinates'];
-        final double? lng = coords != null ? (coords[0] as num).toDouble() : null;
-        final double? lat = coords != null ? (coords[1] as num).toDouble() : null;
-        final photos = u['photos'] as List? ?? [];
-        return {
-          'id': u['_id']?.toString() ?? u['id']?.toString() ?? '',
-          'nickname': u['nickname'] ?? '用户',
-          'lat': lat,
-          'lng': lng,
-          'avatar': photos.isNotEmpty ? photos[0] : null,
-        };
-      }).where((u) => u['lat'] != null && u['lng'] != null).toList();
+      final data = body is Map ? (body['data'] ?? body) : body;
 
-      _pendingUsers = users;
-      _maybeInjectUsers();
+      _pendingData = {
+        'users':   (data['users']  as List? ?? []).cast<Map<String, dynamic>>(),
+        'posts':   (data['posts']  as List? ?? []).cast<Map<String, dynamic>>(),
+        'places':  (data['places'] as List? ?? []).cast<Map<String, dynamic>>(),
+        'userLat': data['userLat'],
+        'userLng': data['userLng'],
+      };
+      _maybeInject();
     } catch (e) {
-      _pendingUsers = [];
-      _maybeInjectUsers();
+      // Fall back to empty globe
+      _pendingData = {'users': [], 'posts': [], 'places': []};
+      _maybeInject();
     }
   }
 
-  void _maybeInjectUsers() {
-    if (!_webReady || _dataLoaded) return;
+  void _maybeInject() {
+    if (!_webReady || _dataLoaded || _pendingData == null) return;
     _dataLoaded = true;
-    if (_pendingUsers.isEmpty) {
-      _controller.runJavaScript('window.showEmpty && window.showEmpty()');
-    } else {
-      final json = jsonEncode(_pendingUsers);
-      // Escape for JS string injection
-      final escaped = json.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
-      _controller.runJavaScript("window.loadUsers('$escaped')");
-    }
+    final json = jsonEncode(_pendingData);
+    final escaped = json.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
+    _controller.runJavaScript("window.loadPoints && window.loadPoints('$escaped')");
   }
 
   void _onUserTapped(String userId) {
@@ -83,12 +82,22 @@ class _GlobeScreenState extends State<GlobeScreen> {
     context.push('/user/$userId');
   }
 
+  void _onPostTapped(String postId) {
+    if (postId.isEmpty) return;
+    context.push('/moments/$postId');
+  }
+
+  void _onPlaceTapped(String placeId) {
+    if (placeId.isEmpty) return;
+    context.push('/places/$placeId');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A12),
+      backgroundColor: const Color(0xFF060a14),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A12),
+        backgroundColor: const Color(0xFF060a14),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
