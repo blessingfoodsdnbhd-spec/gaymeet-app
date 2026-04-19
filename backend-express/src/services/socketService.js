@@ -7,6 +7,7 @@ const Message = require('../models/Message');
 const CallLog = require('../models/CallLog');
 const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
+const { sendChatPush } = require('./fcmService');
 
 let io;
 
@@ -138,6 +139,24 @@ function initSocket(server) {
       // was in both the match room AND their personal user room simultaneously.
       io.to(`user:${userId}`).emit('chat:receive', payload);
       io.to(`user:${otherId}`).emit('chat:receive', payload);
+
+      // Push notification for recipient when they're not connected via socket
+      const recipientSockets = await io.in(`user:${otherId}`).fetchSockets();
+      const recipientOnline = recipientSockets.length > 0;
+      if (!recipientOnline) {
+        const [recipient, sender] = await Promise.all([
+          User.findById(otherId).select('fcmToken').lean(),
+          User.findById(userId).select('nickname').lean(),
+        ]);
+        if (recipient?.fcmToken) {
+          sendChatPush(
+            recipient.fcmToken,
+            sender?.nickname ?? 'Someone',
+            message.content,
+            matchId
+          );
+        }
+      }
     });
 
     // ── chat:read ─────────────────────────────────────────────────────────────

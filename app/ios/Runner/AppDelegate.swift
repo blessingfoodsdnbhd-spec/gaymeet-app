@@ -1,6 +1,9 @@
 import Flutter
 import UIKit
 import GoogleSignIn
+import UserNotifications
+import FirebaseCore
+import FirebaseMessaging
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -8,6 +11,12 @@ import GoogleSignIn
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    FirebaseApp.configure()
+
+    // Register for remote notifications — required for APNs token delivery to FCM
+    UNUserNotificationCenter.current().delegate = self
+    application.registerForRemoteNotifications()
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -15,16 +24,23 @@ import GoogleSignIn
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 
+  // Forward APNs token to Firebase Messaging
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Messaging.messaging().apnsToken = deviceToken
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+  }
+
   override func application(
     _ app: UIApplication,
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
-    // Google Sign-In owns its own scheme
     if GIDSignIn.sharedInstance.handle(url) {
       return true
     }
-    // meyou:// deep links — let Flutter plugins (home_widget) handle them
     return super.application(app, open: url, options: options)
   }
 }

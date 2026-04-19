@@ -61,4 +61,9 @@ module.exports = {
   MAINTENANCE_MODE:     process.env.MAINTENANCE_MODE === 'true',
   MAINTENANCE_MESSAGE:  process.env.MAINTENANCE_MESSAGE || '',
   MIN_APP_VERSION:      process.env.MIN_APP_VERSION || '1.0.0',
+  // ── Firebase Admin (optional — push notifications) ────────────────────────
+  // Set FIREBASE_SERVICE_ACCOUNT_JSON to the full JSON string (or base64) of
+  // your Firebase service account key. Download from:
+  //   Firebase console → Project Settings → Service accounts → Generate new private key
+  // Without this, push notifications are silently disabled.
 };
