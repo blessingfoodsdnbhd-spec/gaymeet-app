@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "208538145733",
+    "project_id": "meetup-nearby",
+    "storage_bucket": "meetup-nearby.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208538145733:android:0670b5b25cb649d11171ac",
+        "android_client_info": {
+          "package_name": "com.meetupnearby.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoDfykEwu7AisF1EG7LqjNz3tPS5f_pYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.meetupnearby.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

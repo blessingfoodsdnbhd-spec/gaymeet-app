@@ -53,7 +53,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _loginWithGoogle() async {
     try {
       final googleSignIn = GoogleSignIn(
+        // iOS client ID (ignored on Android; Android reads google-services.json)
         clientId: '208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com',
+        // Web client — needed on Android to get an ID token the backend can verify
+        serverClientId: '208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com',
       );
       final account = await googleSignIn.signIn();
       if (account == null) return;
