@@ -146,11 +146,15 @@ router.post('/google', async (req, res, next) => {
       return err(res, 'Google Sign-In not configured on server', 501);
     }
 
+    // Accept tokens issued for either the web/Android client or the iOS client
+    const audiences = [process.env.GOOGLE_CLIENT_ID];
+    if (process.env.GOOGLE_IOS_CLIENT_ID) audiences.push(process.env.GOOGLE_IOS_CLIENT_ID);
+
     let payload;
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: audiences,
       });
       payload = ticket.getPayload();
     } catch {

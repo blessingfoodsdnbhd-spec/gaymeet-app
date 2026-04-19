@@ -61,7 +61,10 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
       // Discard if the user navigated away while the request was in flight
       if (_currentMatchId != matchId) return;
       final List<dynamic> raw = response.data['data'] as List<dynamic>;
-      final httpMessages = raw.map((m) => MessageModel.fromJson(m)).toList();
+      // API returns ascending (oldest first); reverse to newest-first so
+      // index 0 = newest = bottom with ListView(reverse: true).
+      final httpMessages = raw.map((m) => MessageModel.fromJson(m)).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       for (final m in httpMessages) {
         _seenIds.add(m.id);
       }
