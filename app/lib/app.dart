@@ -11,7 +11,6 @@ import 'core/providers/subscription_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/maintenance/maintenance_screen.dart';
-import 'shared/widgets/promo_popup.dart';
 
 class MeetupNearbyApp extends ConsumerStatefulWidget {
   const MeetupNearbyApp({super.key});
@@ -42,11 +41,9 @@ class _MeetupNearbyAppState extends ConsumerState<MeetupNearbyApp> {
         // and "Who Liked You" section — runs in background)
         ref.read(likesProvider.notifier).fetchLikes();
 
-        // Pre-fetch promotions, then show interstitial after 2 s
+        // Pre-fetch promotions (HomeScreen will show the interstitial once
+        // it has a valid Navigator context)
         ref.read(promotionProvider.notifier).fetch();
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) PromoPopup.showIfNeeded(context, ref);
-        });
 
         // Schedule "no new matches" push notification if 24 h pass without
         // a match. Backend picks this up and sends FCM at the right time.

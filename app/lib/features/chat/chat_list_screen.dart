@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import '../../config/theme.dart';
 import '../../core/dummy/dummy_data.dart';
 import '../../core/providers/conversations_provider.dart';
@@ -87,6 +86,25 @@ class ChatListScreen extends ConsumerWidget {
   }
 }
 
+String _formatConversationTime(DateTime dt) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+  final msgDay = DateTime(dt.year, dt.month, dt.day);
+
+  if (msgDay == today) {
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  } else if (msgDay == yesterday) {
+    return 'Yesterday';
+  } else if (now.difference(dt).inDays < 7) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[dt.weekday - 1];
+  } else {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[dt.month - 1]} ${dt.day}';
+  }
+}
+
 class _ChatTile extends StatelessWidget {
   final MatchModel match;
   const _ChatTile({required this.match});
@@ -143,8 +161,7 @@ class _ChatTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            timeago.format(match.lastMessageAt ?? match.matchedAt,
-                locale: 'en_short'),
+            _formatConversationTime(match.lastMessageAt ?? match.matchedAt),
             style: TextStyle(color: AppTheme.textHint, fontSize: 11),
           ),
           if (match.unreadCount > 0) ...[

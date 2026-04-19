@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/moments_service.dart';
 import '../models/moment.dart';
@@ -93,8 +94,11 @@ class MomentsNotifier extends StateNotifier<MomentsState> {
         hasMore: moments.length >= 20,
       );
     } catch (_) {
+      // Only fall back to dummy data on first load; keep existing state on refresh
       state = state.copyWith(
-        moments: _feed == 'discover' ? _dummyMoments : [],
+        moments: state.moments.isEmpty
+            ? (_feed == 'discover' ? _dummyMoments : [])
+            : state.moments,
         isLoading: false,
         hasMore: false,
       );
@@ -153,7 +157,8 @@ class MomentsNotifier extends StateNotifier<MomentsState> {
       );
       state = state.copyWith(moments: [moment, ...state.moments]);
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('createMoment error: $e\n$st');
       return false;
     }
   }

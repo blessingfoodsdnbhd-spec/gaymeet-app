@@ -54,6 +54,10 @@ class SocketService {
           .setTransports(['websocket'])
           .setAuth({'token': token})
           .disableAutoConnect()
+          .enableReconnection()
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(15000)
+          .setReconnectionAttempts(99999)
           .build(),
     );
 

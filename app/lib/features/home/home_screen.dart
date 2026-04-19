@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/providers/conversations_provider.dart';
 import '../../core/providers/locale_provider.dart';
 import '../call/incoming_call_screen.dart';
 import '../location/location_hub_screen.dart';
@@ -57,6 +58,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
+    final totalUnread = ref.watch(conversationsProvider).whenOrNull(
+          data: (list) => list.fold<int>(0, (sum, c) => sum + c.unreadCount),
+        ) ??
+        0;
 
     return Scaffold(
       extendBody: true,
@@ -90,18 +95,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     clipBehavior: Clip.none,
                     children: [
                       const Icon(Icons.chat_bubble_rounded),
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppTheme.primary,
+                      if (totalUnread > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.primary,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   label: 'chat'.tr(locale),

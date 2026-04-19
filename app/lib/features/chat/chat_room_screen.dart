@@ -9,6 +9,7 @@ import '../../core/dummy/dummy_data.dart';
 import '../../core/models/message.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/chat_provider.dart';
+import '../../core/providers/conversations_provider.dart';
 import '../../core/providers/match_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/user_provider.dart';
@@ -67,8 +68,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     if (kUseDummyData) {
       _messages = DummyData.messagesFor(widget.matchId);
     } else {
-      Future.microtask(
-          () => ref.read(chatProvider.notifier).openChat(widget.matchId, widget.otherUserId));
+      Future.microtask(() {
+        ref.read(chatProvider.notifier).openChat(widget.matchId, widget.otherUserId);
+        ref.read(conversationsProvider.notifier).markRead(widget.matchId);
+      });
     }
   }
 

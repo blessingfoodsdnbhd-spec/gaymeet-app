@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
+import '../api/socket_service.dart';
 import '../models/match.dart';
 import 'auth_provider.dart';
 
@@ -26,15 +28,55 @@ class OpenConversationResult {
 
 final conversationsProvider = StateNotifierProvider<ConversationsNotifier,
     AsyncValue<List<MatchModel>>>((ref) {
-  return ConversationsNotifier(ref.watch(apiClientProvider));
+  return ConversationsNotifier(
+    ref.watch(apiClientProvider),
+    ref.watch(socketServiceProvider),
+    ref,
+  );
 });
 
 class ConversationsNotifier
     extends StateNotifier<AsyncValue<List<MatchModel>>> {
   final ApiClient _api;
+  final SocketService _socket;
+  final Ref _ref;
+  StreamSubscription? _msgSub;
 
-  ConversationsNotifier(this._api) : super(const AsyncValue.loading()) {
+  ConversationsNotifier(this._api, this._socket, this._ref)
+      : super(const AsyncValue.loading()) {
     fetchConversations();
+    _msgSub = _socket.onMessage.listen((msg) {
+      state.whenData((list) {
+        final idx = list.indexWhere((c) => c.matchId == msg.matchId);
+        if (idx == -1) return;
+        final myId = _ref.read(authStateProvider).user?.id;
+        final isIncoming = msg.senderId != myId;
+        final updated = List<MatchModel>.from(list);
+        updated[idx] = MatchModel(
+          matchId: list[idx].matchId,
+          matchedAt: list[idx].matchedAt,
+          user: list[idx].user,
+          lastMessage: msg.content,
+          lastMessageAt: msg.createdAt,
+          unreadCount: isIncoming
+              ? list[idx].unreadCount + 1
+              : list[idx].unreadCount,
+        );
+        // Re-sort so most-recent stays at the top
+        updated.sort((a, b) {
+          final ta = a.lastMessageAt ?? a.matchedAt;
+          final tb = b.lastMessageAt ?? b.matchedAt;
+          return tb.compareTo(ta);
+        });
+        state = AsyncValue.data(updated);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _msgSub?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchConversations({bool retry = true}) async {
@@ -64,6 +106,24 @@ class ConversationsNotifier
         OpenConversationResult.fromJson(response.data['data']);
     await fetchConversations();
     return result;
+  }
+
+  void markRead(String matchId) {
+    state.whenData((list) {
+      final idx = list.indexWhere((c) => c.matchId == matchId);
+      if (idx == -1) return;
+      if (list[idx].unreadCount == 0) return;
+      final updated = List<MatchModel>.from(list);
+      updated[idx] = MatchModel(
+        matchId: list[idx].matchId,
+        matchedAt: list[idx].matchedAt,
+        user: list[idx].user,
+        lastMessage: list[idx].lastMessage,
+        lastMessageAt: list[idx].lastMessageAt,
+        unreadCount: 0,
+      );
+      state = AsyncValue.data(updated);
+    });
   }
 
   /// Optimistically remove a conversation by the other user's id.

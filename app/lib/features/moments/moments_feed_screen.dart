@@ -171,7 +171,7 @@ class _FeedTab extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return _MomentCard(moment: state.moments[i]);
+          return _MomentCard(moment: state.moments[i], providerNotifier: providerNotifier);
         },
       ),
     );
@@ -205,7 +205,8 @@ class _FeedTab extends ConsumerWidget {
 
 class _MomentCard extends ConsumerStatefulWidget {
   final Moment moment;
-  const _MomentCard({required this.moment});
+  final StateNotifierProvider<MomentsNotifier, MomentsState> providerNotifier;
+  const _MomentCard({required this.moment, required this.providerNotifier});
 
   @override
   ConsumerState<_MomentCard> createState() => _MomentCardState();
@@ -237,7 +238,7 @@ class _MomentCardState extends ConsumerState<_MomentCard>
 
   void _like() {
     _heartCtrl.forward(from: 0);
-    ref.read(momentsProvider.notifier).toggleLike(widget.moment.id);
+    ref.read(widget.providerNotifier.notifier).toggleLike(widget.moment.id);
   }
 
   @override

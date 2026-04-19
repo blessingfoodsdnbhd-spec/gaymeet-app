@@ -28,6 +28,7 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
     _currentMatchId = matchId;
     _seenIds.clear();
     _messageSub?.cancel();
+    state = const AsyncValue.data([]); // clear previous chat's messages immediately
     _messageSub = _socket.onMessage.listen((msg) {
       if (msg.matchId != matchId) return;
       if (_seenIds.contains(msg.id)) return; // already present
@@ -57,18 +58,25 @@ class ChatNotifier extends StateNotifier<AsyncValue<List<MessageModel>>> {
     state = const AsyncValue.loading();
     try {
       final response = await _api.dio.get('/conversations/$otherUserId/messages');
+      // Discard if the user navigated away while the request was in flight
+      if (_currentMatchId != matchId) return;
       final List<dynamic> raw = response.data['data'] as List<dynamic>;
       final httpMessages = raw.map((m) => MessageModel.fromJson(m)).toList();
       for (final m in httpMessages) {
         _seenIds.add(m.id);
       }
       final httpIds = httpMessages.map((m) => m.id).toSet();
-      // Preserve any socket messages that arrived during the HTTP load
+      // Preserve socket messages that arrived during the HTTP load,
+      // but only for THIS conversation — never bleed in a previous chat's messages.
       final extra = existing
-          .where((m) => !httpIds.contains(m.id) && !m.id.startsWith('temp:'))
+          .where((m) =>
+              !httpIds.contains(m.id) &&
+              !m.id.startsWith('temp:') &&
+              m.matchId == matchId)
           .toList();
       state = AsyncValue.data([...extra, ...httpMessages]);
     } catch (e, st) {
+      if (_currentMatchId != matchId) return;
       state = AsyncValue.error(e, st);
     }
   }
