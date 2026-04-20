@@ -11,16 +11,22 @@ router.get('/', auth, async (req, res, next) => {
     const { userId, feed, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const filter = { isActive: true, visibility: 'public' };
+    let filter;
     if (userId) {
-      filter.user = userId;
+      filter = { isActive: true, user: userId, visibility: 'public' };
     } else if (feed === 'following') {
       const Follow = require('../models/Follow');
       const followDocs = await Follow.find({ follower: req.user._id })
         .select('following')
         .lean();
       const followingIds = followDocs.map((f) => f.following);
-      filter.user = { $in: followingIds };
+      filter = {
+        isActive: true,
+        user: { $in: followingIds },
+        visibility: { $in: ['public', 'friends'] },
+      };
+    } else {
+      filter = { isActive: true, visibility: 'public' };
     }
 
     const moments = await Moment.find(filter)

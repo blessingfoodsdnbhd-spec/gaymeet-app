@@ -3,6 +3,8 @@ class StoryItem {
   final String mediaUrl;
   final String mediaType; // 'image' | 'video'
   final String caption;
+  final String visibility; // 'public' | 'followers' | 'private'
+  final bool hasLocation;
   final int viewCount;
   final bool isViewed;
   final DateTime createdAt;
@@ -13,6 +15,8 @@ class StoryItem {
     required this.mediaUrl,
     required this.mediaType,
     required this.caption,
+    this.visibility = 'followers',
+    this.hasLocation = false,
     required this.viewCount,
     required this.isViewed,
     required this.createdAt,
@@ -26,6 +30,8 @@ class StoryItem {
       mediaUrl: json['mediaUrl'] as String? ?? '',
       mediaType: json['mediaType'] as String? ?? 'image',
       caption: json['caption'] as String? ?? '',
+      visibility: json['visibility'] as String? ?? 'followers',
+      hasLocation: json['hasLocation'] as bool? ?? false,
       viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,
       isViewed: json['isViewed'] as bool? ?? false,
       createdAt: json['createdAt'] != null

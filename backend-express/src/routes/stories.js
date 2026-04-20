@@ -6,7 +6,7 @@ const { auth } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const { ok, created, err } = require('../utils/respond');
 
-// ── GET /api/stories — feed (followed users + own) grouped by user ─────────────
+// ── GET /api/stories — feed: public stories + followed users' followers-only ────
 router.get('/', auth, async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -18,12 +18,13 @@ router.get('/', auth, async (req, res, next) => {
       .lean();
     const followingIds = followDocs.map((f) => f.following);
 
-    // Include own stories
-    const authorIds = [...followingIds, userId];
-
     const stories = await Story.find({
-      user: { $in: authorIds },
       expiresAt: { $gt: now },
+      $or: [
+        { user: userId }, // own stories (all visibilities)
+        { user: { $in: followingIds }, visibility: { $in: ['public', 'followers'] } },
+        { visibility: 'public' }, // public stories from anyone
+      ],
     })
       .sort({ user: 1, createdAt: 1 })
       .populate('user', 'nickname avatarUrl')
@@ -91,19 +92,27 @@ router.post(
     try {
       if (!req.file) return err(res, 'media file required');
 
-      const { caption = '', mediaType = 'image' } = req.body;
+      const { caption = '', mediaType = 'image', visibility = 'followers', lat, lng } = req.body;
       const host = `${req.protocol}://${req.get('host')}`;
       const mediaUrl = `${host}/uploads/${req.file.filename}`;
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 h
 
-      const story = await Story.create({
+      const data = {
         user: req.user._id,
         mediaUrl,
         mediaType: ['image', 'video'].includes(mediaType) ? mediaType : 'image',
         caption: caption.slice(0, 100),
+        visibility: ['public', 'followers', 'private'].includes(visibility) ? visibility : 'followers',
         expiresAt,
-      });
+      };
+
+      if (lat != null && lng != null) {
+        data.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
+        data.hasLocation = true;
+      }
+
+      const story = await Story.create(data);
 
       created(res, story.toObject());
     } catch (e) {

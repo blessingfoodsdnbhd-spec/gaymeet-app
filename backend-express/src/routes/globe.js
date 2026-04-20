@@ -2,6 +2,7 @@ const router = require('express').Router();
 const User = require('../models/User');
 const Moment = require('../models/Moment');
 const Place = require('../models/Place');
+const Story = require('../models/Story');
 const { auth } = require('../middleware/auth');
 const { ok } = require('../utils/respond');
 
@@ -10,7 +11,8 @@ const { ok } = require('../utils/respond');
 //   { users, posts, places, userLat, userLng }
 router.get('/points', auth, async (req, res, next) => {
   try {
-    const [rawUsers, rawPosts, rawPlaces, me] = await Promise.all([
+    const now = new Date();
+    const [rawUsers, rawPosts, rawPlaces, rawStories, me] = await Promise.all([
       User.find(
         {
           'location.coordinates': { $exists: true, $ne: null },
@@ -22,7 +24,7 @@ router.get('/points', auth, async (req, res, next) => {
       ).lean(),
 
       Moment.find(
-        { hasLocation: true, isActive: true },
+        { hasLocation: true, isActive: true, visibility: 'public' },
         { _id: 1, content: 1, location: 1, likes: 1, commentsCount: 1, createdAt: 1 }
       ).lean(),
 
@@ -30,6 +32,11 @@ router.get('/points', auth, async (req, res, next) => {
         { isActive: true },
         { _id: 1, name: 1, location: 1, isVerified: 1, category: 1 }
       ).lean(),
+
+      Story.find(
+        { hasLocation: true, visibility: 'public', expiresAt: { $gt: now } },
+        { _id: 1, caption: 1, mediaUrl: 1, location: 1, user: 1, createdAt: 1 }
+      ).populate('user', 'nickname avatarUrl').lean(),
 
       User.findById(req.user._id, { location: 1 }).lean(),
     ]);
@@ -67,10 +74,20 @@ router.get('/points', auth, async (req, res, next) => {
       };
     }).filter((pl) => pl.lat != null && pl.lng != null && !(pl.lat === 0 && pl.lng === 0));
 
+    const stories = rawStories.map((s) => ({
+      id: s._id.toString(),
+      caption: (s.caption || '').substring(0, 50),
+      mediaUrl: s.mediaUrl,
+      lat: s.location?.coordinates?.[1],
+      lng: s.location?.coordinates?.[0],
+      user: s.user ? { id: s.user._id?.toString(), nickname: s.user.nickname, avatarUrl: s.user.avatarUrl } : null,
+      createdAt: s.createdAt,
+    })).filter((s) => s.lat != null && s.lng != null);
+
     const myLat = me?.location?.coordinates?.[1] ?? null;
     const myLng = me?.location?.coordinates?.[0] ?? null;
 
-    ok(res, { users, posts, places, userLat: myLat, userLng: myLng });
+    ok(res, { users, posts, places, stories, userLat: myLat, userLng: myLng });
   } catch (e) {
     next(e);
   }

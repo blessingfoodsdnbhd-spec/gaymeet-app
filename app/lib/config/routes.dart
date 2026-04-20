@@ -56,6 +56,8 @@ import '../features/security/security_screen.dart';
 import '../features/settings/currency_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/stories/create_story_screen.dart';
+import '../features/stories/story_viewer_screen.dart';
+import '../core/models/story.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -132,6 +134,16 @@ GoRouter createRouter({required bool isLoggedIn}) {
 
       // ── Stories ──────────────────────────────────────────────────────────
       GoRoute(path: '/stories/create', builder: (_, __) => const CreateStoryScreen()),
+      GoRoute(
+        path: '/stories/view/:userId',
+        builder: (_, state) {
+          final groups = state.extra as List<StoryGroup>;
+          return StoryViewerScreen(
+            userId: state.pathParameters['userId']!,
+            groups: groups,
+          );
+        },
+      ),
 
       // ── Moments ──────────────────────────────────────────────────────────
       GoRoute(path: '/moments', builder: (_, __) => const MomentsFeedScreen()),

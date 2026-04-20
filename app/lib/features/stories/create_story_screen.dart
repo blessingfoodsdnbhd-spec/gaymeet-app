@@ -18,7 +18,14 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
   File? _selectedFile;
   final _captionCtrl = TextEditingController();
   bool _isPosting = false;
+  String _visibility = 'followers';
   final _picker = ImagePicker();
+
+  static const _visibilityOptions = [
+    ('public', '公开', Icons.public_rounded),
+    ('followers', '关注者', Icons.people_rounded),
+    ('private', '仅自己', Icons.lock_rounded),
+  ];
 
   @override
   void initState() {
@@ -30,6 +37,37 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
   void dispose() {
     _captionCtrl.dispose();
     super.dispose();
+  }
+
+  void _showVisibilityPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 16),
+          ..._visibilityOptions.map((opt) => ListTile(
+                leading: Icon(opt.$3,
+                    color: _visibility == opt.$1 ? AppTheme.primary : Colors.white54),
+                title: Text(opt.$2, style: const TextStyle(color: Colors.white)),
+                trailing: _visibility == opt.$1
+                    ? Icon(Icons.check_rounded, color: AppTheme.primary) : null,
+                onTap: () {
+                  setState(() => _visibility = opt.$1);
+                  Navigator.pop(ctx);
+                },
+              )),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -51,6 +89,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
       await ref.read(storiesProvider.notifier).createStory(
             file: _selectedFile!,
             caption: _captionCtrl.text.trim(),
+            visibility: _visibility,
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,6 +187,35 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
                                 horizontal: 14, vertical: 10),
                             counterStyle:
                                 const TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Visibility picker
+                      GestureDetector(
+                        onTap: _showVisibilityPicker,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _visibilityOptions.firstWhere((o) => o.$1 == _visibility).$3,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _visibilityOptions.firstWhere((o) => o.$1 == _visibility).$2,
+                                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.expand_more_rounded, color: Colors.white54, size: 16),
+                            ],
                           ),
                         ),
                       ),

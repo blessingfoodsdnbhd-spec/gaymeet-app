@@ -46,6 +46,63 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
     }
   }
 
+  void _showCreatePicker(BuildContext ctx, WidgetRef ref) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                    color: AppTheme.textHint,
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                    gradient: AppTheme.brandGradient,
+                    shape: BoxShape.circle),
+                child: const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 20),
+              ),
+              title: const Text('发布故事', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('24小时后消失', style: TextStyle(color: AppTheme.textHint, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ctx.push('/stories/create');
+              },
+            ),
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                    color: AppTheme.card,
+                    shape: BoxShape.circle),
+                child: Icon(Icons.photo_library_rounded, color: AppTheme.primary, size: 20),
+              ),
+              title: const Text('发布动态', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('永久保存', style: TextStyle(color: AppTheme.textHint, fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final created = await ctx.push<bool>('/moments/create');
+                if (created == true && mounted) {
+                  ref.read(momentsProvider.notifier).fetchFeed();
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _onFollowingScroll() {
     if (_followingScrollC.position.pixels >=
         _followingScrollC.position.maxScrollExtent - 200) {
@@ -77,12 +134,7 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final created = await context.push<bool>('/moments/create');
-          if (created == true) {
-            ref.read(momentsProvider.notifier).fetchFeed();
-          }
-        },
+        onPressed: () => _showCreatePicker(context, ref),
         backgroundColor: AppTheme.primary,
         child: const Icon(Icons.add_rounded, color: Colors.white),
       ),
@@ -292,10 +344,16 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                             ],
                           ],
                         ),
-                        Text(
-                          _timeAgo(m.createdAt),
-                          style: TextStyle(
-                              color: AppTheme.textHint, fontSize: 11),
+                        Row(
+                          children: [
+                            Text(
+                              _timeAgo(m.createdAt),
+                              style: TextStyle(
+                                  color: AppTheme.textHint, fontSize: 11),
+                            ),
+                            const SizedBox(width: 6),
+                            _VisibilityBadge(visibility: m.visibility),
+                          ],
                         ),
                       ],
                     ),
@@ -483,6 +541,32 @@ class _PhotoGrid extends StatelessWidget {
         }
         return _Img(url: images[i]);
       },
+    );
+  }
+}
+
+class _VisibilityBadge extends StatelessWidget {
+  final String visibility;
+  const _VisibilityBadge({required this.visibility});
+
+  @override
+  Widget build(BuildContext context) {
+    if (visibility == 'public') return const SizedBox.shrink();
+    final isPrivate = visibility == 'private';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isPrivate ? Icons.lock_rounded : Icons.people_rounded,
+          size: 11,
+          color: AppTheme.textHint,
+        ),
+        const SizedBox(width: 2),
+        Text(
+          isPrivate ? '仅自己' : '好友',
+          style: TextStyle(color: AppTheme.textHint, fontSize: 10),
+        ),
+      ],
     );
   }
 }

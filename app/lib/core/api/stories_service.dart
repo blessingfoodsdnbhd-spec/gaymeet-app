@@ -27,12 +27,19 @@ class StoriesService {
     required File file,
     String mediaType = 'image',
     String caption = '',
+    String visibility = 'followers',
+    double? lat,
+    double? lng,
   }) async {
-    final formData = FormData.fromMap({
+    final fields = <String, dynamic>{
       'media': await MultipartFile.fromFile(file.path),
       'mediaType': mediaType,
       'caption': caption,
-    });
+      'visibility': visibility,
+    };
+    if (lat != null) fields['lat'] = lat.toString();
+    if (lng != null) fields['lng'] = lng.toString();
+    final formData = FormData.fromMap(fields);
     final res = await _client.dio.post('/stories', data: formData);
     return StoryItem.fromJson(
         (res.data['data'] ?? res.data) as Map<String, dynamic>);

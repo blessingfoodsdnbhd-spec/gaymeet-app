@@ -14,9 +14,18 @@ const storySchema = new mongoose.Schema(
       default: 'image',
     },
     caption: { type: String, default: '', maxlength: 100 },
+    visibility: {
+      type: String,
+      enum: ['public', 'followers', 'private'],
+      default: 'followers',
+    },
+    location: {
+      type: { type: String, enum: ['Point'] },
+      coordinates: [Number], // [lng, lat]
+    },
+    hasLocation: { type: Boolean, default: false },
     viewedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     viewCount: { type: Number, default: 0 },
-    // Hard expiry stored as a Date; MongoDB TTL index removes the doc automatically
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true }
@@ -25,5 +34,6 @@ const storySchema = new mongoose.Schema(
 // Auto-delete when expiresAt passes (TTL = 0 means delete at the indexed time)
 storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 storySchema.index({ user: 1, createdAt: -1 });
+storySchema.index({ location: '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('Story', storySchema);

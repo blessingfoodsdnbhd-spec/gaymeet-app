@@ -114,9 +114,12 @@ class StoriesNotifier extends StateNotifier<StoriesState> {
     _service.markViewed(storyId).catchError((_) {});
   }
 
-  Future<void> createStory({required File file, String caption = ''}) async {
-    await _service.createStory(file: file, caption: caption);
-    // Refresh feed so own new story appears
+  Future<void> createStory({
+    required File file,
+    String caption = '',
+    String visibility = 'followers',
+  }) async {
+    await _service.createStory(file: file, caption: caption, visibility: visibility);
     await fetch();
   }
 }
