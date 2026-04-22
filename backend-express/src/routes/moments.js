@@ -12,6 +12,7 @@ router.get('/', auth, async (req, res, next) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     let filter;
+    let followingIds = null;
     if (userId) {
       filter = { isActive: true, user: userId, visibility: 'public' };
     } else if (feed === 'following') {
@@ -19,7 +20,7 @@ router.get('/', auth, async (req, res, next) => {
       const followDocs = await Follow.find({ follower: req.user._id })
         .select('following')
         .lean();
-      const followingIds = followDocs.map((f) => f.following);
+      followingIds = followDocs.map((f) => f.following);
       filter = {
         isActive: true,
         user: { $in: followingIds },
@@ -35,6 +36,12 @@ router.get('/', auth, async (req, res, next) => {
       .limit(parseInt(limit))
       .populate('user', 'nickname avatarUrl isPremium countryCode')
       .lean();
+
+    if (feed === 'following') {
+      console.log(
+        `[moments.feed] user=${req.user._id} following=${followingIds.length} page=${page} matched=${moments.length}`
+      );
+    }
 
     const result = moments.map((m) => ({
       ...m,

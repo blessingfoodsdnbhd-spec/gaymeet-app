@@ -67,19 +67,21 @@ class StoriesState {
 
 class StoriesNotifier extends StateNotifier<StoriesState> {
   final StoriesService _service;
+  final String _feed; // 'discover' or 'following'
 
-  StoriesNotifier(this._service) : super(const StoriesState()) {
+  StoriesNotifier(this._service, [this._feed = 'discover'])
+      : super(const StoriesState()) {
     fetch();
   }
 
   Future<void> fetch() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final groups = await _service.getFeed();
+      final groups = await _service.getFeed(feed: _feed);
       state = state.copyWith(groups: groups, isLoading: false);
     } catch (_) {
       state = state.copyWith(
-        groups: _dummyGroups,
+        groups: _feed == 'discover' ? _dummyGroups : [],
         isLoading: false,
       );
     }
@@ -132,5 +134,10 @@ final _storiesServiceProvider = Provider<StoriesService>(
 
 final storiesProvider =
     StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
-  return StoriesNotifier(ref.watch(_storiesServiceProvider));
+  return StoriesNotifier(ref.watch(_storiesServiceProvider), 'discover');
+});
+
+final followingStoriesProvider =
+    StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref.watch(_storiesServiceProvider), 'following');
 });

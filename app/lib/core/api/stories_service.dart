@@ -7,8 +7,11 @@ class StoriesService {
   final ApiClient _client;
   StoriesService(this._client);
 
-  Future<List<StoryGroup>> getFeed() async {
-    final res = await _client.dio.get('/stories');
+  Future<List<StoryGroup>> getFeed({String feed = 'discover'}) async {
+    final res = await _client.dio.get(
+      '/stories',
+      queryParameters: feed == 'following' ? {'feed': 'following'} : null,
+    );
     final list = (res.data['data'] ?? res.data) as List;
     return list
         .map((j) => StoryGroup.fromJson(j as Map<String, dynamic>))

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../core/models/moment.dart';
 import '../../core/providers/moments_provider.dart';
+import '../../core/providers/stories_provider.dart';
 import '../stories/stories_bar.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -146,13 +147,14 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
             scrollController: _discoverScrollC,
             emptyMessage: '还没有动态',
             emptyAction: true,
-            showStoriesBar: true,
+            storiesProvider: storiesProvider,
           ),
           _FeedTab(
             providerNotifier: followingMomentsProvider,
             scrollController: _followingScrollC,
             emptyMessage: '去关注一些人，这里会显示他们的动态',
             emptyAction: false,
+            storiesProvider: followingStoriesProvider,
           ),
         ],
       ),
@@ -167,19 +169,20 @@ class _FeedTab extends ConsumerWidget {
   final ScrollController scrollController;
   final String emptyMessage;
   final bool emptyAction;
-  final bool showStoriesBar;
+  final StateNotifierProvider<StoriesNotifier, StoriesState>? storiesProvider;
 
   const _FeedTab({
     required this.providerNotifier,
     required this.scrollController,
     required this.emptyMessage,
     required this.emptyAction,
-    this.showStoriesBar = false,
+    this.storiesProvider,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(providerNotifier);
+    final showStoriesBar = storiesProvider != null;
 
     if (state.isLoading && state.moments.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -188,7 +191,7 @@ class _FeedTab extends ConsumerWidget {
     if (state.moments.isEmpty) {
       return Column(
         children: [
-          if (showStoriesBar) const StoriesBar(),
+          if (showStoriesBar) StoriesBar(provider: storiesProvider!),
           if (showStoriesBar)
             const Divider(height: 1, color: Color(0xFF1E1E1E)),
           Expanded(child: _buildEmpty(context)),
@@ -210,7 +213,7 @@ class _FeedTab extends ConsumerWidget {
             if (i == 0) {
               return Column(
                 children: [
-                  const StoriesBar(),
+                  StoriesBar(provider: storiesProvider!),
                   const Divider(height: 1, color: Color(0xFF1E1E1E)),
                 ],
               );

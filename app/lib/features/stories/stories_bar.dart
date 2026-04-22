@@ -7,13 +7,18 @@ import '../../config/theme.dart';
 import '../../core/models/story.dart';
 import '../../core/providers/stories_provider.dart';
 
-/// Horizontal stories bar — shown at the top of the 发现 moments tab.
+/// Horizontal stories bar — shown at the top of the moments tabs.
+///
+/// Pass `provider` to pick which feed to show (discover = public + followed,
+/// following = own + followed only).
 class StoriesBar extends ConsumerWidget {
-  const StoriesBar({super.key});
+  final StateNotifierProvider<StoriesNotifier, StoriesState>? provider;
+
+  const StoriesBar({super.key, this.provider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(storiesProvider);
+    final state = ref.watch(provider ?? storiesProvider);
 
     if (state.isLoading && state.groups.isEmpty) {
       return const SizedBox(

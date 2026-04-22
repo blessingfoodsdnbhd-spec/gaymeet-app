@@ -6,11 +6,13 @@ const { auth } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const { ok, created, err } = require('../utils/respond');
 
-// ── GET /api/stories — feed: public stories + followed users' followers-only ────
+// ── GET /api/stories — feed: public + followed users' followers-only ───────────
+// Query: ?feed=following — restrict to own + followed users only (no strangers).
 router.get('/', auth, async (req, res, next) => {
   try {
     const userId = req.user._id;
     const now = new Date();
+    const feed = req.query.feed === 'following' ? 'following' : 'discover';
 
     // Users I follow
     const followDocs = await Follow.find({ follower: userId })
@@ -18,17 +20,25 @@ router.get('/', auth, async (req, res, next) => {
       .lean();
     const followingIds = followDocs.map((f) => f.following);
 
+    const orClauses = [
+      { user: userId }, // own stories (all visibilities)
+      { user: { $in: followingIds }, visibility: { $in: ['public', 'followers'] } },
+    ];
+    if (feed === 'discover') {
+      orClauses.push({ visibility: 'public' }); // strangers' public stories
+    }
+
     const stories = await Story.find({
       expiresAt: { $gt: now },
-      $or: [
-        { user: userId }, // own stories (all visibilities)
-        { user: { $in: followingIds }, visibility: { $in: ['public', 'followers'] } },
-        { visibility: 'public' }, // public stories from anyone
-      ],
+      $or: orClauses,
     })
       .sort({ user: 1, createdAt: 1 })
       .populate('user', 'nickname avatarUrl')
       .lean();
+
+    console.log(
+      `[stories.feed] user=${userId} feed=${feed} following=${followingIds.length} matched=${stories.length} vis=${stories.map((s) => s.visibility).join(',')}`
+    );
 
     // Group by user
     const grouped = {};
