@@ -1,6 +1,7 @@
 import 'package:gaymeet/core/providers/auth_provider.dart';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/stories_service.dart';
 import '../models/story.dart';
@@ -78,8 +79,14 @@ class StoriesNotifier extends StateNotifier<StoriesState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final groups = await _service.getFeed(feed: _feed);
+      debugPrint(
+        '[stories.fetch] feed=$_feed groups=${groups.length} '
+        'users=${groups.map((g) => g.user.nickname).join(",")}',
+      );
       state = state.copyWith(groups: groups, isLoading: false);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[stories.fetch] feed=$_feed ERROR: $e');
+      debugPrintStack(stackTrace: st, maxFrames: 3);
       state = state.copyWith(
         groups: _feed == 'discover' ? _dummyGroups : [],
         isLoading: false,

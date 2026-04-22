@@ -28,8 +28,18 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChange);
     _discoverScrollC.addListener(_onDiscoverScroll);
     _followingScrollC.addListener(_onFollowingScroll);
+  }
+
+  void _onTabChange() {
+    if (_tabController.indexIsChanging) return;
+    if (_tabController.index == 1) {
+      // 关注 tab — refresh so a newly-followed user's story appears right away.
+      ref.read(followingMomentsProvider.notifier).fetchFeed();
+      ref.read(followingStoriesProvider.notifier).fetch();
+    }
   }
 
   @override
@@ -201,7 +211,13 @@ class _FeedTab extends ConsumerWidget {
 
     return RefreshIndicator(
       color: AppTheme.primary,
-      onRefresh: () => ref.read(providerNotifier.notifier).fetchFeed(),
+      onRefresh: () async {
+        await Future.wait([
+          ref.read(providerNotifier.notifier).fetchFeed(),
+          if (storiesProvider != null)
+            ref.read(storiesProvider!.notifier).fetch(),
+        ]);
+      },
       child: ListView.builder(
         controller: scrollController,
         // +1 for stories bar header, +1 for loading spinner

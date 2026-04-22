@@ -137,7 +137,7 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(
         path: '/stories/view/:userId',
         builder: (_, state) {
-          final groups = state.extra as List<StoryGroup>;
+          final groups = (state.extra as List<StoryGroup>?) ?? <StoryGroup>[];
           return StoryViewerScreen(
             userId: state.pathParameters['userId']!,
             groups: groups,

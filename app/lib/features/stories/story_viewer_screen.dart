@@ -33,8 +33,23 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   @override
   void initState() {
     super.initState();
+    if (widget.groups.isEmpty) {
+      debugPrint('[story.viewer] empty groups for userId=${widget.userId}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
+      _groupIndex = 0;
+      _progressCtrl =
+          AnimationController(vsync: this, duration: _storyDuration);
+      return;
+    }
     _groupIndex = widget.groups.indexWhere((g) => g.user.id == widget.userId);
     if (_groupIndex < 0) _groupIndex = 0;
+    debugPrint(
+      '[story.viewer] open userId=${widget.userId} groupIdx=$_groupIndex '
+      'totalGroups=${widget.groups.length} '
+      'stories=${widget.groups[_groupIndex].stories.length}',
+    );
     _startProgress();
   }
 
@@ -62,7 +77,13 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   }
 
   void _markViewed() {
+    // Update both providers — the same user may appear in either feed, and
+    // we don't know which tab the viewer was opened from.
     ref.read(storiesProvider.notifier).markGroupViewed(
+          _currentGroup.user.id,
+          _currentStory.id,
+        );
+    ref.read(followingStoriesProvider.notifier).markGroupViewed(
           _currentGroup.user.id,
           _currentStory.id,
         );
@@ -106,6 +127,12 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.groups.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
     final group = _currentGroup;
     final story = _currentStory;
 
