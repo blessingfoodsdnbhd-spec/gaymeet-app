@@ -17,7 +17,7 @@ class EventOrganizer {
         id: (j['_id'] ?? j['id'] ?? '') as String,
         nickname: (j['nickname'] ?? '') as String,
         avatarUrl: j['avatarUrl'] as String?,
-        isPremium: (j['isPremium'] as bool?) ?? false,
+        isPremium: true, // VIP disabled — see user.dart
         bio: j['bio'] as String?,
       );
 }

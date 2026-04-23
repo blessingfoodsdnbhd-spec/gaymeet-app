@@ -583,21 +583,7 @@ class _OptionCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (isPremiumRequired)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text('VIP',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800)),
-              )
-            else if (selected)
+            if (selected)
               Icon(Icons.check_circle_rounded,
                   color: AppTheme.primary, size: 20),
           ],

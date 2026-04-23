@@ -113,22 +113,6 @@ class _UserTile extends StatelessWidget {
             const Icon(Icons.verified_rounded,
                 size: 15, color: Color(0xFF42A5F5)),
           ],
-          if (item.isPremium) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                gradient: AppTheme.brandGradient,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text('VIP',
-                  style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white)),
-            ),
-          ],
         ],
       ),
       subtitle: LevelBadge(level: item.level, size: 18, compact: true),

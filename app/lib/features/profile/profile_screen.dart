@@ -401,60 +401,8 @@ class _VipBanner extends StatelessWidget {
       );
     }
 
-    // Non-premium: upgrade CTA
-    return GestureDetector(
-      onTap: () => context.push('/premium'),
-      child: Container(
-        width: double.infinity,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFB8860B), Color(0xFFFFD700), Color(0xFFB8860B)],
-            stops: [0.0, 0.5, 1.0],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFD700).withValues(alpha: 0.25),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Text('👑', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '升级VIP，解锁更多特权',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    '无限滑动 · 超级喜欢 · 隐身模式',
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 14, color: Colors.black54),
-          ],
-        ),
-      ),
-    );
+    // Non-premium branch removed: VIP feature disabled (all users are premium).
+    return const SizedBox.shrink();
   }
 }
 

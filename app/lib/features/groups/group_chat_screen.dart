@@ -161,22 +161,6 @@ class _MessageBubble extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (msg.sender.isPremium) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.brandGradient,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: const Text('VIP',
-                            style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white)),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 3),

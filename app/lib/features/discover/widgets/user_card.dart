@@ -134,19 +134,6 @@ class UserCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (user.isPremium) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.premium.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(Icons.workspace_premium_rounded,
-                              size: 16, color: AppTheme.premium),
-                        ),
-                      ],
                       if (user.isVerified) ...[
                         const SizedBox(width: 6),
                         const Icon(Icons.verified_rounded,

@@ -250,24 +250,6 @@ class _UserInfo extends StatelessWidget {
                 style: const TextStyle(fontSize: 14),
               ),
             ],
-            if (user.isPremium) ...[
-              const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'VIP',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
           ],
         ),
 

@@ -127,7 +127,11 @@ class UserModel {
           ? DateTime.tryParse(json['birthday'])
           : null,
       tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
-      isPremium: json['isPremium'] ?? false,
+      // VIP temporarily disabled — everyone is effectively premium so
+      // previously-gated features are unlocked and the app doesn't show
+      // dead-end upgrade CTAs. To re-enable VIP, restore:
+      //   isPremium: json['isPremium'] ?? false,
+      isPremium: true,
       isOnline: json['isOnline'] ?? false,
       isBoosted: json['isBoosted'] ?? false,
       lastActive: json['lastActive'] != null

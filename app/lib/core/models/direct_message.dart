@@ -79,7 +79,7 @@ class DmUser {
         nickname: json['nickname'] ?? '',
         avatarUrl: json['avatarUrl'],
         isVerified: json['isVerified'] ?? false,
-        isPremium: json['isPremium'] ?? false,
+        isPremium: true, // VIP disabled — see user.dart
       );
 }
 

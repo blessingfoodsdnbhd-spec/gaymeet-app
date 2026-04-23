@@ -259,23 +259,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13)),
-                                  if (_event.organizer.isPremium) ...[
-                                    const SizedBox(width: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        gradient: AppTheme.brandGradient,
-                                        borderRadius:
-                                            BorderRadius.circular(4),
-                                      ),
-                                      child: const Text('VIP',
-                                          style: TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700)),
-                                    ),
-                                  ],
                                 ],
                               ),
                               if (_event.organizer.bio != null &&

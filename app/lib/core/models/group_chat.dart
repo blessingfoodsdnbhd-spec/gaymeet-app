@@ -123,7 +123,7 @@ class GroupMessageSender {
       nickname: json['nickname'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String?,
       level: (json['level'] as num?)?.toInt() ?? 1,
-      isPremium: json['isPremium'] as bool? ?? false,
+      isPremium: true, // VIP disabled — see user.dart
     );
   }
 }

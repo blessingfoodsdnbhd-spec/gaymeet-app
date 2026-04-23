@@ -78,11 +78,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             fontWeight: FontWeight.w800,
                             color: Colors.black)),
                   )
-                : TextButton(
-                    onPressed: () => context.push('/premium'),
-                    child: Text('Upgrade',
-                        style: TextStyle(color: AppTheme.primary)),
-                  ),
+                : null,
           ),
 
           const Divider(),

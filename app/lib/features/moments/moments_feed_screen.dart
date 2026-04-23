@@ -388,22 +388,6 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14)),
-                            if (i.user.isPremium) ...[
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  gradient: AppTheme.brandGradient,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text('VIP',
-                                    style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white)),
-                              ),
-                            ],
                           ],
                         ),
                         Row(

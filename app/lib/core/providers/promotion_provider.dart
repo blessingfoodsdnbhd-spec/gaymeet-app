@@ -5,30 +5,7 @@ import 'auth_provider.dart';
 
 // ── Dummy data ─────────────────────────────────────────────────────────────────
 
-final _dummyPromotions = [
-  Promotion(
-    id: 'promo_1',
-    imageUrl: '',
-    title: '高级会员限时 5 折',
-    subtitle: '本周末前升级，解锁传送、隐身、超级喜欢等功能',
-    actionUrl: '/premium',
-    type: PromotionType.both,
-    startDate: DateTime.now().subtract(const Duration(days: 1)),
-    endDate: DateTime.now().add(const Duration(days: 3)),
-    isActive: true,
-  ),
-  Promotion(
-    id: 'promo_2',
-    imageUrl: '',
-    title: 'Meyou - Social Media 同骄活动',
-    subtitle: '参与彩虹周活动，赢取免费高级会员',
-    actionUrl: '/premium',
-    type: PromotionType.banner,
-    startDate: DateTime.now().subtract(const Duration(hours: 2)),
-    endDate: DateTime.now().add(const Duration(days: 7)),
-    isActive: true,
-  ),
-];
+final _dummyPromotions = <Promotion>[];
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
