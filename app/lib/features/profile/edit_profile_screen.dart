@@ -30,6 +30,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late List<String> _privatePhotos;
   bool _privatePhotoUploading = false;
   final _privatePhotoDeleting = <String>{};
+  int _approvedCount = 0; // how many people currently see my private photos
+  bool _relocking = false;
 
   // Track which photo slots are currently uploading/deleting
   final _loadingSlots = <int>{};
@@ -66,6 +68,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _mbti = user?.mbti;
     _bloodType = user?.bloodType;
     _kinks = List<String>.from(user?.kinks ?? []);
+    _loadApprovedCount();
+  }
+
+  Future<void> _loadApprovedCount() async {
+    try {
+      final count =
+          await ref.read(privatePhotosServiceProvider).getApprovedCount();
+      if (mounted) setState(() => _approvedCount = count);
+    } catch (_) {
+      // Non-fatal — keep default 0.
+    }
   }
 
   @override
@@ -493,8 +506,129 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             );
           },
         ),
+        if (_privatePhotos.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _buildRelockRow(),
+        ],
       ],
     );
+  }
+
+  Widget _buildRelockRow() {
+    final hasApproved = _approvedCount > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasApproved
+              ? const Color(0xFFFFD700).withValues(alpha: 0.4)
+              : const Color(0xFF2A2A2A),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasApproved ? Icons.lock_open_rounded : Icons.lock_rounded,
+            size: 18,
+            color: hasApproved ? const Color(0xFFFFD700) : AppTheme.textHint,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasApproved
+                      ? '$_approvedCount 人已解锁查看'
+                      : '目前没人已解锁',
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasApproved
+                      ? '点锁回会立即取消所有人的访问'
+                      : '已同意的人之后想看需要重新申请',
+                  style: TextStyle(
+                      color: AppTheme.textHint, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: (!hasApproved || _relocking) ? null : _relockAll,
+            icon: _relocking
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFFD700),
+                    ),
+                  )
+                : const Icon(Icons.lock_reset_rounded, size: 16),
+            label: const Text('锁回'),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFFD700),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _relockAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('锁回私密照片？'),
+        content: Text(
+          '$_approvedCount 位已解锁的用户将立即无法继续查看。他们之后想看需要重新申请。',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFFD700),
+            ),
+            child: const Text('确认锁回'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _relocking = true);
+    try {
+      final revoked =
+          await ref.read(privatePhotosServiceProvider).relockAll();
+      if (!mounted) return;
+      setState(() {
+        _approvedCount = 0;
+        _relocking = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已锁回 $revoked 位用户')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _relocking = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('操作失败，请重试')),
+      );
+    }
   }
 
   Widget _buildPrivateFilledSlot(int index) {

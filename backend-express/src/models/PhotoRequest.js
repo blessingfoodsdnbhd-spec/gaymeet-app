@@ -14,7 +14,7 @@ const photoRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'expired'],
+      enum: ['pending', 'approved', 'rejected', 'expired', 'revoked'],
       default: 'pending',
     },
     respondedAt: { type: Date, default: null },

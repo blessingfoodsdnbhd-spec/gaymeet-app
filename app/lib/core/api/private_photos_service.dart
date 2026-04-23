@@ -63,6 +63,19 @@ class PrivatePhotosService {
     return res.data['data']['requests'] as List;
   }
 
+  /// Owner kill switch — revoke every approved viewer.
+  /// Returns the number of grants that were revoked.
+  Future<int> relockAll() async {
+    final res = await _api.dio.post('/users/private-photos/relock');
+    return (res.data['data']?['revoked'] as int?) ?? 0;
+  }
+
+  /// How many users currently have approved access to my private photos.
+  Future<int> getApprovedCount() async {
+    final res = await _api.dio.get('/users/private-photos/approved-count');
+    return (res.data['data']?['count'] as int?) ?? 0;
+  }
+
   /// Pick an image from gallery.
   Future<XFile?> pickImage() {
     return _picker.pickImage(

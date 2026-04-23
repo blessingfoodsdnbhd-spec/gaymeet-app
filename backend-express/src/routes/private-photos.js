@@ -11,6 +11,38 @@ const env         = require('../config/env');
 const MAX_PRIVATE_PHOTOS  = 5;
 const REQUEST_COIN_COST   = 10; // free users pay 10 coins to send a request
 
+// ── POST /api/users/private-photos/relock — revoke all approved viewers ──────
+// Owner-initiated kill switch. Every PhotoRequest where owner=me and
+// status=approved becomes 'revoked', so those viewers immediately lose access.
+// Their rows are kept (not deleted) for audit + to stop instant re-request.
+router.post('/private-photos/relock', auth, async (req, res, next) => {
+  try {
+    const result = await PhotoRequest.updateMany(
+      { owner: req.user._id, status: 'approved' },
+      { $set: { status: 'revoked', respondedAt: new Date() } }
+    );
+    console.log(
+      `[private-photos.relock] owner=${req.user._id} revoked=${result.modifiedCount}`
+    );
+    ok(res, { revoked: result.modifiedCount });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/users/private-photos/approved-count — count of active viewers ────
+router.get('/private-photos/approved-count', auth, async (req, res, next) => {
+  try {
+    const count = await PhotoRequest.countDocuments({
+      owner: req.user._id,
+      status: 'approved',
+    });
+    ok(res, { count });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/users/private-photos — upload a private photo ──────────────────
 router.post('/private-photos', auth, upload.single('photo'), async (req, res, next) => {
   try {
