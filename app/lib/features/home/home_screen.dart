@@ -12,7 +12,6 @@ import '../location/location_hub_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../moments/moments_feed_screen.dart';
 import '../profile/profile_screen.dart';
-import '../places/places_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -51,7 +50,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     LocationHubScreen(),
     ChatListScreen(),
     MomentsFeedScreen(),
-    PlacesScreen(),
     ProfileScreen(),
   ];
 
@@ -115,10 +113,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 BottomNavigationBarItem(
                   icon: const Icon(Icons.photo_library_rounded),
                   label: 'moments'.tr(locale),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.storefront_rounded),
-                  label: '找店',
                 ),
                 BottomNavigationBarItem(
                   icon: const Icon(Icons.person_rounded),
