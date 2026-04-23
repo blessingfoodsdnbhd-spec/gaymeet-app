@@ -9,7 +9,6 @@ const { ok, created, err } = require('../utils/respond');
 const env         = require('../config/env');
 
 const MAX_PRIVATE_PHOTOS  = 5;
-const REQUEST_COIN_COST   = 10; // free users pay 10 coins to send a request
 
 // ── POST /api/users/private-photos/relock — revoke all approved viewers ──────
 // Owner-initiated kill switch. Every PhotoRequest where owner=me and
@@ -116,16 +115,6 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
     });
     if (existing) {
       return err(res, `Request already ${existing.status}`, 409);
-    }
-
-    // Coin cost for free users
-    if (!req.user.isPremium) {
-      const requester = await User.findById(req.user._id);
-      if (requester.coins < REQUEST_COIN_COST) {
-        return err(res, `Need ${REQUEST_COIN_COST} coins to request private photos`, 402);
-      }
-      requester.coins -= REQUEST_COIN_COST;
-      await requester.save();
     }
 
     const request = await PhotoRequest.create({

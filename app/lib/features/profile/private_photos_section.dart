@@ -136,7 +136,7 @@ class _PrivatePhotosSectionState extends ConsumerState<PrivatePhotosSection> {
                         strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.lock_open_rounded, size: 16),
-            label: const Text('申请查看  · 10 coins'),
+            label: const Text('申请查看'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF333333),
               foregroundColor: const Color(0xFFFFD700),
@@ -262,7 +262,7 @@ class _PrivatePhotosSectionState extends ConsumerState<PrivatePhotosSection> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-              Text(ok ? '已发送申请' : '发送失败，请检查金币余额'),
+              Text(ok ? '已发送申请' : '发送失败，请重试'),
           backgroundColor: ok ? AppTheme.surface : AppTheme.error,
         ),
       );
