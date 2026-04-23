@@ -73,7 +73,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 85,
+      imageQuality: 95,      // was 85 — 85% JPEG softens edges noticeably
+      maxWidth: 1440,        // enough for 3x Retina phones, stays under ~1MB
+      maxHeight: 2560,
     );
     if (picked != null) {
       setState(() => _selectedFile = File(picked.path));
