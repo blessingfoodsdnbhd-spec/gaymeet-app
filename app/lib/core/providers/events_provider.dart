@@ -197,11 +197,11 @@ class EventsNotifier extends StateNotifier<EventsState> {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final _eventsServiceProvider = Provider<EventsService>(
+final eventsServiceProvider = Provider<EventsService>(
   (ref) => EventsService(ref.watch(apiClientProvider)),
 );
 
 final eventsProvider =
     StateNotifierProvider<EventsNotifier, EventsState>((ref) {
-  return EventsNotifier(ref.watch(_eventsServiceProvider));
+  return EventsNotifier(ref.watch(eventsServiceProvider));
 });

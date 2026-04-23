@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
+import '../../core/models/feed_item.dart';
 import '../../core/models/moment.dart';
-import '../../core/providers/moments_provider.dart';
+import '../../core/providers/feed_provider.dart';
 import '../../core/providers/stories_provider.dart';
 import '../stories/stories_bar.dart';
 
@@ -36,8 +37,8 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
   void _onTabChange() {
     if (_tabController.indexIsChanging) return;
     if (_tabController.index == 1) {
-      // 关注 tab — refresh so a newly-followed user's story appears right away.
-      ref.read(followingMomentsProvider.notifier).fetchFeed();
+      // 关注 tab — refresh so a newly-followed user's item appears right away.
+      ref.read(followingFeedProvider.notifier).fetch();
       ref.read(followingStoriesProvider.notifier).fetch();
     }
   }
@@ -53,7 +54,14 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
   void _onDiscoverScroll() {
     if (_discoverScrollC.position.pixels >=
         _discoverScrollC.position.maxScrollExtent - 200) {
-      ref.read(momentsProvider.notifier).loadMore();
+      ref.read(feedProvider.notifier).loadMore();
+    }
+  }
+
+  void _onFollowingScroll() {
+    if (_followingScrollC.position.pixels >=
+        _followingScrollC.position.maxScrollExtent - 200) {
+      ref.read(followingFeedProvider.notifier).loadMore();
     }
   }
 
@@ -103,8 +111,23 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
                 Navigator.pop(ctx);
                 final created = await ctx.push<bool>('/moments/create');
                 if (created == true && mounted) {
-                  ref.read(momentsProvider.notifier).fetchFeed();
+                  ref.read(feedProvider.notifier).fetch();
                 }
+              },
+            ),
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                    color: AppTheme.card,
+                    shape: BoxShape.circle),
+                child: Icon(Icons.event_rounded, color: AppTheme.primary, size: 20),
+              ),
+              title: const Text('创建活动', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('约人见面', style: TextStyle(color: AppTheme.textHint, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ctx.push('/events/create');
               },
             ),
             const SizedBox(height: 8),
@@ -112,13 +135,6 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
         ),
       ),
     );
-  }
-
-  void _onFollowingScroll() {
-    if (_followingScrollC.position.pixels >=
-        _followingScrollC.position.maxScrollExtent - 200) {
-      ref.read(followingMomentsProvider.notifier).loadMore();
-    }
   }
 
   @override
@@ -153,16 +169,16 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
         controller: _tabController,
         children: [
           _FeedTab(
-            providerNotifier: momentsProvider,
+            providerNotifier: feedProvider,
             scrollController: _discoverScrollC,
             emptyMessage: '还没有动态',
             emptyAction: true,
             storiesProvider: storiesProvider,
           ),
           _FeedTab(
-            providerNotifier: followingMomentsProvider,
+            providerNotifier: followingFeedProvider,
             scrollController: _followingScrollC,
-            emptyMessage: '去关注一些人，这里会显示他们的动态',
+            emptyMessage: '去关注一些人，这里会显示他们的动态、活动',
             emptyAction: false,
             storiesProvider: followingStoriesProvider,
           ),
@@ -175,7 +191,7 @@ class _MomentsFeedScreenState extends ConsumerState<MomentsFeedScreen>
 // ── Feed tab ──────────────────────────────────────────────────────────────────
 
 class _FeedTab extends ConsumerWidget {
-  final StateNotifierProvider<MomentsNotifier, MomentsState> providerNotifier;
+  final StateNotifierProvider<FeedNotifier, FeedState> providerNotifier;
   final ScrollController scrollController;
   final String emptyMessage;
   final bool emptyAction;
@@ -194,11 +210,11 @@ class _FeedTab extends ConsumerWidget {
     final state = ref.watch(providerNotifier);
     final showStoriesBar = storiesProvider != null;
 
-    if (state.isLoading && state.moments.isEmpty) {
+    if (state.isLoading && state.items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.moments.isEmpty) {
+    if (state.items.isEmpty) {
       return Column(
         children: [
           if (showStoriesBar) StoriesBar(provider: storiesProvider!),
@@ -213,7 +229,7 @@ class _FeedTab extends ConsumerWidget {
       color: AppTheme.primary,
       onRefresh: () async {
         await Future.wait([
-          ref.read(providerNotifier.notifier).fetchFeed(),
+          ref.read(providerNotifier.notifier).fetch(),
           if (storiesProvider != null)
             ref.read(storiesProvider!.notifier).fetch(),
         ]);
@@ -221,7 +237,7 @@ class _FeedTab extends ConsumerWidget {
       child: ListView.builder(
         controller: scrollController,
         // +1 for stories bar header, +1 for loading spinner
-        itemCount: state.moments.length +
+        itemCount: state.items.length +
             (showStoriesBar ? 1 : 0) +
             (state.isLoadingMore ? 1 : 0),
         itemBuilder: (_, i) {
@@ -236,13 +252,22 @@ class _FeedTab extends ConsumerWidget {
             }
             i -= 1;
           }
-          if (i == state.moments.length) {
+          if (i == state.items.length) {
             return const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return _MomentCard(moment: state.moments[i], providerNotifier: providerNotifier);
+          final item = state.items[i];
+          switch (item.type) {
+            case 'event':
+              return _EventCard(item: item);
+            case 'place':
+            case 'moment':
+            default:
+              return _MomentCard(
+                  item: item, providerNotifier: providerNotifier);
+          }
         },
       ),
     );
@@ -272,12 +297,12 @@ class _FeedTab extends ConsumerWidget {
       );
 }
 
-// ── Moment Card ───────────────────────────────────────────────────────────────
+// ── Moment Card (moment + place types) ────────────────────────────────────────
 
 class _MomentCard extends ConsumerStatefulWidget {
-  final Moment moment;
-  final StateNotifierProvider<MomentsNotifier, MomentsState> providerNotifier;
-  const _MomentCard({required this.moment, required this.providerNotifier});
+  final FeedItem item;
+  final StateNotifierProvider<FeedNotifier, FeedState> providerNotifier;
+  const _MomentCard({required this.item, required this.providerNotifier});
 
   @override
   ConsumerState<_MomentCard> createState() => _MomentCardState();
@@ -309,15 +334,33 @@ class _MomentCardState extends ConsumerState<_MomentCard>
 
   void _like() {
     _heartCtrl.forward(from: 0);
-    ref.read(widget.providerNotifier.notifier).toggleLike(widget.moment.id);
+    ref.read(widget.providerNotifier.notifier).toggleLike(widget.item.id);
+  }
+
+  // FeedItem → minimal Moment for navigation to the detail screen.
+  Moment _toMoment() {
+    final i = widget.item;
+    return Moment(
+      id: i.id,
+      user: i.user,
+      content: i.content,
+      images: i.media,
+      likeCount: i.likeCount,
+      isLiked: i.isLiked,
+      commentsCount: i.commentsCount,
+      hasLocation: i.hasLocation,
+      visibility: i.visibility,
+      createdAt: i.createdAt,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final m = widget.moment;
+    final i = widget.item;
+    final isPlace = i.type == 'place';
 
     return GestureDetector(
-      onTap: () => context.push('/moments/${m.id}', extra: m),
+      onTap: () => context.push('/moments/${i.id}', extra: _toMoment()),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         decoration: const BoxDecoration(
@@ -333,7 +376,7 @@ class _MomentCardState extends ConsumerState<_MomentCard>
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Row(
                 children: [
-                  _Avatar(user: m.user),
+                  _Avatar(user: i.user),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -341,11 +384,11 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                       children: [
                         Row(
                           children: [
-                            Text(m.user.nickname,
+                            Text(i.user.nickname,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14)),
-                            if (m.user.isPremium) ...[
+                            if (i.user.isPremium) ...[
                               const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -366,12 +409,28 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                         Row(
                           children: [
                             Text(
-                              _timeAgo(m.createdAt),
+                              _timeAgo(i.createdAt),
                               style: TextStyle(
                                   color: AppTheme.textHint, fontSize: 11),
                             ),
+                            if (isPlace && i.placeName != null) ...[
+                              const SizedBox(width: 6),
+                              Icon(Icons.place_rounded,
+                                  size: 11, color: AppTheme.primary),
+                              const SizedBox(width: 2),
+                              Flexible(
+                                child: Text(
+                                  i.placeName!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: AppTheme.primary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
                             const SizedBox(width: 6),
-                            _VisibilityBadge(visibility: m.visibility),
+                            _VisibilityBadge(visibility: i.visibility),
                           ],
                         ),
                       ],
@@ -384,19 +443,19 @@ class _MomentCardState extends ConsumerState<_MomentCard>
             ),
 
             // ── Content ──────────────────────────────────────────────────────
-            if (m.content.isNotEmpty)
+            if (i.content.isNotEmpty)
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Text(m.content,
+                child: Text(i.content,
                     style: const TextStyle(fontSize: 15, height: 1.5)),
               ),
 
             // ── Photo grid ───────────────────────────────────────────────────
-            if (m.images.isNotEmpty)
+            if (i.media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: _PhotoGrid(images: m.images),
+                child: _PhotoGrid(images: i.media),
               ),
 
             // ── Actions ──────────────────────────────────────────────────────
@@ -413,19 +472,19 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                       child: Row(
                         children: [
                           Icon(
-                            m.isLiked
+                            i.isLiked
                                 ? Icons.favorite_rounded
                                 : Icons.favorite_border_rounded,
-                            color: m.isLiked
+                            color: i.isLiked
                                 ? AppTheme.primary
                                 : AppTheme.textHint,
                             size: 22,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            m.likeCount.toString(),
+                            i.likeCount.toString(),
                             style: TextStyle(
-                                color: m.isLiked
+                                color: i.isLiked
                                     ? AppTheme.primary
                                     : AppTheme.textHint,
                                 fontSize: 13),
@@ -437,13 +496,14 @@ class _MomentCardState extends ConsumerState<_MomentCard>
                   const SizedBox(width: 24),
                   // Comment
                   GestureDetector(
-                    onTap: () => context.push('/moments/${m.id}', extra: m),
+                    onTap: () =>
+                        context.push('/moments/${i.id}', extra: _toMoment()),
                     child: Row(
                       children: [
                         Icon(Icons.chat_bubble_outline_rounded,
                             color: AppTheme.textHint, size: 20),
                         const SizedBox(width: 4),
-                        Text(m.commentsCount.toString(),
+                        Text(i.commentsCount.toString(),
                             style: TextStyle(
                                 color: AppTheme.textHint, fontSize: 13)),
                       ],
@@ -460,15 +520,209 @@ class _MomentCardState extends ConsumerState<_MomentCard>
       ),
     );
   }
+}
 
-  String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
-    if (diff.inHours < 24) return '${diff.inHours}小时前';
-    if (diff.inDays < 7) return '${diff.inDays}天前';
-    return '${dt.month}/${dt.day}';
+// ── Event Card ────────────────────────────────────────────────────────────────
+
+class _EventCard extends StatelessWidget {
+  final FeedItem item;
+  const _EventCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = item.eventTitle ?? '活动';
+    final venue = item.venue ?? '';
+    final date = item.eventDate;
+    final price = item.price;
+    final cover = item.media.isNotEmpty ? item.media.first : null;
+
+    return GestureDetector(
+      onTap: () => context.push('/events/${item.id}'),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0xFF1E1E1E), width: 6),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header (who created it) ─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Row(
+                children: [
+                  _Avatar(user: item.user),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(item.user.nickname,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14)),
+                            const SizedBox(width: 6),
+                            Text('创建了活动',
+                                style: TextStyle(
+                                    color: AppTheme.textHint, fontSize: 12)),
+                          ],
+                        ),
+                        Text(_timeAgo(item.createdAt),
+                            style: TextStyle(
+                                color: AppTheme.textHint, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.brandGradient,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.event_rounded,
+                            size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('活动',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Cover image ─────────────────────────────────────────────────
+            if (cover != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: CachedNetworkImage(
+                      imageUrl: cover,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: AppTheme.card),
+                      errorWidget: (_, __, ___) =>
+                          Container(color: AppTheme.card),
+                    ),
+                  ),
+                ),
+              ),
+
+            // ── Title + venue + date ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(title,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+            if (item.content.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                child: Text(
+                  item.content,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                      height: 1.4),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  if (date != null)
+                    _InfoChip(
+                      icon: Icons.schedule_rounded,
+                      text: _formatEventDate(date),
+                    ),
+                  if (venue.isNotEmpty)
+                    _InfoChip(
+                      icon: Icons.place_rounded,
+                      text: venue,
+                    ),
+                  _InfoChip(
+                    icon: Icons.group_rounded,
+                    text: '${item.attendeeCount} 参加',
+                  ),
+                  if (price > 0)
+                    _InfoChip(
+                      icon: Icons.payments_rounded,
+                      text: '${item.currency} $price',
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoChip({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: AppTheme.textSecondary),
+        const SizedBox(width: 4),
+        Text(text,
+            style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+String _timeAgo(DateTime dt) {
+  final diff = DateTime.now().difference(dt);
+  if (diff.inMinutes < 1) return '刚刚';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
+  if (diff.inHours < 24) return '${diff.inHours}小时前';
+  if (diff.inDays < 7) return '${diff.inDays}天前';
+  return '${dt.month}/${dt.day}';
+}
+
+String _formatEventDate(DateTime dt) {
+  final now = DateTime.now();
+  final diff = dt.difference(now);
+  final mm = dt.month.toString().padLeft(2, '0');
+  final dd = dt.day.toString().padLeft(2, '0');
+  final hh = dt.hour.toString().padLeft(2, '0');
+  final mi = dt.minute.toString().padLeft(2, '0');
+  if (diff.inDays == 0 && dt.day == now.day) {
+    return '今天 $hh:$mi';
+  }
+  if (diff.inDays < 7 && diff.inDays >= 0) {
+    const wk = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    return '${wk[dt.weekday - 1]} $hh:$mi';
+  }
+  return '$mm/$dd $hh:$mi';
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────

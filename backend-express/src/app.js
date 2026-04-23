@@ -44,6 +44,7 @@ const businessRoutes = require('./routes/business');
 const dateRoomsRoutes = require('./routes/date-rooms');
 const uploadRoutes = require('./routes/upload');
 const globeRoutes = require('./routes/globe');
+const feedRoutes = require('./routes/feed');
 
 const app = express();
 
@@ -112,6 +113,7 @@ app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/globe', globeRoutes);
+app.use('/api/feed', feedRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

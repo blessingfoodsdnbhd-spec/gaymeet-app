@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/providers/events_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/onboarding/profile_setup_screen.dart';
@@ -208,10 +210,54 @@ GoRouter createRouter({required bool isLoggedIn}) {
       GoRoute(
         path: '/events/:id',
         builder: (_, state) {
-          final event = state.extra as AppEvent;
-          return EventDetailScreen(event: event);
+          final extra = state.extra;
+          if (extra is AppEvent) return EventDetailScreen(event: extra);
+          // Navigated without an in-memory event (e.g. from the unified feed).
+          // Fetch by id, then render the detail screen.
+          return _EventDetailByIdLoader(id: state.pathParameters['id']!);
         },
       ),
     ],
   );
+}
+
+class _EventDetailByIdLoader extends ConsumerStatefulWidget {
+  final String id;
+  const _EventDetailByIdLoader({required this.id});
+
+  @override
+  ConsumerState<_EventDetailByIdLoader> createState() =>
+      _EventDetailByIdLoaderState();
+}
+
+class _EventDetailByIdLoaderState
+    extends ConsumerState<_EventDetailByIdLoader> {
+  late Future<AppEvent> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ref.read(eventsServiceProvider).getEvent(widget.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AppEvent>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snap.hasError || snap.data == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('活动已不存在')),
+          );
+        }
+        return EventDetailScreen(event: snap.data!);
+      },
+    );
+  }
 }
