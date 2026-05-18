@@ -78,6 +78,7 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
           <View style={styles.avatarRow}>
             <Avatar
               name={me?.nickname}
+              uri={me?.avatarUrl}
               avatarIdx={0}
               size={96}
               shape="circle"
@@ -87,6 +88,7 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
             </View>
             <Avatar
               name={matchedUser.nickname}
+              uri={matchedUser.avatarUrl}
               avatarIdx={matchedUser.avatarIdx}
               size={96}
               shape="circle"

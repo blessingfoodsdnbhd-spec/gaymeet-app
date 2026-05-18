@@ -22,6 +22,7 @@ import { Button } from '../../components/Button';
 import { TagChip } from '../../components/TagChip';
 import { INTEREST_TAGS, type InterestTagId } from '../../data/interestTags';
 import { postMoment } from '../../api/moments';
+import { uploadFile } from '../../api/upload';
 
 const MAX_PHOTOS = 9;
 const MAX_CONTENT = 500;
@@ -35,15 +36,26 @@ export function ComposerScreen() {
   const [tag, setTag] = useState<InterestTagId | null>(null);
 
   const submitMut = useMutation({
-    mutationFn: () =>
-      postMoment({
+    mutationFn: async () => {
+      // Upload all picked photos to /api/upload, get back permanent URLs.
+      // Skip URIs that already look like https — they're already uploaded.
+      const uploadedUrls: string[] = [];
+      for (const uri of photos) {
+        if (/^https?:\/\//.test(uri)) {
+          uploadedUrls.push(uri);
+        } else {
+          const url = await uploadFile(uri);
+          uploadedUrls.push(url);
+        }
+      }
+      return postMoment({
         content: content.trim(),
-        images: photos,
+        images: uploadedUrls,
         // tag isn't currently a backend field on Moment — kept client-side for v2.
         // The server will ignore it. TODO: add `tag` to Moment model.
-      }),
+      });
+    },
     onSuccess: () => {
-      // refresh all moments queries
       queryClient.invalidateQueries({ queryKey: ['moments'] });
       nav.goBack();
     },

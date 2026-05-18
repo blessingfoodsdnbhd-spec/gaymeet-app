@@ -167,6 +167,7 @@ function CommentRow({ comment }: { comment: Comment }) {
     >
       <Avatar
         name={comment.user.nickname}
+        uri={comment.user.avatarUrl}
         avatarIdx={idxFor(comment.user._id)}
         size={36}
       />

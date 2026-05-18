@@ -186,6 +186,7 @@ function NewMatchesStrip({
           >
             <Avatar
               name={th.user.nickname}
+              uri={th.user.avatarUrl}
               avatarIdx={idxFor(th.user.id)}
               size={58}
               showOnline={th.user.isOnline}
@@ -236,6 +237,7 @@ function ThreadRow({
     >
       <Avatar
         name={thread.user.nickname}
+        uri={thread.user.avatarUrl}
         avatarIdx={idxFor(thread.user.id)}
         size={52}
         showOnline={thread.user.isOnline}

@@ -34,6 +34,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         <Pressable onPress={() => onTapAuthor?.(moment)}>
           <Avatar
             name={moment.user.nickname}
+            uri={moment.user.avatarUrl}
             avatarIdx={idxFor(moment.user._id)}
             size={40}
           />

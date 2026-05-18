@@ -66,6 +66,7 @@ export function ProfileScreen() {
         >
           <Avatar
             name={user.nickname}
+            uri={user.avatarUrl}
             avatarIdx={0}
             size={72}
             shape="circle"

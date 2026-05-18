@@ -7,16 +7,20 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { Avatar } from '../../components/Avatar';
 import { useAuth } from '../../store/auth';
-import { patchMe } from '../../api/me';
+import { patchMe, getMe } from '../../api/me';
+import { uploadProfilePhoto } from '../../api/upload';
 
 export function EditProfileScreen() {
   const theme = useTheme();
@@ -28,6 +32,34 @@ export function EditProfileScreen() {
   const [bio, setBio] = useState(user?.bio ?? '');
   const [age, setAge] = useState(user?.age != null ? String(user.age) : '');
   const [busy, setBusy] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const pickAvatar = async () => {
+    if (uploadingAvatar) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要照片权限', '在系统设置中允许 Meyou 访问你的照片。');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+    setUploadingAvatar(true);
+    try {
+      await uploadProfilePhoto(result.assets[0].uri);
+      // Refresh full user from server so avatarUrl + photos[] are accurate
+      const fresh = await getMe();
+      setUser(fresh);
+    } catch {
+      Alert.alert('上传失败', '稍后再试。');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const onSave = async () => {
     if (busy) return;
@@ -71,12 +103,32 @@ export function EditProfileScreen() {
       >
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 24 }}>
-            <Avatar
-              name={nickname || user?.nickname}
-              avatarIdx={0}
-              size={88}
-            />
-            <Pressable style={{ marginTop: 12 }}>
+            <Pressable onPress={pickAvatar} disabled={uploadingAvatar}>
+              <Avatar
+                name={nickname || user?.nickname}
+                uri={user?.avatarUrl}
+                avatarIdx={0}
+                size={88}
+              />
+              {uploadingAvatar && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 88,
+                    height: 88,
+                    borderRadius: 44,
+                    backgroundColor: 'rgba(0,0,0,0.45)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ActivityIndicator color="#FFFFFF" />
+                </View>
+              )}
+            </Pressable>
+            <Pressable onPress={pickAvatar} disabled={uploadingAvatar} style={{ marginTop: 12 }}>
               <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '500' }}>
                 更换头像
               </Text>

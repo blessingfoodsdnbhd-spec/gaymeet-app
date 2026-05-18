@@ -29,4 +29,5 @@ export type RootStackParamList = {
   AccountSettings: undefined;
   Comments: { momentId: string };
   Composer: undefined;
+  Report: { userId: string; userName?: string };
 };

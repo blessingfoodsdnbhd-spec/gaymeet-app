@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { Heart, X } from 'lucide-react-native';
+import { Heart, MoreHorizontal, X } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
@@ -11,6 +13,8 @@ import { Card } from '../../components/Card';
 import { useTheme } from '../../theme/ThemeProvider';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import type { DiscoverCardUser } from '../../api/discover';
+import type { RootStackParamList } from '../../navigation/types';
+import { showSafetyMenu } from '../../utils/safetyMenu';
 
 interface Props {
   open: boolean;
@@ -21,6 +25,17 @@ interface Props {
 
 export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const theme = useTheme();
+  const nav = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const onMore = () => {
+    if (!user) return;
+    showSafetyMenu({
+      userId: user.id,
+      userName: user.nickname,
+      nav,
+      onBlocked: onClose,
+    });
+  };
 
   return (
     <Sheet open={open} onClose={onClose} maxHeight="85%">
@@ -29,6 +44,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           <View style={styles.header}>
             <Avatar
               name={user.nickname}
+              uri={user.avatarUrl}
               avatarIdx={user.avatarIdx}
               size={56}
               shape="circle"
@@ -42,6 +58,9 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                 {user.distance ?? ''}
               </Text>
             </View>
+            <IconButton onPress={onMore}>
+              <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </IconButton>
             <IconButton onPress={onClose}>
               <X size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>

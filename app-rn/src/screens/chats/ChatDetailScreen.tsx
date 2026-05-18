@@ -16,12 +16,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
+  MoreHorizontal,
   Phone,
   Send,
   Smile,
   Video,
   Mic,
 } from 'lucide-react-native';
+import { showSafetyMenu } from '../../utils/safetyMenu';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -227,6 +229,7 @@ export function ChatDetailScreen() {
           <>
             <Avatar
               name={thread.user.nickname}
+              uri={thread.user.avatarUrl}
               avatarIdx={idxFor(thread.user.id)}
               size={38}
               showOnline={thread.user.isOnline}
@@ -254,6 +257,22 @@ export function ChatDetailScreen() {
               }
             >
               <Video size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </Pressable>
+            <Pressable
+              style={iconBtn(theme)}
+              onPress={() =>
+                showSafetyMenu({
+                  userId: thread.user.id,
+                  userName: thread.user.nickname,
+                  nav,
+                  includeUnmatch: true,
+                  onBlocked: () => nav.goBack(),
+                  // TODO: real unmatch — backend doesn't have DELETE /chats/:id yet.
+                  onUnmatch: () => nav.goBack(),
+                })
+              }
+            >
+              <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
             </Pressable>
           </>
         )}
