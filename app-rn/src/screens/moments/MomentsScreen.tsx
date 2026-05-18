@@ -6,6 +6,7 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,11 +15,14 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Button } from '../../components/Button';
 import { MomentItem } from './MomentItem';
+import { uploadFile } from '../../api/upload';
+import { postMoment } from '../../api/moments';
 import type { RootStackParamList } from '../../navigation/types';
 import {
   getMoments,
@@ -48,6 +52,32 @@ export function MomentsScreen() {
     queryFn: () => getMoments(filter),
     staleTime: 30_000,
   });
+
+  const [capturing, setCapturing] = useState(false);
+
+  const onCamera = async () => {
+    if (capturing) return;
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要相机权限', '在系统设置中允许 Meyou 访问相机。');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    setCapturing(true);
+    try {
+      const url = await uploadFile(result.assets[0].uri);
+      await postMoment({ content: '', images: [url] });
+      queryClient.invalidateQueries({ queryKey: ['moments'] });
+    } catch {
+      Alert.alert('发布失败', '稍后再试。');
+    } finally {
+      setCapturing(false);
+    }
+  };
 
   const likeMut = useMutation({
     mutationFn: (id: string) => toggleLike(id),
@@ -86,8 +116,12 @@ export function MomentsScreen() {
         title={t('tabs.moments')}
         right={
           <>
-            <IconButton>
-              <Camera size={18} color={theme.colors.text} strokeWidth={1.6} />
+            <IconButton onPress={onCamera}>
+              {capturing ? (
+                <ActivityIndicator size="small" color={theme.colors.text} />
+              ) : (
+                <Camera size={18} color={theme.colors.text} strokeWidth={1.6} />
+              )}
             </IconButton>
             <IconButton onPress={() => nav.navigate('Composer')}>
               <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />

@@ -13,6 +13,7 @@ import { useAuth, getAccessToken } from './store/auth';
 import { getMe } from './api/me';
 import { loadFonts } from './theme/fonts';
 import { GlobalMatchListener } from './components/GlobalMatchListener';
+import { MessageBanner } from './components/MessageBanner';
 import { registerPushToken } from './utils/push';
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ export function App() {
               <RootNavigator />
             </NavigationContainer>
             <GlobalMatchListener />
+            <MessageBanner />
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
