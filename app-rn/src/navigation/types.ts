@@ -18,7 +18,7 @@ export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
   ChatDetail: { chatId: string };
-  Call: { kind: 'voice' | 'video'; userId: string };
+  Call: { userId: string };
   // Profile sub-pages — presented as pushes over MainTabs.
   EditProfile: undefined;
   TagsEdit: undefined;

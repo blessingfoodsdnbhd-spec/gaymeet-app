@@ -20,7 +20,6 @@ import {
   Phone,
   Send,
   Smile,
-  Video,
   Mic,
 } from 'lucide-react-native';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -245,18 +244,10 @@ export function ChatDetailScreen() {
             <Pressable
               style={iconBtn(theme)}
               onPress={() =>
-                nav.navigate('Call', { kind: 'voice', userId: thread.user.id })
+                nav.navigate('Call', { userId: thread.user.id })
               }
             >
               <Phone size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </Pressable>
-            <Pressable
-              style={iconBtn(theme)}
-              onPress={() =>
-                nav.navigate('Call', { kind: 'video', userId: thread.user.id })
-              }
-            >
-              <Video size={18} color={theme.colors.text} strokeWidth={1.6} />
             </Pressable>
             <Pressable
               style={iconBtn(theme)}
