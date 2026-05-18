@@ -186,4 +186,35 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
   }
 });
 
+// ── DELETE /api/conversations/:matchId — unmatch ──────────────────────────────
+// Tombstones the match: sets isActive=false so it disappears from both users'
+// chat lists. Messages stay in the DB for moderation review.
+router.delete('/:matchId', auth, async (req, res, next) => {
+  try {
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    match.isActive = false;
+    await match.save();
+
+    // Push to BOTH users so their chat lists update in real time.
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        for (const uid of match.users.map((u) => u.toString())) {
+          io.to(`user:${uid}`).emit('match:removed', { matchId: match._id.toString() });
+        }
+      }
+    } catch (_) {}
+
+    ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

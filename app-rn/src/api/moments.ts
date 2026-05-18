@@ -1,11 +1,6 @@
 import { api } from './client';
 
-/** Maps the v2 design's filter chips to the backend's `feed` query param.
- *  - "all"      → no param (public feed)
- *  - "friends"  → feed=following
- *  - "nearby"   → not yet supported server-side; falls back to all
- *  - "interest" → not yet supported server-side; falls back to all
- */
+/** Maps the v2 design's filter chips 1:1 to the backend's `feed` query param. */
 export type MomentsFilter = 'all' | 'friends' | 'nearby' | 'interest';
 
 export interface MomentAuthor {
@@ -36,15 +31,11 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
   });
 }
 
-function mapFilter(f: MomentsFilter): Record<string, unknown> {
-  if (f === 'friends') return { feed: 'following' };
-  // TODO: server-side support for nearby + interest. For now they degrade to "all".
-  return {};
-}
-
 export const getMoments = (filter: MomentsFilter = 'all', page = 1) =>
   unwrap<Moment[]>(
-    api.get('/moments', { params: { ...mapFilter(filter), page, limit: 20 } }),
+    api.get('/moments', {
+      params: filter === 'all' ? { page, limit: 20 } : { feed: filter, page, limit: 20 },
+    }),
   );
 
 export const toggleLike = (id: string) =>

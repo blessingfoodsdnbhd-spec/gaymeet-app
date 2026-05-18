@@ -62,3 +62,8 @@ export const openConversation = (otherUserId: string) =>
   unwrap<{ matchId: string; coinsCharged: number }>(
     api.post(`/conversations/open/${otherUserId}`),
   );
+
+/** Unmatch — tombstones the Match on the server; both sides receive
+ *  a `match:removed` WS event. */
+export const deleteConversation = (matchId: string) =>
+  unwrap<{ success: true }>(api.delete(`/conversations/${matchId}`));

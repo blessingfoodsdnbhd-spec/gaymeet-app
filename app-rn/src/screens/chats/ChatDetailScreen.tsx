@@ -30,7 +30,7 @@ import { Avatar } from '../../components/Avatar';
 import { Bubble } from '../../components/Bubble';
 import { useAuth } from '../../store/auth';
 import { useChats } from '../../store/chats';
-import { getMessages, sendMessage, type Message, type ChatThread } from '../../api/chats';
+import { deleteConversation, getMessages, sendMessage, type Message, type ChatThread } from '../../api/chats';
 import { on as wsOn, emit as wsEmit, type WsChatReceive, type WsChatTyping } from '../../api/ws';
 import type { RootStackParamList } from '../../navigation/types';
 import { hhmm } from '../../utils/time';
@@ -266,9 +266,20 @@ export function ChatDetailScreen() {
                   userName: thread.user.nickname,
                   nav,
                   includeUnmatch: true,
-                  onBlocked: () => nav.goBack(),
-                  // TODO: real unmatch — backend doesn't have DELETE /chats/:id yet.
-                  onUnmatch: () => nav.goBack(),
+                  onBlocked: () => {
+                    queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+                    nav.goBack();
+                  },
+                  onUnmatch: async () => {
+                    try {
+                      await deleteConversation(matchId);
+                      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+                      nav.goBack();
+                    } catch {
+                      // best effort — silently fall back to local navigate
+                      nav.goBack();
+                    }
+                  },
                 })
               }
             >

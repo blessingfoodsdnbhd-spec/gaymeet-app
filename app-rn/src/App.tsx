@@ -13,6 +13,7 @@ import { useAuth, getAccessToken } from './store/auth';
 import { getMe } from './api/me';
 import { loadFonts } from './theme/fonts';
 import { GlobalMatchListener } from './components/GlobalMatchListener';
+import { registerPushToken } from './utils/push';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,9 @@ export function App() {
         try {
           const me = await getMe();
           setUser(me);
+          // Best-effort: register push token in the background. Silent on
+          // permission denial, simulator, or any other failure.
+          registerPushToken().catch(() => {});
         } catch {
           // Invalid token — let the user see Welcome
         }

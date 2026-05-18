@@ -1,9 +1,13 @@
 const router = require('express').Router();
 const Moment = require('../models/Moment');
 const MomentComment = require('../models/MomentComment');
+const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
+
+// Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
+const MOMENTS_NEARBY_KM = 10;
 
 // ── GET /api/moments ──────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res, next) => {
@@ -15,7 +19,7 @@ router.get('/', auth, async (req, res, next) => {
     let followingIds = null;
     if (userId) {
       filter = { isActive: true, user: userId, visibility: 'public' };
-    } else if (feed === 'following') {
+    } else if (feed === 'following' || feed === 'friends') {
       const Follow = require('../models/Follow');
       const followDocs = await Follow.find({ follower: req.user._id })
         .select('following')
@@ -25,6 +29,48 @@ router.get('/', auth, async (req, res, next) => {
         isActive: true,
         user: { $in: followingIds },
         visibility: { $in: ['public', 'friends'] },
+      };
+    } else if (feed === 'nearby') {
+      // Find users within MOMENTS_NEARBY_KM of me, then filter moments to that set.
+      const me = req.user;
+      const lat = me.location?.coordinates?.[1] ?? 3.1390;
+      const lng = me.location?.coordinates?.[0] ?? 101.6869;
+      const nearbyUsers = await User.find({
+        _id: { $ne: me._id },
+        'preferences.hideFromNearby': { $ne: true },
+        'preferences.stealthMode': { $ne: true },
+        location: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: [lng, lat] },
+            $maxDistance: MOMENTS_NEARBY_KM * 1000,
+          },
+        },
+      })
+        .select('_id')
+        .limit(500)
+        .lean();
+      filter = {
+        isActive: true,
+        user: { $in: nearbyUsers.map((u) => u._id) },
+        visibility: 'public',
+      };
+    } else if (feed === 'interest') {
+      // Match posts by users who share at least one tag with me.
+      const myInterests = req.user.interests || [];
+      if (myInterests.length === 0) {
+        return ok(res, []);
+      }
+      const interestUsers = await User.find({
+        _id: { $ne: req.user._id },
+        interests: { $in: myInterests },
+      })
+        .select('_id')
+        .limit(1000)
+        .lean();
+      filter = {
+        isActive: true,
+        user: { $in: interestUsers.map((u) => u._id) },
+        visibility: 'public',
       };
     } else {
       filter = { isActive: true, visibility: 'public' };
