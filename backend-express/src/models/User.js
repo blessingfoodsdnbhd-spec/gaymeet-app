@@ -45,6 +45,25 @@ const userSchema = new mongoose.Schema(
     avatarUrl: { type: String, default: null },
     photos: [{ type: String }],
 
+    // ── Meyou 密友 (v2) interest matching ─────────────────────────────────
+    // The 16 fixed interest tag IDs the user has selected. Set during the
+    // mandatory InterestTagsPicker onboarding step; required ≥3 to enter app.
+    interests: { type: [String], default: [] },
+    // When the user first completed (or last re-confirmed) the interests
+    // picker. Null → client routes to InterestTagsPicker on next launch.
+    interestsOnboardedAt: { type: Date, default: null },
+    // Free-form profile prompts ("本周想找人一起" → "去 APW 喝咖啡。")
+    prompts: {
+      type: [
+        {
+          q: { type: String, required: true },
+          a: { type: String, required: true },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
+
     // Body stats
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg

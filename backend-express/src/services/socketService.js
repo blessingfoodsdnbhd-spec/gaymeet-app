@@ -140,6 +140,25 @@ function initSocket(server) {
       io.to(`user:${otherId}`).emit('chat:receive', payload);
     });
 
+    // ── chat:typing ───────────────────────────────────────────────────────────
+    // Payload: { matchId: string, typing: boolean }
+    // Pass-through relay — server doesn't persist, just forwards to the other
+    // member of the match's personal room.
+    socket.on('chat:typing', async ({ matchId, typing = true } = {}) => {
+      if (!matchId) return;
+      const match = await Match.findOne({ _id: matchId, users: userId });
+      if (!match) return;
+      const otherId = match.users
+        .find((u) => u.toString() !== userId)
+        ?.toString();
+      if (!otherId) return;
+      io.to(`user:${otherId}`).emit('chat:typing', {
+        matchId,
+        fromUserId: userId,
+        typing: !!typing,
+      });
+    });
+
     // ── chat:read ─────────────────────────────────────────────────────────────
     // Payload: { matchId: string }
     socket.on('chat:read', async ({ matchId } = {}) => {
