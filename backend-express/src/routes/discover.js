@@ -35,6 +35,24 @@ router.get('/cards', auth, async (req, res, next) => {
     const me = req.user;
     const count = Math.min(parseInt(req.query.count, 10) || 10, 30);
 
+    // Optional filter overrides. Distance defaults to MAX_DISTANCE_M.
+    const radiusKmRaw = parseFloat(req.query.radiusKm);
+    const maxDistance = Number.isFinite(radiusKmRaw) && radiusKmRaw > 0
+      ? Math.min(radiusKmRaw * 1000, MAX_DISTANCE_M)
+      : MAX_DISTANCE_M;
+
+    // `interests` query param: comma-separated tag ids (or repeated values).
+    // When provided, only candidates with at least one matching tag are returned.
+    const interestsParam = req.query.interests;
+    let filterInterests = null;
+    if (interestsParam) {
+      const arr = Array.isArray(interestsParam)
+        ? interestsParam
+        : String(interestsParam).split(',');
+      filterInterests = arr.map((s) => String(s).trim()).filter(Boolean);
+      if (filterInterests.length === 0) filterInterests = null;
+    }
+
     const alreadySwiped = await Swipe.find({ fromUser: me._id }, { toUser: 1 }).lean();
     const swipedIds = alreadySwiped.map((s) => s.toUser);
     const usersWhoBlockedMe = await User.find({ blockedUsers: me._id }, { _id: 1 }).lean();
@@ -49,19 +67,24 @@ router.get('/cards', auth, async (req, res, next) => {
     const lng = me.location?.coordinates?.[0] ?? 101.6869;
     const myInterests = me.interests || [];
 
+    const baseQuery = {
+      _id: { $nin: excludeIds },
+      'preferences.hideFromNearby': { $ne: true },
+      'preferences.stealthMode': { $ne: true },
+      isDeleted: { $ne: true },
+    };
+    if (filterInterests) {
+      baseQuery.interests = { $in: filterInterests };
+    }
+
     const pipeline = [
       {
         $geoNear: {
           near: { type: 'Point', coordinates: [lng, lat] },
           distanceField: 'distanceMeters',
-          maxDistance: MAX_DISTANCE_M,
+          maxDistance,
           spherical: true,
-          query: {
-            _id: { $nin: excludeIds },
-            'preferences.hideFromNearby': { $ne: true },
-            'preferences.stealthMode': { $ne: true },
-            isDeleted: { $ne: true },
-          },
+          query: baseQuery,
         },
       },
       {

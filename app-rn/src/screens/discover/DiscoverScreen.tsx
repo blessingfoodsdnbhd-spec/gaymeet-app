@@ -13,10 +13,18 @@ import { CardStack, type CardStackHandle } from './CardStack';
 import { NearbyGrid } from './NearbyGrid';
 import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
-import { getDiscoverCards, getNearby, swipe, type DiscoverCardUser } from '../../api/discover';
+import { FiltersSheet } from './FiltersSheet';
+import {
+  getDiscoverCards,
+  getNearby,
+  swipe,
+  type DiscoverCardUser,
+  type DiscoverFilters,
+} from '../../api/discover';
 import { useAuth } from '../../store/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { brandGradient } from '../../theme/tokens';
+import type { InterestTagId } from '../../data/interestTags';
 
 type Mode = 'cards' | 'nearby';
 
@@ -29,12 +37,15 @@ export function DiscoverScreen() {
   const [mode, setMode] = useState<Mode>('cards');
   const [aboutUser, setAboutUser] = useState<DiscoverCardUser | null>(null);
   const [matched, setMatched] = useState<DiscoverCardUser | null>(null);
+  const [filters, setFilters] = useState<DiscoverFilters>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const stackRef = useRef<CardStackHandle>(null);
+  const hasActiveFilters = !!filters.radiusKm || (filters.interests?.length ?? 0) > 0;
 
-  // Cards query — keep on screen even while fetching the next page
+  // Cards query — key includes filters so changing them refetches cleanly.
   const cardsQ = useQuery({
-    queryKey: ['discover', 'cards'],
-    queryFn: () => getDiscoverCards(10),
+    queryKey: ['discover', 'cards', filters.radiusKm ?? null, filters.interests ?? null],
+    queryFn: () => getDiscoverCards(10, filters),
     staleTime: 30_000,
   });
 
@@ -52,8 +63,9 @@ export function DiscoverScreen() {
 
   const handleSwiped = (user: DiscoverCardUser, liked: boolean) => {
     // Remove the top card from the cache so the stack re-renders without it
-    queryClient.setQueryData<DiscoverCardUser[]>(['discover', 'cards'], (prev) =>
-      (prev ?? []).filter((u) => u.id !== user.id),
+    queryClient.setQueryData<DiscoverCardUser[]>(
+      ['discover', 'cards', filters.radiusKm ?? null, filters.interests ?? null],
+      (prev) => (prev ?? []).filter((u) => u.id !== user.id),
     );
 
     // Background-prefetch when the deck gets low
@@ -121,8 +133,23 @@ export function DiscoverScreen() {
         left={null}
         right={
           <>
-            <IconButton>
-              <SlidersHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
+            <IconButton onPress={() => setFiltersOpen(true)}>
+              <View>
+                <SlidersHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
+                {hasActiveFilters && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -3,
+                      right: -3,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: theme.colors.primary,
+                    }}
+                  />
+                )}
+              </View>
             </IconButton>
             <IconButton>
               <Bell size={18} color={theme.colors.text} strokeWidth={1.6} />
@@ -159,6 +186,14 @@ export function DiscoverScreen() {
         me={me}
         onMessage={() => setMatched(null)}
         onLater={() => setMatched(null)}
+      />
+
+      <FiltersSheet
+        open={filtersOpen}
+        initial={filters}
+        myInterests={(me?.interests ?? []) as InterestTagId[]}
+        onApply={(f) => setFilters(f)}
+        onClose={() => setFiltersOpen(false)}
       />
     </SafeAreaView>
   );

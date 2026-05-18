@@ -24,8 +24,23 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
   });
 }
 
-export const getDiscoverCards = (count = 10) =>
-  unwrap<DiscoverCardUser[]>(api.get('/discover/cards', { params: { count } }));
+export interface DiscoverFilters {
+  radiusKm?: number;
+  interests?: InterestTagId[];
+}
+
+export const getDiscoverCards = (count = 10, filters?: DiscoverFilters) =>
+  unwrap<DiscoverCardUser[]>(
+    api.get('/discover/cards', {
+      params: {
+        count,
+        ...(filters?.radiusKm ? { radiusKm: filters.radiusKm } : {}),
+        ...(filters?.interests && filters.interests.length > 0
+          ? { interests: filters.interests.join(',') }
+          : {}),
+      },
+    }),
+  );
 
 export const swipe = (userId: string, action: SwipeAction) =>
   unwrap<SwipeResult>(api.post('/discover/swipe', { userId, action }));
