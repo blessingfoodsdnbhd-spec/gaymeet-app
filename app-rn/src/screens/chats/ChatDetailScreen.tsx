@@ -17,7 +17,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
   MoreHorizontal,
-  Phone,
   Send,
   Smile,
   Mic,
@@ -241,14 +240,6 @@ export function ChatDetailScreen() {
                 {otherTyping ? '正在输入…' : thread.user.isOnline ? '在线' : '离线'}
               </Text>
             </View>
-            <Pressable
-              style={iconBtn(theme)}
-              onPress={() =>
-                nav.navigate('Call', { userId: thread.user.id })
-              }
-            >
-              <Phone size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </Pressable>
             <Pressable
               style={iconBtn(theme)}
               onPress={() =>

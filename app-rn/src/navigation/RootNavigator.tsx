@@ -5,7 +5,6 @@ import { useAuth } from '../store/auth';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { ChatDetailScreen } from '../screens/chats/ChatDetailScreen';
-import { CallScreen } from '../screens/call/CallScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
 import { TagsEditScreen } from '../screens/profile/TagsEditScreen';
 import { PromptsEditScreen } from '../screens/profile/PromptsEditScreen';
@@ -37,11 +36,6 @@ export function RootNavigator() {
             name="ChatDetail"
             component={ChatDetailScreen}
             options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="Call"
-            component={CallScreen}
-            options={{ presentation: 'fullScreenModal', animation: 'fade' }}
           />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="TagsEdit" component={TagsEditScreen} options={{ animation: 'slide_from_right' }} />
