@@ -1,0 +1,55 @@
+{
+  "welcome": {
+    "tagline": "和你喜欢同一件事的人相遇。",
+    "continueApple": "用 Apple 继续",
+    "continueGoogle": "用 Google 继续",
+    "continueEmail": "用邮箱继续",
+    "disclaimer": "继续即表示同意《服务条款》与《隐私政策》"
+  },
+  "email": {
+    "title": "你的邮箱是?",
+    "subtitle": "用邮箱登录,我们会发一个 6 位验证码。",
+    "placeholder": "you@example.com",
+    "cta": "发送验证码"
+  },
+  "otp": {
+    "title": "输入验证码",
+    "resend": "{{seconds}}s 后可重发",
+    "resendCta": "重发验证码"
+  },
+  "tags": {
+    "title": "你的兴趣?",
+    "subtitle": "选 3 个以上兴趣 · 我们会帮你找到同频的人",
+    "stepLabel": "第 2 / 2 步",
+    "ctaPickMore": "已选 {{n}} 个 · 还需选 {{more}} 个",
+    "ctaReady": "已选 {{n}} 个 · 棒!",
+    "enter": "进入密友"
+  },
+  "tabs": {
+    "discover": "发现",
+    "moments": "动态",
+    "chats": "消息",
+    "profile": "我"
+  },
+  "discover": {
+    "modeCards": "推荐",
+    "modeNearby": "附近",
+    "sharedInterests": "{{n}} 个共同兴趣",
+    "emptyTitle": "今天就到这儿啦",
+    "emptySubtitle": "已经看完了你的同好。\n明天再回来看看 🍵",
+    "redo": "再看一遍"
+  },
+  "match": {
+    "title": "It's a Meyou!",
+    "subtitle": "你们成为密友了",
+    "bothLove": "你和 {{name}} 都对",
+    "sendCta": "发条消息打招呼",
+    "later": "稍后再说"
+  },
+  "common": {
+    "back": "返回",
+    "close": "关闭",
+    "settings": "设置",
+    "loading": "加载中…"
+  }
+}

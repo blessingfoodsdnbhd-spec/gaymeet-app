@@ -1,0 +1,55 @@
+{
+  "welcome": {
+    "tagline": "Meet people who love the same things.",
+    "continueApple": "Continue with Apple",
+    "continueGoogle": "Continue with Google",
+    "continueEmail": "Continue with Email",
+    "disclaimer": "By continuing you agree to Terms & Privacy Policy"
+  },
+  "email": {
+    "title": "What's your email?",
+    "subtitle": "We'll send you a 6-digit verification code.",
+    "placeholder": "you@example.com",
+    "cta": "Send code"
+  },
+  "otp": {
+    "title": "Enter the code",
+    "resend": "Resend in {{seconds}}s",
+    "resendCta": "Resend code"
+  },
+  "tags": {
+    "title": "What are you into?",
+    "subtitle": "Pick 3 or more · we'll match you with same-wavelength people",
+    "stepLabel": "Step 2 / 2",
+    "ctaPickMore": "{{n}} selected · pick {{more}} more",
+    "ctaReady": "{{n}} selected · ready!",
+    "enter": "Enter Meyou"
+  },
+  "tabs": {
+    "discover": "Discover",
+    "moments": "Moments",
+    "chats": "Chats",
+    "profile": "Me"
+  },
+  "discover": {
+    "modeCards": "For You",
+    "modeNearby": "Nearby",
+    "sharedInterests": "{{n}} shared interests",
+    "emptyTitle": "That's it for today",
+    "emptySubtitle": "You've seen everyone in your wavelength.\nCome back tomorrow 🍵",
+    "redo": "See again"
+  },
+  "match": {
+    "title": "It's a Meyou!",
+    "subtitle": "You're now close friends",
+    "bothLove": "You and {{name}} both love",
+    "sendCta": "Send a message",
+    "later": "Maybe later"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "settings": "Settings",
+    "loading": "Loading…"
+  }
+}

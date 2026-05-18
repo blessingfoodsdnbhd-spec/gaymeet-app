@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Meyou",
+    "slug": "meyou",
+    "scheme": "meyou",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/logo.jpg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./src/assets/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAFC"
+    },
+    "ios": {
+      "bundleIdentifier": "com.meetupnearby.app",
+      "supportsTablet": false,
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
+        "NSCameraUsageDescription": "Meyou needs camera access for video calls and profile photos.",
+        "NSMicrophoneUsageDescription": "Meyou needs microphone access for voice and video calls.",
+        "NSPhotoLibraryUsageDescription": "Meyou needs photo access to upload your moments and profile photos."
+      }
+    },
+    "android": {
+      "package": "com.meetupnearby.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/logo.jpg",
+        "backgroundColor": "#FAFAFC"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Meyou uses your location to show you people nearby who share your interests."
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "apiUrl": "https://gaymeet-api.onrender.com"
+    }
+  }
+}
