@@ -51,7 +51,9 @@
       "expo-asset"
     ],
     "extra": {
-      "apiUrl": "https://gaymeet-api.onrender.com"
+      "apiUrl": "https://gaymeet-api.onrender.com",
+      "googleWebClientId": "REPLACE_ME",
+      "googleIosClientId": "REPLACE_ME"
     }
   }
 }

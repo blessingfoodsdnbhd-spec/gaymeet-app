@@ -1,15 +1,16 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
-import { brandGradient } from '../../theme/tokens';
+import { useAuth } from '../../store/auth';
+import { signInApple, signInGoogle } from '../../api/auth';
+import { signInWithGoogle } from '../../utils/googleSignin';
 import type { AuthStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
@@ -18,19 +19,61 @@ export function WelcomeScreen() {
   const nav = useNavigation<Nav>();
   const theme = useTheme();
   const { t } = useTranslation();
+  const signIn = useAuth((s) => s.signIn);
+  const [busy, setBusy] = useState<'apple' | 'google' | null>(null);
 
   const onApple = async () => {
+    if (busy) return;
+    let credential: AppleAuthentication.AppleAuthenticationCredential;
     try {
-      const credential = await AppleAuthentication.signInAsync({
+      credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      // TODO: POST /auth/apple with credential.identityToken
-      console.log('apple ok', credential);
-    } catch (e) {
-      // user cancel — silent no-op
+    } catch (e: any) {
+      // ERR_CANCELED → user dismissed the sheet; stay silent.
+      if (e?.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert('登录失败', '请重试');
+      return;
+    }
+    if (!credential.identityToken) {
+      Alert.alert('登录失败', 'Apple 没有返回有效凭证,请重试');
+      return;
+    }
+    setBusy('apple');
+    try {
+      // Apple only includes fullName on the FIRST sign-in for a given Apple
+      // ID — pass it through so the backend can persist the user's name.
+      const name = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || undefined
+        : undefined;
+      const res = await signInApple(credential.identityToken, name);
+      await signIn(res.accessToken, res.refreshToken, res.user);
+    } catch {
+      Alert.alert('登录失败', '稍后再试');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onGoogle = async () => {
+    if (busy) return;
+    setBusy('google');
+    try {
+      const result = await signInWithGoogle();
+      if (!result) return; // user canceled or config missing
+      const res = await signInGoogle(result.idToken);
+      await signIn(res.accessToken, res.refreshToken, res.user);
+    } catch (e: any) {
+      const message = e?.userFriendlyMessage ?? '登录失败,稍后再试';
+      Alert.alert('Google 登录', message);
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -40,7 +83,6 @@ export function WelcomeScreen() {
         <Image
           source={require('../../assets/logo.jpg')}
           style={{ width: 148, height: 148, borderRadius: 38 }}
-          // soft purple shadow to lift the logo off the cream bg
         />
         <View style={{ marginTop: 22, alignItems: 'center' }}>
           {/* Wordmark — uses Fraunces italic with background-clip-text equivalent.
@@ -82,21 +124,24 @@ export function WelcomeScreen() {
             label={t('welcome.continueApple')}
             variant="dark"
             onPress={onApple}
+            loading={busy === 'apple'}
+            disabled={busy === 'google'}
             fullWidth
           />
         )}
         <Button
           label={t('welcome.continueGoogle')}
           variant="ghost"
-          onPress={() => {
-            /* TODO: GoogleSignin.signIn */
-          }}
+          onPress={onGoogle}
+          loading={busy === 'google'}
+          disabled={busy === 'apple'}
           fullWidth
         />
         <Button
           label={t('welcome.continueEmail')}
           variant="ghost"
           onPress={() => nav.navigate('EmailEntry')}
+          disabled={!!busy}
           fullWidth
         />
         <Text
