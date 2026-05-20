@@ -11,10 +11,17 @@ export interface Pricing {
   annual: PricingTier;
 }
 
-/** Apple App Store SKUs (must match App Store Connect products). */
+/**
+ * Apple App Store SKUs (must match App Store Connect products).
+ *
+ * Note: Apple does NOT allow reuse of product IDs — once a product is
+ * created and deleted, that exact ID is permanently retired. The earlier
+ * `.premium.monthly/annual` IDs were burned on a misplaced one-time IAP
+ * creation, so we switched to the `.subscription.*` namespace.
+ */
 export const IAP_SKUS = {
-  monthly: 'com.meetupnearby.app.premium.monthly',
-  annual: 'com.meetupnearby.app.premium.annual',
+  monthly: 'com.meetupnearby.app.subscription.monthly',
+  annual: 'com.meetupnearby.app.subscription.annual',
 } as const;
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
