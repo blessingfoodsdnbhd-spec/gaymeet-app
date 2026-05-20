@@ -92,13 +92,26 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
     }
 
     const result: any = await GoogleSignin.signIn();
-    // Library v13 returns { type: 'success', data: { idToken, user } } shape;
-    // earlier versions returned the inner `data` directly.
+    console.warn('GoogleSignin.signIn() result keys:', JSON.stringify(Object.keys(result ?? {})));
+    console.warn('GoogleSignin.signIn() result.type:', result?.type);
+
+    // v13 returns { type: 'success' | 'cancelled', data: { idToken, user, ... } }
+    if (result?.type === 'cancelled') {
+      return null; // user dismissed
+    }
+
     const data = result?.data ?? result;
-    const idToken: string | undefined = data?.idToken ?? data?.tokens?.idToken;
+    // Try every shape we've seen in the wild
+    const idToken: string | undefined =
+      data?.idToken ??
+      data?.tokens?.idToken ??
+      result?.idToken;
+
     if (!idToken) {
+      console.warn('Google no idToken — full result:', JSON.stringify(result));
       const err = new Error('Google did not return an idToken');
-      (err as any).userFriendlyMessage = 'Google 没有返回有效凭证,请重试';
+      (err as any).userFriendlyMessage =
+        'Google 没拿到 idToken — 可能 webClientId 配错了';
       throw err;
     }
     return {
