@@ -14,8 +14,10 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 
-const SKU_MONTHLY = 'com.meetupnearby.app.premium.monthly';
-const SKU_ANNUAL = 'com.meetupnearby.app.premium.annual';
+// Apple product IDs cannot be reused after deletion, so we live in the
+// `.subscription.*` namespace rather than the original `.premium.*`.
+const SKU_MONTHLY = 'com.meetupnearby.app.subscription.monthly';
+const SKU_ANNUAL = 'com.meetupnearby.app.subscription.annual';
 const VALID_SKUS = new Set([SKU_MONTHLY, SKU_ANNUAL]);
 
 const APPLE_VERIFY_PROD = 'https://buy.itunes.apple.com/verifyReceipt';
