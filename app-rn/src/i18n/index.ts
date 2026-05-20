@@ -13,6 +13,9 @@ i18n.use(initReactI18next).init({
   lng: 'zh',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
+  // RN doesn't ship a full Intl.PluralRules; this opts into the legacy
+  // JSON format and silences the bootstrap warning.
+  compatibilityJSON: 'v3',
 });
 
 export default i18n;
