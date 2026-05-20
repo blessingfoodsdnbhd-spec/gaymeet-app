@@ -5,7 +5,26 @@ const Match = require('../models/Match');
 const Message = require('../models/Message');
 const User = require('../models/User');
 
-const FIRST_MESSAGE_COST = 10;
+// Meyou 密友 v2 — only monetisation is the Premium subscription:
+//   monthly: RM 39.90
+//   annual : RM 399.00 (~2 months free)
+// Opening a dm with a non-matched user (an "intro") requires an active
+// subscription. Already-matched conversations are always free.
+const PREMIUM_PRICING = {
+  monthly: { price: 39.9, currency: 'MYR', period: 'month' },
+  annual:  { price: 399,  currency: 'MYR', period: 'year'  },
+};
+
+function isPremiumActive(user) {
+  if (!user) return false;
+  if (user.vipLevel > 0) {
+    if (!user.vipExpiresAt || new Date(user.vipExpiresAt) > new Date()) return true;
+  }
+  if (user.isPremium) {
+    if (!user.premiumExpiresAt || new Date(user.premiumExpiresAt) > new Date()) return true;
+  }
+  return false;
+}
 
 // ── GET /api/conversations ─────────────────────────────────────────────────────
 // List all conversations (mutual matches + dm-opened), formatted for MatchModel.fromJson
@@ -89,54 +108,27 @@ router.post('/open/:userId', auth, async (req, res, next) => {
       isActive: true,
     });
     if (existing) {
-      return ok(res, { matchId: existing._id.toString(), coinsCharged: 0 });
+      return ok(res, { matchId: existing._id.toString(), premium: false });
     }
 
-    // New dm: charge intro fee from the sender's coin balance.
-    const balance = req.user.coins ?? 0;
-    if (balance < FIRST_MESSAGE_COST) {
+    // New intro dm requires an active Premium subscription.
+    if (!isPremiumActive(req.user)) {
       return res.status(402).json({
-        error: '金币不足',
-        required: FIRST_MESSAGE_COST,
-        balance,
+        error: '需要 Premium 会员',
+        reason: 'premium_required',
+        pricing: PREMIUM_PRICING,
       });
     }
 
-    // Atomic decrement + create — if either fails, roll back the decrement.
-    const updated = await User.findOneAndUpdate(
-      { _id: senderId, coins: { $gte: FIRST_MESSAGE_COST } },
-      { $inc: { coins: -FIRST_MESSAGE_COST } },
-      { new: true },
+    const match = await Match.create({
+      users: [senderId, targetUserId],
+      source: 'dm',
+    });
+    return ok(
+      res,
+      { matchId: match._id.toString(), premium: true },
+      201,
     );
-    if (!updated) {
-      return res.status(402).json({
-        error: '金币不足',
-        required: FIRST_MESSAGE_COST,
-        balance,
-      });
-    }
-
-    try {
-      const match = await Match.create({
-        users: [senderId, targetUserId],
-        source: 'dm',
-      });
-      return ok(
-        res,
-        {
-          matchId: match._id.toString(),
-          coinsCharged: FIRST_MESSAGE_COST,
-          balance: updated.coins,
-        },
-        201,
-      );
-    } catch (createErr) {
-      // Refund on failure
-      await User.findByIdAndUpdate(senderId, {
-        $inc: { coins: FIRST_MESSAGE_COST },
-      });
-      throw createErr;
-    }
   } catch (e) {
     next(e);
   }
