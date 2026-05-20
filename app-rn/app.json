@@ -48,12 +48,18 @@
           "locationAlwaysAndWhenInUsePermission": "Meyou uses your location to show you people nearby who share your interests."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.208538145733-ccuidhniu111ssc70ri9kjrdv6095obs"
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://gaymeet-api.onrender.com",
-      "googleWebClientId": "REPLACE_ME",
-      "googleIosClientId": "REPLACE_ME"
+      "googleWebClientId": "208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com",
+      "googleIosClientId": "208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com"
     }
   }
 }
