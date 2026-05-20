@@ -17,6 +17,7 @@ import { FiltersSheet } from './FiltersSheet';
 import {
   getDiscoverCards,
   getNearby,
+  resetSwipes,
   swipe,
   type DiscoverCardUser,
   type DiscoverFilters,
@@ -212,6 +213,18 @@ function CardsBody({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const [resetting, setResetting] = useState(false);
+
+  const onReset = async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      await resetSwipes();
+      await cardsQ.refetch();
+    } finally {
+      setResetting(false);
+    }
+  };
 
   if (cardsQ.isLoading) {
     return (
@@ -252,7 +265,8 @@ function CardsBody({
         <Button
           label={t('discover.redo')}
           variant="soft"
-          onPress={() => cardsQ.refetch()}
+          onPress={onReset}
+          loading={resetting}
           style={{ marginTop: 24 }}
         />
       </View>

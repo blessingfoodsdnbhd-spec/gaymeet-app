@@ -289,4 +289,17 @@ function hashToIdx(id) {
   return h % 10;
 }
 
+// ── DELETE /api/discover/swipes ──────────────────────────────────────────────
+// Dev/testing convenience — wipe every swipe the current user has made so
+// the same candidates re-enter the deck. Does NOT touch Match documents,
+// so existing chats stay intact.
+router.delete('/swipes', auth, async (req, res, next) => {
+  try {
+    const { deletedCount } = await Swipe.deleteMany({ fromUser: req.user._id });
+    ok(res, { deletedCount });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
