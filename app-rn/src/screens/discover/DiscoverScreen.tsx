@@ -30,7 +30,6 @@ import { brandGradient } from '../../theme/tokens';
 import type { InterestTagId } from '../../data/interestTags';
 import type { RootStackParamList } from '../../navigation/types';
 
-const INTRO_COST = 10;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type Mode = 'cards' | 'nearby';
@@ -49,38 +48,26 @@ export function DiscoverScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const stackRef = useRef<CardStackHandle>(null);
 
-  const openIntroChat = (user: DiscoverCardUser) => {
-    Alert.alert(
-      '发条 intro',
-      `给 ${user.nickname} 发消息会消耗 ${INTRO_COST} 个金币（已 match 的好友免费）。继续吗?`,
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确认',
-          onPress: async () => {
-            try {
-              const res = await openConversation(user.id);
-              queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
-              nav.navigate('ChatDetail', { chatId: res.matchId });
-            } catch (e: any) {
-              const status = e?.response?.status;
-              const body = e?.response?.data;
-              if (status === 402) {
-                Alert.alert(
-                  '金币不足',
-                  `给陌生人发消息需要 ${body?.required ?? INTRO_COST} 金币,你现在有 ${body?.balance ?? 0} 个。`,
-                );
-              } else {
-                Alert.alert(
-                  '打开失败',
-                  body?.error || e?.message || '稍后再试',
-                );
-              }
-            }
-          },
-        },
-      ],
-    );
+  const openIntroChat = async (user: DiscoverCardUser) => {
+    try {
+      const res = await openConversation(user.id);
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+      nav.navigate('ChatDetail', { chatId: res.matchId });
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      if (status === 402 && body?.reason === 'premium_required') {
+        const monthly = body?.pricing?.monthly?.price ?? 39.9;
+        const annual = body?.pricing?.annual?.price ?? 399;
+        Alert.alert(
+          'Premium 会员专属',
+          `给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM ${monthly}\n年费 RM ${annual}\n(年费约省 2 个月)`,
+          [{ text: '好' }],
+        );
+      } else {
+        Alert.alert('打开失败', body?.error || e?.message || '稍后再试');
+      }
+    }
   };
   const hasActiveFilters = !!filters.radiusKm || (filters.interests?.length ?? 0) > 0;
 
