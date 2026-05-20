@@ -58,7 +58,7 @@ export function DiscoverScreen() {
       const body = e?.response?.data;
       if (status === 402 && body?.reason === 'premium_required') {
         const monthly = body?.pricing?.monthly?.price ?? 39.9;
-        const annual = body?.pricing?.annual?.price ?? 399;
+        const annual = body?.pricing?.annual?.price ?? 399.9;
         Alert.alert(
           'Premium 会员专属',
           `给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM ${monthly}\n年费 RM ${annual}\n(年费约省 2 个月)`,
