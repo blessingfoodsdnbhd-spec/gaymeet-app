@@ -95,23 +95,24 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
     console.warn('GoogleSignin.signIn() result keys:', JSON.stringify(Object.keys(result ?? {})));
     console.warn('GoogleSignin.signIn() result.type:', result?.type);
 
-    // v13 returns { type: 'success' | 'cancelled', data: { idToken, user, ... } }
-    if (result?.type === 'cancelled') {
-      return null; // user dismissed
-    }
-
     const data = result?.data ?? result;
-    // Try every shape we've seen in the wild
     const idToken: string | undefined =
       data?.idToken ??
       data?.tokens?.idToken ??
       result?.idToken;
 
+    if (result?.type === 'cancelled' && !idToken) {
+      return null; // genuine user cancel
+    }
+
     if (!idToken) {
-      console.warn('Google no idToken — full result:', JSON.stringify(result));
+      // Throw so onGoogle's catch surfaces an Alert. Include the raw shape
+      // in the message so we can see it on-device without Metro logs.
+      const dump = safeStringify(result);
+      console.warn('Google no idToken — full result:', dump);
       const err = new Error('Google did not return an idToken');
       (err as any).userFriendlyMessage =
-        'Google 没拿到 idToken — 可能 webClientId 配错了';
+        `Google 没拿到 idToken。\n返回:${dump.slice(0, 200)}`;
       throw err;
     }
     return {
@@ -140,4 +141,14 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
 
 export function isGoogleConfigured() {
   return getConfig().ready;
+}
+
+function safeStringify(v: unknown): string {
+  try {
+    return JSON.stringify(v, (_k, val) =>
+      typeof val === 'string' && val.length > 200 ? `${val.slice(0, 200)}…` : val,
+    );
+  } catch {
+    return String(v);
+  }
 }
