@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   Bell,
   ChevronRight,
+  Crown,
   Edit2,
   Globe,
   Lock,
@@ -167,6 +168,13 @@ export function ProfileScreen() {
         {/* Settings rows */}
         <SectionTitle>设置</SectionTitle>
         <Card flat style={{ paddingVertical: 4 }}>
+          <SettingsRow
+            icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label="Premium 会员"
+            detail={(user as any).isPremium ? '已开通' : '升级'}
+            onPress={() => nav.navigate('Premium')}
+          />
+          <Divider />
           <SettingsRow
             icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label="隐私"

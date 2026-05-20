@@ -48,6 +48,7 @@ const feedRoutes = require('./routes/feed');
 // Meyou 密友 v2 — interest matching
 const interestsRoutes = require('./routes/interests');
 const discoverV2Routes = require('./routes/discover');
+const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 
 const app = express();
 
@@ -120,6 +121,7 @@ app.use('/api/feed', feedRoutes);
 // Meyou 密友 v2 — interest matching
 app.use('/api/me', interestsRoutes);
 app.use('/api/discover', discoverV2Routes);
+app.use('/api/subscriptions', subscriptionsV2Routes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
