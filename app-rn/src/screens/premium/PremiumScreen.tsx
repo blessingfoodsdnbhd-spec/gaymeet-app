@@ -43,7 +43,11 @@ export function PremiumScreen() {
   const pricingQ = useQuery({
     queryKey: ['pricing'],
     queryFn: getPricing,
-    staleTime: 24 * 3600_000,
+    // Always re-fetch when opening the screen — pricing can change
+    // server-side and a stale value risks the in-app price not matching
+    // App Store Connect, which Apple reviewers flag.
+    staleTime: 60_000,
+    refetchOnMount: 'always',
   });
 
   const pricing = pricingQ.data;
