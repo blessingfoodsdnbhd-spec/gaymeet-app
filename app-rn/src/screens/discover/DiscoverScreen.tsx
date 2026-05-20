@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
@@ -21,10 +23,15 @@ import {
   type DiscoverCardUser,
   type DiscoverFilters,
 } from '../../api/discover';
+import { openConversation } from '../../api/chats';
 import { useAuth } from '../../store/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { brandGradient } from '../../theme/tokens';
 import type { InterestTagId } from '../../data/interestTags';
+import type { RootStackParamList } from '../../navigation/types';
+
+const INTRO_COST = 10;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type Mode = 'cards' | 'nearby';
 
@@ -33,6 +40,7 @@ export function DiscoverScreen() {
   const { t } = useTranslation();
   const me = useAuth((s) => s.user);
   const queryClient = useQueryClient();
+  const nav = useNavigation<Nav>();
 
   const [mode, setMode] = useState<Mode>('cards');
   const [aboutUser, setAboutUser] = useState<DiscoverCardUser | null>(null);
@@ -40,6 +48,40 @@ export function DiscoverScreen() {
   const [filters, setFilters] = useState<DiscoverFilters>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const stackRef = useRef<CardStackHandle>(null);
+
+  const openIntroChat = (user: DiscoverCardUser) => {
+    Alert.alert(
+      '发条 intro',
+      `给 ${user.nickname} 发消息会消耗 ${INTRO_COST} 个金币（已 match 的好友免费）。继续吗?`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确认',
+          onPress: async () => {
+            try {
+              const res = await openConversation(user.id);
+              queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+              nav.navigate('ChatDetail', { chatId: res.matchId });
+            } catch (e: any) {
+              const status = e?.response?.status;
+              const body = e?.response?.data;
+              if (status === 402) {
+                Alert.alert(
+                  '金币不足',
+                  `给陌生人发消息需要 ${body?.required ?? INTRO_COST} 金币,你现在有 ${body?.balance ?? 0} 个。`,
+                );
+              } else {
+                Alert.alert(
+                  '打开失败',
+                  body?.error || e?.message || '稍后再试',
+                );
+              }
+            }
+          },
+        },
+      ],
+    );
+  };
   const hasActiveFilters = !!filters.radiusKm || (filters.interests?.length ?? 0) > 0;
 
   // Cards query — key includes filters so changing them refetches cleanly.
@@ -164,6 +206,7 @@ export function DiscoverScreen() {
           stackRef={stackRef}
           onOpenAbout={(u) => setAboutUser(u)}
           onSwiped={handleSwiped}
+          onSendIntro={openIntroChat}
         />
       ) : (
         <NearbyBody nearbyQ={nearbyQ} onOpen={(u) => setAboutUser(u)} />
@@ -204,11 +247,13 @@ function CardsBody({
   stackRef,
   onOpenAbout,
   onSwiped,
+  onSendIntro,
 }: {
   cardsQ: ReturnType<typeof useQuery<DiscoverCardUser[]>>;
   stackRef: React.RefObject<CardStackHandle>;
   onOpenAbout: (u: DiscoverCardUser) => void;
   onSwiped: (u: DiscoverCardUser, liked: boolean) => void;
+  onSendIntro: (u: DiscoverCardUser) => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -282,9 +327,7 @@ function CardsBody({
           icon={<Send size={18} color="#B14B59" strokeWidth={2} />}
           bg={theme.colors.accentRoseSoft}
           small
-          onPress={() => {
-            /* TODO: open chat directly with `top` */
-          }}
+          onPress={() => onSendIntro(top)}
         />
       </View>
     </>

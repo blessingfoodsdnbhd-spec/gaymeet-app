@@ -63,8 +63,14 @@ router.get('/', auth, async (req, res, next) => {
 });
 
 // ── POST /api/conversations/open/:userId ───────────────────────────────────────
-// Find existing conversation or create one (charging coins if not a mutual match).
-// Returns { matchId, coinsCharged }
+// Find existing conversation or create one. Opening a dm with someone you
+// haven't matched yet charges FIRST_MESSAGE_COST coins from User.coins;
+// already-matched users open for free.
+//
+// Returns:
+//   200 { matchId, coinsCharged: 0 }     — existing match / chat
+//   201 { matchId, coinsCharged: 10 }    — newly opened dm, coins deducted
+//   402 { error, required, balance }     — insufficient coins
 router.post('/open/:userId', auth, async (req, res, next) => {
   try {
     const senderId = req.user._id.toString();
@@ -77,22 +83,60 @@ router.post('/open/:userId', auth, async (req, res, next) => {
     const receiver = await User.findById(targetUserId).select('_id nickname');
     if (!receiver) return err(res, 'User not found', 404);
 
-    // Check if a conversation already exists (mutual match OR previous dm)
+    // Existing match / chat: free
     const existing = await Match.findOne({
       users: { $all: [senderId, targetUserId] },
       isActive: true,
     });
-
     if (existing) {
       return ok(res, { matchId: existing._id.toString(), coinsCharged: 0 });
     }
 
-    const match = await Match.create({
-      users: [senderId, targetUserId],
-      source: 'dm',
-    });
+    // New dm: charge intro fee from the sender's coin balance.
+    const balance = req.user.coins ?? 0;
+    if (balance < FIRST_MESSAGE_COST) {
+      return res.status(402).json({
+        error: '金币不足',
+        required: FIRST_MESSAGE_COST,
+        balance,
+      });
+    }
 
-    ok(res, { matchId: match._id.toString(), coinsCharged: 0 }, 201);
+    // Atomic decrement + create — if either fails, roll back the decrement.
+    const updated = await User.findOneAndUpdate(
+      { _id: senderId, coins: { $gte: FIRST_MESSAGE_COST } },
+      { $inc: { coins: -FIRST_MESSAGE_COST } },
+      { new: true },
+    );
+    if (!updated) {
+      return res.status(402).json({
+        error: '金币不足',
+        required: FIRST_MESSAGE_COST,
+        balance,
+      });
+    }
+
+    try {
+      const match = await Match.create({
+        users: [senderId, targetUserId],
+        source: 'dm',
+      });
+      return ok(
+        res,
+        {
+          matchId: match._id.toString(),
+          coinsCharged: FIRST_MESSAGE_COST,
+          balance: updated.coins,
+        },
+        201,
+      );
+    } catch (createErr) {
+      // Refund on failure
+      await User.findByIdAndUpdate(senderId, {
+        $inc: { coins: FIRST_MESSAGE_COST },
+      });
+      throw createErr;
+    }
   } catch (e) {
     next(e);
   }
