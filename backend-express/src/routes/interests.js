@@ -97,7 +97,8 @@ router.patch('/privacy', auth, async (req, res, next) => {
 
 // ── GET /api/me/pricing ───────────────────────────────────────────────────────
 // Premium subscription tiers (Meyou 密友 v2 — single SKU, billed in MYR).
-router.get('/pricing', auth, async (_req, res) => {
+// Public — same numbers for everyone, no auth needed.
+router.get('/pricing', async (_req, res) => {
   ok(res, {
     monthly: { price: 39.9, currency: 'MYR', period: 'month' },
     annual:  { price: 399.9, currency: 'MYR', period: 'year' },
