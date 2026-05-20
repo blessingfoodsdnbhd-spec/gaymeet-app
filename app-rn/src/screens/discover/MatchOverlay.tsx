@@ -54,7 +54,7 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
 
   if (!matchedUser) return null;
 
-  const sharedZh = matchedUser.sharedTags
+  const sharedZh = (matchedUser.sharedTags ?? [])
     .map((id) => tagById(id)?.zh)
     .filter(Boolean)
     .join(' · ');

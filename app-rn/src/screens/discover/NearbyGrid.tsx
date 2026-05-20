@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
@@ -94,6 +95,8 @@ function Tile({
 }) {
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
   const initial = (user.nickname || '?').trim().charAt(0).toUpperCase();
+  const hasPhoto = !!user.avatarUrl;
+
   return (
     <Pressable
       onPress={onPress}
@@ -103,13 +106,24 @@ function Tile({
         opacity: pressed ? 0.85 : 1,
       })}
     >
-      <LinearGradient
-        colors={[a, b]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.tileBg}
-      >
-        <Text style={styles.tileInitial}>{initial}</Text>
+      <View style={[styles.tileBg, { overflow: 'hidden' }]}>
+        {hasPhoto ? (
+          <Image
+            source={{ uri: user.avatarUrl! }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={120}
+          />
+        ) : (
+          <LinearGradient
+            colors={[a, b]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          >
+            <Text style={styles.tileInitial}>{initial}</Text>
+          </LinearGradient>
+        )}
 
         {user.isOnline && <View style={styles.onlineDot} />}
 
@@ -122,7 +136,7 @@ function Tile({
             <Text style={styles.tileDist}>{user.distance}</Text>
           )}
         </LinearGradient>
-      </LinearGradient>
+      </View>
     </Pressable>
   );
 }

@@ -59,8 +59,12 @@ export function ComposerScreen() {
       queryClient.invalidateQueries({ queryKey: ['moments'] });
       nav.goBack();
     },
-    onError: () => {
-      Alert.alert('发送失败', '稍后再试。');
+    onError: (e: any) => {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const detail = body?.error || body?.message || e?.message || 'unknown';
+      console.warn('postMoment failed', { status, body, error: e });
+      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     },
   });
 

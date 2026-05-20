@@ -256,14 +256,26 @@ router.get('/nearby', auth, async (req, res, next) => {
     ];
 
     const docs = await User.aggregate(pipeline);
-    const users = docs.map((u) => ({
+    const others = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
       distance: formatDistance(u.distanceMeters),
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
     }));
-    ok(res, users);
+
+    // Prepend the current user as a "0.0 km" tile so they see themselves in
+    // the grid (product-decided behavior — surfaces own profile entry point).
+    const selfPublic = me.toPublicJSON();
+    const self = {
+      ...selfPublic,
+      sharedTags: me.interests || [],
+      distance: '0 m',
+      distKm: 0,
+      avatarIdx: hashToIdx(me._id.toString()),
+    };
+
+    ok(res, [self, ...others]);
   } catch (e) {
     next(e);
   }
