@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -40,8 +40,15 @@ export function InterestTagsPickerScreen() {
     try {
       const user = await setInterests(Array.from(selected));
       setUser(user);
-    } catch {
-      // TODO: toast retry
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const detail = body?.error || body?.message || e?.message || 'unknown';
+      console.warn('setInterests failed', { status, body, error: e });
+      Alert.alert(
+        '保存失败',
+        `${detail}${status ? ` (HTTP ${status})` : ''}`,
+      );
     } finally {
       setBusy(false);
     }
