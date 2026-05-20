@@ -82,6 +82,9 @@ const userSchema = new mongoose.Schema(
     // Premium
     isPremium: { type: Boolean, default: false },
     premiumExpiresAt: { type: Date, default: null },
+    // Apple IAP — used by /api/subscriptions/apple-webhook to find the user
+    // a renewal/expiry event belongs to. Set by verify-apple-receipt.
+    appleOriginalTransactionId: { type: String, default: null, sparse: true },
 
     // Privacy preferences
     preferences: { type: preferencesSchema, default: () => ({}) },
