@@ -64,9 +64,11 @@ export function App() {
           <ThemeProvider>
             <NavigationContainer>
               <RootNavigator />
+              {/* Both listeners use useNavigation() and must live inside
+                  NavigationContainer to read the navigator context. */}
+              <GlobalMatchListener />
+              <MessageBanner />
             </NavigationContainer>
-            <GlobalMatchListener />
-            <MessageBanner />
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

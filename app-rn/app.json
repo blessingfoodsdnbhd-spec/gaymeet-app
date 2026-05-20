@@ -21,7 +21,8 @@
         "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
         "NSCameraUsageDescription": "Meyou needs camera access for video calls and profile photos.",
         "NSMicrophoneUsageDescription": "Meyou needs microphone access for voice and video calls.",
-        "NSPhotoLibraryUsageDescription": "Meyou needs photo access to upload your moments and profile photos."
+        "NSPhotoLibraryUsageDescription": "Meyou needs photo access to upload your moments and profile photos.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -35,7 +36,9 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
@@ -59,7 +62,11 @@
     "extra": {
       "apiUrl": "https://gaymeet-api.onrender.com",
       "googleWebClientId": "208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com",
-      "googleIosClientId": "208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com"
-    }
+      "googleIosClientId": "208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "6164b27d-200d-4850-a17f-d97b2575027b"
+      }
+    },
+    "owner": "xiuyi"
   }
 }
