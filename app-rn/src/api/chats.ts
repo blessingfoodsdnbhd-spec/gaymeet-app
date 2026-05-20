@@ -57,9 +57,13 @@ export const getMessages = (otherUserId: string, before?: string) =>
 export const sendMessage = (matchId: string, content: string, type: 'text' | 'sticker' = 'text') =>
   unwrap<Message>(api.post(`/conversations/${matchId}/send`, { content, type }));
 
-/** Find existing match or create a new dm thread (charges no coins in v2). */
+/**
+ * Find existing match or open a new dm. If the target user is already
+ * matched, opening is free. Otherwise the backend charges 10 coins from
+ * User.coins — a 402 response signals "not enough balance".
+ */
 export const openConversation = (otherUserId: string) =>
-  unwrap<{ matchId: string; coinsCharged: number }>(
+  unwrap<{ matchId: string; coinsCharged: number; balance?: number }>(
     api.post(`/conversations/open/${otherUserId}`),
   );
 
