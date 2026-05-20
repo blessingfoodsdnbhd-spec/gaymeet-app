@@ -54,8 +54,16 @@ export function WelcomeScreen() {
         : undefined;
       const res = await signInApple(credential.identityToken, name);
       await signIn(res.accessToken, res.refreshToken, res.user);
-    } catch {
-      Alert.alert('登录失败', '稍后再试');
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const detail =
+        body?.error ||
+        body?.message ||
+        e?.message ||
+        'unknown';
+      console.warn('apple sign-in failed', { status, body, error: e });
+      Alert.alert('Apple 登录失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(null);
     }
