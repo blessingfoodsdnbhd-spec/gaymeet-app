@@ -77,14 +77,15 @@ export function ChatDetailScreen() {
     return () => setFocus(null);
   }, [matchId, setFocus, markRead]);
 
-  // The conversations API addresses messages by the other user's id, not matchId.
-  // Use thread.user.id if loaded; otherwise fall back to matchId so the URL is
-  // still defined (server returns [] for an unknown match — non-fatal).
-  const otherId = thread?.user.id ?? matchId;
+  // The conversations API addresses messages by the OTHER user's id, not the
+  // matchId. Without the thread loaded we don't know who that is — wait for
+  // the chats list to populate before firing the messages query (otherwise
+  // we'd hit /conversations/<matchId>/messages and always get [] back).
+  const otherId = thread?.user.id;
 
   const msgsQ = useQuery({
-    queryKey: ['chats', 'messages', matchId],
-    queryFn: () => getMessages(otherId),
+    queryKey: ['chats', 'messages', matchId, otherId],
+    queryFn: () => getMessages(otherId!),
     enabled: !!otherId,
   });
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { getConversations, type ChatThread } from '../../api/chats';
+import { useChats } from '../../store/chats';
 import type { RootStackParamList } from '../../navigation/types';
 import { hhmm, shortTime } from '../../utils/time';
 
@@ -44,11 +45,19 @@ export function ChatsListScreen() {
   const nav = useNavigation<Nav>();
   const [q, setQ] = useState('');
 
+  const setThreads = useChats((s) => s.setThreads);
   const threadsQ = useQuery({
     queryKey: ['chats', 'list'],
     queryFn: getConversations,
     staleTime: 30_000,
   });
+
+  // Keep the Zustand store in sync with the query result — ChatDetailScreen
+  // reads threads from the store to render the header (avatar/name/online)
+  // and to map matchId → other userId for the messages endpoint.
+  useEffect(() => {
+    if (threadsQ.data) setThreads(threadsQ.data);
+  }, [threadsQ.data, setThreads]);
 
   const filtered = useMemo(() => {
     const list = threadsQ.data ?? [];
