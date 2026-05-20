@@ -11,12 +11,14 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { Avatar } from './Avatar';
 import { useAuth } from '../store/auth';
 import { useChats } from '../store/chats';
 import { on as wsOn, type WsChatReceive } from '../api/ws';
+import type { ChatThread } from '../api/chats';
 import type { RootStackParamList } from '../navigation/types';
 
 interface Banner {
@@ -45,6 +47,8 @@ export function MessageBanner() {
   const me = useAuth((s) => s.user);
   const focusedMatchId = useChats((s) => s.focusedMatchId);
   const threads = useChats((s) => s.threads);
+  const setThreads = useChats((s) => s.setThreads);
+  const queryClient = useQueryClient();
   const [banner, setBanner] = useState<Banner | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,8 +62,36 @@ export function MessageBanner() {
 
     wsOn('chat:receive', (msg: WsChatReceive) => {
       if (cancelled) return;
-      if (msg.senderId === me.id) return; // ignore my own echo
-      if (focusedMatchId === msg.matchId) return; // already in the thread
+
+      // Bump the relevant thread to the top of the chats list and freshen
+      // its lastMessage / lastMessageAt, regardless of whose echo it is —
+      // both sender and receiver want their list re-ordered.
+      const isMine = msg.senderId === me.id;
+      const bump = (list: ChatThread[]) => {
+        const idx = list.findIndex((t) => t.matchId === msg.matchId);
+        if (idx === -1) return list;
+        const thread = list[idx];
+        const updated: ChatThread = {
+          ...thread,
+          lastMessage:
+            msg.type === 'sticker' ? msg.content : msg.content.slice(0, 100),
+          lastMessageAt: msg.createdAt,
+          unreadCount:
+            !isMine && focusedMatchId !== msg.matchId
+              ? thread.unreadCount + 1
+              : thread.unreadCount,
+        };
+        return [updated, ...list.filter((_, i) => i !== idx)];
+      };
+      queryClient.setQueryData<ChatThread[]>(['chats', 'list'], (prev) =>
+        prev ? bump(prev) : prev,
+      );
+      setThreads(bump(threads));
+
+      // Ignore my own echo for the banner. Skip if user is already in
+      // that thread.
+      if (isMine) return;
+      if (focusedMatchId === msg.matchId) return;
 
       const thread = threads.find((t) => t.matchId === msg.matchId);
       const preview =

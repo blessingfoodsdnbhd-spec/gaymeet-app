@@ -12,7 +12,7 @@ const User = require('../models/User');
 // subscription. Already-matched conversations are always free.
 const PREMIUM_PRICING = {
   monthly: { price: 39.9, currency: 'MYR', period: 'month' },
-  annual:  { price: 399,  currency: 'MYR', period: 'year'  },
+  annual:  { price: 399.9, currency: 'MYR', period: 'year'  },
 };
 
 function isPremiumActive(user) {
