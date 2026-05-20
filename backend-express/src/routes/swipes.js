@@ -63,17 +63,30 @@ router.post('/', auth, async (req, res, next) => {
           users: { $all: [me._id, targetUserId] },
         });
 
+        let match = existing;
+        let isNewMatch = false;
         if (!existing) {
-          const match = await Match.create({
-            users: [me._id, targetUserId],
-          });
-          return ok(res, { matched: true, matchId: match._id.toString() });
+          match = await Match.create({ users: [me._id, targetUserId] });
+          isNewMatch = true;
         }
 
-        return ok(res, {
-          matched: true,
-          matchId: existing._id.toString(),
-        });
+        // Notify the OTHER user via socket so they get a MatchOverlay.
+        if (isNewMatch) {
+          try {
+            const { getIO } = require('../services/socketService');
+            const io = getIO();
+            if (io) {
+              io.to(`user:${targetUserId}`).emit('match:new', {
+                id: match._id.toString(),
+                user: me.toPublicJSON(),
+              });
+            }
+          } catch (_) {
+            // best effort
+          }
+        }
+
+        return ok(res, { matched: true, matchId: match._id.toString() });
       }
     }
 

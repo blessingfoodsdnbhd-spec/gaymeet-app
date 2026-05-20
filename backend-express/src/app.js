@@ -45,6 +45,9 @@ const dateRoomsRoutes = require('./routes/date-rooms');
 const uploadRoutes = require('./routes/upload');
 const globeRoutes = require('./routes/globe');
 const feedRoutes = require('./routes/feed');
+// Meyou 密友 v2 — interest matching
+const interestsRoutes = require('./routes/interests');
+const discoverV2Routes = require('./routes/discover');
 
 const app = express();
 
@@ -114,6 +117,9 @@ app.use('/api/date-rooms', dateRoomsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/globe', globeRoutes);
 app.use('/api/feed', feedRoutes);
+// Meyou 密友 v2 — interest matching
+app.use('/api/me', interestsRoutes);
+app.use('/api/discover', discoverV2Routes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
