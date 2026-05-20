@@ -2,7 +2,7 @@
 //
 // Single-SKU per period:
 //   com.meetupnearby.app.premium.monthly   → RM 39.90 / month
-//   com.meetupnearby.app.premium.annual    → RM 399    / year
+//   com.meetupnearby.app.premium.annual    → RM 399.90 / year
 //
 // Apple's verifyReceipt API is deprecated; in production we'd use the
 // App Store Server API + signed JWT notifications. For v2 launch we use

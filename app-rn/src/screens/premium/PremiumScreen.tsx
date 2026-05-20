@@ -138,10 +138,10 @@ export function PremiumScreen() {
             <View style={{ gap: 12 }}>
               <PlanCard
                 plan="annual"
-                price={pricing?.annual.price ?? 399}
+                price={pricing?.annual.price ?? 399.9}
                 period="年"
                 badge="省 2 个月"
-                monthlyEquivalent={Math.round(((pricing?.annual.price ?? 399) / 12) * 10) / 10}
+                monthlyEquivalent={Math.round(((pricing?.annual.price ?? 399.9) / 12) * 10) / 10}
                 selected={selected === 'annual'}
                 onSelect={() => setSelected('annual')}
               />
@@ -174,7 +174,7 @@ export function PremiumScreen() {
         <Button
           label={
             selected === 'annual'
-              ? `年费 RM ${pricing?.annual.price ?? 399}`
+              ? `年费 RM ${pricing?.annual.price ?? 399.9}`
               : `月费 RM ${pricing?.monthly.price ?? 39.9}`
           }
           onPress={onSubscribe}
