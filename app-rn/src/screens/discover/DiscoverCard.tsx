@@ -66,7 +66,7 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
         <View style={styles.sharedPill}>
           <View style={[styles.sharedDot, { backgroundColor: theme.colors.primary }]} />
           <Text style={[styles.sharedText, { color: theme.colors.primaryDeep }]}>
-            {t('discover.sharedInterests', { n: user.sharedTags.length })}
+            {t('discover.sharedInterests', { n: (user.sharedTags ?? []).length })}
           </Text>
         </View>
 
@@ -119,12 +119,12 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
           </Text>
         )}
         <View style={styles.tagsRow}>
-          {(user.interests as InterestTagId[])
+          {((user.interests ?? []) as InterestTagId[])
             .slice(0, 4)
             .map((id) => {
               const tag = tagById(id);
               if (!tag) return null;
-              const shared = user.sharedTags.includes(id);
+              const shared = (user.sharedTags ?? []).includes(id);
               return <TagChip key={id} tag={tag} shared={shared} />;
             })
             .filter(Boolean)}

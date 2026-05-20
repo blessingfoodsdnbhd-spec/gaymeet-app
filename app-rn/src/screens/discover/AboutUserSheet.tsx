@@ -97,17 +97,17 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
-              兴趣 · {user.sharedTags.length} 个共同
+              兴趣 · {(user.sharedTags ?? []).length} 个共同
             </Text>
             <View style={styles.tagsRow}>
-              {(user.interests as InterestTagId[]).map((id) => {
+              {((user.interests ?? []) as InterestTagId[]).map((id) => {
                 const tag = tagById(id);
                 if (!tag) return null;
                 return (
                   <TagChip
                     key={id}
                     tag={tag}
-                    shared={user.sharedTags.includes(id)}
+                    shared={(user.sharedTags ?? []).includes(id)}
                   />
                 );
               })}
