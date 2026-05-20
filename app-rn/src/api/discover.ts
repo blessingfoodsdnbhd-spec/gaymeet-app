@@ -47,7 +47,3 @@ export const swipe = (userId: string, action: SwipeAction) =>
 
 export const getNearby = (radiusKm = 10) =>
   unwrap<DiscoverCardUser[]>(api.get('/discover/nearby', { params: { radiusKm } }));
-
-/** Dev/testing convenience — clear all swipes so candidates re-enter the deck. */
-export const resetSwipes = () =>
-  unwrap<{ deletedCount: number }>(api.delete('/discover/swipes'));
