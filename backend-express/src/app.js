@@ -73,6 +73,15 @@ app.use(globalLimiter);
 // ── Static uploads ────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 
+// ── Public legal / support pages ──────────────────────────────────────────────
+// These are linked from the App Store listing (privacy URL, support URL) and
+// the in-app Welcome disclaimer. Bilingual zh + en, single page each.
+const publicDir = path.resolve(__dirname, '../public');
+app.use('/legal', express.static(publicDir));
+app.get('/privacy', (_req, res) => res.sendFile(path.join(publicDir, 'privacy.html')));
+app.get('/terms',   (_req, res) => res.sendFile(path.join(publicDir, 'terms.html')));
+app.get('/support', (_req, res) => res.sendFile(path.join(publicDir, 'support.html')));
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
 
