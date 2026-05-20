@@ -64,9 +64,12 @@ export const brandGradient = {
 };
 
 export const typography = {
-  fontZh: 'NotoSansSC',
+  // CJK uses the platform default — PingFang SC on iOS, Noto Sans CJK SC
+  // on Android — which avoids bundling ~30 MB of CJK glyphs. The system
+  // string maps to whatever RN picks by default.
+  fontZh: 'System',
   fontEn: 'System', // Helvetica Neue on iOS, system on Android
-  fontDisplay: 'Fraunces', // italic, loaded via expo-font
+  fontDisplay: 'Fraunces', // italic 400; load via expo-font (see theme/fonts.ts)
   size: {
     display: 48,
     displayLg: 64,

@@ -1,31 +1,20 @@
+import * as Font from 'expo-font';
+
 /**
- * Fonts are not yet bundled — drop these files into `src/assets/fonts/` and
- * uncomment the loader below. Until then the app falls back to system fonts
- * (Helvetica on iOS, Roboto on Android), and any `fontFamily: 'Fraunces'`
- * silently renders as system.
+ * Bundled fonts.
  *
- * Required files:
- *  - Fraunces-Italic.ttf         (variable; download from Google Fonts)
- *  - Fraunces-MediumItalic.ttf
- *  - NotoSansSC-Regular.otf
- *  - NotoSansSC-Medium.otf
- *  - NotoSansSC-SemiBold.otf
+ * We ship only the Fraunces italic display weights — Latin-only, ~170KB
+ * total. Chinese rendering falls back to the system font (PingFang SC on
+ * iOS, Noto Sans CJK SC on Android), which is what every Chinese reader
+ * already expects to look "right" on their device, and saves us from
+ * bundling 30 MB of CJK glyphs.
  *
- * Switch from this stub to the real loader by uncommenting and ensuring
- * the files exist — Metro will throw if a `require()` resolves to nothing.
+ * `fontFamily: 'Fraunces'`         → italic 400 (default Welcome wordmark)
+ * `fontFamily: 'Fraunces-Medium'`  → italic 500 (MatchOverlay headline, prompts)
  */
 export async function loadFonts() {
-  // Placeholder — see comment above.
-  return Promise.resolve();
-
-  // Real implementation (enable once font files are committed):
-  //
-  // const Font = await import('expo-font');
-  // return Font.loadAsync({
-  //   Fraunces: require('../assets/fonts/Fraunces-Italic.ttf'),
-  //   'Fraunces-Medium': require('../assets/fonts/Fraunces-MediumItalic.ttf'),
-  //   NotoSansSC: require('../assets/fonts/NotoSansSC-Regular.otf'),
-  //   'NotoSansSC-Medium': require('../assets/fonts/NotoSansSC-Medium.otf'),
-  //   'NotoSansSC-SemiBold': require('../assets/fonts/NotoSansSC-SemiBold.otf'),
-  // });
+  return Font.loadAsync({
+    Fraunces: require('../assets/fonts/Fraunces-Italic.ttf'),
+    'Fraunces-Medium': require('../assets/fonts/Fraunces-MediumItalic.ttf'),
+  });
 }
