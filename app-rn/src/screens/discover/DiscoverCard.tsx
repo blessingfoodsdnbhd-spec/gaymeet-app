@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
@@ -54,13 +55,24 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
         theme.shadows.card,
       ]}
     >
-      <LinearGradient
-        colors={[a, b]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
-        <Text style={styles.heroInitial}>{initial}</Text>
+      <View style={styles.hero}>
+        {user.avatarUrl ? (
+          <Image
+            source={{ uri: user.avatarUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={150}
+          />
+        ) : (
+          <LinearGradient
+            colors={[a, b]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          >
+            <Text style={styles.heroInitial}>{initial}</Text>
+          </LinearGradient>
+        )}
 
         {/* Shared interest pill — top-left */}
         <View style={styles.sharedPill}>
@@ -102,7 +114,7 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
         >
           <Text style={[styles.stampText, { color: theme.colors.nope }]}>NOPE</Text>
         </Animated.View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.info}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
