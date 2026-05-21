@@ -1,16 +1,26 @@
 /**
- * Cloudflare R2 storage service (S3-compatible).
+ * S3-compatible object storage service.
  *
- * When R2_* env vars are absent, `configured` is false and every
- * upload call returns null — callers must fall back to local disk.
+ * Works with any S3-compatible provider (Cloudflare R2, Backblaze B2,
+ * AWS S3, etc.). When the required env vars are missing, `configured`
+ * is false and every upload call returns null — callers must fall back
+ * to local disk.
  *
  * Required env vars:
- *   R2_ACCOUNT_ID       – Cloudflare account ID (32-char hex)
- *   R2_ACCESS_KEY_ID    – R2 API token access key
- *   R2_SECRET_ACCESS_KEY– R2 API token secret
- *   R2_BUCKET           – Bucket name (e.g. meetupnearby-media)
- *   R2_PUBLIC_URL       – Public URL for bucket
- *                         e.g. https://pub-<hash>.r2.dev  OR  https://media.yourdomain.com
+ *   R2_ACCESS_KEY_ID    – Access key
+ *   R2_SECRET_ACCESS_KEY– Secret key
+ *   R2_BUCKET           – Bucket name
+ *   R2_PUBLIC_URL       – Public base URL for objects in bucket
+ *
+ * Endpoint (one of):
+ *   R2_ENDPOINT         – Full S3 endpoint URL (preferred; provider-agnostic)
+ *                         e.g. https://s3.us-east-005.backblazeb2.com
+ *   R2_ACCOUNT_ID       – Cloudflare account ID (fallback; R2-only)
+ *                         Will build https://<id>.r2.cloudflarestorage.com
+ *
+ * Optional:
+ *   R2_REGION           – SigV4 region. Defaults to 'auto' (good for R2)
+ *                         For B2 must match bucket region (e.g. 'us-east-005')
  */
 
 const {
@@ -19,8 +29,10 @@ const {
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 
+const hasEndpoint = !!(process.env.R2_ENDPOINT || process.env.R2_ACCOUNT_ID);
+
 const configured = !!(
-  process.env.R2_ACCOUNT_ID &&
+  hasEndpoint &&
   process.env.R2_ACCESS_KEY_ID &&
   process.env.R2_SECRET_ACCESS_KEY &&
   process.env.R2_BUCKET &&
@@ -33,11 +45,15 @@ const R2_PUBLIC_URL = configured
   ? process.env.R2_PUBLIC_URL.replace(/^<|>$/g, '').replace(/\/+$/, '')
   : '';
 
+const endpoint = process.env.R2_ENDPOINT
+  ? process.env.R2_ENDPOINT.replace(/\/+$/, '')
+  : `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
 let s3 = null;
 if (configured) {
   s3 = new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    region: process.env.R2_REGION || 'auto',
+    endpoint,
     credentials: {
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
