@@ -58,6 +58,17 @@ if (configured) {
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     },
+    // B2 / R2 / other S3-compatibles do not implement AWS' newer
+    // flexible-checksum + auto-validated PUT checksums. Recent
+    // @aws-sdk/client-s3 (>=3.730) trips a "Credential access key has
+    // length N, should be 32" client-side validation when those headers
+    // are added with a non-32-char access key. Forcing both knobs to
+    // WHEN_REQUIRED disables the auto-checksum that triggers it.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
+    // Use path-style URLs (bucket in path, not subdomain). B2 supports
+    // both, but path-style avoids DNS edge cases.
+    forcePathStyle: true,
   });
 }
 
