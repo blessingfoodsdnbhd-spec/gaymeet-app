@@ -7,15 +7,18 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "image": "latest"
+      "ios": { "image": "latest" },
+      "android": { "image": "latest" }
     },
     "preview": {
       "distribution": "internal",
-      "image": "latest"
+      "ios": { "image": "latest" },
+      "android": { "image": "latest" }
     },
     "production": {
       "autoIncrement": true,
-      "image": "latest"
+      "ios": { "image": "latest" },
+      "android": { "image": "latest" }
     }
   },
   "submit": {
