@@ -53,8 +53,11 @@ export function ReportScreen() {
       Alert.alert('已收到', '我们会尽快审核。该用户已被自动屏蔽。', [
         { text: '好', onPress: () => nav.goBack() },
       ]);
-    } catch {
-      Alert.alert('提交失败', '稍后再试。');
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const d =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('提交失败', `${d}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

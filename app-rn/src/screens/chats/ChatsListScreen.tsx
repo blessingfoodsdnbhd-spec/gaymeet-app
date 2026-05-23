@@ -10,14 +10,14 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Search, Flame } from 'lucide-react-native';
+import { Search, Flame } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
-import { TopBar, IconButton } from '../../components/TopBar';
+import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { useChats } from '../../store/chats';
@@ -80,19 +80,7 @@ export function ChatsListScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <TopBar
-        title={t('tabs.chats')}
-        right={
-          <>
-            <IconButton>
-              <Search size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
-            <IconButton>
-              <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
-          </>
-        }
-      />
+      <TopBar title={t('tabs.chats')} />
 
       <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
         <View

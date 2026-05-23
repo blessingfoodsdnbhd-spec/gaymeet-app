@@ -46,18 +46,15 @@ router.get('/export', auth, async (req, res, next) => {
 });
 
 // ── DELETE /api/account ───────────────────────────────────────────────────────
+// Apple guideline 5.1.1(v) — users must be able to delete their account
+// in-app. Most Meyou users sign in via OTP / Apple / Google and never set
+// a password, so we cannot require one here. The JWT itself proves the
+// caller controls the account.
 router.delete('/', auth, async (req, res, next) => {
   try {
-    const { password } = req.body;
-    if (!password) return err(res, 'password is required to delete account');
-
-    const user = await User.findById(req.user._id).select('+password');
-    const valid = await user.comparePassword(password);
-    if (!valid) return err(res, 'Incorrect password', 401);
-
     const uid = req.user._id;
 
-    // Remove all user data (best-effort, non-blocking)
+    // Remove all user data (best-effort, parallel)
     await Promise.allSettled([
       Match.deleteMany({ $or: [{ user1: uid }, { user2: uid }] }),
       Message.deleteMany({ sender: uid }),

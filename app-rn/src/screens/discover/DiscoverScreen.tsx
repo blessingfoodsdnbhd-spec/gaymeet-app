@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
+import { Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -91,10 +91,16 @@ export function DiscoverScreen() {
   });
 
   const handleSwiped = (user: DiscoverCardUser, liked: boolean) => {
-    // Remove the top card from the cache so the stack re-renders without it
-    queryClient.setQueryData<DiscoverCardUser[]>(
-      ['discover', 'cards', filters.radiusKm ?? null, filters.interests ?? null],
-      (prev) => (prev ?? []).filter((u) => u.id !== user.id),
+    const cardsKey = [
+      'discover',
+      'cards',
+      filters.radiusKm ?? null,
+      filters.interests ?? null,
+    ];
+
+    // Optimistically remove the top card from the cache
+    queryClient.setQueryData<DiscoverCardUser[]>(cardsKey, (prev) =>
+      (prev ?? []).filter((u) => u.id !== user.id),
     );
 
     // Background-prefetch when the deck gets low
@@ -110,6 +116,16 @@ export function DiscoverScreen() {
           if (res.match) {
             setMatched(user);
           }
+        },
+        onError: (e: any) => {
+          // Roll back the optimistic removal so the user can retry.
+          queryClient.setQueryData<DiscoverCardUser[]>(cardsKey, (prev) =>
+            prev?.some((u) => u.id === user.id) ? prev : [user, ...(prev ?? [])],
+          );
+          const status = e?.response?.status;
+          const detail =
+            e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+          Alert.alert('操作失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
         },
       },
     );
@@ -182,9 +198,6 @@ export function DiscoverScreen() {
                   />
                 )}
               </View>
-            </IconButton>
-            <IconButton>
-              <Bell size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
           </>
         }

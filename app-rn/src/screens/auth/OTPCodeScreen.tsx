@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -57,8 +57,15 @@ export function OTPCodeScreen() {
 
   const resend = async () => {
     if (resendIn > 0) return;
-    await sendOtp(route.params.email);
-    setResendIn(59);
+    try {
+      await sendOtp(route.params.email);
+      setResendIn(59);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('重发失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+    }
   };
 
   return (

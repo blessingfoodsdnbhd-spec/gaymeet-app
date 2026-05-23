@@ -9,7 +9,6 @@ import {
   Edit2,
   Globe,
   Lock,
-  QrCode,
   ShieldCheck,
   Settings as SettingsIcon,
 } from 'lucide-react-native';
@@ -46,9 +45,6 @@ export function ProfileScreen() {
       <TopBar
         right={
           <>
-            <IconButton>
-              <QrCode size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
             <IconButton onPress={() => nav.navigate('AccountSettings')}>
               <SettingsIcon size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>

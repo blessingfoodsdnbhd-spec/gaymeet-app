@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -19,7 +20,6 @@ import {
   MoreHorizontal,
   Send,
   Smile,
-  Mic,
 } from 'lucide-react-native';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 
@@ -83,8 +83,12 @@ export function ChatDetailScreen() {
   // we'd hit /conversations/<matchId>/messages and always get [] back).
   const otherId = thread?.user.id;
 
+  // Note: queryKey is 3-tuple — every setQueryData below writes to this same
+  // key. Including otherId in the key (it used to be 4-tuple) caused all
+  // optimistic + WS-received updates to land in a phantom cache slot,
+  // freezing the chat until refetch.
   const msgsQ = useQuery({
-    queryKey: ['chats', 'messages', matchId, otherId],
+    queryKey: ['chats', 'messages', matchId],
     queryFn: () => getMessages(otherId!),
     enabled: !!otherId,
   });
@@ -258,9 +262,15 @@ export function ChatDetailScreen() {
                       await deleteConversation(matchId);
                       queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
                       nav.goBack();
-                    } catch {
-                      // best effort — silently fall back to local navigate
-                      nav.goBack();
+                    } catch (e: any) {
+                      // Safety-relevant: never silently pretend it worked.
+                      const status = e?.response?.status;
+                      const detail =
+                        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+                      Alert.alert(
+                        '取消配对失败',
+                        `${detail}${status ? ` (HTTP ${status})` : ''}`,
+                      );
                     }
                   },
                 })
@@ -404,11 +414,7 @@ export function ChatDetailScreen() {
             >
               <Send size={18} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
-          ) : (
-            <Pressable hitSlop={8}>
-              <Mic size={24} color={theme.colors.muted} strokeWidth={1.6} />
-            </Pressable>
-          )}
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

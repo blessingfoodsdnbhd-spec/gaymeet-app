@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, Pressable, Image, useWindowDimensions, StyleSheet } from 'react-native';
-import { Heart, MessageSquare, MoreHorizontal, Share2 } from 'lucide-react-native';
+import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Chip } from '../../components/Chip';
 import { tagById } from '../../data/interestTags';
 import { shortTime } from '../../utils/time';
+import { showSafetyMenu } from '../../utils/safetyMenu';
 import type { Moment } from '../../api/moments';
 
 function idxFor(id: string) {
@@ -24,6 +26,7 @@ interface Props {
 
 export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }: Props) {
   const theme = useTheme();
+  const nav = useNavigation();
   const { width } = useWindowDimensions();
   const photos = moment.images ?? [];
   const tag = moment.tag ? tagById(moment.tag) : null;
@@ -48,7 +51,16 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
             {moment.user.countryCode ? ` · ${moment.user.countryCode}` : ''}
           </Text>
         </View>
-        <Pressable hitSlop={8}>
+        <Pressable
+          hitSlop={8}
+          onPress={() =>
+            showSafetyMenu({
+              userId: moment.user._id,
+              userName: moment.user.nickname,
+              nav: nav as any,
+            })
+          }
+        >
           <MoreHorizontal size={20} color={theme.colors.muted} strokeWidth={1.6} />
         </Pressable>
       </View>
@@ -83,9 +95,6 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
           icon={<MessageSquare size={20} color={theme.colors.muted} strokeWidth={1.8} />}
           count={moment.commentCount ?? 0}
           onPress={() => onOpenComments?.(moment)}
-        />
-        <Action
-          icon={<Share2 size={20} color={theme.colors.muted} strokeWidth={1.8} />}
         />
       </View>
     </View>
