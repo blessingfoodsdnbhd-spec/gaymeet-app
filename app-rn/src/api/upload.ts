@@ -50,6 +50,10 @@ export interface PhotosUploadResult {
 
 export async function uploadProfilePhoto(uri: string): Promise<PhotosUploadResult> {
   const fd = fileFromUri(uri, 'photo');
+  // "Change avatar" UX → backend prepends instead of appending so the new
+  // upload becomes photos[0] (the avatar). Without this the old photos[0]
+  // sticks and the avatar visually never updates.
+  fd.append('primary', '1');
   return unwrap<PhotosUploadResult>(
     api.post('/users/photos', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
