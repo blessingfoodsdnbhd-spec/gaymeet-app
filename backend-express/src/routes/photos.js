@@ -25,17 +25,19 @@ async function storePhoto(file, req) {
 
 // ── POST /api/users/photos ────────────────────────────────────────────────────
 // Multipart fields:
-//   photo  – the file
-//   primary – '1' / 'true' to make this the new avatar (prepend, not append)
+//   photo   – the file
+//   primary – '0' / 'false' to opt out of the avatar-change behaviour and
+//             just append to the gallery. Defaults to true (the avatar
+//             picker is the only known caller today; any future
+//             gallery-add flow should pass primary=0 explicitly).
 router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) => {
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
     const url = await storePhoto(req.file, req);
-    const asPrimary =
-      req.body?.primary === '1' ||
-      req.body?.primary === 'true' ||
-      req.body?.primary === true;
+    // Default-true: must opt out with '0' or 'false' to append-only.
+    const raw = req.body?.primary;
+    const asPrimary = !(raw === '0' || raw === 'false' || raw === false);
 
     const user = await User.findById(req.user._id);
     if (asPrimary) {
