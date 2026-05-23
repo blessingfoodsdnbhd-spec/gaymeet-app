@@ -24,15 +24,28 @@ async function storePhoto(file, req) {
 }
 
 // ── POST /api/users/photos ────────────────────────────────────────────────────
+// Multipart fields:
+//   photo  – the file
+//   primary – '1' / 'true' to make this the new avatar (prepend, not append)
 router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) => {
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
     const url = await storePhoto(req.file, req);
+    const asPrimary =
+      req.body?.primary === '1' ||
+      req.body?.primary === 'true' ||
+      req.body?.primary === true;
 
     const user = await User.findById(req.user._id);
-    user.photos.push(url);
-    user.avatarUrl = user.photos[0]; // always photos[0] = avatarUrl
+    if (asPrimary) {
+      // Avatar-change semantics: new photo becomes photos[0] (the avatar)
+      // and any pre-existing copy of this URL is removed.
+      user.photos = [url, ...user.photos.filter((p) => p !== url)];
+    } else {
+      user.photos.push(url);
+    }
+    user.avatarUrl = user.photos[0]; // photos[0] is always the avatar
 
     await user.save();
     ok(res, { url, avatarUrl: user.avatarUrl, photos: user.photos });

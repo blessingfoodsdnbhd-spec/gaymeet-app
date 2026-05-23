@@ -54,8 +54,13 @@ export function EditProfileScreen() {
       // Refresh full user from server so avatarUrl + photos[] are accurate
       const fresh = await getMe();
       setUser(fresh);
-    } catch {
-      Alert.alert('上传失败', '稍后再试。');
+    } catch (e: any) {
+      // Show stage-aware detail so we can debug instead of swallowing the error.
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const detail = body?.error || body?.message || e?.message || 'unknown';
+      console.warn('avatar upload failed', { status, body, error: e });
+      Alert.alert('上传失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setUploadingAvatar(false);
     }
