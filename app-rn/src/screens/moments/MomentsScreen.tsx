@@ -162,7 +162,10 @@ export function MomentsScreen() {
                 style={{
                   fontSize: 13,
                   fontWeight: '600',
-                  color: active ? theme.colors.surface : theme.colors.text2,
+                  // Use primary text colour for inactive chips so the
+                  // labels stay legible — text2 (#605F70) was too washed
+                  // out for the white-pill background.
+                  color: active ? theme.colors.surface : theme.colors.text,
                 }}
               >
                 {f.label}
