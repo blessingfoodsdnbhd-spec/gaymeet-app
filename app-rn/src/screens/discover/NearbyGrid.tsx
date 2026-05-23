@@ -16,10 +16,10 @@ export function NearbyGrid({ users, onOpen, cityLabel = 'KL · Bangsar' }: Props
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const cols = 4;
-  const gap = 8;
-  const horizontalPad = 14;
+  const gap = 0; // edge-to-edge tiles
+  const horizontalPad = 0;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
-  const tileH = tileW * 1.18;
+  const tileH = tileW; // square
 
   return (
     <View style={{ flex: 1 }}>
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   tileBg: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 0, // sharp square edges, no gap between tiles
     overflow: 'hidden',
   },
   tileInitial: {

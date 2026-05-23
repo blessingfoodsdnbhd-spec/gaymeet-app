@@ -33,7 +33,7 @@ import {
 
 const FILTERS: { id: MomentsFilter; label: string }[] = [
   { id: 'all', label: '全部' },
-  { id: 'friends', label: '我的同好' },
+  { id: 'friends', label: '同好' },
   { id: 'nearby', label: '附近' },
   { id: 'interest', label: '兴趣' },
 ];
@@ -151,8 +151,11 @@ export function MomentsScreen() {
                 paddingVertical: 7,
                 borderRadius: 999,
                 backgroundColor: active ? theme.colors.text : theme.colors.surface,
-                borderWidth: active ? 0 : 1,
-                borderColor: theme.colors.line,
+                // Keep borderWidth identical between states so the chip's
+                // outer dimensions don't jump by 2px on toggle (which made
+                // "我的同好" look slightly off-vertical vs its neighbours).
+                borderWidth: 1,
+                borderColor: active ? theme.colors.text : theme.colors.line,
               }}
             >
               <Text
