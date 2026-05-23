@@ -85,37 +85,6 @@ app.get('/support', (_req, res) => res.sendFile(path.join(publicDir, 'support.ht
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-// ── TEMP: B2 upload self-test ─────────────────────────────────────────────────
-// Verifies the r2Service end-to-end without needing a JWT. Returns:
-//   { ok: true, url, deleted: true }  on full round-trip
-//   { ok: false, stage, error }       on any failure
-// Gated by a fixed token in URL to keep it from being scraped.
-// REMOVE this route after we confirm uploads work.
-app.get('/__b2test/c7c3e5f', async (req, res) => {
-  const r2 = require('./services/r2Service');
-  if (!r2.configured) {
-    return res.json({ ok: false, stage: 'config', error: 'R2_* env vars missing' });
-  }
-  // Tiny 1x1 transparent PNG (67 bytes)
-  const pngBytes = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgAAIAAAUAAarVyFEAAAAASUVORK5CYII=',
-    'base64',
-  );
-  const key = `__b2test/ping-${Date.now()}.png`;
-  let url;
-  try {
-    url = await r2.uploadFile(pngBytes, key, 'image/png');
-  } catch (e) {
-    return res.json({ ok: false, stage: 'upload', error: e?.message });
-  }
-  // Only clean up if explicitly asked (default keeps file so we can verify
-  // the public URL serves it correctly).
-  if (req.query.cleanup === '1') {
-    try { await r2.deleteFile(key); } catch (_) {}
-  }
-  res.json({ ok: true, url, key });
-});
-
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
