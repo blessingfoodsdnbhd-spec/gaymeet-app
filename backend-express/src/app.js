@@ -91,7 +91,7 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 //   { ok: false, stage, error }       on any failure
 // Gated by a fixed token in URL to keep it from being scraped.
 // REMOVE this route after we confirm uploads work.
-app.get('/__b2test/c7c3e5f', async (_req, res) => {
+app.get('/__b2test/c7c3e5f', async (req, res) => {
   const r2 = require('./services/r2Service');
   if (!r2.configured) {
     return res.json({ ok: false, stage: 'config', error: 'R2_* env vars missing' });
@@ -108,8 +108,11 @@ app.get('/__b2test/c7c3e5f', async (_req, res) => {
   } catch (e) {
     return res.json({ ok: false, stage: 'upload', error: e?.message });
   }
-  // Best-effort cleanup
-  try { await r2.deleteFile(key); } catch (_) {}
+  // Only clean up if explicitly asked (default keeps file so we can verify
+  // the public URL serves it correctly).
+  if (req.query.cleanup === '1') {
+    try { await r2.deleteFile(key); } catch (_) {}
+  }
   res.json({ ok: true, url, key });
 });
 
