@@ -72,8 +72,12 @@ export function MomentsScreen() {
       const url = await uploadFile(result.assets[0].uri);
       await postMoment({ content: '', images: [url] });
       queryClient.invalidateQueries({ queryKey: ['moments'] });
-    } catch {
-      Alert.alert('发布失败', '稍后再试。');
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const detail = body?.error || body?.message || e?.message || 'unknown';
+      console.warn('camera quick-post failed', { status, body, error: e });
+      Alert.alert('发布失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setCapturing(false);
     }

@@ -5,12 +5,12 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Alert,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, ImagePlus, X } from 'lucide-react-native';
@@ -43,16 +43,23 @@ export function ComposerScreen() {
       for (const uri of photos) {
         if (/^https?:\/\//.test(uri)) {
           uploadedUrls.push(uri);
-        } else {
+          continue;
+        }
+        try {
           const url = await uploadFile(uri);
           uploadedUrls.push(url);
+        } catch (e: any) {
+          // Annotate the error with which upload stage failed
+          const wrapped: any = new Error(`upload failed: ${e?.message ?? e}`);
+          wrapped.stage = 'upload';
+          wrapped.uri = uri;
+          wrapped.response = e?.response;
+          throw wrapped;
         }
       }
       return postMoment({
         content: content.trim(),
         images: uploadedUrls,
-        // tag isn't currently a backend field on Moment — kept client-side for v2.
-        // The server will ignore it. TODO: add `tag` to Moment model.
       });
     },
     onSuccess: () => {
@@ -60,11 +67,15 @@ export function ComposerScreen() {
       nav.goBack();
     },
     onError: (e: any) => {
+      const stage = e?.stage ?? 'post';
       const status = e?.response?.status;
       const body = e?.response?.data;
       const detail = body?.error || body?.message || e?.message || 'unknown';
-      console.warn('postMoment failed', { status, body, error: e });
-      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      console.warn('moments publish failed', { stage, status, body, error: e });
+      Alert.alert(
+        '发送失败',
+        `[${stage}] ${detail}${status ? ` (HTTP ${status})` : ''}`,
+      );
     },
   });
 
@@ -79,11 +90,12 @@ export function ComposerScreen() {
       allowsMultipleSelection: true,
       selectionLimit: MAX_PHOTOS - photos.length,
       quality: 0.8,
+      // Convert HEIC → JPEG so backend / browsers don't choke on Apple's
+      // proprietary format
     });
     if (result.canceled) return;
     const uris = result.assets.map((a) => a.uri);
-    // TODO: upload to /api/upload first; for now we keep local URIs as a
-    // placeholder so the visual flow works in dev.
+    console.warn('picked photos:', uris);
     setPhotos([...photos, ...uris].slice(0, MAX_PHOTOS));
   };
 
