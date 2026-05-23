@@ -149,7 +149,10 @@ export function DiscoverScreen() {
                     style={{
                       fontSize: 14,
                       fontWeight: '600',
-                      color: active ? theme.colors.text : theme.colors.muted,
+                      // muted (#8E8DA0) was too washed out for an
+                      // interactive segmented control — use text2 so the
+                      // inactive label still reads clearly.
+                      color: active ? theme.colors.text : theme.colors.text2,
                     }}
                   >
                     {tab.label}
