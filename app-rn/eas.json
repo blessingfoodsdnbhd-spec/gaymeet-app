@@ -16,7 +16,7 @@
       "android": { "image": "latest" }
     },
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "ios": { "image": "latest" },
       "android": { "image": "latest" }
     }
