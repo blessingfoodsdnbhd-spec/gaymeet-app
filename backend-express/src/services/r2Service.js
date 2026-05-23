@@ -44,9 +44,11 @@ async function authorize() {
   ).toString('base64');
   let data;
   try {
-    const res = await axios.post(
+    // B2 v3 b2_authorize_account is a GET (axios.post would send 'null'
+    // as body which B2 then tries to parse as JSON and fails with
+    // "object should start with brace but found: ￿").
+    const res = await axios.get(
       'https://api.backblazeb2.com/b2api/v3/b2_authorize_account',
-      null,
       { headers: { Authorization: `Basic ${credentials}` } },
     );
     data = res.data;
