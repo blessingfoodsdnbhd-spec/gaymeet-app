@@ -38,28 +38,61 @@ const AUTH_TTL_MS = 23 * 60 * 60 * 1000;
 
 async function authorize() {
   if (authCache && authCache.expiresAt > Date.now()) return authCache;
+  console.log('[b2] authorize() → b2_authorize_account');
   const credentials = Buffer.from(
     `${process.env.R2_ACCESS_KEY_ID}:${process.env.R2_SECRET_ACCESS_KEY}`,
   ).toString('base64');
-  const res = await axios.post(
-    'https://api.backblazeb2.com/b2api/v3/b2_authorize_account',
-    null,
-    { headers: { Authorization: `Basic ${credentials}` } },
-  );
-  const data = res.data;
+  let data;
+  try {
+    const res = await axios.post(
+      'https://api.backblazeb2.com/b2api/v3/b2_authorize_account',
+      null,
+      { headers: { Authorization: `Basic ${credentials}` } },
+    );
+    data = res.data;
+  } catch (e) {
+    console.error(
+      '[b2] b2_authorize_account FAILED:',
+      e?.response?.status,
+      e?.response?.data || e?.message,
+    );
+    throw new Error(
+      `b2_authorize_account ${e?.response?.status || ''}: ${
+        e?.response?.data?.message || e?.message
+      }`,
+    );
+  }
+
+  // v3 returns apiInfo.storageApi.{apiUrl,downloadUrl,bucketId}.
+  // Older clients sometimes saw the flat shape (apiUrl/downloadUrl at root).
   const storageApi = data.apiInfo?.storageApi ?? {};
   const apiUrl = storageApi.apiUrl || data.apiUrl;
   const downloadUrl = storageApi.downloadUrl || data.downloadUrl;
   let bucketId = storageApi.bucketId || null;
 
+  if (!apiUrl) {
+    console.error('[b2] no apiUrl in authorize response:', data);
+    throw new Error('b2_authorize_account returned no apiUrl');
+  }
+
   // If the key is not bucket-scoped, look up bucketId by name.
   if (!bucketId) {
-    const lookup = await axios.post(
-      `${apiUrl}/b2api/v3/b2_list_buckets`,
-      { accountId: data.accountId, bucketName: process.env.R2_BUCKET },
-      { headers: { Authorization: data.authorizationToken } },
-    );
-    bucketId = lookup.data.buckets?.[0]?.bucketId;
+    console.log('[b2] key is unscoped, looking up bucketId for', process.env.R2_BUCKET);
+    try {
+      const lookup = await axios.post(
+        `${apiUrl}/b2api/v3/b2_list_buckets`,
+        { accountId: data.accountId, bucketName: process.env.R2_BUCKET },
+        { headers: { Authorization: data.authorizationToken } },
+      );
+      bucketId = lookup.data.buckets?.[0]?.bucketId;
+    } catch (e) {
+      console.error(
+        '[b2] b2_list_buckets FAILED:',
+        e?.response?.status,
+        e?.response?.data || e?.message,
+      );
+      throw e;
+    }
     if (!bucketId) {
       throw new Error(`B2 bucket not found: ${process.env.R2_BUCKET}`);
     }
@@ -72,6 +105,7 @@ async function authorize() {
     bucketId,
     expiresAt: Date.now() + AUTH_TTL_MS,
   };
+  console.log('[b2] authorized — apiUrl:', apiUrl, 'bucketId:', bucketId);
   return authCache;
 }
 
@@ -84,30 +118,65 @@ async function uploadFile(buffer, key, contentType) {
   const auth = await authorize();
 
   // 1) Get a one-shot upload URL
-  const urlRes = await axios.post(
-    `${auth.apiUrl}/b2api/v3/b2_get_upload_url`,
-    { bucketId: auth.bucketId },
-    { headers: { Authorization: auth.authToken } },
-  );
-  const { uploadUrl, authorizationToken: uploadAuthToken } = urlRes.data;
+  let uploadUrl, uploadAuthToken;
+  try {
+    const urlRes = await axios.post(
+      `${auth.apiUrl}/b2api/v3/b2_get_upload_url`,
+      { bucketId: auth.bucketId },
+      { headers: { Authorization: auth.authToken } },
+    );
+    uploadUrl = urlRes.data.uploadUrl;
+    uploadAuthToken = urlRes.data.authorizationToken;
+  } catch (e) {
+    console.error(
+      '[b2] b2_get_upload_url FAILED:',
+      e?.response?.status,
+      e?.response?.data || e?.message,
+    );
+    // Invalidate auth cache in case the token is stale
+    authCache = null;
+    throw new Error(
+      `b2_get_upload_url ${e?.response?.status || ''}: ${
+        e?.response?.data?.message || e?.message
+      }`,
+    );
+  }
 
   // 2) SHA-1 of body (B2 requires this header)
   const sha1 = crypto.createHash('sha1').update(buffer).digest('hex');
 
-  // 3) PUSH file
-  await axios.post(uploadUrl, buffer, {
-    headers: {
-      Authorization: uploadAuthToken,
-      'X-Bz-File-Name': encodeURIComponent(key),
-      'Content-Type': contentType || 'image/jpeg',
-      'Content-Length': buffer.length,
-      'X-Bz-Content-Sha1': sha1,
-    },
-    maxBodyLength: Infinity,
-    maxContentLength: Infinity,
-  });
+  // 3) PUSH file — use transformRequest to keep Buffer raw (axios default
+  // tries to serialize objects). Passing identity is the canonical fix.
+  console.log('[b2] uploading', key, `(${buffer.length} bytes)`);
+  try {
+    await axios.post(uploadUrl, buffer, {
+      headers: {
+        Authorization: uploadAuthToken,
+        'X-Bz-File-Name': encodeURIComponent(key),
+        'Content-Type': contentType || 'image/jpeg',
+        'Content-Length': buffer.length,
+        'X-Bz-Content-Sha1': sha1,
+      },
+      transformRequest: [(d) => d],
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
+  } catch (e) {
+    console.error(
+      '[b2] upload POST FAILED:',
+      e?.response?.status,
+      e?.response?.data || e?.message,
+    );
+    throw new Error(
+      `b2 upload ${e?.response?.status || ''}: ${
+        e?.response?.data?.message || e?.message
+      }`,
+    );
+  }
 
-  return `${R2_PUBLIC_URL}/${key}`;
+  const publicUrl = `${R2_PUBLIC_URL}/${key}`;
+  console.log('[b2] upload OK →', publicUrl);
+  return publicUrl;
 }
 
 /**
