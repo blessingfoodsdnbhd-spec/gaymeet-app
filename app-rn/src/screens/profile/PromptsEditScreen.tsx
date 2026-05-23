@@ -7,6 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus, Trash2 } from 'lucide-react-native';
@@ -66,6 +67,11 @@ export function PromptsEditScreen() {
       const updated = await setPrompts(clean);
       setUser(updated);
       nav.goBack();
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

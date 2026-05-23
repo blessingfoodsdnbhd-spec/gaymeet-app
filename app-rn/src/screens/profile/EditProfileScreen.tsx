@@ -19,7 +19,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { Avatar } from '../../components/Avatar';
 import { useAuth } from '../../store/auth';
-import { patchMe, getMe } from '../../api/me';
+import { patchMe } from '../../api/me';
 import { uploadProfilePhoto } from '../../api/upload';
 
 export function EditProfileScreen() {
@@ -50,16 +50,21 @@ export function EditProfileScreen() {
     if (result.canceled) return;
     setUploadingAvatar(true);
     try {
-      await uploadProfilePhoto(result.assets[0].uri);
-      // Refresh full user from server so avatarUrl + photos[] are accurate
-      const fresh = await getMe();
-      setUser(fresh);
+      // Server response already has the fresh avatarUrl + photos[] —
+      // use it directly instead of a second getMe() round-trip that
+      // could fail and stall the UI update.
+      const result2 = await uploadProfilePhoto(result.assets[0].uri);
+      if (user) {
+        setUser({
+          ...user,
+          avatarUrl: result2.avatarUrl ?? user.avatarUrl,
+          photos: result2.photos ?? user.photos,
+        });
+      }
     } catch (e: any) {
-      // Show stage-aware detail so we can debug instead of swallowing the error.
       const status = e?.response?.status;
       const body = e?.response?.data;
       const detail = body?.error || body?.message || e?.message || 'unknown';
-      console.warn('avatar upload failed', { status, body, error: e });
       Alert.alert('上传失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setUploadingAvatar(false);
@@ -77,8 +82,11 @@ export function EditProfileScreen() {
       });
       setUser(updated);
       nav.goBack();
-    } catch {
-      // TODO: toast retry
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

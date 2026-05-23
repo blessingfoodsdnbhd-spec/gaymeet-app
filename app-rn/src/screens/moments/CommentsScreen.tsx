@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Send } from 'lucide-react-native';
@@ -53,6 +54,14 @@ export function CommentsScreen() {
         ...(prev ?? []),
         real,
       ]);
+    },
+    onError: (e: any, content) => {
+      // Restore the draft so the user can retry without retyping.
+      setDraft(content);
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     },
   });
 

@@ -57,8 +57,17 @@ export function showSafetyMenu({
               try {
                 await blockUser(userId);
                 onBlocked?.();
-              } catch {
-                Alert.alert('操作失败', '稍后再试。');
+              } catch (e: any) {
+                const status = e?.response?.status;
+                const detail =
+                  e?.response?.data?.error ||
+                  e?.response?.data?.message ||
+                  e?.message ||
+                  'unknown';
+                Alert.alert(
+                  '屏蔽失败',
+                  `${detail}${status ? ` (HTTP ${status})` : ''}`,
+                );
               }
             },
           },

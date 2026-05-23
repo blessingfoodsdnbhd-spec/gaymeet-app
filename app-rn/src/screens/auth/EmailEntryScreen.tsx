@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, Text, TextInput, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,8 +29,11 @@ export function EmailEntryScreen() {
     try {
       await sendOtp(email);
       nav.navigate('OTPCode', { email });
-    } catch (e) {
-      // TODO: show toast / inline error
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

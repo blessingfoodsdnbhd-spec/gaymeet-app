@@ -1,43 +1,72 @@
-import React, { useState } from 'react';
-import { SettingsShell, SettingsCard, ToggleRow, Divider } from './SettingsShell';
+import React, { useEffect, useState } from 'react';
+import { Linking, Pressable, Text, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
 
+/**
+ * Honest version: we don't yet have a server-side notification-preferences
+ * API, so the previous per-category toggles silently lied. Show the user
+ * what we actually know (system push status) and link straight to iOS
+ * Settings if they want to change it.
+ */
 export function NotificationSettings() {
-  const [match, setMatch] = useState(true);
-  const [message, setMessage] = useState(true);
-  const [like, setLike] = useState(true);
-  const [moment, setMoment] = useState(false);
+  const theme = useTheme();
+  const [status, setStatus] = useState<'granted' | 'denied' | 'undetermined' | 'unknown'>(
+    'unknown',
+  );
+
+  const refresh = async () => {
+    try {
+      const perm = await Notifications.getPermissionsAsync();
+      setStatus(
+        perm.granted
+          ? 'granted'
+          : perm.status === 'undetermined'
+          ? 'undetermined'
+          : 'denied',
+      );
+    } catch {
+      setStatus('unknown');
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const label =
+    status === 'granted'
+      ? '已开启'
+      : status === 'denied'
+      ? '已关闭'
+      : status === 'undetermined'
+      ? '未设置'
+      : '未知';
 
   return (
     <SettingsShell title="通知">
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        <ToggleRow
-          label="新密友"
-          value={match}
-          onValueChange={setMatch}
-          hint="有人和你互相喜欢时通知我"
-        />
+        <LinkRow label="系统推送" detail={label} />
         <Divider />
-        <ToggleRow
-          label="消息"
-          value={message}
-          onValueChange={setMessage}
-          hint="收到新消息时通知我"
-        />
-        <Divider />
-        <ToggleRow
-          label="点赞"
-          value={like}
-          onValueChange={setLike}
-          hint="有人对我的动态点赞时通知我"
-        />
-        <Divider />
-        <ToggleRow
-          label="动态推荐"
-          value={moment}
-          onValueChange={setMoment}
-          hint="同好发了新动态时推送给我"
+        <LinkRow
+          label="打开系统设置"
+          onPress={() => Linking.openSettings()}
         />
       </SettingsCard>
+
+      <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+        <Text
+          style={{
+            fontSize: 12,
+            color: theme.colors.muted,
+            lineHeight: 18,
+          }}
+        >
+          通知开关由 iOS 系统管理。如果你想停止接收 Meyou 的所有推送,
+          请前往「设置 → 通知 → Meyou」关闭。
+        </Text>
+      </View>
     </SettingsShell>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -42,6 +42,11 @@ export function TagsEditScreen() {
       const updated = await setInterests(Array.from(selected));
       setUser(updated);
       nav.goBack();
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

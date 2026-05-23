@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Alert } from 'react-native';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy } from '../../../api/me';
 import {
@@ -8,6 +9,13 @@ import {
   Divider,
   LinkRow,
 } from './SettingsShell';
+
+function reportFailure(e: any, label: string) {
+  const status = e?.response?.status;
+  const detail =
+    e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
+  Alert.alert(`${label}失败`, `${detail}${status ? ` (HTTP ${status})` : ''}`);
+}
 
 export function PrivacySettings() {
   const user = useAuth((s) => s.user);
@@ -26,8 +34,9 @@ export function PrivacySettings() {
     try {
       const updated = await setPrivacy({ nearbyVisible: v });
       setUser(updated);
-    } catch {
+    } catch (e) {
       setNearbyVisible(!v);
+      reportFailure(e, '设置');
     }
   };
   const flipDistance = async (v: boolean) => {
@@ -35,8 +44,9 @@ export function PrivacySettings() {
     try {
       const updated = await setPrivacy({ showDistance: v });
       setUser(updated);
-    } catch {
+    } catch (e) {
       setShowDistance(!v);
+      reportFailure(e, '设置');
     }
   };
 
