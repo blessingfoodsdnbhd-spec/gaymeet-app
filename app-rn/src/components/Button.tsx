@@ -156,7 +156,12 @@ function Content({
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       {leadingIcon}
-      <Text style={[labelStyle, { color }, textStyle]}>{label}</Text>
+      {/* numberOfLines={1} prevents a too-narrow button (e.g. a row of
+          equal-flex pills) from line-wrapping its label character-by-
+          character. Labels that overflow horizontally truncate with an
+          ellipsis instead — the caller's layout problem, not a visual
+          glitch. */}
+      <Text numberOfLines={1} style={[labelStyle, { color }, textStyle]}>{label}</Text>
       {trailingIcon}
     </View>
   );

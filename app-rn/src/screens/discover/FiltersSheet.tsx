@@ -82,6 +82,12 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
                   onPress={() => setRadius(r)}
                   small
                   fullWidth
+                  // Button's default `paddingHorizontal: 22` (44px total)
+                  // leaves only ~6px of inner Text width when 6 pills
+                  // share a single flex:1 row on a ~335px sheet. That
+                  // forced "10" / "25" / "All" to wrap character-by-
+                  // character. Override to a tight padding here.
+                  style={styles.radiusPill}
                 />
               </View>
             );
@@ -130,6 +136,9 @@ const styles = StyleSheet.create({
   radiusRow: {
     flexDirection: 'row',
     gap: 6,
+  },
+  radiusPill: {
+    paddingHorizontal: 4,
   },
   tagsRow: {
     flexDirection: 'row',
