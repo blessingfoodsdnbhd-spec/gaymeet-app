@@ -133,7 +133,15 @@ export function MomentsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
+        // flexGrow:0 alone wasn't enough — under Fabric in a column
+        // flex parent, the chip ScrollView's outer box was reported
+        // smaller than its actual content height. The next sibling
+        // (the FlatList) then painted over the chip row's bottom
+        // edge, which looked like the labels "字被遮一半" — the
+        // overlap was from below, not the text itself.
+        // flexShrink:0 prevents the outer box from being squeezed
+        // below the chips' real height.
+        style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}
       >
         {filters.map((f) => {
@@ -209,6 +217,17 @@ export function MomentsScreen() {
           )}
           refreshing={feedQ.isFetching && !feedQ.isLoading}
           onRefresh={() => feedQ.refetch()}
+          // flex:1 confines the list to the space left after TopBar +
+          // chip row, so its first item can't paint above its own box.
+          // Without this the FlatList's container collapsed to content
+          // height and the first MomentItem drew on top of the chip
+          // row's bottom edge.
+          style={{ flex: 1 }}
+          // iOS would otherwise auto-inset the scroll content for the
+          // parent SafeAreaView's top edge a SECOND time, pulling the
+          // first row up under the chip header. We've already handled
+          // the safe area at the SafeAreaView; don't double-count.
+          contentInsetAdjustmentBehavior="never"
           ListEmptyComponent={
             <View style={styles.centerFill}>
               <Text style={{ color: theme.colors.muted }}>{t('moments.empty')}</Text>
