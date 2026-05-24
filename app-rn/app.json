@@ -64,6 +64,14 @@
       [
         "react-native-iap",
         { "paymentProvider": "Play Store" }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
       ]
     ],
     "extra": {
