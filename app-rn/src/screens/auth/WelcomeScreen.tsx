@@ -72,11 +72,47 @@ export function WelcomeScreen() {
   const onGoogle = async () => {
     if (busy) return;
     setBusy('google');
+    // Build #12 diagnostics — every post-native-signin step accumulates a
+    // trail. If anything fails or returns silently, the alert shows the
+    // last step we reached. Strip once Google sign-in is confirmed stable.
+    const diag: string[] = ['onGoogle start'];
     try {
       const result = await signInWithGoogle();
+      diag.push(`native signIn: ${result ? 'idToken got' : 'null (wrapper alerted)'}`);
       if (!result) return; // cancelled or config missing — wrapper alerted
+
+      // Decode the idToken's `aud` claim for diagnostic visibility. JWT
+      // is three base64url segments; the middle one is the JSON payload.
+      try {
+        const mid = result.idToken.split('.')[1] ?? '';
+        // RN's atob exists on modern engines; fall back to a manual decode.
+        const padded = mid + '='.repeat((4 - (mid.length % 4)) % 4);
+        const b64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decoded = (globalThis as any).atob
+          ? (globalThis as any).atob(b64)
+          : Buffer.from(b64, 'base64').toString('binary');
+        const payload = JSON.parse(decoded);
+        const audShort = String(payload.aud ?? '').match(/-(\w{8})/)?.[1] ?? 'unknown';
+        diag.push(`aud=${audShort} iss=${payload.iss ?? '?'} exp=${payload.exp ?? '?'}`);
+      } catch (e: any) {
+        diag.push(`aud-decode failed: ${e?.message ?? String(e)}`);
+      }
+
+      diag.push('calling backend /auth/google');
       const res = await signInGoogle(result.idToken);
+      diag.push(
+        `backend ok: user=${res.user?.id?.slice(-6) ?? '?'} ` +
+        `interestsOnboardedAt=${res.user?.interestsOnboardedAt ?? 'null'}`,
+      );
+
       await signIn(res.accessToken, res.refreshToken, res.user);
+      diag.push('auth store signIn done');
+      // RootNavigator should now flip: if interestsOnboardedAt is null,
+      // needsTags becomes true and (thanks to the key-remount fix in
+      // RootNavigator) AuthStack remounts on InterestTagsPicker. If
+      // interestsOnboardedAt is set, signedIn flips true and we land in
+      // MainTabs. Either way navigation is reactive — no manual nav here.
     } catch (e: any) {
       const status = e?.response?.status;
       const body = e?.response?.data;
@@ -88,7 +124,7 @@ export function WelcomeScreen() {
         t('googleSignIn.loginFailed');
       Alert.alert(
         t('welcome.googleErrorTitle'),
-        `${message}${status ? ` (HTTP ${status})` : ''}`,
+        `${message}${status ? ` (HTTP ${status})` : ''}\n\nDIAG: ${diag.join(' → ')}`,
       );
     } finally {
       setBusy(null);
