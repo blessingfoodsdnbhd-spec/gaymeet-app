@@ -230,7 +230,9 @@ export function MomentsScreen() {
           contentInsetAdjustmentBehavior="never"
           ListEmptyComponent={
             <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted }}>{t('moments.empty')}</Text>
+              <Text style={{ color: theme.colors.muted, textAlign: 'center', lineHeight: 22 }}>
+                {t(`moments.emptyByFilter.${filter}`)}
+              </Text>
             </View>
           }
         />

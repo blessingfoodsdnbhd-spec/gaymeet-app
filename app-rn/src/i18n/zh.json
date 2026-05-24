@@ -73,6 +73,12 @@
       "interest": "兴趣"
     },
     "empty": "这里还没有动态",
+    "emptyByFilter": {
+      "all": "还没有动态 — 来发第一条吧",
+      "friends": "你关注的人还没发动态 — 去「发现」找同好",
+      "nearby": "附近还没有动态 — 换个范围或晚点再来看",
+      "interest": "没有匹配的兴趣动态 — 去「我 → 兴趣」补全标签,我们会按兴趣推荐"
+    },
     "loadFailed": "无法加载",
     "cameraPermTitle": "需要相机权限",
     "cameraPermBody": "在系统设置中允许 Meyou 访问相机。",
@@ -84,7 +90,11 @@
       "contentPlaceholder": "分享一些什么...",
       "sendFailed": "发送失败",
       "photoPermTitle": "需要照片权限",
-      "photoPermBody": "在系统设置中允许 Meyou 访问你的照片。"
+      "photoPermBody": "在系统设置中允许 Meyou 访问你的照片。",
+      "addPhotoTitle": "添加照片",
+      "takePhoto": "拍照",
+      "chooseFromLibrary": "从相册选择",
+      "cancel": "取消"
     },
     "comments": {
       "title": "评论",

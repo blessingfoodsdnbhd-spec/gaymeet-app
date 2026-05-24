@@ -73,6 +73,12 @@
       "interest": "Interests"
     },
     "empty": "No moments yet",
+    "emptyByFilter": {
+      "all": "No moments yet — be the first to post",
+      "friends": "No moments from people you follow yet — find people in Discover",
+      "nearby": "No moments nearby yet — try a wider area or check back later",
+      "interest": "No matching moments — pick interests in Profile → Interests so we can match you to a feed"
+    },
     "loadFailed": "Couldn't load",
     "cameraPermTitle": "Camera permission required",
     "cameraPermBody": "Allow Meyou to access the camera in Settings.",
@@ -84,7 +90,11 @@
       "contentPlaceholder": "Share something...",
       "sendFailed": "Send failed",
       "photoPermTitle": "Photo permission required",
-      "photoPermBody": "Allow Meyou to access your photos in Settings."
+      "photoPermBody": "Allow Meyou to access your photos in Settings.",
+      "addPhotoTitle": "Add photo",
+      "takePhoto": "Take photo",
+      "chooseFromLibrary": "Choose from Library",
+      "cancel": "Cancel"
     },
     "comments": {
       "title": "Comments",
