@@ -65,6 +65,7 @@
         "react-native-iap",
         { "paymentProvider": "Play Store" }
       ],
+      "./plugins/withIapAndroidXFix.js",
       [
         "expo-build-properties",
         {
