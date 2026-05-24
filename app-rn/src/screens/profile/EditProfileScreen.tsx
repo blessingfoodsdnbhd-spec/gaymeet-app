@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
@@ -24,6 +25,7 @@ import { uploadProfilePhoto } from '../../api/upload';
 
 export function EditProfileScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
@@ -38,7 +40,7 @@ export function EditProfileScreen() {
     if (uploadingAvatar) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要照片权限', '在系统设置中允许 Meyou 访问你的照片。');
+      Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -65,7 +67,7 @@ export function EditProfileScreen() {
       const status = e?.response?.status;
       const body = e?.response?.data;
       const detail = body?.error || body?.message || e?.message || 'unknown';
-      Alert.alert('上传失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('profile.edit.uploadFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setUploadingAvatar(false);
     }
@@ -86,7 +88,7 @@ export function EditProfileScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('profile.edit.saveFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }
@@ -106,7 +108,7 @@ export function EditProfileScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '600', color: theme.colors.text }}>
-          编辑资料
+          {t('profile.edit.title')}
         </Text>
       </View>
 
@@ -143,28 +145,28 @@ export function EditProfileScreen() {
             </Pressable>
             <Pressable onPress={pickAvatar} disabled={uploadingAvatar} style={{ marginTop: 12 }}>
               <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '500' }}>
-                更换头像
+                {t('profile.edit.changeAvatar')}
               </Text>
             </Pressable>
           </View>
 
-          <Label>昵称</Label>
+          <Label>{t('profile.edit.nickname')}</Label>
           <Field value={nickname} onChangeText={setNickname} maxLength={30} />
 
-          <Label>简介</Label>
+          <Label>{t('profile.edit.bio')}</Label>
           <Field
             value={bio}
             onChangeText={setBio}
             multiline
             maxLength={140}
             minHeight={88}
-            placeholder="一两句介绍自己"
+            placeholder={t('profile.edit.bioPlaceholder')}
           />
           <Text style={{ marginTop: 4, fontSize: 11, color: theme.colors.muted, textAlign: 'right' }}>
             {bio.length} / 140
           </Text>
 
-          <Label>年龄</Label>
+          <Label>{t('profile.edit.age')}</Label>
           <Field
             value={age}
             onChangeText={(v) => setAge(v.replace(/\D/g, '').slice(0, 2))}
@@ -174,7 +176,7 @@ export function EditProfileScreen() {
         </ScrollView>
 
         <View style={{ padding: 20 }}>
-          <Button label="保存" loading={busy} onPress={onSave} fullWidth />
+          <Button label={t('common.save')} loading={busy} onPress={onSave} fullWidth />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -35,11 +35,11 @@ export function WelcomeScreen() {
     } catch (e: any) {
       // ERR_CANCELED → user dismissed the sheet; stay silent.
       if (e?.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('登录失败', '请重试');
+      Alert.alert(t('welcome.appleFailedTitle'), t('welcome.appleFailedRetry'));
       return;
     }
     if (!credential.identityToken) {
-      Alert.alert('登录失败', 'Apple 没有返回有效凭证,请重试');
+      Alert.alert(t('welcome.appleFailedTitle'), t('welcome.appleNoCredential'));
       return;
     }
     setBusy('apple');
@@ -63,7 +63,7 @@ export function WelcomeScreen() {
         e?.message ||
         'unknown';
       console.warn('apple sign-in failed', { status, body, error: e });
-      Alert.alert('Apple 登录失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('welcome.appleErrorTitle'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(null);
     }
@@ -85,9 +85,9 @@ export function WelcomeScreen() {
         body?.message ||
         e?.userFriendlyMessage ||
         e?.message ||
-        '登录失败,稍后再试';
+        t('googleSignIn.loginFailed');
       Alert.alert(
-        'Google 登录',
+        t('welcome.googleErrorTitle'),
         `${message}${status ? ` (HTTP ${status})` : ''}`,
       );
     } finally {
@@ -117,7 +117,7 @@ export function WelcomeScreen() {
               fontWeight: '500',
             }}
           >
-            密 友
+            {t('welcome.wordmarkSubtitle')}
           </Text>
         </View>
 

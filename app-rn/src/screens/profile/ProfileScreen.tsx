@@ -109,11 +109,23 @@ export function ProfileScreen() {
           />
         </LinearGradient>
 
-        {/* Stats */}
+        {/* Stats — all three are tappable, each opens its own list screen. */}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-          <Stat label={t('profile.stats.matches')} value={fmt(stats?.matches)} />
-          <Stat label={t('profile.stats.friends')} value={fmt(stats?.following)} />
-          <Stat label={t('profile.stats.moments')} value={fmt(stats?.moments)} />
+          <Stat
+            label={t('profile.stats.matches')}
+            value={fmt(stats?.matches)}
+            onPress={() => nav.navigate('MatchesList')}
+          />
+          <Stat
+            label={t('profile.stats.friends')}
+            value={fmt(stats?.following)}
+            onPress={() => nav.navigate('FriendsList')}
+          />
+          <Stat
+            label={t('profile.stats.moments')}
+            value={fmt(stats?.moments)}
+            onPress={() => nav.navigate('MyMoments')}
+          />
         </View>
 
         {/* My interests */}
@@ -227,11 +239,21 @@ export function ProfileScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string | number;
+  onPress?: () => void;
+}) {
   const theme = useTheme();
   return (
-    <View
-      style={{
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => ({
         flex: 1,
         backgroundColor: theme.colors.surface,
         borderRadius: theme.radius.l,
@@ -239,11 +261,12 @@ function Stat({ label, value }: { label: string; value: string | number }) {
         borderColor: theme.colors.line,
         paddingVertical: 14,
         alignItems: 'center',
-      }}
+        opacity: pressed && onPress ? 0.7 : 1,
+      })}
     >
       <Text style={{ fontSize: 20, fontWeight: '700', color: theme.colors.text }}>{value}</Text>
       <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 4 }}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 

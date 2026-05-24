@@ -100,7 +100,7 @@ export function ChatsListScreen() {
           <TextInput
             value={q}
             onChangeText={setQ}
-            placeholder="搜索"
+            placeholder={t('chats.searchPlaceholder')}
             placeholderTextColor={theme.colors.muted}
             style={{ flex: 1, fontSize: 14, color: theme.colors.text, padding: 0 }}
           />
@@ -158,7 +158,7 @@ export function ChatsListScreen() {
           ListEmptyComponent={
             <View style={styles.centerFill}>
               <Text style={{ color: theme.colors.muted, fontSize: 14 }}>
-                还没有消息 — 去发现 tab 找同频的人吧
+                {t('chats.empty')}
               </Text>
             </View>
           }
@@ -176,6 +176,7 @@ function NewMatchesStrip({
   onTap: (t: ChatThread) => void;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={{ paddingTop: 8, paddingBottom: 12 }}>
       <Text
@@ -188,7 +189,7 @@ function NewMatchesStrip({
           marginBottom: 10,
         }}
       >
-        新密友 · {threads.length}
+        {t('chats.newMatchesHeader', { n: threads.length })}
       </Text>
       <ScrollView
         horizontal
@@ -234,6 +235,7 @@ function ThreadRow({
   onPress: () => void;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const time = thread.lastMessageAt
     ? sameDay(thread.lastMessageAt)
       ? hhmm(thread.lastMessageAt)
@@ -285,7 +287,7 @@ function ThreadRow({
             marginTop: 4,
           }}
         >
-          {thread.lastMessage || '说声你好吧 →'}
+          {thread.lastMessage || t('chats.sayHi')}
         </Text>
       </View>
       {thread.unreadCount > 0 && (

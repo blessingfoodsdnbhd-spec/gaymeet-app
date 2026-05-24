@@ -60,12 +60,15 @@ export function DiscoverScreen() {
         const monthly = body?.pricing?.monthly?.price ?? 39.9;
         const annual = body?.pricing?.annual?.price ?? 399.9;
         Alert.alert(
-          'Premium 会员专属',
-          `给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM ${monthly}\n年费 RM ${annual}\n(年费约省 2 个月)`,
-          [{ text: '好' }],
+          t('discover.premiumTitle'),
+          t('discover.premiumBody', { monthly, annual }),
+          [{ text: t('discover.premiumOk') }],
         );
       } else {
-        Alert.alert('打开失败', body?.error || e?.message || '稍后再试');
+        Alert.alert(
+          t('discover.openFailedTitle'),
+          body?.error || e?.message || t('discover.openFailedFallback'),
+        );
       }
     }
   };
@@ -78,9 +81,14 @@ export function DiscoverScreen() {
     staleTime: 30_000,
   });
 
+  // Nearby query — keyed on the same filter dimensions as cardsQ so that
+  // applying a new radius or interest set in the FiltersSheet actually
+  // triggers a refetch. (Previously the key was static ['discover','nearby']
+  // and the queryFn hardcoded 10km, so Filters silently did nothing on the
+  // Nearby tab — only Cards reflected filter changes.)
   const nearbyQ = useQuery({
-    queryKey: ['discover', 'nearby'],
-    queryFn: () => getNearby(10),
+    queryKey: ['discover', 'nearby', filters.radiusKm ?? null, filters.interests ?? null],
+    queryFn: () => getNearby(filters.radiusKm ?? 10, filters),
     enabled: mode === 'nearby',
     staleTime: 60_000,
   });
@@ -125,7 +133,7 @@ export function DiscoverScreen() {
           const status = e?.response?.status;
           const detail =
             e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-          Alert.alert('操作失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+          Alert.alert(t('discover.swipeFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
         },
       },
     );
@@ -272,9 +280,9 @@ function CardsBody({
     return (
       <View style={styles.centerFill}>
         <Text style={{ color: theme.colors.muted, fontSize: 14, marginBottom: 12 }}>
-          网络出错,稍后重试
+          {t('discover.networkError')}
         </Text>
-        <Button label="重试" onPress={() => cardsQ.refetch()} variant="soft" />
+        <Button label={t('common.retry')} onPress={() => cardsQ.refetch()} variant="soft" />
       </View>
     );
   }
@@ -345,6 +353,7 @@ function NearbyBody({
   onOpen: (u: DiscoverCardUser) => void;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   if (nearbyQ.isLoading) {
     return (
       <View style={styles.centerFill}>
@@ -355,8 +364,8 @@ function NearbyBody({
   if (nearbyQ.isError) {
     return (
       <View style={styles.centerFill}>
-        <Text style={{ color: theme.colors.muted, fontSize: 14 }}>无法加载附近</Text>
-        <Button label="重试" onPress={() => nearbyQ.refetch()} variant="soft" style={{ marginTop: 12 }} />
+        <Text style={{ color: theme.colors.muted, fontSize: 14 }}>{t('discover.loadNearbyFailed')}</Text>
+        <Button label={t('common.retry')} onPress={() => nearbyQ.refetch()} variant="soft" style={{ marginTop: 12 }} />
       </View>
     );
   }

@@ -12,9 +12,9 @@ export function AccountSettings() {
   const [deleting, setDeleting] = useState(false);
 
   const confirmSignOut = () => {
-    Alert.alert('退出登录', '确定要退出吗?', [
-      { text: '取消', style: 'cancel' },
-      { text: '退出', style: 'destructive', onPress: () => signOut() },
+    Alert.alert(t('accountSettings.signOutConfirmTitle'), t('accountSettings.signOutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('accountSettings.signOutButton'), style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
@@ -22,21 +22,21 @@ export function AccountSettings() {
   const confirmDelete = () => {
     if (deleting) return;
     Alert.alert(
-      '删除账号',
-      '所有聊天、动态、匹配将被永久删除。这个操作无法撤销。',
+      t('accountSettings.deleteStep1Title'),
+      t('accountSettings.deleteStep1Body'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '继续',
+          text: t('accountSettings.deleteStep1Continue'),
           style: 'destructive',
           onPress: () =>
             Alert.alert(
-              '再次确认',
-              '最终确认 — 你的账号和所有数据将立即被删除。',
+              t('accountSettings.deleteStep2Title'),
+              t('accountSettings.deleteStep2Body'),
               [
-                { text: '取消', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                  text: '永久删除',
+                  text: t('accountSettings.deleteStep2Confirm'),
                   style: 'destructive',
                   onPress: async () => {
                     setDeleting(true);
@@ -52,7 +52,7 @@ export function AccountSettings() {
                         e?.message ||
                         'unknown';
                       Alert.alert(
-                        '删除失败',
+                        t('accountSettings.deleteFailed'),
                         `${detail}${status ? ` (HTTP ${status})` : ''}`,
                       );
                     } finally {
@@ -70,14 +70,14 @@ export function AccountSettings() {
   return (
     <SettingsShell title={t('accountSettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        <LinkRow label="邮箱" detail={user?.email ?? '—'} />
+        <LinkRow label={t('accountSettings.emailLabel')} detail={user?.email ?? '—'} />
       </SettingsCard>
 
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        <LinkRow label="退出登录" onPress={confirmSignOut} />
+        <LinkRow label={t('accountSettings.signOut')} onPress={confirmSignOut} />
         <Divider />
         <LinkRow
-          label={deleting ? '正在删除…' : '删除账号'}
+          label={deleting ? t('accountSettings.deleting') : t('accountSettings.deleteAccount')}
           destructive
           onPress={confirmDelete}
         />

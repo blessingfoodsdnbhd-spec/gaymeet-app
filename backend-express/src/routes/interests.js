@@ -101,14 +101,31 @@ router.patch('/privacy', auth, async (req, res, next) => {
 // ── GET /api/me/stats ────────────────────────────────────────────────────────
 // Powers the three counters on the profile screen: 同频 (matched users),
 // 好友 (people I follow), 动态 (moments I've posted).
+//
+// The matches count must agree with what the MatchesListScreen actually
+// renders (which calls GET /api/conversations). That endpoint:
+//   1. filters Match by { users: me, isActive: true }
+//   2. drops entries where the OTHER user has been deleted (populate → null)
+//   3. the client further filters to source === 'match'
+// A naive Match.countDocuments({ users: me, isActive: true }) inflates the
+// number — it includes source='dm' rows AND rows whose other user has been
+// deleted. Mirror the same join + filter here so the stat matches the list.
 router.get('/stats', auth, async (req, res, next) => {
   try {
     const uid = req.user._id;
-    const [matches, following, moments] = await Promise.all([
-      Match.countDocuments({ users: uid, isActive: true }),
+    const [matchDocs, following, moments] = await Promise.all([
+      Match.find({ users: uid, isActive: true, source: 'match' })
+        .select('users source')
+        .populate('users', '_id')
+        .lean(),
       Follow.countDocuments({ follower: uid }),
       Moment.countDocuments({ user: uid, isActive: true }),
     ]);
+    const matches = matchDocs.filter((m) => {
+      const validUsers = (m.users || []).filter(Boolean);
+      const other = validUsers.find((u) => u._id.toString() !== uid.toString());
+      return !!other;
+    }).length;
     ok(res, { matches, following, moments });
   } catch (e) {
     next(e);

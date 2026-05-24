@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, ImagePlus, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
@@ -27,6 +28,7 @@ const MAX_CONTENT = 500;
 
 export function ComposerScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
@@ -76,7 +78,7 @@ export function ComposerScreen() {
       const detail = body?.error || body?.message || e?.message || 'unknown';
       console.warn('moments publish failed', { stage, status, body, error: e });
       Alert.alert(
-        '发送失败',
+        t('moments.composer.sendFailed'),
         `[${stage}] ${detail}${status ? ` (HTTP ${status})` : ''}`,
       );
     },
@@ -85,7 +87,7 @@ export function ComposerScreen() {
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要照片权限', '在系统设置中允许 Meyou 访问你的照片。');
+      Alert.alert(t('moments.composer.photoPermTitle'), t('moments.composer.photoPermBody'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -121,7 +123,7 @@ export function ComposerScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-          新动态
+          {t('moments.composer.headerTitle')}
         </Text>
         <Pressable
           onPress={() => canSubmit && submitMut.mutate()}
@@ -135,7 +137,7 @@ export function ComposerScreen() {
               fontWeight: '600',
             }}
           >
-            发布
+            {t('moments.composer.publish')}
           </Text>
         </Pressable>
       </View>
@@ -148,7 +150,7 @@ export function ComposerScreen() {
           <TextInput
             value={content}
             onChangeText={setContent}
-            placeholder="分享一些什么..."
+            placeholder={t('moments.composer.contentPlaceholder')}
             placeholderTextColor={theme.colors.muted}
             multiline
             maxLength={MAX_CONTENT}
@@ -205,7 +207,7 @@ export function ComposerScreen() {
 
         <View style={{ padding: 20 }}>
           <Button
-            label="发布动态"
+            label={t('moments.composer.publishCta')}
             onPress={() => submitMut.mutate()}
             disabled={!canSubmit}
             loading={submitMut.isPending}

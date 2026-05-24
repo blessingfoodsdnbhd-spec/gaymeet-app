@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Check, ChevronLeft, Crown, Sparkles } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
@@ -22,18 +23,19 @@ import { useAuth } from '../../store/auth';
 import { getPricing, IAP_SKUS } from '../../api/subscription';
 import { purchaseSubscription } from '../../utils/iap';
 
-const BENEFITS = [
-  '给还没 match 的人直接发消息',
-  '看谁喜欢了你',
-  '无限滑卡片',
-  '"已读"回执',
-  '加大 Boost 曝光',
-];
+const BENEFIT_KEYS = [
+  'directIntro',
+  'seeLikes',
+  'unlimitedSwipes',
+  'readReceipts',
+  'biggerBoost',
+] as const;
 
 type Plan = 'monthly' | 'annual';
 
 export function PremiumScreen() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const nav = useNavigation();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
@@ -62,14 +64,14 @@ export function PremiumScreen() {
       const updated = await purchaseSubscription(sku);
       if (updated) {
         setUser({ ...(user as any), ...updated });
-        Alert.alert('订阅成功', '欢迎成为 Premium 会员!');
+        Alert.alert(t('premium.subscribeSuccessTitle'), t('premium.subscribeSuccessBody'));
         nav.goBack();
       }
     } catch (e: any) {
-      const message = e?.message || '订阅失败,稍后再试';
+      const message = e?.message || t('premium.subscribeFailedBody');
       // user cancel — silent
       if (!/cancel/i.test(String(message))) {
-        Alert.alert('订阅失败', message);
+        Alert.alert(t('premium.subscribeFailedTitle'), message);
       }
     } finally {
       setBusy(false);
@@ -94,7 +96,7 @@ export function PremiumScreen() {
         >
           <Crown size={36} color="#FFFFFF" strokeWidth={1.6} />
           <Text style={styles.heroTitle}>Meyou Premium</Text>
-          <Text style={styles.heroTagline}>解锁全部功能,找到真同好</Text>
+          <Text style={styles.heroTagline}>{t('premium.heroTagline')}</Text>
         </LinearGradient>
 
         {isActive && expiresIso && (
@@ -103,10 +105,14 @@ export function PremiumScreen() {
               <Sparkles size={18} color={theme.colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
-                  你已是 Premium 会员
+                  {t('premium.active')}
                 </Text>
                 <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 2 }}>
-                  到期: {new Date(expiresIso).toLocaleDateString('zh-CN')}
+                  {t('premium.expiresAt', {
+                    date: new Date(expiresIso).toLocaleDateString(
+                      i18n.language.startsWith('zh') ? 'zh-CN' : 'en-US',
+                    ),
+                  })}
                 </Text>
               </View>
             </View>
@@ -114,9 +120,9 @@ export function PremiumScreen() {
         )}
 
         <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
-          <Text style={[styles.section, { color: theme.colors.muted }]}>专属权益</Text>
-          {BENEFITS.map((b) => (
-            <View key={b} style={styles.benefitRow}>
+          <Text style={[styles.section, { color: theme.colors.muted }]}>{t('premium.benefitsSection')}</Text>
+          {BENEFIT_KEYS.map((k) => (
+            <View key={k} style={styles.benefitRow}>
               <View
                 style={{
                   width: 22,
@@ -129,13 +135,15 @@ export function PremiumScreen() {
               >
                 <Check size={14} color={theme.colors.primaryDeep} strokeWidth={2.4} />
               </View>
-              <Text style={{ fontSize: 15, color: theme.colors.text, flex: 1 }}>{b}</Text>
+              <Text style={{ fontSize: 15, color: theme.colors.text, flex: 1 }}>
+                {t(`premium.benefits.${k}`)}
+              </Text>
             </View>
           ))}
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
-          <Text style={[styles.section, { color: theme.colors.muted }]}>选择套餐</Text>
+          <Text style={[styles.section, { color: theme.colors.muted }]}>{t('premium.plansSection')}</Text>
           {pricingQ.isLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
           ) : (
@@ -143,8 +151,8 @@ export function PremiumScreen() {
               <PlanCard
                 plan="annual"
                 price={pricing?.annual.price ?? 399.9}
-                period="年"
-                badge="省 2 个月"
+                period={t('premium.perYear')}
+                badge={t('premium.saveTwoMonths')}
                 monthlyEquivalent={Math.round(((pricing?.annual.price ?? 399.9) / 12) * 10) / 10}
                 selected={selected === 'annual'}
                 onSelect={() => setSelected('annual')}
@@ -152,7 +160,7 @@ export function PremiumScreen() {
               <PlanCard
                 plan="monthly"
                 price={pricing?.monthly.price ?? 39.9}
-                period="月"
+                period={t('premium.perMonth')}
                 selected={selected === 'monthly'}
                 onSelect={() => setSelected('monthly')}
               />
@@ -170,7 +178,7 @@ export function PremiumScreen() {
             lineHeight: 16,
           }}
         >
-          订阅会自动续费,可在 App Store → Apple ID → 订阅 取消。续费会在到期前 24 小时扣款。
+          {t('premium.disclaimer')}
         </Text>
       </ScrollView>
 
@@ -178,8 +186,8 @@ export function PremiumScreen() {
         <Button
           label={
             selected === 'annual'
-              ? `年费 RM ${pricing?.annual.price ?? 399.9}`
-              : `月费 RM ${pricing?.monthly.price ?? 39.9}`
+              ? t('premium.ctaAnnual', { price: pricing?.annual.price ?? 399.9 })
+              : t('premium.ctaMonthly', { price: pricing?.monthly.price ?? 39.9 })
           }
           onPress={onSubscribe}
           loading={busy}
@@ -208,6 +216,7 @@ function PlanCard({
   onSelect: () => void;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onSelect}
@@ -243,7 +252,7 @@ function PlanCard({
       </View>
       {monthlyEquivalent && (
         <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 6 }}>
-          ≈ RM {monthlyEquivalent} / 月
+          {t('premium.monthlyEquivalent', { n: monthlyEquivalent })}
         </Text>
       )}
     </Pressable>

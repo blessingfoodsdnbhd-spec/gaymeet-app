@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
@@ -17,6 +18,7 @@ import { setInterests } from '../../api/me';
 
 export function TagsEditScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
@@ -46,7 +48,7 @@ export function TagsEditScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('profile.tagsEdit.saveFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }
@@ -66,13 +68,13 @@ export function TagsEditScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '600', color: theme.colors.text }}>
-          兴趣
+          {t('profile.tagsEdit.title')}
         </Text>
       </View>
 
       <View style={{ paddingHorizontal: 20 }}>
         <Text style={{ fontSize: 14, color: theme.colors.text2, lineHeight: 21 }}>
-          至少选 {MIN_ONBOARDING_TAGS} 个,你会被推荐给同好。
+          {t('profile.tagsEdit.subtitle', { n: MIN_ONBOARDING_TAGS })}
         </Text>
       </View>
 
@@ -97,7 +99,7 @@ export function TagsEditScreen() {
 
       <View style={{ padding: 20 }}>
         <Button
-          label={`保存 · ${selected.size} 个`}
+          label={t('profile.tagsEdit.saveWithCount', { n: selected.size })}
           disabled={!ready}
           loading={busy}
           onPress={onSave}

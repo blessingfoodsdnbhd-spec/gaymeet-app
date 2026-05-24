@@ -38,8 +38,23 @@ export const getMoments = (filter: MomentsFilter = 'all', page = 1) =>
     }),
   );
 
+/** Fetch moments authored by a specific user. Backend route uses the same
+ *  GET /moments handler with a userId query param — see moments.js. */
+export const getUserMoments = (userId: string, page = 1) =>
+  unwrap<Moment[]>(
+    api.get('/moments', { params: { userId, page, limit: 20 } }),
+  );
+
 export const toggleLike = (id: string) =>
   unwrap<{ likeCount: number; isLiked: boolean }>(api.post(`/moments/${id}/like`));
+
+/**
+ * Soft-delete a moment (the author's own). Backend sets isActive=false;
+ * GET single returns 404 afterwards and the feeds drop the row. Required
+ * by Apple guideline 1.2 — user must be able to delete their own UGC.
+ */
+export const deleteMoment = (id: string) =>
+  unwrap<{ success: true }>(api.delete(`/moments/${id}`));
 
 export const postMoment = (body: {
   content: string;

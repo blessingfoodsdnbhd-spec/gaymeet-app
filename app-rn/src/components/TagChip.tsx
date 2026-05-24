@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { InterestTag } from '../data/interestTags';
 
@@ -16,6 +17,8 @@ interface Props {
  */
 export function TagChip({ tag, selected, shared, onPress }: Props) {
   const theme = useTheme();
+  const { i18n } = useTranslation();
+  const label = i18n.language?.startsWith('zh') ? tag.zh : tag.en;
 
   const bg = selected
     ? theme.colors.primary
@@ -47,7 +50,7 @@ export function TagChip({ tag, selected, shared, onPress }: Props) {
       })}
     >
       <Text style={{ fontSize: 15 }}>{tag.emoji}</Text>
-      <Text style={{ fontSize: 14, fontWeight: '500', color: fg }}>{tag.zh}</Text>
+      <Text style={{ fontSize: 14, fontWeight: '500', color: fg }}>{label}</Text>
     </Pressable>
   );
 }

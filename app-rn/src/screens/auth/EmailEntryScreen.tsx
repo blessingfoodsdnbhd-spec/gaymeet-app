@@ -33,7 +33,7 @@ export function EmailEntryScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('email.sendFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }

@@ -65,6 +65,22 @@ export interface MyStats {
 }
 export const getMyStats = () => unwrap<MyStats>(api.get('/me/stats'));
 
+/** A user as returned by /api/users/:id/following — slim profile shape
+ *  with the relationship flags needed to render a list row. */
+export interface FollowedUser {
+  _id: string;
+  nickname: string;
+  avatarUrl?: string | null;
+  isOnline?: boolean;
+  isPremium?: boolean;
+  isVerified?: boolean;
+  isFollowing?: boolean;
+  isSelf?: boolean;
+  level?: number;
+}
+export const getFollowing = (userId: string) =>
+  unwrap<FollowedUser[]>(api.get(`/users/${userId}/following`));
+
 /** Permanently delete the current account. Backend wipes matches, messages,
  * moments, and the user document itself. JWT alone is required — no
  * password — because most users sign in via OTP / Apple / Google. */

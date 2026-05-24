@@ -55,7 +55,7 @@ export function MomentsScreen() {
     if (capturing) return;
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要相机权限', '在系统设置中允许 Meyou 访问相机。');
+      Alert.alert(t('moments.cameraPermTitle'), t('moments.cameraPermBody'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -73,7 +73,7 @@ export function MomentsScreen() {
       const body = e?.response?.data;
       const detail = body?.error || body?.message || e?.message || 'unknown';
       console.warn('camera quick-post failed', { status, body, error: e });
-      Alert.alert('发布失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('moments.publishFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setCapturing(false);
     }
@@ -133,8 +133,16 @@ export function MomentsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+        // flexGrow:0 alone wasn't enough — under Fabric in a column
+        // flex parent, the chip ScrollView's outer box was reported
+        // smaller than its actual content height. The next sibling
+        // (the FlatList) then painted over the chip row's bottom
+        // edge, which looked like the labels "字被遮一半" — the
+        // overlap was from below, not the text itself.
+        // flexShrink:0 prevents the outer box from being squeezed
+        // below the chips' real height.
+        style={{ flexGrow: 0, flexShrink: 0 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}
       >
         {filters.map((f) => {
           const active = filter === f.id;
@@ -143,20 +151,36 @@ export function MomentsScreen() {
               key={f.id}
               onPress={() => setFilter(f.id)}
               style={{
-                paddingHorizontal: 14,
-                paddingVertical: 7,
+                // Bigger padding both axes → the borderRadius:999 pill
+                // looks fully rounded instead of capsule-flat, and the
+                // chip has room around the larger label.
+                paddingHorizontal: 18,
+                paddingVertical: 10,
                 borderRadius: 999,
                 backgroundColor: active ? theme.colors.text : theme.colors.surface,
                 // Keep borderWidth identical between states so the chip's
                 // outer dimensions don't jump by 2px on toggle (which made
-                // "我的同好" look slightly off-vertical vs its neighbours).
+                // labels look slightly off-vertical vs their neighbours).
                 borderWidth: 1,
                 borderColor: active ? theme.colors.text : theme.colors.line,
               }}
             >
               <Text
+                numberOfLines={1}
                 style={{
-                  fontSize: 13,
+                  fontSize: 15,
+                  // Explicit lineHeight ≥ 1.3× fontSize. Under
+                  // Fabric/Bridgeless (newArchEnabled: true), a
+                  // <Text numberOfLines={1}> with intrinsic line-height
+                  // can be measured at height ≈ fontSize, which then
+                  // clips CJK glyphs (全部 / 同好 / 附近 / 兴趣) ~2-3px
+                  // top and bottom — the "字被遮一半" report after the
+                  // fontSize 13→15 bump. Pinning lineHeight to 20
+                  // reserves the right line-box height so glyphs render
+                  // in full. (Opposite of the MomentItem caption fix
+                  // in 06e904e where multi-line CJK needed lineHeight
+                  // DROPPED — different RN measurement path.)
+                  lineHeight: 20,
                   fontWeight: '600',
                   // Use primary text colour for inactive chips so the
                   // labels stay legible — text2 (#605F70) was too washed
@@ -193,6 +217,17 @@ export function MomentsScreen() {
           )}
           refreshing={feedQ.isFetching && !feedQ.isLoading}
           onRefresh={() => feedQ.refetch()}
+          // flex:1 confines the list to the space left after TopBar +
+          // chip row, so its first item can't paint above its own box.
+          // Without this the FlatList's container collapsed to content
+          // height and the first MomentItem drew on top of the chip
+          // row's bottom edge.
+          style={{ flex: 1 }}
+          // iOS would otherwise auto-inset the scroll content for the
+          // parent SafeAreaView's top edge a SECOND time, pulling the
+          // first row up under the chip header. We've already handled
+          // the safe area at the SafeAreaView; don't double-count.
+          contentInsetAdjustmentBehavior="never"
           ListEmptyComponent={
             <View style={styles.centerFill}>
               <Text style={{ color: theme.colors.muted }}>{t('moments.empty')}</Text>

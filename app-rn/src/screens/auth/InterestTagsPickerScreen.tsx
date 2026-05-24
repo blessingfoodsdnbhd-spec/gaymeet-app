@@ -46,7 +46,7 @@ export function InterestTagsPickerScreen() {
       const detail = body?.error || body?.message || e?.message || 'unknown';
       console.warn('setInterests failed', { status, body, error: e });
       Alert.alert(
-        '保存失败',
+        t('tags.saveFailed'),
         `${detail}${status ? ` (HTTP ${status})` : ''}`,
       );
     } finally {

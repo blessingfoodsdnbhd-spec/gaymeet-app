@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -16,6 +17,7 @@ interface Props {
 
 export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const cols = 4;
   const gap = 0; // edge-to-edge tiles
@@ -54,7 +56,7 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
           <View />
         )}
         <Text style={{ fontSize: 12, color: theme.colors.muted }}>
-          {users.length} 人在附近
+          {t('nearby.peopleCount', { n: users.length })}
         </Text>
       </View>
 
@@ -80,7 +82,7 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
         </View>
         <View style={{ alignItems: 'center', paddingTop: 18, paddingBottom: 8 }}>
           <Text style={{ fontSize: 11.5, color: theme.colors.muted }}>
-            仅显示开启了"附近"的同好
+            {t('nearby.footnote')}
           </Text>
         </View>
       </ScrollView>

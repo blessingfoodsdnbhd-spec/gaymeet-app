@@ -4,18 +4,26 @@
     "continueApple": "Continue with Apple",
     "continueGoogle": "Continue with Google",
     "continueEmail": "Continue with Email",
-    "disclaimer": "By continuing you agree to Terms & Privacy Policy"
+    "disclaimer": "By continuing you agree to Terms & Privacy Policy",
+    "wordmarkSubtitle": "密 友",
+    "appleFailedTitle": "Login failed",
+    "appleFailedRetry": "Please retry",
+    "appleNoCredential": "Apple didn't return a valid credential, please retry",
+    "appleErrorTitle": "Apple Sign-In failed",
+    "googleErrorTitle": "Google Sign-In"
   },
   "email": {
     "title": "What's your email?",
     "subtitle": "We'll send you a 6-digit verification code.",
     "placeholder": "you@example.com",
-    "cta": "Send code"
+    "cta": "Send code",
+    "sendFailed": "Send failed"
   },
   "otp": {
     "title": "Enter the code",
     "resend": "Resend in {{seconds}}s",
-    "resendCta": "Resend code"
+    "resendCta": "Resend code",
+    "resendFailed": "Resend failed"
   },
   "tags": {
     "title": "What are you into?",
@@ -23,7 +31,8 @@
     "stepLabel": "Step 2 / 2",
     "ctaPickMore": "{{n}} selected · pick {{more}} more",
     "ctaReady": "{{n}} selected · ready!",
-    "enter": "Enter Meyou"
+    "enter": "Enter Meyou",
+    "saveFailed": "Save failed"
   },
   "tabs": {
     "discover": "Discover",
@@ -46,7 +55,15 @@
       "interestsCount": "{{n}} selected",
       "reset": "Reset",
       "apply": "Apply"
-    }
+    },
+    "premiumTitle": "Premium only",
+    "premiumBody": "Messaging people you haven't matched with is a Premium feature.\n\nMonthly RM {{monthly}}\nAnnual RM {{annual}}\n(Annual saves ~2 months)",
+    "premiumOk": "OK",
+    "openFailedTitle": "Couldn't open",
+    "openFailedFallback": "Please try later",
+    "swipeFailed": "Action failed",
+    "networkError": "Network error, try later",
+    "loadNearbyFailed": "Couldn't load Nearby"
   },
   "moments": {
     "filters": {
@@ -56,14 +73,62 @@
       "interest": "Interests"
     },
     "empty": "No moments yet",
-    "loadFailed": "Couldn't load moments"
+    "loadFailed": "Couldn't load",
+    "cameraPermTitle": "Camera permission required",
+    "cameraPermBody": "Allow Meyou to access the camera in Settings.",
+    "publishFailed": "Publish failed",
+    "composer": {
+      "headerTitle": "New moment",
+      "publish": "Publish",
+      "publishCta": "Post moment",
+      "contentPlaceholder": "Share something...",
+      "sendFailed": "Send failed",
+      "photoPermTitle": "Photo permission required",
+      "photoPermBody": "Allow Meyou to access your photos in Settings."
+    },
+    "comments": {
+      "title": "Comments",
+      "empty": "No comments yet",
+      "placeholder": "Say something…",
+      "loadFailed": "Couldn't load comments",
+      "sendFailed": "Send failed"
+    },
+    "delete": {
+      "title": "Delete this moment?",
+      "body": "This can't be undone.",
+      "action": "Delete",
+      "failed": "Delete failed"
+    }
+  },
+  "chats": {
+    "searchPlaceholder": "Search",
+    "empty": "No messages yet — head to Discover to find your wavelength",
+    "newMatchesHeader": "New friends · {{n}}",
+    "sayHi": "Say hi →",
+    "detail": {
+      "typing": "typing…",
+      "online": "online",
+      "offline": "offline",
+      "messagePlaceholder": "Say something…",
+      "unmatchFailed": "Unmatch failed"
+    }
   },
   "match": {
     "title": "It's a Meyou!",
     "subtitle": "You're now close friends",
     "bothLove": "You and {{name}} both love",
     "sendCta": "Send a message",
-    "later": "Maybe later"
+    "later": "Maybe later",
+    "sharedSuffix": "in common"
+  },
+  "about": {
+    "section": "About",
+    "interestsCount": "Interests · {{n}} in common",
+    "likeCta": "Like {{name}}"
+  },
+  "nearby": {
+    "peopleCount": "{{n}} nearby",
+    "footnote": "Showing people who allow Nearby"
   },
   "profile": {
     "stats": {
@@ -89,6 +154,46 @@
       "languageValueZh": "Chinese",
       "languageValueEn": "English",
       "account": "Account & security"
+    },
+    "edit": {
+      "title": "Edit profile",
+      "changeAvatar": "Change avatar",
+      "nickname": "Nickname",
+      "bio": "Bio",
+      "bioPlaceholder": "A line or two about you",
+      "age": "Age",
+      "saveFailed": "Save failed",
+      "photoPermTitle": "Photo permission required",
+      "photoPermBody": "Allow Meyou to access your photos in Settings.",
+      "uploadFailed": "Upload failed"
+    },
+    "tagsEdit": {
+      "title": "Interests",
+      "subtitle": "Pick at least {{n}} — we'll recommend you to people who share them.",
+      "saveWithCount": "Save · {{n}}",
+      "saveFailed": "Save failed"
+    },
+    "promptsEdit": {
+      "title": "Prompts",
+      "answerPlaceholder": "Write your answer…",
+      "askedSection": "Want to be asked",
+      "saveFailed": "Save failed",
+      "save": "Save",
+      "suggestions": {
+        "thisWeek": "Looking for someone to do this with this week",
+        "albumOnRepeat": "Album on repeat lately",
+        "idealWeekend": "Ideal weekend morning",
+        "movieToTalk": "A movie I wanted to talk about last week",
+        "playingThisMonth": "What I'm playing this month",
+        "recommendBook": "Recommend me a book"
+      }
+    },
+    "matchesList": {
+      "empty": "No matches yet — head to Discover",
+      "matchedAt": "Matched · {{date}}"
+    },
+    "friendsList": {
+      "empty": "No friends yet"
     }
   },
   "languageSettings": {
@@ -108,10 +213,113 @@
     "updateFailed": "Update failed"
   },
   "notificationSettings": {
-    "title": "Notifications"
+    "title": "Notifications",
+    "systemPushLabel": "System push",
+    "openSystemSettings": "Open system settings",
+    "hint": "Notifications are managed by iOS. To stop all Meyou pushes, go to Settings → Notifications → Meyou and turn them off.",
+    "statusGranted": "On",
+    "statusDenied": "Off",
+    "statusUndetermined": "Not set",
+    "statusUnknown": "Unknown"
   },
   "accountSettings": {
-    "title": "Account & security"
+    "title": "Account & security",
+    "emailLabel": "Email",
+    "signOut": "Sign out",
+    "deleteAccount": "Delete account",
+    "deleting": "Deleting…",
+    "signOutConfirmTitle": "Sign out",
+    "signOutConfirmBody": "Are you sure you want to sign out?",
+    "signOutButton": "Sign out",
+    "deleteStep1Title": "Delete account",
+    "deleteStep1Body": "All chats, moments, and matches will be permanently deleted. This cannot be undone.",
+    "deleteStep1Continue": "Continue",
+    "deleteStep2Title": "Confirm again",
+    "deleteStep2Body": "Final confirmation — your account and all data will be deleted immediately.",
+    "deleteStep2Confirm": "Permanently delete",
+    "deleteFailed": "Delete failed"
+  },
+  "safetyMenu": {
+    "report": "Report",
+    "block": "Block",
+    "unmatch": "Unmatch",
+    "cancel": "Cancel",
+    "blockConfirmTitle": "Block {{name}}?",
+    "blockConfirmBody": "You will no longer see each other; chats and matches will be removed.",
+    "blockAction": "Block",
+    "blockFailed": "Block failed",
+    "unmatchConfirmTitle": "Unmatch with {{name}}?",
+    "unmatchConfirmBody": "The chat will be removed and cannot be restored.",
+    "unmatchAction": "Unmatch"
+  },
+  "report": {
+    "title": "Report {{name}}",
+    "subtitle": "Why are you reporting this person? After submission we'll review and the user will be auto-blocked.",
+    "noteLabel": "Notes (optional)",
+    "notePlaceholder": "What happened…",
+    "submit": "Submit report",
+    "submittedTitle": "Received",
+    "submittedBody": "We'll review soon. This user has been auto-blocked.",
+    "submittedOk": "OK",
+    "submitFailed": "Submit failed",
+    "reasons": {
+      "inappropriate_photos": "Inappropriate photos",
+      "harassment": "Harassment",
+      "spam": "Spam",
+      "fake_profile": "Fake profile",
+      "underage": "Underage",
+      "other": "Other"
+    }
+  },
+  "premium": {
+    "heroTagline": "Unlock everything to find your real wavelength",
+    "active": "You're a Premium member",
+    "expiresAt": "Expires: {{date}}",
+    "benefitsSection": "Benefits",
+    "benefits": {
+      "directIntro": "Message anyone before matching",
+      "seeLikes": "See who liked you",
+      "unlimitedSwipes": "Unlimited swipes",
+      "readReceipts": "Read receipts",
+      "biggerBoost": "Bigger Boost reach"
+    },
+    "plansSection": "Choose a plan",
+    "perYear": "year",
+    "perMonth": "month",
+    "saveTwoMonths": "Save 2 months",
+    "monthlyEquivalent": "≈ RM {{n}} / month",
+    "disclaimer": "Subscription auto-renews; cancel in App Store → Apple ID → Subscriptions. Charged 24 hrs before renewal.",
+    "ctaAnnual": "Annual RM {{price}}",
+    "ctaMonthly": "Monthly RM {{price}}",
+    "subscribeSuccessTitle": "Subscribed!",
+    "subscribeSuccessBody": "Welcome to Premium!",
+    "subscribeFailedTitle": "Subscription failed",
+    "subscribeFailedBody": "Subscription failed, please try again."
+  },
+  "iapError": {
+    "iosOnly": "Premium is iOS-only for now",
+    "moduleMissing": "IAP module not installed; needs an EAS dev build",
+    "initFailed": "IAP init failed: {{detail}}",
+    "fetchFailed": "Couldn't read the plan: {{detail}}",
+    "skuMissing": "App Store can't find this plan — the SKU may not be live",
+    "purchaseFailed": "Purchase failed: {{detail}}",
+    "receiptMissing": "Couldn't get the App Store receipt"
+  },
+  "googleSignIn": {
+    "notReadyTitle": "Google Sign-In not enabled",
+    "notReadyBody": "Administrator hasn't configured OAuth credentials yet. Please use Email or Apple, or try again later.",
+    "noIdToken": "Google didn't return a credential. Make sure the OAuth client's Bundle ID = com.meetupnearby.app, then retry.",
+    "loginFailedWithCode": "Login failed ({{code}})",
+    "loginFailed": "Login failed, please try again"
+  },
+  "time": {
+    "justNow": "just now",
+    "minAgo": "{{n}} min ago",
+    "hrAgo": "{{n}} hr ago",
+    "dayAgo": "{{n}} d ago"
+  },
+  "messageBanner": {
+    "newMessage": "New message"
   },
   "common": {
     "back": "Back",
@@ -119,6 +327,8 @@
     "settings": "Settings",
     "loading": "Loading…",
     "retry": "Retry",
-    "save": "Save"
+    "save": "Save",
+    "cancel": "Cancel",
+    "ok": "OK"
   }
 }

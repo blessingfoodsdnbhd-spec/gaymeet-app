@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Send } from 'lucide-react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -36,6 +37,7 @@ function idxFor(id: string) {
 
 export function CommentsScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const route = useRoute<Rt>();
   const { momentId } = route.params;
@@ -61,7 +63,7 @@ export function CommentsScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('发送失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('moments.comments.sendFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     },
   });
 
@@ -79,7 +81,7 @@ export function CommentsScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-          评论
+          {t('moments.comments.title')}
         </Text>
       </View>
 
@@ -94,7 +96,7 @@ export function CommentsScreen() {
         ) : commentsQ.isError ? (
           <View style={styles.centerFill}>
             <Text style={{ color: theme.colors.muted, fontSize: 14, marginBottom: 12 }}>
-              无法加载评论
+              {t('moments.comments.loadFailed')}
             </Text>
             <Pressable
               onPress={() => commentsQ.refetch()}
@@ -106,7 +108,7 @@ export function CommentsScreen() {
                 borderColor: theme.colors.line,
               }}
             >
-              <Text style={{ color: theme.colors.text, fontSize: 13.5 }}>重试</Text>
+              <Text style={{ color: theme.colors.text, fontSize: 13.5 }}>{t('common.retry')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -126,7 +128,7 @@ export function CommentsScreen() {
             renderItem={({ item }) => <CommentRow comment={item} />}
             ListEmptyComponent={
               <View style={styles.centerFill}>
-                <Text style={{ color: theme.colors.muted, fontSize: 14 }}>还没有评论</Text>
+                <Text style={{ color: theme.colors.muted, fontSize: 14 }}>{t('moments.comments.empty')}</Text>
               </View>
             }
           />
@@ -148,7 +150,7 @@ export function CommentsScreen() {
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder="说点什么…"
+              placeholder={t('moments.comments.placeholder')}
               placeholderTextColor={theme.colors.muted}
               multiline
               maxLength={200}

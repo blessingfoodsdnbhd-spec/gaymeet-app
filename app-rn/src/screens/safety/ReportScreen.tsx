@@ -13,15 +13,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, ChevronLeft } from 'lucide-react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import {
-  REPORT_REASON_LABELS,
-  reportUser,
-  type ReportReason,
-} from '../../api/safety';
+import { reportUser, type ReportReason } from '../../api/safety';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Rt = RouteProp<RootStackParamList, 'Report'>;
@@ -37,6 +34,7 @@ const REASONS: ReportReason[] = [
 
 export function ReportScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const route = useRoute<Rt>();
   const { userId, userName } = route.params;
@@ -50,14 +48,14 @@ export function ReportScreen() {
     setBusy(true);
     try {
       await reportUser(userId, reason, detail.trim() || undefined);
-      Alert.alert('已收到', '我们会尽快审核。该用户已被自动屏蔽。', [
-        { text: '好', onPress: () => nav.goBack() },
+      Alert.alert(t('report.submittedTitle'), t('report.submittedBody'), [
+        { text: t('report.submittedOk'), onPress: () => nav.goBack() },
       ]);
     } catch (e: any) {
       const status = e?.response?.status;
       const d =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('提交失败', `${d}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('report.submitFailed'), `${d}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }
@@ -77,7 +75,7 @@ export function ReportScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '600', color: theme.colors.text }}>
-          举报 {userName ?? ''}
+          {t('report.title', { name: userName ?? '' })}
         </Text>
       </View>
 
@@ -94,7 +92,7 @@ export function ReportScreen() {
               marginBottom: 18,
             }}
           >
-            为什么要举报这个人?提交后我们会进行人工审核,并自动屏蔽该用户。
+            {t('report.subtitle')}
           </Text>
 
           <Card flat style={{ paddingVertical: 4 }}>
@@ -114,7 +112,7 @@ export function ReportScreen() {
                     })}
                   >
                     <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
-                      {REPORT_REASON_LABELS[r]}
+                      {t(`report.reasons.${r}`)}
                     </Text>
                     {active && (
                       <Check size={18} color={theme.colors.primary} strokeWidth={2.2} />
@@ -144,12 +142,12 @@ export function ReportScreen() {
               marginBottom: 8,
             }}
           >
-            补充说明 (可选)
+            {t('report.noteLabel')}
           </Text>
           <TextInput
             value={detail}
             onChangeText={setDetail}
-            placeholder="发生了什么…"
+            placeholder={t('report.notePlaceholder')}
             placeholderTextColor={theme.colors.muted}
             multiline
             maxLength={400}
@@ -170,7 +168,7 @@ export function ReportScreen() {
 
         <View style={{ padding: 20 }}>
           <Button
-            label="提交举报"
+            label={t('report.submit')}
             onPress={onSubmit}
             disabled={!reason}
             loading={busy}
