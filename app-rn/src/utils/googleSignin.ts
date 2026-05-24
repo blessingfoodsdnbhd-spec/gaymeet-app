@@ -15,6 +15,7 @@
  */
 import { Alert, Platform } from 'react-native';
 import Constants from 'expo-constants';
+import i18n from '../i18n';
 
 let configured = false;
 let configuredOk: boolean | null = null;
@@ -77,18 +78,27 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
   const ok = await ensureConfigured();
   if (!ok) {
     Alert.alert(
-      'Google 登录暂未开通',
-      '管理员还没有配置 OAuth 凭证。请用邮箱或 Apple 登录,或稍后再试。',
+      i18n.t('googleSignIn.notReadyTitle'),
+      i18n.t('googleSignIn.notReadyBody'),
     );
     return null;
   }
 
   try {
     const mod = await import('@react-native-google-signin/google-signin');
-    const { GoogleSignin, statusCodes } = mod;
+    const { GoogleSignin } = mod;
 
     if (Platform.OS === 'android') {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    }
+
+    // Clear any cached previous sign-in. Without this, a half-completed
+    // earlier attempt can leave native state that blocks the next signIn()
+    // with an opaque "in progress" or stale-token error.
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // best-effort
     }
 
     const result: any = await GoogleSignin.signIn();
@@ -96,7 +106,7 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
     // v13+ wraps the payload in `{ type, data: {...} }`; older versions
     // return the fields at the top level. Handle both.
     const data = result?.data ?? result;
-    const idToken: string | undefined =
+    let idToken: string | undefined =
       data?.idToken ??
       data?.tokens?.idToken ??
       result?.idToken;
@@ -105,9 +115,22 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
       return null; // genuine user cancel
     }
 
+    // signIn() can return User.idToken === null even on success in some
+    // v13 configurations (e.g. when webClientId/iOS client config doesn't
+    // line up). Fall back to getTokens() which explicitly fetches a fresh
+    // idToken from the native module.
+    if (!idToken) {
+      try {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens?.idToken;
+      } catch {
+        // ignore — handled by the !idToken throw below
+      }
+    }
+
     if (!idToken) {
       const err = new Error('Google did not return an idToken');
-      (err as any).userFriendlyMessage = 'Google 没返回登录凭证,请重试或换登录方式。';
+      (err as any).userFriendlyMessage = i18n.t('googleSignIn.noIdToken');
       throw err;
     }
     return {
@@ -128,7 +151,12 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
       return null;
     }
     if (!e.userFriendlyMessage) {
-      e.userFriendlyMessage = '登录失败,稍后再试';
+      // Include the native error code if present — it's a small string
+      // like "SIGN_IN_REQUIRED" / "DEVELOPER_ERROR" / "PLAY_SERVICES_NOT_AVAILABLE"
+      // that tells us *what* failed on the device without needing logs.
+      e.userFriendlyMessage = e?.code
+        ? i18n.t('googleSignIn.loginFailedWithCode', { code: e.code })
+        : i18n.t('googleSignIn.loginFailed');
     }
     throw e;
   }

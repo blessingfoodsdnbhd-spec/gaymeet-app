@@ -1,5 +1,6 @@
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 
+import i18n from '../i18n';
 import { blockUser } from '../api/safety';
 
 // `nav` is structurally typed so we can accept either NavigationProp or the
@@ -32,9 +33,11 @@ export function showSafetyMenu({
   includeUnmatch,
   onUnmatch,
 }: ShowOptions) {
-  const labels: string[] = ['举报', '屏蔽 (Block)'];
-  if (includeUnmatch) labels.push('解除匹配 (Unmatch)');
-  labels.push('取消');
+  const t = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
+
+  const labels: string[] = [t('safetyMenu.report'), t('safetyMenu.block')];
+  if (includeUnmatch) labels.push(t('safetyMenu.unmatch'));
+  labels.push(t('safetyMenu.cancel'));
   const cancelIndex = labels.length - 1;
   const destructiveIndices = [1];
   if (includeUnmatch) destructiveIndices.push(2);
@@ -46,12 +49,12 @@ export function showSafetyMenu({
     }
     if (idx === 1) {
       Alert.alert(
-        `屏蔽 ${userName}?`,
-        '你们彼此不再可见,聊天和匹配将被移除。',
+        t('safetyMenu.blockConfirmTitle', { name: userName }),
+        t('safetyMenu.blockConfirmBody'),
         [
-          { text: '取消', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '屏蔽',
+            text: t('safetyMenu.blockAction'),
             style: 'destructive',
             onPress: async () => {
               try {
@@ -65,7 +68,7 @@ export function showSafetyMenu({
                   e?.message ||
                   'unknown';
                 Alert.alert(
-                  '屏蔽失败',
+                  t('safetyMenu.blockFailed'),
                   `${detail}${status ? ` (HTTP ${status})` : ''}`,
                 );
               }
@@ -76,10 +79,14 @@ export function showSafetyMenu({
       return;
     }
     if (includeUnmatch && idx === 2) {
-      Alert.alert(`解除与 ${userName} 的匹配?`, '聊天将被移除,无法恢复。', [
-        { text: '取消', style: 'cancel' },
-        { text: '解除', style: 'destructive', onPress: () => onUnmatch?.() },
-      ]);
+      Alert.alert(
+        t('safetyMenu.unmatchConfirmTitle', { name: userName }),
+        t('safetyMenu.unmatchConfirmBody'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('safetyMenu.unmatchAction'), style: 'destructive', onPress: () => onUnmatch?.() },
+        ],
+      );
     }
   };
 
@@ -100,7 +107,7 @@ export function showSafetyMenu({
       style: destructiveIndices.includes(i) ? ('destructive' as const) : undefined,
       onPress: () => onSelect(i),
     }));
-    buttons.push({ text: '取消', style: undefined as any, onPress: () => {} });
+    buttons.push({ text: t('common.cancel'), style: undefined as any, onPress: () => {} });
     Alert.alert(userName, undefined, buttons);
   }
 }

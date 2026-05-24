@@ -98,7 +98,7 @@ export function MatchesListScreen() {
           ListEmptyComponent={
             <View style={styles.centerFill}>
               <Text style={{ color: theme.colors.muted, textAlign: 'center' }}>
-                还没有同频好友 — 去发现卡片
+                {t('profile.matchesList.empty')}
               </Text>
             </View>
           }
@@ -110,6 +110,7 @@ export function MatchesListScreen() {
 
 function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
@@ -134,7 +135,7 @@ function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void
           {thread.user.nickname}
         </Text>
         <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-          {shortTime(thread.matchedAt)} 配对
+          {shortTime(thread.matchedAt)} {t('profile.matchesList.matchedSuffix')}
         </Text>
       </View>
       {thread.unreadCount > 0 && (

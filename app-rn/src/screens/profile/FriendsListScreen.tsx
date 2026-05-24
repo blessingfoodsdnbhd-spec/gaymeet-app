@@ -66,12 +66,15 @@ export function FriendsListScreen() {
         const monthly = body?.pricing?.monthly?.price ?? 39.9;
         const annual = body?.pricing?.annual?.price ?? 399.9;
         Alert.alert(
-          'Premium 会员专属',
-          `给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM ${monthly}\n年费 RM ${annual}\n(年费约省 2 个月)`,
-          [{ text: '好' }],
+          t('discover.premiumTitle'),
+          t('discover.premiumBody', { monthly, annual }),
+          [{ text: t('discover.premiumOk') }],
         );
       } else {
-        Alert.alert('打开失败', body?.error || e?.message || '稍后再试');
+        Alert.alert(
+          t('discover.openFailedTitle'),
+          body?.error || e?.message || t('discover.openFailedFallback'),
+        );
       }
     }
   };
@@ -118,7 +121,7 @@ export function FriendsListScreen() {
           ListEmptyComponent={
             <View style={styles.centerFill}>
               <Text style={{ color: theme.colors.muted, textAlign: 'center' }}>
-                还没有好友
+                {t('profile.friendsList.empty')}
               </Text>
             </View>
           }

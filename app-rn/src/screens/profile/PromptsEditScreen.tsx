@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus, Trash2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
@@ -19,14 +20,14 @@ import { Card } from '../../components/Card';
 import { useAuth } from '../../store/auth';
 import { setPrompts } from '../../api/me';
 
-const SUGGESTED_QUESTIONS = [
-  '本周想找人一起',
-  '近期最循环的一张专辑',
-  '理想的周末早晨',
-  '上周最想跟人聊的电影',
-  '本月在玩',
-  '想被推荐一本',
-];
+const SUGGESTED_QUESTION_KEYS = [
+  'thisWeek',
+  'albumOnRepeat',
+  'idealWeekend',
+  'movieToTalk',
+  'playingThisMonth',
+  'recommendBook',
+] as const;
 
 interface Draft {
   q: string;
@@ -35,9 +36,14 @@ interface Draft {
 
 export function PromptsEditScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
+
+  const suggestedQuestions = SUGGESTED_QUESTION_KEYS.map(
+    (k) => t(`profile.promptsEdit.suggestions.${k}`),
+  );
 
   const [drafts, setDrafts] = useState<Draft[]>(
     (user?.prompts ?? []).map((p) => ({ q: p.q, a: p.a })),
@@ -71,7 +77,7 @@ export function PromptsEditScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('保存失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('profile.promptsEdit.saveFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(false);
     }
@@ -91,7 +97,7 @@ export function PromptsEditScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '600', color: theme.colors.text }}>
-          答题
+          {t('profile.promptsEdit.title')}
         </Text>
       </View>
 
@@ -113,7 +119,7 @@ export function PromptsEditScreen() {
               <TextInput
                 value={d.a}
                 onChangeText={(v) => updateAt(i, { a: v })}
-                placeholder="写下你的答案…"
+                placeholder={t('profile.promptsEdit.answerPlaceholder')}
                 placeholderTextColor={theme.colors.muted}
                 multiline
                 style={{
@@ -141,9 +147,9 @@ export function PromptsEditScreen() {
                   marginBottom: 10,
                 }}
               >
-                想被问的问题
+                {t('profile.promptsEdit.askedSection')}
               </Text>
-              {SUGGESTED_QUESTIONS.filter((q) => !drafts.find((d) => d.q === q)).map((q) => (
+              {suggestedQuestions.filter((q) => !drafts.find((d) => d.q === q)).map((q) => (
                 <Pressable
                   key={q}
                   onPress={() => addDraft(q)}
@@ -164,7 +170,7 @@ export function PromptsEditScreen() {
         </ScrollView>
 
         <View style={{ padding: 20 }}>
-          <Button label="保存" loading={busy} onPress={onSave} fullWidth />
+          <Button label={t('profile.promptsEdit.save')} loading={busy} onPress={onSave} fullWidth />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -12,6 +12,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { Avatar } from './Avatar';
@@ -43,6 +44,7 @@ function idxFor(id: string) {
  */
 export function MessageBanner() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const me = useAuth((s) => s.user);
   const focusedMatchId = useChats((s) => s.focusedMatchId);
@@ -104,7 +106,7 @@ export function MessageBanner() {
       setBanner({
         matchId: msg.matchId,
         senderId: msg.senderId,
-        senderName: thread?.user.nickname ?? '新消息',
+        senderName: thread?.user.nickname ?? t('messageBanner.newMessage'),
         senderAvatarUrl: thread?.user.avatarUrl,
         preview,
       });

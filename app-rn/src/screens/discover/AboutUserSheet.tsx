@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Heart, MoreHorizontal, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
@@ -25,6 +26,7 @@ interface Props {
 
 export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
 
   const onMore = () => {
@@ -88,7 +90,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
           {user.bio && (
             <View style={{ marginTop: 18 }}>
-              <Text style={[styles.section, { color: theme.colors.muted }]}>关于</Text>
+              <Text style={[styles.section, { color: theme.colors.muted }]}>{t('about.section')}</Text>
               <Text style={{ fontSize: 14, lineHeight: 22, color: theme.colors.text2 }}>
                 {user.bio}
               </Text>
@@ -97,7 +99,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
-              兴趣 · {(user.sharedTags ?? []).length} 个共同
+              {t('about.interestsCount', { n: (user.sharedTags ?? []).length })}
             </Text>
             <View style={styles.tagsRow}>
               {((user.interests ?? []) as InterestTagId[]).map((id) => {
@@ -115,7 +117,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           </View>
 
           <Button
-            label={`想认识 ${user.nickname}`}
+            label={t('about.likeCta', { name: user.nickname })}
             onPress={onLike}
             leadingIcon={<Heart size={18} color="#FFFFFF" fill="#FFFFFF" />}
             fullWidth

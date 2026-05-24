@@ -4,18 +4,26 @@
     "continueApple": "用 Apple 继续",
     "continueGoogle": "用 Google 继续",
     "continueEmail": "用邮箱继续",
-    "disclaimer": "继续即表示同意《服务条款》与《隐私政策》"
+    "disclaimer": "继续即表示同意《服务条款》与《隐私政策》",
+    "wordmarkSubtitle": "密 友",
+    "appleFailedTitle": "登录失败",
+    "appleFailedRetry": "请重试",
+    "appleNoCredential": "Apple 没有返回有效凭证,请重试",
+    "appleErrorTitle": "Apple 登录失败",
+    "googleErrorTitle": "Google 登录"
   },
   "email": {
     "title": "你的邮箱是?",
     "subtitle": "用邮箱登录,我们会发一个 6 位验证码。",
     "placeholder": "you@example.com",
-    "cta": "发送验证码"
+    "cta": "发送验证码",
+    "sendFailed": "发送失败"
   },
   "otp": {
     "title": "输入验证码",
     "resend": "{{seconds}}s 后可重发",
-    "resendCta": "重发验证码"
+    "resendCta": "重发验证码",
+    "resendFailed": "重发失败"
   },
   "tags": {
     "title": "你的兴趣?",
@@ -23,7 +31,8 @@
     "stepLabel": "第 2 / 2 步",
     "ctaPickMore": "已选 {{n}} 个 · 还需选 {{more}} 个",
     "ctaReady": "已选 {{n}} 个 · 棒!",
-    "enter": "进入密友"
+    "enter": "进入密友",
+    "saveFailed": "保存失败"
   },
   "tabs": {
     "discover": "发现",
@@ -46,7 +55,15 @@
       "interestsCount": "{{n}} 个",
       "reset": "重置",
       "apply": "应用"
-    }
+    },
+    "premiumTitle": "Premium 会员专属",
+    "premiumBody": "给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM {{monthly}}\n年费 RM {{annual}}\n(年费约省 2 个月)",
+    "premiumOk": "好",
+    "openFailedTitle": "打开失败",
+    "openFailedFallback": "稍后再试",
+    "swipeFailed": "操作失败",
+    "networkError": "网络出错,稍后重试",
+    "loadNearbyFailed": "无法加载附近"
   },
   "moments": {
     "filters": {
@@ -56,14 +73,56 @@
       "interest": "兴趣"
     },
     "empty": "这里还没有动态",
-    "loadFailed": "无法加载"
+    "loadFailed": "无法加载",
+    "cameraPermTitle": "需要相机权限",
+    "cameraPermBody": "在系统设置中允许 Meyou 访问相机。",
+    "publishFailed": "发布失败",
+    "composer": {
+      "headerTitle": "新动态",
+      "publish": "发布",
+      "publishCta": "发布动态",
+      "contentPlaceholder": "分享一些什么...",
+      "sendFailed": "发送失败",
+      "photoPermTitle": "需要照片权限",
+      "photoPermBody": "在系统设置中允许 Meyou 访问你的照片。"
+    },
+    "comments": {
+      "title": "评论",
+      "empty": "还没有评论",
+      "placeholder": "说点什么…",
+      "loadFailed": "无法加载评论",
+      "sendFailed": "发送失败"
+    }
+  },
+  "chats": {
+    "searchPlaceholder": "搜索",
+    "empty": "还没有消息 — 去发现 tab 找同频的人吧",
+    "newMatchesHeader": "新密友 · {{n}}",
+    "sayHi": "说声你好吧 →",
+    "detail": {
+      "typing": "正在输入…",
+      "online": "在线",
+      "offline": "离线",
+      "messagePlaceholder": "说点什么…",
+      "unmatchFailed": "取消配对失败"
+    }
   },
   "match": {
     "title": "It's a Meyou!",
     "subtitle": "你们成为密友了",
     "bothLove": "你和 {{name}} 都对",
     "sendCta": "发条消息打招呼",
-    "later": "稍后再说"
+    "later": "稍后再说",
+    "sharedSuffix": "有同样的兴趣"
+  },
+  "about": {
+    "section": "关于",
+    "interestsCount": "兴趣 · {{n}} 个共同",
+    "likeCta": "想认识 {{name}}"
+  },
+  "nearby": {
+    "peopleCount": "{{n}} 人在附近",
+    "footnote": "仅显示开启了「附近」的同好"
   },
   "profile": {
     "stats": {
@@ -89,6 +148,46 @@
       "languageValueZh": "中文",
       "languageValueEn": "English",
       "account": "账户与安全"
+    },
+    "edit": {
+      "title": "编辑资料",
+      "changeAvatar": "更换头像",
+      "nickname": "昵称",
+      "bio": "简介",
+      "bioPlaceholder": "一两句介绍自己",
+      "age": "年龄",
+      "saveFailed": "保存失败",
+      "photoPermTitle": "需要照片权限",
+      "photoPermBody": "在系统设置中允许 Meyou 访问你的照片。",
+      "uploadFailed": "上传失败"
+    },
+    "tagsEdit": {
+      "title": "兴趣",
+      "subtitle": "至少选 {{n}} 个,你会被推荐给同好。",
+      "saveWithCount": "保存 · {{n}} 个",
+      "saveFailed": "保存失败"
+    },
+    "promptsEdit": {
+      "title": "答题",
+      "answerPlaceholder": "写下你的答案…",
+      "askedSection": "想被问的问题",
+      "saveFailed": "保存失败",
+      "save": "保存",
+      "suggestions": {
+        "thisWeek": "本周想找人一起",
+        "albumOnRepeat": "近期最循环的一张专辑",
+        "idealWeekend": "理想的周末早晨",
+        "movieToTalk": "上周最想跟人聊的电影",
+        "playingThisMonth": "本月在玩",
+        "recommendBook": "想被推荐一本"
+      }
+    },
+    "matchesList": {
+      "empty": "还没有同频好友 — 去发现卡片",
+      "matchedSuffix": "配对"
+    },
+    "friendsList": {
+      "empty": "还没有好友"
     }
   },
   "languageSettings": {
@@ -108,10 +207,113 @@
     "updateFailed": "设置失败"
   },
   "notificationSettings": {
-    "title": "通知"
+    "title": "通知",
+    "systemPushLabel": "系统推送",
+    "openSystemSettings": "打开系统设置",
+    "hint": "通知开关由 iOS 系统管理。如果你想停止接收 Meyou 的所有推送,请前往「设置 → 通知 → Meyou」关闭。",
+    "statusGranted": "已开启",
+    "statusDenied": "已关闭",
+    "statusUndetermined": "未设置",
+    "statusUnknown": "未知"
   },
   "accountSettings": {
-    "title": "账户与安全"
+    "title": "账户与安全",
+    "emailLabel": "邮箱",
+    "signOut": "退出登录",
+    "deleteAccount": "删除账号",
+    "deleting": "正在删除…",
+    "signOutConfirmTitle": "退出登录",
+    "signOutConfirmBody": "确定要退出吗?",
+    "signOutButton": "退出",
+    "deleteStep1Title": "删除账号",
+    "deleteStep1Body": "所有聊天、动态、匹配将被永久删除。这个操作无法撤销。",
+    "deleteStep1Continue": "继续",
+    "deleteStep2Title": "再次确认",
+    "deleteStep2Body": "最终确认 — 你的账号和所有数据将立即被删除。",
+    "deleteStep2Confirm": "永久删除",
+    "deleteFailed": "删除失败"
+  },
+  "safetyMenu": {
+    "report": "举报",
+    "block": "屏蔽 (Block)",
+    "unmatch": "解除匹配 (Unmatch)",
+    "cancel": "取消",
+    "blockConfirmTitle": "屏蔽 {{name}}?",
+    "blockConfirmBody": "你们彼此不再可见,聊天和匹配将被移除。",
+    "blockAction": "屏蔽",
+    "blockFailed": "屏蔽失败",
+    "unmatchConfirmTitle": "解除与 {{name}} 的匹配?",
+    "unmatchConfirmBody": "聊天将被移除,无法恢复。",
+    "unmatchAction": "解除"
+  },
+  "report": {
+    "title": "举报 {{name}}",
+    "subtitle": "为什么要举报这个人?提交后我们会进行人工审核,并自动屏蔽该用户。",
+    "noteLabel": "补充说明 (可选)",
+    "notePlaceholder": "发生了什么…",
+    "submit": "提交举报",
+    "submittedTitle": "已收到",
+    "submittedBody": "我们会尽快审核。该用户已被自动屏蔽。",
+    "submittedOk": "好",
+    "submitFailed": "提交失败",
+    "reasons": {
+      "inappropriate_photos": "不当照片",
+      "harassment": "骚扰行为",
+      "spam": "垃圾信息",
+      "fake_profile": "虚假资料",
+      "underage": "未成年",
+      "other": "其他"
+    }
+  },
+  "premium": {
+    "heroTagline": "解锁全部功能,找到真同好",
+    "active": "你已是 Premium 会员",
+    "expiresAt": "到期: {{date}}",
+    "benefitsSection": "专属权益",
+    "benefits": {
+      "directIntro": "给还没 match 的人直接发消息",
+      "seeLikes": "看谁喜欢了你",
+      "unlimitedSwipes": "无限滑卡片",
+      "readReceipts": "「已读」回执",
+      "biggerBoost": "加大 Boost 曝光"
+    },
+    "plansSection": "选择套餐",
+    "perYear": "年",
+    "perMonth": "月",
+    "saveTwoMonths": "省 2 个月",
+    "monthlyEquivalent": "≈ RM {{n}} / 月",
+    "disclaimer": "订阅会自动续费,可在 App Store → Apple ID → 订阅 取消。续费会在到期前 24 小时扣款。",
+    "ctaAnnual": "年费 RM {{price}}",
+    "ctaMonthly": "月费 RM {{price}}",
+    "subscribeSuccessTitle": "订阅成功",
+    "subscribeSuccessBody": "欢迎成为 Premium 会员!",
+    "subscribeFailedTitle": "订阅失败",
+    "subscribeFailedBody": "订阅失败,稍后再试"
+  },
+  "iapError": {
+    "iosOnly": "Premium 暂只支持 iOS",
+    "moduleMissing": "IAP 模块未安装,需要 EAS dev build",
+    "initFailed": "IAP 初始化失败: {{detail}}",
+    "fetchFailed": "无法读取套餐: {{detail}}",
+    "skuMissing": "App Store 找不到这个套餐,可能 SKU 未上架",
+    "purchaseFailed": "购买失败: {{detail}}",
+    "receiptMissing": "拿不到 App Store receipt"
+  },
+  "googleSignIn": {
+    "notReadyTitle": "Google 登录暂未开通",
+    "notReadyBody": "管理员还没有配置 OAuth 凭证。请用邮箱或 Apple 登录,或稍后再试。",
+    "noIdToken": "Google 没返回登录凭证。请确认 OAuth 客户端的 Bundle ID = com.meetupnearby.app,然后重试。",
+    "loginFailedWithCode": "登录失败 ({{code}})",
+    "loginFailed": "登录失败,稍后再试"
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minAgo": "{{n}} 分钟前",
+    "hrAgo": "{{n}} 小时前",
+    "dayAgo": "{{n}} 天前"
+  },
+  "messageBanner": {
+    "newMessage": "新消息"
   },
   "common": {
     "back": "返回",
@@ -119,6 +321,8 @@
     "settings": "设置",
     "loading": "加载中…",
     "retry": "重试",
-    "save": "保存"
+    "save": "保存",
+    "cancel": "取消",
+    "ok": "好"
   }
 }

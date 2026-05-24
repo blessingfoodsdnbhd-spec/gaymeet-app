@@ -8,13 +8,17 @@ export type ReportReason =
   | 'underage'
   | 'other';
 
+/**
+ * @deprecated Use `t('report.reasons.<reason>')` instead. Kept for the
+ * stable ReportReason union typing.
+ */
 export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
-  inappropriate_photos: '不当照片',
-  harassment: '骚扰行为',
-  spam: '垃圾信息',
-  fake_profile: '虚假资料',
-  underage: '未成年',
-  other: '其他',
+  inappropriate_photos: 'Inappropriate photos',
+  harassment: 'Harassment',
+  spam: 'Spam',
+  fake_profile: 'Fake profile',
+  underage: 'Underage',
+  other: 'Other',
 };
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {

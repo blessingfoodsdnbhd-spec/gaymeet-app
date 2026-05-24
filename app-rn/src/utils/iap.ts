@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import i18n from '../i18n';
 import { verifyAppleReceipt } from '../api/subscription';
 
 /**
@@ -16,32 +17,34 @@ export async function purchaseSubscription(sku: string): Promise<{
   isPremium: boolean;
   premiumExpiresAt: string | null;
 } | null> {
+  const t = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
+
   // Android requires Google Play setup — skip for now.
   if (Platform.OS !== 'ios') {
-    throw new Error('Premium 暂只支持 iOS');
+    throw new Error(t('iapError.iosOnly'));
   }
 
   let RNIap: any;
   try {
     RNIap = await import('react-native-iap');
   } catch {
-    throw new Error('IAP 模块未安装,需要 EAS dev build');
+    throw new Error(t('iapError.moduleMissing'));
   }
 
   try {
     await RNIap.initConnection();
   } catch (e: any) {
-    throw new Error(`IAP 初始化失败: ${e?.message ?? e}`);
+    throw new Error(t('iapError.initFailed', { detail: e?.message ?? e }));
   }
 
   let products: any[];
   try {
     products = await RNIap.getSubscriptions({ skus: [sku] });
   } catch (e: any) {
-    throw new Error(`无法读取套餐: ${e?.message ?? e}`);
+    throw new Error(t('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
   if (!products || products.length === 0) {
-    throw new Error('App Store 找不到这个套餐,可能 SKU 未上架');
+    throw new Error(t('iapError.skuMissing'));
   }
 
   let purchase: any;
@@ -50,7 +53,7 @@ export async function purchaseSubscription(sku: string): Promise<{
   } catch (e: any) {
     const msg = String(e?.message ?? e);
     if (/cancel|user closed/i.test(msg)) return null;
-    throw new Error(`购买失败: ${msg}`);
+    throw new Error(t('iapError.purchaseFailed', { detail: msg }));
   }
   if (!purchase) return null;
 
@@ -60,7 +63,7 @@ export async function purchaseSubscription(sku: string): Promise<{
     receipt = await RNIap.getReceiptIOS();
   }
   if (!receipt) {
-    throw new Error('拿不到 App Store receipt');
+    throw new Error(t('iapError.receiptMissing'));
   }
 
   // Hand off to backend for verification — Apple-validated receipts are the

@@ -64,7 +64,7 @@ export function OTPCodeScreen() {
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-      Alert.alert('重发失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('otp.resendFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     }
   };
 

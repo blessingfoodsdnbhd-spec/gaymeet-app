@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const opacity = useSharedValue(0);
   const popScale = useSharedValue(0.9);
@@ -54,8 +54,12 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
 
   if (!matchedUser) return null;
 
+  const isZh = i18n.language?.startsWith('zh');
   const sharedZh = (matchedUser.sharedTags ?? [])
-    .map((id) => tagById(id)?.zh)
+    .map((id) => {
+      const tag = tagById(id);
+      return tag ? (isZh ? tag.zh : tag.en) : undefined;
+    })
     .filter(Boolean)
     .join(' · ');
 
@@ -99,7 +103,7 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
             <Text style={styles.bothLove}>
               {t('match.bothLove', { name: matchedUser.nickname })}
             </Text>
-            <Text style={styles.sharedRow}>{sharedZh} 有同样的兴趣</Text>
+            <Text style={styles.sharedRow}>{sharedZh} {t('match.sharedSuffix')}</Text>
           </View>
 
           <Pressable onPress={onMessage} style={styles.primary}>

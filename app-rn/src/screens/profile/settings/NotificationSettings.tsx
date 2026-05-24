@@ -39,20 +39,20 @@ export function NotificationSettings() {
 
   const label =
     status === 'granted'
-      ? '已开启'
+      ? t('notificationSettings.statusGranted')
       : status === 'denied'
-      ? '已关闭'
+      ? t('notificationSettings.statusDenied')
       : status === 'undetermined'
-      ? '未设置'
-      : '未知';
+      ? t('notificationSettings.statusUndetermined')
+      : t('notificationSettings.statusUnknown');
 
   return (
     <SettingsShell title={t('notificationSettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        <LinkRow label="系统推送" detail={label} />
+        <LinkRow label={t('notificationSettings.systemPushLabel')} detail={label} />
         <Divider />
         <LinkRow
-          label="打开系统设置"
+          label={t('notificationSettings.openSystemSettings')}
           onPress={() => Linking.openSettings()}
         />
       </SettingsCard>
@@ -65,8 +65,7 @@ export function NotificationSettings() {
             lineHeight: 18,
           }}
         >
-          通知开关由 iOS 系统管理。如果你想停止接收 Meyou 的所有推送,
-          请前往「设置 → 通知 → Meyou」关闭。
+          {t('notificationSettings.hint')}
         </Text>
       </View>
     </SettingsShell>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Image, useWindowDimensions, StyleSheet } from 'react-native';
 import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -26,10 +27,12 @@ interface Props {
 
 export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }: Props) {
   const theme = useTheme();
+  const { i18n } = useTranslation();
   const nav = useNavigation();
   const { width } = useWindowDimensions();
   const photos = moment.images ?? [];
   const tag = moment.tag ? tagById(moment.tag) : null;
+  const tagLabel = tag ? (i18n.language?.startsWith('zh') ? tag.zh : tag.en) : '';
 
   return (
     <View style={[styles.wrap, { borderBottomColor: theme.colors.line }]}>
@@ -73,7 +76,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
 
       {tag && (
         <View style={{ marginTop: 12, paddingHorizontal: 20 }}>
-          <Chip label={`${tag.emoji} ${tag.zh}`} variant="solid" />
+          <Chip label={`${tag.emoji} ${tagLabel}`} variant="solid" />
         </View>
       )}
 

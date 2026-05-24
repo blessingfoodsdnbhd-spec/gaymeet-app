@@ -13,11 +13,11 @@ const OPTIONS: { id: 'zh' | 'en'; label: string; subtitle: string }[] = [
 
 export function LanguageSettings() {
   const theme = useTheme();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const current = i18n.language.startsWith('zh') ? 'zh' : 'en';
 
   return (
-    <SettingsShell title={i18n.language.startsWith('zh') ? '语言' : 'Language'}>
+    <SettingsShell title={t('languageSettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         {OPTIONS.map((opt, i) => {
           const active = current === opt.id;

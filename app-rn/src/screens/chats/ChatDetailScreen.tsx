@@ -21,6 +21,7 @@ import {
   Send,
   Smile,
 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -46,6 +47,7 @@ const STICKERS = ['😊', '😂', '🥰', '😘', '😎', '🤔', '😅', '🙃'
 
 export function ChatDetailScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const queryClient = useQueryClient();
@@ -265,7 +267,7 @@ export function ChatDetailScreen() {
                 {thread.user.nickname}
               </Text>
               <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
-                {otherTyping ? '正在输入…' : thread.user.isOnline ? '在线' : '离线'}
+                {otherTyping ? t('chats.detail.typing') : thread.user.isOnline ? t('chats.detail.online') : t('chats.detail.offline')}
               </Text>
             </View>
             <Pressable
@@ -291,7 +293,7 @@ export function ChatDetailScreen() {
                       const detail =
                         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
                       Alert.alert(
-                        '取消配对失败',
+                        t('chats.detail.unmatchFailed'),
                         `${detail}${status ? ` (HTTP ${status})` : ''}`,
                       );
                     }
@@ -411,7 +413,7 @@ export function ChatDetailScreen() {
             <TextInput
               value={composing}
               onChangeText={onComposeChange}
-              placeholder="说点什么…"
+              placeholder={t('chats.detail.messagePlaceholder')}
               placeholderTextColor={theme.colors.muted}
               multiline
               style={{

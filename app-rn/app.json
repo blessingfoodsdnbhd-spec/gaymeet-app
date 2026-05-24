@@ -16,7 +16,8 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "10",
+      "buildNumber": "11",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
         "NSCameraUsageDescription": "Meyou needs camera access for video calls and profile photos.",

@@ -55,7 +55,7 @@ export function MomentsScreen() {
     if (capturing) return;
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要相机权限', '在系统设置中允许 Meyou 访问相机。');
+      Alert.alert(t('moments.cameraPermTitle'), t('moments.cameraPermBody'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -73,7 +73,7 @@ export function MomentsScreen() {
       const body = e?.response?.data;
       const detail = body?.error || body?.message || e?.message || 'unknown';
       console.warn('camera quick-post failed', { status, body, error: e });
-      Alert.alert('发布失败', `${detail}${status ? ` (HTTP ${status})` : ''}`);
+      Alert.alert(t('moments.publishFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setCapturing(false);
     }
@@ -149,7 +149,7 @@ export function MomentsScreen() {
                 backgroundColor: active ? theme.colors.text : theme.colors.surface,
                 // Keep borderWidth identical between states so the chip's
                 // outer dimensions don't jump by 2px on toggle (which made
-                // "我的同好" look slightly off-vertical vs its neighbours).
+                // labels look slightly off-vertical vs their neighbours).
                 borderWidth: 1,
                 borderColor: active ? theme.colors.text : theme.colors.line,
               }}

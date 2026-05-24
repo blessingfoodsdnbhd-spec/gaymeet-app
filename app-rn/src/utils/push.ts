@@ -15,8 +15,8 @@ import { registerToken, unregisterToken } from '../api/notifications';
  *    the backend ships notifications via FCM/APNs directly (see backend
  *    services) — Expo's push service would be a needless extra hop.
  *  - Permission flow is deliberately silent on denial; we don't want to
- *    spam the user with system prompts. Settings → 通知 will offer to
- *    re-ask later (TODO).
+ *    spam the user with system prompts. Settings → Notifications will
+ *    offer to re-ask later (TODO).
  */
 export async function registerPushToken(): Promise<string | null> {
   if (!Device.isDevice) return null; // simulators can't receive push
