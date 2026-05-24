@@ -134,7 +134,7 @@ export function MomentsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}
       >
         {filters.map((f) => {
           const active = filter === f.id;
@@ -143,8 +143,11 @@ export function MomentsScreen() {
               key={f.id}
               onPress={() => setFilter(f.id)}
               style={{
-                paddingHorizontal: 14,
-                paddingVertical: 7,
+                // Bigger padding both axes → the borderRadius:999 pill
+                // looks fully rounded instead of capsule-flat, and the
+                // chip has room around the larger label.
+                paddingHorizontal: 18,
+                paddingVertical: 10,
                 borderRadius: 999,
                 backgroundColor: active ? theme.colors.text : theme.colors.surface,
                 // Keep borderWidth identical between states so the chip's
@@ -155,8 +158,9 @@ export function MomentsScreen() {
               }}
             >
               <Text
+                numberOfLines={1}
                 style={{
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: '600',
                   // Use primary text colour for inactive chips so the
                   // labels stay legible — text2 (#605F70) was too washed
