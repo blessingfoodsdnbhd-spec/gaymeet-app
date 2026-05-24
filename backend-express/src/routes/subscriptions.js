@@ -36,45 +36,26 @@ router.get('/plans', (req, res) => {
 });
 
 // ── POST /api/subscriptions/purchase ─────────────────────────────────────────
-// In production: verify receipt with Apple/Google before granting premium.
-router.post('/purchase', auth, async (req, res, next) => {
-  try {
-    const { plan, receipt } = req.body;
-
-    if (!plan || !PLANS[plan]) {
-      return err(res, `plan must be one of: ${Object.keys(PLANS).join(', ')}`);
-    }
-
-    const { days } = PLANS[plan];
-    const now = new Date();
-
-    // Extend existing subscription if still active
-    const base = req.user.isPremium && req.user.premiumExpiresAt && req.user.premiumExpiresAt > now
-      ? req.user.premiumExpiresAt
-      : now;
-
-    const expiresAt = new Date(base.getTime() + days * 86400000);
-
-    const { vipLevel } = PLANS[plan];
-    await User.findByIdAndUpdate(req.user._id, {
-      isPremium: true,
-      premiumExpiresAt: expiresAt,
-      vipLevel,
-      vipExpiresAt: expiresAt,
-    });
-
-    ok(res, {
-      success: true,
-      plan,
-      isPremium: true,
-      vipLevel,
-      premiumExpiresAt: expiresAt.toISOString(),
-      vipExpiresAt: expiresAt.toISOString(),
-      ...PLANS[plan],
-    });
-  } catch (e) {
-    next(e);
-  }
+// REMOVED — security hole. The previous handler took `{plan, receipt}` from
+// the body and granted Premium based on `plan` alone, never validating the
+// receipt with Apple. Any authenticated user could POST
+// {"plan": "yearly"} and get 365 days of Premium for free.
+//
+// The real purchase flow is in routes/subscriptions-v2.js:
+//   POST /api/subscriptions/verify-apple-receipt { receipt, productId }
+// which calls Apple's /verifyReceipt, falls back to the sandbox endpoint
+// on status 21007, matches the product_id, and sets premiumExpiresAt
+// from Apple's returned expires_date_ms. The RN client only uses that
+// path (see app-rn/src/api/subscription.ts → verifyAppleReceipt).
+//
+// Returning 410 Gone so any stale client gets a clear signal instead of
+// a silent success. Don't re-introduce a plan-only path.
+router.post('/purchase', auth, (_req, res) => {
+  res.status(410).json({
+    error:
+      'This endpoint is gone. Use POST /api/subscriptions/verify-apple-receipt ' +
+      'with a real App Store receipt.',
+  });
 });
 
 // ── GET /api/subscriptions/status ─────────────────────────────────────────────
