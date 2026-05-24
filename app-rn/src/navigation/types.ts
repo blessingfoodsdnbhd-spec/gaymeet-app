@@ -22,6 +22,9 @@ export type RootStackParamList = {
   EditProfile: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
+  MyMoments: undefined;
+  FriendsList: undefined;
+  MatchesList: undefined;
   PrivacySettings: undefined;
   NotificationSettings: undefined;
   LanguageSettings: undefined;
