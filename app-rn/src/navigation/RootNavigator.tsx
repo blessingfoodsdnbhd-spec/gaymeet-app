@@ -31,7 +31,19 @@ export function RootNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!signedIn ? (
         <Stack.Screen name="Auth">
-          {() => <AuthStack needsTags={needsTags} />}
+          {/* The `key` forces AuthStack to fully remount when needsTags
+              toggles. Without it, the inner navigator's initialRouteName
+              (which is only consulted at mount) is ignored — a new user
+              who just signed in via Google / email / Apple would stay
+              stuck on the Welcome screen instead of being routed to
+              InterestTagsPicker. That was the "Google sign-in completes
+              but app stays on Welcome with no error" bug from build #11. */}
+          {() => (
+            <AuthStack
+              key={needsTags ? 'auth-needs-tags' : 'auth-welcome'}
+              needsTags={needsTags}
+            />
+          )}
         </Stack.Screen>
       ) : (
         <>
