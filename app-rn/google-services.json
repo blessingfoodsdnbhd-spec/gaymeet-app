@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "208538145733-m4r22r9pdj2kdfosg1303q6nllbk1lrg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meetupnearby.app",
+            "certificate_hash": "f11794041a087dc6565cf56ffc91f7d64886c471"
+          }
+        },
+        {
           "client_id": "208538145733-s6h7dq570h57i9j28ncc2g43gd5c3hv8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -35,7 +43,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com",
+              "client_id": "208538145733-o3lnnnet2hgen2fqqvfbrm1pr8o4144m.apps.googleusercontent.com",
               "client_type": 3
             },
             {
