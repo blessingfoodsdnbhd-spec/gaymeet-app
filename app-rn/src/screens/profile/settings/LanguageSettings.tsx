@@ -17,7 +17,7 @@ export function LanguageSettings() {
   const current = i18n.language.startsWith('zh') ? 'zh' : 'en';
 
   return (
-    <SettingsShell title="语言">
+    <SettingsShell title={i18n.language.startsWith('zh') ? '语言' : 'Language'}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         {OPTIONS.map((opt, i) => {
           const active = current === opt.id;

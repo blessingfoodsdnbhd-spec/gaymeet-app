@@ -37,7 +37,26 @@
     "sharedInterests": "{{n}} shared interests",
     "emptyTitle": "That's it for today",
     "emptySubtitle": "You've seen everyone in your wavelength.\nCome back tomorrow 🍵",
-    "redo": "See again"
+    "redo": "See again",
+    "filters": {
+      "title": "Filters",
+      "distance": "Distance",
+      "interests": "Interests",
+      "unlimited": "All",
+      "interestsCount": "{{n}} selected",
+      "reset": "Reset",
+      "apply": "Apply"
+    }
+  },
+  "moments": {
+    "filters": {
+      "all": "All",
+      "friends": "Friends",
+      "nearby": "Nearby",
+      "interest": "Interests"
+    },
+    "empty": "No moments yet",
+    "loadFailed": "Couldn't load moments"
   },
   "match": {
     "title": "It's a Meyou!",
@@ -46,10 +65,60 @@
     "sendCta": "Send a message",
     "later": "Maybe later"
   },
+  "profile": {
+    "stats": {
+      "matches": "Matches",
+      "friends": "Friends",
+      "moments": "Moments"
+    },
+    "editProfile": "Edit profile",
+    "interestsTitle": "My interests",
+    "interestsEmpty": "No interests yet",
+    "interestsManage": "+ Manage",
+    "promptsTitle": "Prompts",
+    "promptsEmpty": "Add a prompt so people get to know you",
+    "promptsAdd": "+ Add prompt",
+    "settingsTitle": "Settings",
+    "rows": {
+      "premium": "Premium",
+      "premiumActive": "Active",
+      "premiumUpgrade": "Upgrade",
+      "privacy": "Privacy",
+      "notifications": "Notifications",
+      "language": "Language",
+      "languageValueZh": "Chinese",
+      "languageValueEn": "English",
+      "account": "Account & security"
+    }
+  },
+  "languageSettings": {
+    "title": "Language",
+    "zh": "Chinese",
+    "en": "English",
+    "zhNative": "中文",
+    "enNative": "English"
+  },
+  "privacySettings": {
+    "title": "Privacy",
+    "showInNearby": "Show me in Nearby",
+    "showInNearbyHint": "When off, you won't appear in other people's Nearby grid",
+    "showDistance": "Show my distance",
+    "showDistanceHint": "When off, only city shows — no kilometres",
+    "blocklist": "Blocked users",
+    "updateFailed": "Update failed"
+  },
+  "notificationSettings": {
+    "title": "Notifications"
+  },
+  "accountSettings": {
+    "title": "Account & security"
+  },
   "common": {
     "back": "Back",
     "close": "Close",
     "settings": "Settings",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "retry": "Retry",
+    "save": "Save"
   }
 }

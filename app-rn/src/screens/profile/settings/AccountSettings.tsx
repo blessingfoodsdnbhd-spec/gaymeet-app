@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
 import { deleteAccount } from '../../../api/me';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
 
 export function AccountSettings() {
+  const { t } = useTranslation();
   const user = useAuth((s) => s.user);
   const signOut = useAuth((s) => s.signOut);
   const [deleting, setDeleting] = useState(false);
@@ -66,7 +68,7 @@ export function AccountSettings() {
   };
 
   return (
-    <SettingsShell title="账户与安全">
+    <SettingsShell title={t('accountSettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         <LinkRow label="邮箱" detail={user?.email ?? '—'} />
       </SettingsCard>
