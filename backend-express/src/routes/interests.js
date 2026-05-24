@@ -1,5 +1,8 @@
 const router = require('express').Router();
 const User = require('../models/User');
+const Match = require('../models/Match');
+const Follow = require('../models/Follow');
+const Moment = require('../models/Moment');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 
@@ -90,6 +93,23 @@ router.patch('/privacy', auth, async (req, res, next) => {
     }
     const user = await User.findByIdAndUpdate(req.user._id, update, { new: true });
     ok(res, user.toPublicJSON());
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/me/stats ────────────────────────────────────────────────────────
+// Powers the three counters on the profile screen: 同频 (matched users),
+// 好友 (people I follow), 动态 (moments I've posted).
+router.get('/stats', auth, async (req, res, next) => {
+  try {
+    const uid = req.user._id;
+    const [matches, following, moments] = await Promise.all([
+      Match.countDocuments({ users: uid, isActive: true }),
+      Follow.countDocuments({ follower: uid }),
+      Moment.countDocuments({ user: uid, isActive: true }),
+    ]);
+    ok(res, { matches, following, moments });
   } catch (e) {
     next(e);
   }
