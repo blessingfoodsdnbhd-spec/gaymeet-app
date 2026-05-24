@@ -43,7 +43,13 @@ export function DiscoverScreen() {
 
   const [mode, setMode] = useState<Mode>('cards');
   const [aboutUser, setAboutUser] = useState<DiscoverCardUser | null>(null);
-  const [matched, setMatched] = useState<DiscoverCardUser | null>(null);
+  // matchId is the freshly-created Match document id from the mutual-like
+  // backend response. We need it to navigate the user from the celebration
+  // overlay into the chat thread — previously we only kept the user object
+  // and dropped match.id, so "Send a message" had nothing to navigate to.
+  const [matched, setMatched] = useState<
+    { user: DiscoverCardUser; matchId: string } | null
+  >(null);
   const [filters, setFilters] = useState<DiscoverFilters>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const stackRef = useRef<CardStackHandle>(null);
@@ -122,7 +128,12 @@ export function DiscoverScreen() {
       {
         onSuccess: (res) => {
           if (res.match) {
-            setMatched(user);
+            // Capture the matchId — needed by the overlay's "Send a
+            // message" CTA to navigate into the new chat thread.
+            setMatched({ user, matchId: res.match.id });
+            // Freshen the chats list cache so when the user lands in
+            // ChatDetail, the new thread is also present in the list.
+            queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
           }
         },
         onError: (e: any) => {
@@ -236,9 +247,15 @@ export function DiscoverScreen() {
 
       <MatchOverlay
         open={matched != null}
-        matchedUser={matched}
+        matchedUser={matched?.user ?? null}
         me={me}
-        onMessage={() => setMatched(null)}
+        onMessage={() => {
+          // Capture both before clearing so the navigate target survives
+          // the state update.
+          const matchId = matched?.matchId;
+          setMatched(null);
+          if (matchId) nav.navigate('ChatDetail', { chatId: matchId });
+        }}
         onLater={() => setMatched(null)}
       />
 
