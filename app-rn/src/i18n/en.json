@@ -184,7 +184,7 @@
     },
     "matchesList": {
       "empty": "No matches yet — head to Discover",
-      "matchedSuffix": "matched"
+      "matchedAt": "Matched · {{date}}"
     },
     "friendsList": {
       "empty": "No friends yet"

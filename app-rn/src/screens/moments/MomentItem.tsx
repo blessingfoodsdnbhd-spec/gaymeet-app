@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, Image, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +73,11 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         <Text style={[styles.content, { color: theme.colors.text }]}>{moment.content}</Text>
       ) : null}
 
-      {photos.length > 0 && <PhotoGrid photos={photos} maxWidth={width - 40} />}
+      {photos.length > 0 && (
+        <View style={styles.photoArea}>
+          <PhotoGrid photos={photos} maxWidth={width - 40} />
+        </View>
+      )}
 
       {tag && (
         <View style={{ marginTop: 12, paddingHorizontal: 20 }}>
@@ -145,17 +150,25 @@ function Action({
 }
 
 function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number }) {
+  // Use width:'100%' with aspectRatio rather than `width: maxWidth`
+  // alongside `marginHorizontal: 20`. The old form let the image
+  // sometimes overflow into the text region above (visible as text
+  // getting "cut in half" when the image finished loading) because
+  // the explicit pixel width could disagree with the parent's
+  // computed inner width when scrollbars / safe-area insets shifted.
+  // The wrapping <View style={styles.photoArea}> in the parent now
+  // owns the horizontal margin, so the image just fills it.
   if (photos.length === 1) {
     return (
       <Image
         source={{ uri: photos[0] }}
         style={{
-          width: maxWidth,
-          height: 220,
+          width: '100%',
+          aspectRatio: 4 / 3,
           borderRadius: 14,
-          marginHorizontal: 20,
-          marginTop: 12,
         }}
+        contentFit="cover"
+        transition={150}
       />
     );
   }
@@ -165,8 +178,6 @@ function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number })
   return (
     <View
       style={{
-        marginTop: 12,
-        marginHorizontal: 20,
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap,
@@ -177,6 +188,8 @@ function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number })
           key={i}
           source={{ uri: p }}
           style={{ width: tileW, height: tileW, borderRadius: 8 }}
+          contentFit="cover"
+          transition={150}
         />
       ))}
     </View>
@@ -188,6 +201,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Defensive: prevent any child (e.g. an image that briefly
+    // reports the wrong intrinsic size) from bleeding into the next
+    // card while RN re-measures.
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -200,6 +217,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: 20,
     marginTop: 10,
+    // Text owns its own vertical space; do NOT add maxHeight or
+    // numberOfLines here — captions wrap to any length the user wrote.
+  },
+  photoArea: {
+    marginTop: 12,
+    marginHorizontal: 20,
   },
   actions: {
     flexDirection: 'row',

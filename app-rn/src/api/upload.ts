@@ -26,12 +26,20 @@ function fileFromUri(uri: string, fieldName: string) {
 /**
  * Generic single-file upload to /api/upload. Returns the public URL.
  * Used for moments images and any other ad-hoc attachments.
+ *
+ * Timeout is bumped to 60s here (vs the global 30s) because:
+ *   - photos can be a few MB over cellular,
+ *   - the backend then re-uploads to Backblaze B2 (another network hop),
+ *   - and a cold Render dyno adds ~20-50s on top of all that.
  */
+const UPLOAD_TIMEOUT_MS = 60_000;
+
 export async function uploadFile(uri: string): Promise<string> {
   const fd = fileFromUri(uri, 'file');
   const res = await api.post('/upload', fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
     transformRequest: (data) => data, // axios would JSON.stringify FormData otherwise
+    timeout: UPLOAD_TIMEOUT_MS,
   });
   const body = res.data as any;
   const payload = (body?.data ?? body) as { url: string };
@@ -58,6 +66,7 @@ export async function uploadProfilePhoto(uri: string): Promise<PhotosUploadResul
     api.post('/users/photos', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
       transformRequest: (data) => data,
+      timeout: UPLOAD_TIMEOUT_MS,
     }) as any,
   );
 }

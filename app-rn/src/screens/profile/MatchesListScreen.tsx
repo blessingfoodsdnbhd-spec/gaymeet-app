@@ -135,7 +135,7 @@ function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void
           {thread.user.nickname}
         </Text>
         <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-          {shortTime(thread.matchedAt)} {t('profile.matchesList.matchedSuffix')}
+          {t('profile.matchesList.matchedAt', { date: shortTime(thread.matchedAt) })}
         </Text>
       </View>
       {thread.unreadCount > 0 && (

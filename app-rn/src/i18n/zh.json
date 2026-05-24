@@ -184,7 +184,7 @@
     },
     "matchesList": {
       "empty": "还没有同频好友 — 去发现卡片",
-      "matchedSuffix": "配对"
+      "matchedAt": "{{date}} 配对"
     },
     "friendsList": {
       "empty": "还没有好友"

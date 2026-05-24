@@ -9,9 +9,13 @@ const baseURL =
 // All backend routes are namespaced under /api on the Express server.
 const apiBase = baseURL.replace(/\/+$/, '') + '/api';
 
+// Default timeout covers the common case (~95% of calls finish in well
+// under 5s). Render's free tier cold-starts can take 30-50s though, so we
+// give some headroom. Upload endpoints (multipart, slow B2 round-trip)
+// override per-call via the second axios arg — see api/upload.ts.
 export const api = axios.create({
   baseURL: apiBase,
-  timeout: 15000,
+  timeout: 30000,
 });
 
 api.interceptors.request.use(async (config) => {
