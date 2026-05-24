@@ -2,10 +2,11 @@ const router = require('express').Router();
 const Question = require('../models/Question');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
+const { isPremiumActive } = require('../utils/premium');
 
 // ── Rate-limit helper: 3 questions/day for free users ─────────────────────────
 async function checkDailyLimit(senderUser) {
-  if (senderUser.isPremium || (senderUser.vipLevel && senderUser.vipLevel > 0)) return true;
+  if (isPremiumActive(senderUser)) return true;
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const count = await Question.countDocuments({

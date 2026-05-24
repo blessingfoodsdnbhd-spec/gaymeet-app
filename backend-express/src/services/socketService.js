@@ -176,8 +176,26 @@ function initSocket(server) {
         [`unreadCounts.${userId}`]: 0,
       });
 
-      // Notify the other party that messages were read
-      io.to(`match:${matchId}`).emit('chat:read', { matchId, readBy: userId });
+      // Read receipts are Premium-only. Only emit the "your message was
+      // read" event to the OTHER party (the sender of the now-read
+      // messages) AND only if THAT party is premium. Otherwise the free
+      // sender shouldn't see read state, and the reader doesn't need
+      // an echo of their own action.
+      const otherId = match.users
+        .find((u) => u.toString() !== userId)
+        ?.toString();
+      if (otherId) {
+        const { isPremiumActive } = require('../utils/premium');
+        const otherUser = await User.findById(otherId).select(
+          'isPremium premiumExpiresAt vipLevel vipExpiresAt',
+        );
+        if (otherUser && isPremiumActive(otherUser)) {
+          io.to(`user:${otherId}`).emit('chat:read', {
+            matchId,
+            readBy: userId,
+          });
+        }
+      }
     });
 
     // ── group:join ────────────────────────────────────────────────────────────

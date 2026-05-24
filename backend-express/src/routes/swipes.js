@@ -4,6 +4,7 @@ const Match = require('../models/Match');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { isPremiumActive } = require('../utils/premium');
 
 const FREE_DAILY_SWIPES = 20;
 
@@ -21,7 +22,7 @@ router.post('/', auth, async (req, res, next) => {
     const me = req.user;
 
     // ── Daily swipe limit for free users ──────────────────────────────────────
-    if (!me.isPremium && direction !== 'pass') {
+    if (!isPremiumActive(me) && direction !== 'pass') {
       const today = new Date().toISOString().slice(0, 10);
       const swipeUser = await User.findById(me._id);
 

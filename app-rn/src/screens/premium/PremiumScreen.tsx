@@ -21,7 +21,7 @@ import { Card } from '../../components/Card';
 import { brandGradient } from '../../theme/tokens';
 import { useAuth } from '../../store/auth';
 import { getPricing, IAP_SKUS } from '../../api/subscription';
-import { purchaseSubscription } from '../../utils/iap';
+import { purchaseSubscription, restoreSubscriptions } from '../../utils/iap';
 
 const BENEFIT_KEYS = [
   'directIntro',
@@ -41,6 +41,7 @@ export function PremiumScreen() {
   const setUser = useAuth((s) => s.setUser);
   const [selected, setSelected] = useState<Plan>('annual');
   const [busy, setBusy] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const pricingQ = useQuery({
     queryKey: ['pricing'],
@@ -55,6 +56,38 @@ export function PremiumScreen() {
   const pricing = pricingQ.data;
   const isActive = !!user && (user as any).isPremium === true;
   const expiresIso = (user as any)?.premiumExpiresAt;
+
+  // Restore previously-purchased subscription. Apple guideline 3.1.1
+  // requires this button on every IAP-using screen — review rejects
+  // builds without it. Calls the native restore flow, then replays the
+  // returned receipt through the same /verify-apple-receipt backend
+  // path that the purchase flow uses, so the server re-grants premium.
+  const onRestore = async () => {
+    if (restoring || busy) return;
+    setRestoring(true);
+    try {
+      const restored = await restoreSubscriptions();
+      if (restored) {
+        setUser({ ...(user as any), ...restored });
+        Alert.alert(
+          t('premium.restoreSuccessTitle'),
+          t('premium.restoreSuccessBody'),
+        );
+      } else {
+        Alert.alert(
+          t('premium.restoreNothingTitle'),
+          t('premium.restoreNothingBody'),
+        );
+      }
+    } catch (e: any) {
+      Alert.alert(
+        t('premium.restoreFailedTitle'),
+        e?.message ?? '',
+      );
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const onSubscribe = async () => {
     if (busy) return;
@@ -180,6 +213,27 @@ export function PremiumScreen() {
         >
           {t('premium.disclaimer')}
         </Text>
+
+        {/* Restore Purchases — Apple guideline 3.1.1. Subtle link
+            under the disclaimer; primary CTA stays the subscribe
+            button below. */}
+        <Pressable
+          onPress={onRestore}
+          disabled={restoring || busy}
+          hitSlop={10}
+          style={{ alignSelf: 'center', marginTop: 14, padding: 6 }}
+        >
+          <Text
+            style={{
+              color: theme.colors.primaryDeep,
+              fontSize: 13,
+              fontWeight: '500',
+              opacity: restoring || busy ? 0.5 : 1,
+            }}
+          >
+            {restoring ? '…' : t('premium.restore')}
+          </Text>
+        </Pressable>
       </ScrollView>
 
       <View style={{ padding: 20 }}>

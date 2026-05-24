@@ -304,7 +304,13 @@
     "subscribeSuccessTitle": "订阅成功",
     "subscribeSuccessBody": "欢迎成为 Premium 会员!",
     "subscribeFailedTitle": "订阅失败",
-    "subscribeFailedBody": "订阅失败,稍后再试"
+    "subscribeFailedBody": "订阅失败,稍后再试",
+    "restore": "恢复购买",
+    "restoreSuccessTitle": "已恢复 Premium",
+    "restoreSuccessBody": "已找到并重新激活你的订阅。",
+    "restoreNothingTitle": "没有可恢复的订阅",
+    "restoreNothingBody": "在这个 Apple ID 下没找到有效订阅。",
+    "restoreFailedTitle": "恢复失败"
   },
   "iapError": {
     "iosOnly": "Premium 暂只支持 iOS",
@@ -313,7 +319,8 @@
     "fetchFailed": "无法读取套餐: {{detail}}",
     "skuMissing": "App Store 找不到这个套餐,可能 SKU 未上架",
     "purchaseFailed": "购买失败: {{detail}}",
-    "receiptMissing": "拿不到 App Store receipt"
+    "receiptMissing": "拿不到 App Store receipt",
+    "restoreFailed": "恢复失败: {{detail}}"
   },
   "googleSignIn": {
     "notReadyTitle": "Google 登录暂未开通",
