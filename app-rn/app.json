@@ -60,6 +60,10 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.208538145733-ccuidhniu111ssc70ri9kjrdv6095obs"
         }
+      ],
+      [
+        "react-native-iap",
+        { "paymentProvider": "Play Store" }
       ]
     ],
     "extra": {
