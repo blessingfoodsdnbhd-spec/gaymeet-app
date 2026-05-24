@@ -114,7 +114,11 @@ router.get('/stats', auth, async (req, res, next) => {
   try {
     const uid = req.user._id;
     const [matchDocs, following, moments] = await Promise.all([
-      Match.find({ users: uid, isActive: true, source: 'match' })
+      // Don't filter `source: 'match'` in the Mongo query — that drops
+      // legacy documents that have no source field at all. conversations.js
+      // treats `m.source ?? 'match'` as the wire value, so a missing field
+      // counts as 'match'. Mirror that in JS post-filter below.
+      Match.find({ users: uid, isActive: true })
         .select('users source')
         .populate('users', '_id')
         .lean(),
@@ -124,7 +128,9 @@ router.get('/stats', auth, async (req, res, next) => {
     const matches = matchDocs.filter((m) => {
       const validUsers = (m.users || []).filter(Boolean);
       const other = validUsers.find((u) => u._id.toString() !== uid.toString());
-      return !!other;
+      if (!other) return false;
+      const src = m.source ?? 'match';
+      return src === 'match';
     }).length;
     ok(res, { matches, following, moments });
   } catch (e) {
