@@ -92,6 +92,12 @@
       "placeholder": "说点什么…",
       "loadFailed": "无法加载评论",
       "sendFailed": "发送失败"
+    },
+    "delete": {
+      "title": "删除这条动态?",
+      "body": "删除后无法恢复。",
+      "action": "删除",
+      "failed": "删除失败"
     }
   },
   "chats": {

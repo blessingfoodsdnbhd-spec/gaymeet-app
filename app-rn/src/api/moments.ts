@@ -48,6 +48,14 @@ export const getUserMoments = (userId: string, page = 1) =>
 export const toggleLike = (id: string) =>
   unwrap<{ likeCount: number; isLiked: boolean }>(api.post(`/moments/${id}/like`));
 
+/**
+ * Soft-delete a moment (the author's own). Backend sets isActive=false;
+ * GET single returns 404 afterwards and the feeds drop the row. Required
+ * by Apple guideline 1.2 — user must be able to delete their own UGC.
+ */
+export const deleteMoment = (id: string) =>
+  unwrap<{ success: true }>(api.delete(`/moments/${id}`));
+
 export const postMoment = (body: {
   content: string;
   images?: string[];

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, Pressable, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -11,7 +12,8 @@ import { Chip } from '../../components/Chip';
 import { tagById } from '../../data/interestTags';
 import { shortTime } from '../../utils/time';
 import { showSafetyMenu } from '../../utils/safetyMenu';
-import type { Moment } from '../../api/moments';
+import { useAuth } from '../../store/auth';
+import { deleteMoment, type Moment } from '../../api/moments';
 
 function idxFor(id: string) {
   let h = 0;
@@ -28,12 +30,65 @@ interface Props {
 
 export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }: Props) {
   const theme = useTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nav = useNavigation();
   const { width } = useWindowDimensions();
+  const me = useAuth((s) => s.user);
+  const queryClient = useQueryClient();
   const photos = moment.images ?? [];
   const tag = moment.tag ? tagById(moment.tag) : null;
   const tagLabel = tag ? (i18n.language?.startsWith('zh') ? tag.zh : tag.en) : '';
+  const isMine = !!me && moment.user._id === me.id;
+
+  // Soft-delete the moment. Optimistically removes the row from every
+  // moments query in the cache (MomentsScreen's ['moments', filter] and
+  // MyMomentsScreen's ['moments', 'user', userId]) so the FlatList
+  // updates immediately. Rolls back on failure. Refreshes the profile
+  // stats so the 动态 counter drops by one.
+  const deleteMut = useMutation({
+    mutationFn: () => deleteMoment(moment._id),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['moments'] });
+      const entries = queryClient.getQueriesData<Moment[]>({ queryKey: ['moments'] });
+      queryClient.setQueriesData<Moment[]>(
+        { queryKey: ['moments'] },
+        (prev) => (prev ?? []).filter((m) => m._id !== moment._id),
+      );
+      return { entries };
+    },
+    onError: (_e, _vars, ctx) => {
+      // Restore every snapshot we touched.
+      ctx?.entries.forEach(([key, data]) => queryClient.setQueryData(key, data));
+      Alert.alert(t('moments.delete.failed'));
+    },
+    onSettled: () => {
+      // Profile stat counter & comments query freshness.
+      queryClient.invalidateQueries({ queryKey: ['me', 'stats'] });
+    },
+  });
+
+  const onMore = () => {
+    if (isMine) {
+      Alert.alert(
+        t('moments.delete.title'),
+        t('moments.delete.body'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('moments.delete.action'),
+            style: 'destructive',
+            onPress: () => deleteMut.mutate(),
+          },
+        ],
+      );
+    } else {
+      showSafetyMenu({
+        userId: moment.user._id,
+        userName: moment.user.nickname,
+        nav: nav as any,
+      });
+    }
+  };
 
   return (
     <View style={[styles.wrap, { borderBottomColor: theme.colors.line }]}>
@@ -55,16 +110,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
             {moment.user.countryCode ? ` · ${moment.user.countryCode}` : ''}
           </Text>
         </View>
-        <Pressable
-          hitSlop={8}
-          onPress={() =>
-            showSafetyMenu({
-              userId: moment.user._id,
-              userName: moment.user.nickname,
-              nav: nav as any,
-            })
-          }
-        >
+        <Pressable hitSlop={8} onPress={onMore}>
           <MoreHorizontal size={20} color={theme.colors.muted} strokeWidth={1.6} />
         </Pressable>
       </View>

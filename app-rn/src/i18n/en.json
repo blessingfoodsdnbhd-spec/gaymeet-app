@@ -92,6 +92,12 @@
       "placeholder": "Say something…",
       "loadFailed": "Couldn't load comments",
       "sendFailed": "Send failed"
+    },
+    "delete": {
+      "title": "Delete this moment?",
+      "body": "This can't be undone.",
+      "action": "Delete",
+      "failed": "Delete failed"
     }
   },
   "chats": {
