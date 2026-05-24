@@ -90,43 +90,54 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     ],
   }));
 
+  // Hoist the GestureDetector ABOVE the cards map so it doesn't unmount
+  // and remount when the top card changes after a swipe. Previously each
+  // card was conditionally wrapped — `<GestureDetector><Animated.View>`
+  // for the top vs `<Animated.View>` alone for the rest. When card B
+  // transitioned non-top → top after a swipe, React saw a different
+  // element type at the same array position and rebuilt the whole
+  // subtree. That remount re-played expo-image's `transition={150}` fade
+  // on the (now-top) card's Image → the visible "flash" the user reported.
+  //
+  // Now every card uses the identical Animated.View wrapper; only the
+  // style switches between `topStyle` (gesture-driven) and the non-top
+  // translateY+scale. React reconciles in place, the Image stays
+  // mounted, no fade re-plays, no flash.
   return (
-    <View style={styles.wrap}>
-      {cards.slice(0, 3).reverse().map((card, i, arr) => {
-        const idx = arr.length - 1 - i; // 0 = top
-        const isTop = idx === 0;
-        const scale = 1 - idx * 0.04;
-        const offsetY = idx * 10;
+    <GestureDetector gesture={pan}>
+      <View style={styles.wrap}>
+        {cards.slice(0, 3).reverse().map((card, i, arr) => {
+          const idx = arr.length - 1 - i; // 0 = top
+          const isTop = idx === 0;
+          const scale = 1 - idx * 0.04;
+          const offsetY = idx * 10;
 
-        const baseStyle = {
-          position: 'absolute' as const,
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 10 - idx,
-          opacity: idx === 2 ? 0.92 : 1,
-        };
+          const baseStyle = {
+            position: 'absolute' as const,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 10 - idx,
+            opacity: idx === 2 ? 0.92 : 1,
+          };
 
-        if (isTop) {
           return (
-            <GestureDetector key={card.id} gesture={pan}>
-              <Animated.View style={[baseStyle, topStyle]}>
-                <DiscoverCard user={card} dragX={tx} isTop />
-              </Animated.View>
-            </GestureDetector>
+            <Animated.View
+              key={card.id}
+              style={[
+                baseStyle,
+                isTop
+                  ? topStyle
+                  : { transform: [{ translateY: offsetY }, { scale }] },
+              ]}
+            >
+              <DiscoverCard user={card} dragX={isTop ? tx : undefined} isTop={isTop} />
+            </Animated.View>
           );
-        }
-        return (
-          <Animated.View
-            key={card.id}
-            style={[baseStyle, { transform: [{ translateY: offsetY }, { scale }] }]}
-          >
-            <DiscoverCard user={card} />
-          </Animated.View>
-        );
-      })}
-    </View>
+        })}
+      </View>
+    </GestureDetector>
   );
 });
 

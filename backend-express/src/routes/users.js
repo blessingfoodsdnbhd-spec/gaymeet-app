@@ -375,7 +375,8 @@ router.get('/likes', auth, async (req, res, next) => {
 
     const likers = swipes.map((s) => s.fromUser);
 
-    if (me.isPremium) {
+    const { isPremiumActive } = require('../utils/premium');
+    if (isPremiumActive(me)) {
       ok(res, { count: likers.length, users: likers });
     } else {
       // Free: return count + blurred (just IDs + placeholder)

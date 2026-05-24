@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   StyleSheet,
+  ActionSheetIOS,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,7 +85,9 @@ export function ComposerScreen() {
     },
   });
 
-  const pickImages = async () => {
+  // Launch the OS image picker against the library. Multi-select up to
+  // the remaining slot count (MAX_PHOTOS - current).
+  const pickFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('moments.composer.photoPermTitle'), t('moments.composer.photoPermBody'));
@@ -95,13 +98,68 @@ export function ComposerScreen() {
       allowsMultipleSelection: true,
       selectionLimit: MAX_PHOTOS - photos.length,
       quality: 0.8,
-      // Convert HEIC → JPEG so backend / browsers don't choke on Apple's
-      // proprietary format
     });
     if (result.canceled) return;
     const uris = result.assets.map((a) => a.uri);
-    console.warn('picked photos:', uris);
     setPhotos([...photos, ...uris].slice(0, MAX_PHOTOS));
+  };
+
+  // Open the device camera and append the captured photo. One shot per
+  // tap — the camera UI doesn't have a multi-capture mode.
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('moments.cameraPermTitle'), t('moments.cameraPermBody'));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    if (result.canceled) return;
+    const uri = result.assets[0]?.uri;
+    if (uri) setPhotos([...photos, uri].slice(0, MAX_PHOTOS));
+  };
+
+  // Source picker — show an action sheet on iOS, fall back to a chained
+  // Alert on Android. Either route lets the user take a new photo OR
+  // pick existing ones from the library. Backend accepts up to 9 images
+  // per moment (Moment.images schema + routes/moments.js POST handler),
+  // so we keep MAX_PHOTOS in sync.
+  const onAddPhotoTap = () => {
+    if (photos.length >= MAX_PHOTOS) return;
+    const opts = [
+      t('moments.composer.takePhoto'),
+      t('moments.composer.chooseFromLibrary'),
+      t('moments.composer.cancel'),
+    ];
+    const handle = (idx: number) => {
+      if (idx === 0) takePhoto();
+      else if (idx === 1) pickFromLibrary();
+    };
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: t('moments.composer.addPhotoTitle'),
+          options: opts,
+          cancelButtonIndex: 2,
+          userInterfaceStyle: 'light',
+        },
+        handle,
+      );
+    } else {
+      // Android fallback — Alert with two action buttons + cancel.
+      Alert.alert(
+        t('moments.composer.addPhotoTitle'),
+        undefined,
+        [
+          { text: opts[0], onPress: () => handle(0) },
+          { text: opts[1], onPress: () => handle(1) },
+          { text: opts[2], style: 'cancel' },
+        ],
+      );
+    }
   };
 
   const removeAt = (i: number) => setPhotos(photos.filter((_, j) => j !== i));
@@ -184,7 +242,7 @@ export function ComposerScreen() {
               ))}
               {photos.length < MAX_PHOTOS && (
                 <Pressable
-                  onPress={pickImages}
+                  onPress={onAddPhotoTap}
                   style={[
                     styles.photoTile,
                     {

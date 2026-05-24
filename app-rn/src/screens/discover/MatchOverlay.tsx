@@ -103,7 +103,15 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
             <Text style={styles.bothLove}>
               {t('match.bothLove', { name: matchedUser.nickname })}
             </Text>
-            <Text style={styles.sharedRow}>{sharedZh} {t('match.sharedSuffix')}</Text>
+            {/* Only render the shared-tags line when there's actually
+                something to show. With an empty sharedTags array the old
+                code rendered "  有同样的兴趣" — looked like a blank fill-
+                in. If the matched user happens to have zero overlap,
+                better to suppress the line entirely than render
+                a misleading template. */}
+            {sharedZh ? (
+              <Text style={styles.sharedRow}>{sharedZh} {t('match.sharedSuffix')}</Text>
+            ) : null}
           </View>
 
           <Pressable onPress={onMessage} style={styles.primary}>

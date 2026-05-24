@@ -4,6 +4,7 @@ const { ok, err } = require('../utils/respond');
 const Match = require('../models/Match');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const { isPremiumActive } = require('../utils/premium');
 
 // Meyou 密友 v2 — only monetisation is the Premium subscription:
 //   monthly: RM 39.90
@@ -14,17 +15,6 @@ const PREMIUM_PRICING = {
   monthly: { price: 39.9, currency: 'MYR', period: 'month' },
   annual:  { price: 399.9, currency: 'MYR', period: 'year'  },
 };
-
-function isPremiumActive(user) {
-  if (!user) return false;
-  if (user.vipLevel > 0) {
-    if (!user.vipExpiresAt || new Date(user.vipExpiresAt) > new Date()) return true;
-  }
-  if (user.isPremium) {
-    if (!user.premiumExpiresAt || new Date(user.premiumExpiresAt) > new Date()) return true;
-  }
-  return false;
-}
 
 // ── GET /api/conversations ─────────────────────────────────────────────────────
 // List all conversations (mutual matches + dm-opened), formatted for MatchModel.fromJson
@@ -216,7 +206,19 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
       .limit(parseInt(limit))
       .lean();
 
-    ok(res, messages.reverse());
+    // Read receipts are a Premium feature. For non-premium requesters,
+    // strip the `readBy` array so a "your message was read" tick can't
+    // be inferred from the response. (Premium gating must be server-
+    // side — a custom client could otherwise just read the field.)
+    const isPremium = isPremiumActive(req.user);
+    const sanitized = isPremium
+      ? messages
+      : messages.map((m) => {
+          const { readBy, ...rest } = m;
+          return rest;
+        });
+
+    ok(res, sanitized.reverse());
   } catch (e) {
     next(e);
   }

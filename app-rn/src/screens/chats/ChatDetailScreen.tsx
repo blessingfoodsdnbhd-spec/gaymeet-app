@@ -76,8 +76,24 @@ export function ChatDetailScreen() {
   useEffect(() => {
     setFocus(matchId);
     markRead(matchId);
+    // Tell the server we're now reading this thread. The backend
+    // `join_room` handler (services/socketService.js) marks all unread
+    // messages as readBy this user AND resets unreadCounts[userId] = 0
+    // on the Match document — so the next /api/conversations fetch
+    // returns unreadCount: 0 for this row.
+    wsEmit('join_room', { matchId });
+    // Mirror that reset locally in the chats-list query cache so the
+    // badge clears the moment the user navigates back, instead of
+    // waiting for the next refetch (ChatsListScreen reads the FlatList
+    // data from React Query, not from Zustand — `markRead` above only
+    // updates Zustand which doesn't drive the rendered list).
+    queryClient.setQueryData<ChatThread[]>(['chats', 'list'], (prev) =>
+      (prev ?? []).map((t) =>
+        t.matchId === matchId ? { ...t, unreadCount: 0 } : t,
+      ),
+    );
     return () => setFocus(null);
-  }, [matchId, setFocus, markRead]);
+  }, [matchId, setFocus, markRead, queryClient]);
 
   // The conversations API addresses messages by the OTHER user's id, not the
   // matchId. Without the thread loaded we don't know who that is — wait for

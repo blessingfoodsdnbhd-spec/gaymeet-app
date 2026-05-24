@@ -2,13 +2,14 @@ const router = require('express').Router();
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { isPremiumActive } = require('../utils/premium');
 
 // ── POST /api/users/boost ─────────────────────────────────────────────────────
 router.post('/boost', auth, async (req, res, next) => {
   try {
     const me = req.user;
 
-    if (!me.isPremium) {
+    if (!isPremiumActive(me)) {
       return err(res, 'Boost requires Premium', 403);
     }
 
