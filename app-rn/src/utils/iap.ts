@@ -1,50 +1,47 @@
 import { Platform } from 'react-native';
 import i18n from '../i18n';
-import { verifyAppleReceipt, IAP_SKUS } from '../api/subscription';
+import {
+  verifyAppleReceipt,
+  verifyGooglePurchase,
+  IAP_SKUS,
+  ANDROID_IAP,
+  ANDROID_PACKAGE_NAME,
+  basePlanForAppleSku,
+} from '../api/subscription';
 
-/**
- * Purchase a subscription via the device's IAP store.
- *
- * Requires `react-native-iap` to be installed AND configured in
- * App Store Connect with matching SKUs (see `IAP_SKUS`). The native
- * module is lazy-imported so Expo Go and development builds without
- * IAP support get a clear error rather than a startup crash.
- *
- * Returns the backend's updated isPremium / premiumExpiresAt on success.
- * Returns null on user cancellation.
- */
-export async function purchaseSubscription(sku: string): Promise<{
+type PremiumResult = {
   isPremium: boolean;
   premiumExpiresAt: string | null;
-} | null> {
-  const t = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
+};
 
-  // Android requires Google Play setup — skip for now.
-  if (Platform.OS !== 'ios') {
-    throw new Error(t('iapError.iosOnly'));
-  }
+const tx = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
 
-  let RNIap: any;
+async function loadRNIap(): Promise<any> {
   try {
-    RNIap = await import('react-native-iap');
+    return await import('react-native-iap');
   } catch {
-    throw new Error(t('iapError.moduleMissing'));
+    throw new Error(tx('iapError.moduleMissing'));
   }
+}
 
+async function safeInit(RNIap: any) {
   try {
     await RNIap.initConnection();
   } catch (e: any) {
-    throw new Error(t('iapError.initFailed', { detail: e?.message ?? e }));
+    throw new Error(tx('iapError.initFailed', { detail: e?.message ?? e }));
   }
+}
 
+// ─── iOS purchase ────────────────────────────────────────────────────────────
+async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | null> {
   let products: any[];
   try {
     products = await RNIap.getSubscriptions({ skus: [sku] });
   } catch (e: any) {
-    throw new Error(t('iapError.fetchFailed', { detail: e?.message ?? e }));
+    throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
   if (!products || products.length === 0) {
-    throw new Error(t('iapError.skuMissing'));
+    throw new Error(tx('iapError.skuMissing'));
   }
 
   let purchase: any;
@@ -53,94 +50,134 @@ export async function purchaseSubscription(sku: string): Promise<{
   } catch (e: any) {
     const msg = String(e?.message ?? e);
     if (/cancel|user closed/i.test(msg)) return null;
-    throw new Error(t('iapError.purchaseFailed', { detail: msg }));
+    throw new Error(tx('iapError.purchaseFailed', { detail: msg }));
   }
   if (!purchase) return null;
 
-  // iOS 7+ exposes the raw receipt via getReceiptIOS()
   let receipt: string | undefined = purchase.transactionReceipt;
   if (!receipt && RNIap.getReceiptIOS) {
     receipt = await RNIap.getReceiptIOS();
   }
   if (!receipt) {
-    throw new Error(t('iapError.receiptMissing'));
+    throw new Error(tx('iapError.receiptMissing'));
   }
 
-  // Hand off to backend for verification — Apple-validated receipts are the
-  // source of truth for activating Premium on the User document.
   const result = await verifyAppleReceipt(receipt, sku);
 
-  // Acknowledge the purchase so iOS doesn't keep replaying it on next launch.
   try {
     await RNIap.finishTransaction({ purchase, isConsumable: false });
   } catch {
     // best effort
   }
+  return result;
+}
 
+// ─── Android purchase ────────────────────────────────────────────────────────
+// Play uses ONE subscription ID with multiple base plans; the caller still
+// passes an Apple-style sku (monthly/annual), and we translate to the right
+// base plan + look up its offerToken from subscriptionOfferDetails.
+async function purchaseAndroid(
+  appleSku: string,
+  RNIap: any,
+): Promise<PremiumResult | null> {
+  const wantedBasePlan = basePlanForAppleSku(appleSku);
+  if (!wantedBasePlan) {
+    throw new Error(tx('iapError.skuMissing'));
+  }
+  const subscriptionId = ANDROID_IAP.subscriptionId;
+
+  let products: any[];
+  try {
+    products = await RNIap.getSubscriptions({ skus: [subscriptionId] });
+  } catch (e: any) {
+    throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
+  }
+  const product = (products || []).find((p: any) => p?.productId === subscriptionId);
+  if (!product) {
+    throw new Error(tx('iapError.skuMissing'));
+  }
+
+  const offers = product.subscriptionOfferDetails || [];
+  const matchingOffer = offers.find((o: any) => o?.basePlanId === wantedBasePlan);
+  if (!matchingOffer?.offerToken) {
+    throw new Error(tx('iapError.skuMissing'));
+  }
+
+  let purchase: any;
+  try {
+    purchase = await RNIap.requestSubscription({
+      sku: subscriptionId,
+      subscriptionOffers: [
+        { sku: subscriptionId, offerToken: matchingOffer.offerToken },
+      ],
+    });
+  } catch (e: any) {
+    const msg = String(e?.message ?? e);
+    if (/cancel|user closed/i.test(msg)) return null;
+    throw new Error(tx('iapError.purchaseFailed', { detail: msg }));
+  }
+  // RNIap may return an array on Android (one purchase per SKU).
+  const top = Array.isArray(purchase) ? purchase[0] : purchase;
+  if (!top) return null;
+
+  const purchaseToken: string | undefined = top.purchaseToken;
+  const productId: string = top.productId || subscriptionId;
+  if (!purchaseToken) {
+    throw new Error(tx('iapError.receiptMissing'));
+  }
+
+  const result = await verifyGooglePurchase(
+    purchaseToken,
+    productId,
+    ANDROID_PACKAGE_NAME,
+  );
+
+  // Acknowledge so Play doesn't auto-refund. Backend also acknowledges
+  // (double-ack is idempotent on Play's side), but the native ack tells
+  // RNIap to stop replaying the pending purchase.
+  try {
+    await RNIap.finishTransaction({ purchase: top, isConsumable: false });
+  } catch {
+    // best effort
+  }
   return result;
 }
 
 /**
- * Restore an existing Premium subscription on a new device / after a
- * reinstall. Apple guideline 3.1.1 requires every IAP-using app expose
- * a Restore button — submission will be rejected otherwise.
+ * Purchase a subscription via the device's IAP store.
  *
- *   - Calls native RNIap.getAvailablePurchases() to surface any
- *     previously-purchased entitlement still active for this Apple ID.
- *   - For each restored receipt matching one of our SKUs, replays it
- *     through the backend's /verify-apple-receipt endpoint so the
- *     server re-grants premium and returns the updated state.
- *   - Returns the activated isPremium/premiumExpiresAt OR null if
- *     nothing restorable was found.
- *   - On a native-module error (no IAP support, etc.) throws with a
- *     userFriendlyMessage; the caller surfaces an Alert.
+ * Caller always passes an Apple-style SKU (`IAP_SKUS.monthly|annual`);
+ * Android internally translates to the Play subscription + base plan.
+ *
+ * Returns the backend's updated isPremium / premiumExpiresAt on success.
+ * Returns null on user cancellation.
  */
-export async function restoreSubscriptions(): Promise<{
-  isPremium: boolean;
-  premiumExpiresAt: string | null;
-} | null> {
-  const t = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
+export async function purchaseSubscription(sku: string): Promise<PremiumResult | null> {
+  const RNIap = await loadRNIap();
+  await safeInit(RNIap);
+  if (Platform.OS === 'ios') return purchaseIOS(sku, RNIap);
+  if (Platform.OS === 'android') return purchaseAndroid(sku, RNIap);
+  throw new Error(tx('iapError.iosOnly'));
+}
 
-  if (Platform.OS !== 'ios') {
-    throw new Error(t('iapError.iosOnly'));
-  }
-
-  let RNIap: any;
-  try {
-    RNIap = await import('react-native-iap');
-  } catch {
-    throw new Error(t('iapError.moduleMissing'));
-  }
-
-  try {
-    await RNIap.initConnection();
-  } catch (e: any) {
-    throw new Error(t('iapError.initFailed', { detail: e?.message ?? e }));
-  }
-
+// ─── Restore: iOS ────────────────────────────────────────────────────────────
+async function restoreIOS(RNIap: any): Promise<PremiumResult | null> {
   let purchases: any[] = [];
   try {
     purchases = await RNIap.getAvailablePurchases();
   } catch (e: any) {
-    throw new Error(t('iapError.restoreFailed', { detail: e?.message ?? e }));
+    throw new Error(tx('iapError.restoreFailed', { detail: e?.message ?? e }));
   }
-
-  // Filter to only our subscription SKUs — Apple may also return stale
-  // consumables / unrelated entitlements.
   const ourSkus = new Set<string>([IAP_SKUS.monthly, IAP_SKUS.annual]);
-  const eligible = (purchases || []).filter((p: any) =>
-    ourSkus.has(p?.productId),
-  );
+  const eligible = (purchases || []).filter((p: any) => ourSkus.has(p?.productId));
   if (eligible.length === 0) return null;
 
-  // Walk newest-first and try each receipt with the backend until one
-  // succeeds. The latest receipt usually covers the full history.
   eligible.sort(
     (a: any, b: any) =>
       Number(b.transactionDate ?? 0) - Number(a.transactionDate ?? 0),
   );
 
-  let activated: { isPremium: boolean; premiumExpiresAt: string | null } | null = null;
+  let activated: PremiumResult | null = null;
   let lastErr: any = null;
   for (const p of eligible) {
     const receipt: string | undefined =
@@ -163,10 +200,76 @@ export async function restoreSubscriptions(): Promise<{
 
   if (!activated && lastErr) {
     throw new Error(
-      t('iapError.restoreFailed', {
+      tx('iapError.restoreFailed', {
         detail: lastErr?.message ?? String(lastErr),
       }),
     );
   }
   return activated;
+}
+
+// ─── Restore: Android ────────────────────────────────────────────────────────
+async function restoreAndroid(RNIap: any): Promise<PremiumResult | null> {
+  let purchases: any[] = [];
+  try {
+    purchases = await RNIap.getAvailablePurchases();
+  } catch (e: any) {
+    throw new Error(tx('iapError.restoreFailed', { detail: e?.message ?? e }));
+  }
+  const eligible = (purchases || []).filter(
+    (p: any) => p?.productId === ANDROID_IAP.subscriptionId,
+  );
+  if (eligible.length === 0) return null;
+
+  // Most recent first — Play returns transactionDate as a string ISO or
+  // a millis number depending on RNIap version.
+  eligible.sort((a: any, b: any) => {
+    const av = Number(a?.transactionDate ?? Date.parse(a?.transactionDate ?? '') ?? 0);
+    const bv = Number(b?.transactionDate ?? Date.parse(b?.transactionDate ?? '') ?? 0);
+    return bv - av;
+  });
+
+  let activated: PremiumResult | null = null;
+  let lastErr: any = null;
+  for (const p of eligible) {
+    if (!p?.purchaseToken) {
+      lastErr = new Error('no purchaseToken on purchase');
+      continue;
+    }
+    try {
+      const res = await verifyGooglePurchase(
+        p.purchaseToken,
+        p.productId || ANDROID_IAP.subscriptionId,
+        ANDROID_PACKAGE_NAME,
+      );
+      if (res?.isPremium) {
+        activated = res;
+        break;
+      }
+    } catch (e: any) {
+      lastErr = e;
+    }
+  }
+
+  if (!activated && lastErr) {
+    throw new Error(
+      tx('iapError.restoreFailed', {
+        detail: lastErr?.message ?? String(lastErr),
+      }),
+    );
+  }
+  return activated;
+}
+
+/**
+ * Restore an existing Premium subscription on a new device / after a
+ * reinstall. Apple guideline 3.1.1 (and Play has a similar expectation)
+ * requires every IAP-using app expose a Restore button.
+ */
+export async function restoreSubscriptions(): Promise<PremiumResult | null> {
+  const RNIap = await loadRNIap();
+  await safeInit(RNIap);
+  if (Platform.OS === 'ios') return restoreIOS(RNIap);
+  if (Platform.OS === 'android') return restoreAndroid(RNIap);
+  throw new Error(tx('iapError.iosOnly'));
 }

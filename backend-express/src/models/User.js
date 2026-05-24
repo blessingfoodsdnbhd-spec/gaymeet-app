@@ -85,6 +85,10 @@ const userSchema = new mongoose.Schema(
     // Apple IAP — used by /api/subscriptions/apple-webhook to find the user
     // a renewal/expiry event belongs to. Set by verify-apple-receipt.
     appleOriginalTransactionId: { type: String, default: null, sparse: true },
+    // Google Play — purchaseToken used by /api/subscriptions/google-webhook
+    // to find the user a renewal/expiry event belongs to. Set by
+    // verify-google-purchase; updated on the upgrade/downgrade token chain.
+    googleOriginalPurchaseToken: { type: String, default: null, sparse: true },
 
     // Privacy preferences
     preferences: { type: preferencesSchema, default: () => ({}) },
@@ -214,6 +218,7 @@ userSchema.index({ isBoosted: 1, lastActiveAt: -1 });
 userSchema.index({ referralCode: 1 });
 userSchema.index({ googleId: 1 }, { sparse: true });
 userSchema.index({ appleId: 1 }, { sparse: true });
+userSchema.index({ googleOriginalPurchaseToken: 1 }, { sparse: true });
 
 // ── Virtuals ──────────────────────────────────────────────────────────────────
 userSchema.virtual('distanceLabel').get(function () {
