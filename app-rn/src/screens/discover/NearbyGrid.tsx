@@ -19,9 +19,12 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  // Per user feedback "左边右边 留一点空白" — was edge-to-edge brick
+  // (horizontalPad=0, gap=0); now padded sides + a thin gap between
+  // tiles so the grid reads as cards, not a poster wall.
   const cols = 4;
-  const gap = 0; // edge-to-edge tiles
-  const horizontalPad = 0;
+  const gap = 4;
+  const horizontalPad = 14;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
   const tileH = tileW; // square
 
@@ -162,7 +165,10 @@ const styles = StyleSheet.create({
   },
   tileBg: {
     flex: 1,
-    borderRadius: 0, // sharp square edges, no gap between tiles
+    // Rounded a touch so the now-spaced tiles read as cards instead of
+    // sharp squares floating in the new gap. If the user prefers the
+    // old brutalist sharp-edge look, drop this to 0.
+    borderRadius: 10,
     overflow: 'hidden',
   },
   tileInitial: {
