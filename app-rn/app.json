@@ -3,7 +3,7 @@
     "name": "Meyou",
     "slug": "meyou",
     "scheme": "meyou",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/logo.jpg",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "12",
+      "buildNumber": "13",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
