@@ -14,6 +14,8 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
@@ -23,6 +25,7 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useAuth } from '../../store/auth';
+import { getMyStats } from '../../api/me';
 import type { RootStackParamList } from '../../navigation/types';
 
 // Profile sub-pages are presented as modals over MainTabs. They aren't
@@ -32,13 +35,25 @@ type AnyNav = NativeStackNavigationProp<any>;
 
 export function ProfileScreen() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const nav = useNavigation<AnyNav>();
   const user = useAuth((s) => s.user);
+
+  // The stats endpoint is cheap (three countDocuments calls) but we still
+  // cache for a minute — the profile tab is bounced into often.
+  const statsQ = useQuery({
+    queryKey: ['me', 'stats'],
+    queryFn: getMyStats,
+    staleTime: 60_000,
+    enabled: !!user,
+  });
 
   if (!user) return null;
 
   const interests = (user.interests ?? []) as InterestTagId[];
   const prompts = user.prompts ?? [];
+  const stats = statsQ.data;
+  const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
@@ -85,7 +100,7 @@ export function ProfileScreen() {
             ) : null}
           </View>
           <Button
-            label="编辑资料"
+            label={t('profile.editProfile')}
             variant="soft"
             small
             leadingIcon={<Edit2 size={14} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
@@ -96,13 +111,13 @@ export function ProfileScreen() {
 
         {/* Stats */}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-          <Stat label="同频" value="—" />
-          <Stat label="好友" value="—" />
-          <Stat label="动态" value="—" />
+          <Stat label={t('profile.stats.matches')} value={fmt(stats?.matches)} />
+          <Stat label={t('profile.stats.friends')} value={fmt(stats?.following)} />
+          <Stat label={t('profile.stats.moments')} value={fmt(stats?.moments)} />
         </View>
 
         {/* My interests */}
-        <SectionTitle>我的兴趣</SectionTitle>
+        <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
         <View style={[styles.tagsRow]}>
           {interests.length > 0 ? (
             interests.map((id) => {
@@ -111,7 +126,7 @@ export function ProfileScreen() {
               return <TagChip key={id} tag={tag} shared />;
             })
           ) : (
-            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>还没有兴趣</Text>
+            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.interestsEmpty')}</Text>
           )}
           <Pressable
             onPress={() => nav.navigate('TagsEdit')}
@@ -124,12 +139,12 @@ export function ProfileScreen() {
               borderColor: theme.colors.line,
             }}
           >
-            <Text style={{ color: theme.colors.text2, fontSize: 14 }}>+ 管理</Text>
+            <Text style={{ color: theme.colors.text2, fontSize: 14 }}>{t('profile.interestsManage')}</Text>
           </Pressable>
         </View>
 
         {/* My prompts */}
-        <SectionTitle>个人答题</SectionTitle>
+        <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>
         {prompts.length > 0 ? (
           prompts.map((p, i) => (
             <Card key={i} surface2 flat style={{ padding: 14, marginBottom: 10 }}>
@@ -152,47 +167,47 @@ export function ProfileScreen() {
           ))
         ) : (
           <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
-            添加 prompt 让人更了解你
+            {t('profile.promptsEmpty')}
           </Text>
         )}
         <Pressable onPress={() => nav.navigate('PromptsEdit')} style={{ marginTop: 6 }}>
           <Text style={{ color: theme.colors.primary, fontSize: 13.5, fontWeight: '500' }}>
-            + 添加问题
+            {t('profile.promptsAdd')}
           </Text>
         </Pressable>
 
         {/* Settings rows */}
-        <SectionTitle>设置</SectionTitle>
+        <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
         <Card flat style={{ paddingVertical: 4 }}>
           <SettingsRow
             icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label="Premium 会员"
-            detail={(user as any).isPremium ? '已开通' : '升级'}
+            label={t('profile.rows.premium')}
+            detail={(user as any).isPremium ? t('profile.rows.premiumActive') : t('profile.rows.premiumUpgrade')}
             onPress={() => nav.navigate('Premium')}
           />
           <Divider />
           <SettingsRow
             icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label="隐私"
+            label={t('profile.rows.privacy')}
             onPress={() => nav.navigate('PrivacySettings')}
           />
           <Divider />
           <SettingsRow
             icon={<Bell size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label="通知"
+            label={t('profile.rows.notifications')}
             onPress={() => nav.navigate('NotificationSettings')}
           />
           <Divider />
           <SettingsRow
             icon={<Globe size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label="语言"
-            detail="中文"
+            label={t('profile.rows.language')}
+            detail={i18n.language.startsWith('zh') ? t('profile.rows.languageValueZh') : t('profile.rows.languageValueEn')}
             onPress={() => nav.navigate('LanguageSettings')}
           />
           <Divider />
           <SettingsRow
             icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label="账户与安全"
+            label={t('profile.rows.account')}
             onPress={() => nav.navigate('AccountSettings')}
           />
         </Card>

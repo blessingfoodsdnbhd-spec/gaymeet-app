@@ -58,6 +58,13 @@ export const setPrivacy = (patch: { nearbyVisible?: boolean; showDistance?: bool
 export const updateLocation = (latitude: number, longitude: number) =>
   unwrap<{ success: true }>(api.put('/users/me/location', { latitude, longitude }));
 
+export interface MyStats {
+  matches: number;
+  following: number;
+  moments: number;
+}
+export const getMyStats = () => unwrap<MyStats>(api.get('/me/stats'));
+
 /** Permanently delete the current account. Backend wipes matches, messages,
  * moments, and the user document itself. JWT alone is required — no
  * password — because most users sign in via OTP / Apple / Google. */

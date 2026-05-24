@@ -178,11 +178,24 @@ export function ChatDetailScreen() {
       return { pendingId };
     },
     onSuccess: (real, _vars, ctx) => {
-      queryClient.setQueryData<Message[]>(['chats', 'messages', matchId], (prev) =>
-        (prev ?? []).map((m) =>
+      // The WS chat:receive echo can arrive BEFORE this HTTP POST returns.
+      // If it did, the real message is already in the cache (added by the
+      // WS handler) AND the optimistic message is still there with
+      // pendingId. Naively replacing the optimistic with `real` then leaves
+      // two cache entries with the same real.id → React duplicate-key.
+      // Detect that case and drop the optimistic instead of replacing it.
+      queryClient.setQueryData<Message[]>(['chats', 'messages', matchId], (prev) => {
+        const arr = prev ?? [];
+        const wsAlreadyHasIt = arr.some(
+          (m) => m.id === real.id && m.pendingId !== ctx?.pendingId,
+        );
+        if (wsAlreadyHasIt) {
+          return arr.filter((m) => m.pendingId !== ctx?.pendingId);
+        }
+        return arr.map((m) =>
           m.pendingId === ctx?.pendingId ? { ...real, status: 'sent' } : m,
-        ),
-      );
+        );
+      });
     },
     onError: (_err, _vars, ctx) => {
       queryClient.setQueryData<Message[]>(['chats', 'messages', matchId], (prev) =>

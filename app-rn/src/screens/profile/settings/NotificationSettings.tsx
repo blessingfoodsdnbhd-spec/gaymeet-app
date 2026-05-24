@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
 
@@ -12,6 +13,7 @@ import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
  */
 export function NotificationSettings() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [status, setStatus] = useState<'granted' | 'denied' | 'undetermined' | 'unknown'>(
     'unknown',
   );
@@ -45,7 +47,7 @@ export function NotificationSettings() {
       : '未知';
 
   return (
-    <SettingsShell title="通知">
+    <SettingsShell title={t('notificationSettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         <LinkRow label="系统推送" detail={label} />
         <Divider />

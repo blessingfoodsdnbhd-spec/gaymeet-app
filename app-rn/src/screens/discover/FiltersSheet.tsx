@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { TagChip } from '../../components/TagChip';
@@ -21,6 +22,7 @@ const DEFAULT_RADIUS = 10;
 
 export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [radius, setRadius] = useState<number>(initial.radiusKm ?? DEFAULT_RADIUS);
   const [picked, setPicked] = useState<Set<InterestTagId>>(
     new Set(initial.interests ?? []),
@@ -64,10 +66,10 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
   return (
     <Sheet open={open} onClose={onClose} maxHeight="80%">
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>筛选</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t('discover.filters.title')}</Text>
 
         <Text style={[styles.section, { color: theme.colors.muted }]}>
-          距离 · {radius === 100 ? '不限' : `${radius} km`}
+          {t('discover.filters.distance')} · {radius === 100 ? t('discover.filters.unlimited') : `${radius} km`}
         </Text>
         <View style={styles.radiusRow}>
           {RADIUS_OPTIONS.map((r) => {
@@ -75,7 +77,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
             return (
               <View key={r} style={{ flex: 1 }}>
                 <Button
-                  label={r === 100 ? '不限' : `${r}`}
+                  label={r === 100 ? t('discover.filters.unlimited') : `${r}`}
                   variant={active ? 'soft' : 'ghost'}
                   onPress={() => setRadius(r)}
                   small
@@ -87,7 +89,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
         </View>
 
         <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
-          兴趣 · {picked.size === 0 ? '不限' : `${picked.size} 个`}
+          {t('discover.filters.interests')} · {picked.size === 0 ? t('discover.filters.unlimited') : t('discover.filters.interestsCount', { n: picked.size })}
         </Text>
         <View style={styles.tagsRow}>
           {sortedTags.map((tag) => (
@@ -103,10 +105,10 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
 
       <View style={styles.footer}>
         <View style={{ flex: 1 }}>
-          <Button label="重置" variant="ghost" onPress={reset} fullWidth />
+          <Button label={t('discover.filters.reset')} variant="ghost" onPress={reset} fullWidth />
         </View>
         <View style={{ flex: 2 }}>
-          <Button label="应用" onPress={apply} fullWidth />
+          <Button label={t('discover.filters.apply')} onPress={apply} fullWidth />
         </View>
       </View>
     </Sheet>

@@ -37,7 +37,26 @@
     "sharedInterests": "{{n}} 个共同兴趣",
     "emptyTitle": "今天就到这儿啦",
     "emptySubtitle": "已经看完了你的同好。\n明天再回来看看 🍵",
-    "redo": "再看一遍"
+    "redo": "再看一遍",
+    "filters": {
+      "title": "筛选",
+      "distance": "距离",
+      "interests": "兴趣",
+      "unlimited": "不限",
+      "interestsCount": "{{n}} 个",
+      "reset": "重置",
+      "apply": "应用"
+    }
+  },
+  "moments": {
+    "filters": {
+      "all": "全部",
+      "friends": "同好",
+      "nearby": "附近",
+      "interest": "兴趣"
+    },
+    "empty": "这里还没有动态",
+    "loadFailed": "无法加载"
   },
   "match": {
     "title": "It's a Meyou!",
@@ -46,10 +65,60 @@
     "sendCta": "发条消息打招呼",
     "later": "稍后再说"
   },
+  "profile": {
+    "stats": {
+      "matches": "同频",
+      "friends": "好友",
+      "moments": "动态"
+    },
+    "editProfile": "编辑资料",
+    "interestsTitle": "我的兴趣",
+    "interestsEmpty": "还没有兴趣",
+    "interestsManage": "+ 管理",
+    "promptsTitle": "个人答题",
+    "promptsEmpty": "添加 prompt 让人更了解你",
+    "promptsAdd": "+ 添加问题",
+    "settingsTitle": "设置",
+    "rows": {
+      "premium": "Premium 会员",
+      "premiumActive": "已开通",
+      "premiumUpgrade": "升级",
+      "privacy": "隐私",
+      "notifications": "通知",
+      "language": "语言",
+      "languageValueZh": "中文",
+      "languageValueEn": "English",
+      "account": "账户与安全"
+    }
+  },
+  "languageSettings": {
+    "title": "语言",
+    "zh": "中文",
+    "en": "English",
+    "zhNative": "Chinese",
+    "enNative": "英文"
+  },
+  "privacySettings": {
+    "title": "隐私",
+    "showInNearby": "在「附近」显示我",
+    "showInNearbyHint": "关闭后,你不会出现在其他人的「附近」网格中",
+    "showDistance": "显示我的距离",
+    "showDistanceHint": "关闭后只显示城市,不显示距离公里数",
+    "blocklist": "黑名单",
+    "updateFailed": "设置失败"
+  },
+  "notificationSettings": {
+    "title": "通知"
+  },
+  "accountSettings": {
+    "title": "账户与安全"
+  },
   "common": {
     "back": "返回",
     "close": "关闭",
     "settings": "设置",
-    "loading": "加载中…"
+    "loading": "加载中…",
+    "retry": "重试",
+    "save": "保存"
   }
 }

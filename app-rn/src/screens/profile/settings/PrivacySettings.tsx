@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy } from '../../../api/me';
 import {
@@ -10,14 +11,15 @@ import {
   LinkRow,
 } from './SettingsShell';
 
-function reportFailure(e: any, label: string) {
+function reportFailure(e: any, title: string) {
   const status = e?.response?.status;
   const detail =
     e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
-  Alert.alert(`${label}失败`, `${detail}${status ? ` (HTTP ${status})` : ''}`);
+  Alert.alert(title, `${detail}${status ? ` (HTTP ${status})` : ''}`);
 }
 
 export function PrivacySettings() {
+  const { t } = useTranslation();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
 
@@ -36,7 +38,7 @@ export function PrivacySettings() {
       setUser(updated);
     } catch (e) {
       setNearbyVisible(!v);
-      reportFailure(e, '设置');
+      reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
   const flipDistance = async (v: boolean) => {
@@ -46,30 +48,30 @@ export function PrivacySettings() {
       setUser(updated);
     } catch (e) {
       setShowDistance(!v);
-      reportFailure(e, '设置');
+      reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
 
   return (
-    <SettingsShell title="隐私">
+    <SettingsShell title={t('privacySettings.title')}>
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         <ToggleRow
-          label="在「附近」显示我"
+          label={t('privacySettings.showInNearby')}
           value={nearbyVisible}
           onValueChange={flipNearby}
-          hint="关闭后,你不会出现在其他人的「附近」网格中"
+          hint={t('privacySettings.showInNearbyHint')}
         />
         <Divider />
         <ToggleRow
-          label="显示我的距离"
+          label={t('privacySettings.showDistance')}
           value={showDistance}
           onValueChange={flipDistance}
-          hint="关闭后只显示城市,不显示距离公里数"
+          hint={t('privacySettings.showDistanceHint')}
         />
       </SettingsCard>
 
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        <LinkRow label="黑名单" />
+        <LinkRow label={t('privacySettings.blocklist')} />
       </SettingsCard>
     </SettingsShell>
   );

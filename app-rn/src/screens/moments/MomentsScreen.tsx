@@ -31,12 +31,7 @@ import {
   type MomentsFilter,
 } from '../../api/moments';
 
-const FILTERS: { id: MomentsFilter; label: string }[] = [
-  { id: 'all', label: '全部' },
-  { id: 'friends', label: '同好' },
-  { id: 'nearby', label: '附近' },
-  { id: 'interest', label: '兴趣' },
-];
+const FILTER_IDS: MomentsFilter[] = ['all', 'friends', 'nearby', 'interest'];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -46,6 +41,7 @@ export function MomentsScreen() {
   const nav = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<MomentsFilter>('all');
+  const filters = FILTER_IDS.map((id) => ({ id, label: t(`moments.filters.${id}`) }));
 
   const feedQ = useQuery({
     queryKey: ['moments', filter],
@@ -140,7 +136,7 @@ export function MomentsScreen() {
         style={{ flexGrow: 0 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
       >
-        {FILTERS.map((f) => {
+        {filters.map((f) => {
           const active = filter === f.id;
           return (
             <Pressable
@@ -181,8 +177,8 @@ export function MomentsScreen() {
         </View>
       ) : feedQ.isError ? (
         <View style={styles.centerFill}>
-          <Text style={{ color: theme.colors.muted, marginBottom: 12 }}>无法加载</Text>
-          <Button label="重试" variant="soft" onPress={() => feedQ.refetch()} />
+          <Text style={{ color: theme.colors.muted, marginBottom: 12 }}>{t('moments.loadFailed')}</Text>
+          <Button label={t('common.retry')} variant="soft" onPress={() => feedQ.refetch()} />
         </View>
       ) : (
         <FlatList
@@ -199,7 +195,7 @@ export function MomentsScreen() {
           onRefresh={() => feedQ.refetch()}
           ListEmptyComponent={
             <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted }}>这里还没有动态</Text>
+              <Text style={{ color: theme.colors.muted }}>{t('moments.empty')}</Text>
             </View>
           }
         />
