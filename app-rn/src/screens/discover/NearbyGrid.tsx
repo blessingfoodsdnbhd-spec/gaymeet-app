@@ -9,10 +9,12 @@ import type { DiscoverCardUser } from '../../api/discover';
 interface Props {
   users: DiscoverCardUser[];
   onOpen: (user: DiscoverCardUser) => void;
+  /** Optional label for the location pill. If omitted, the pill is hidden
+   *  rather than showing a misleading hardcoded value. */
   cityLabel?: string;
 }
 
-export function NearbyGrid({ users, onOpen, cityLabel = 'KL · Bangsar' }: Props) {
+export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const cols = 4;
@@ -24,29 +26,33 @@ export function NearbyGrid({ users, onOpen, cityLabel = 'KL · Bangsar' }: Props
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.cityRow}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 7,
-            borderRadius: 999,
-            backgroundColor: theme.colors.surface,
-            borderWidth: 1,
-            borderColor: theme.colors.line,
-          }}
-        >
+        {cityLabel ? (
           <View
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: 4,
-              backgroundColor: theme.colors.online,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 999,
+              backgroundColor: theme.colors.surface,
+              borderWidth: 1,
+              borderColor: theme.colors.line,
             }}
-          />
-          <Text style={{ fontSize: 12.5, color: theme.colors.text2 }}>{cityLabel}</Text>
-        </View>
+          >
+            <View
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 4,
+                backgroundColor: theme.colors.online,
+              }}
+            />
+            <Text style={{ fontSize: 12.5, color: theme.colors.text2 }}>{cityLabel}</Text>
+          </View>
+        ) : (
+          <View />
+        )}
         <Text style={{ fontSize: 12, color: theme.colors.muted }}>
           {users.length} 人在附近
         </Text>
@@ -93,7 +99,10 @@ function Tile({
   height: number;
   onPress: () => void;
 }) {
-  const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
+  // Backend may not always populate avatarIdx (it's a server-computed
+  // helper for the no-photo gradient fallback). NaN % n is NaN, which
+  // would index out-of-bounds and crash the destructure.
+  const [a, b] = avatarGradients[(user.avatarIdx ?? 0) % avatarGradients.length];
   const initial = (user.nickname || '?').trim().charAt(0).toUpperCase();
   const hasPhoto = !!user.avatarUrl;
 
