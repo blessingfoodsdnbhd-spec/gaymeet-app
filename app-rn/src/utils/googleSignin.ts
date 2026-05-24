@@ -92,9 +92,9 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
     }
 
     const result: any = await GoogleSignin.signIn();
-    console.warn('GoogleSignin.signIn() result keys:', JSON.stringify(Object.keys(result ?? {})));
-    console.warn('GoogleSignin.signIn() result.type:', result?.type);
 
+    // v13+ wraps the payload in `{ type, data: {...} }`; older versions
+    // return the fields at the top level. Handle both.
     const data = result?.data ?? result;
     const idToken: string | undefined =
       data?.idToken ??
@@ -106,13 +106,8 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult | null> {
     }
 
     if (!idToken) {
-      // Throw so onGoogle's catch surfaces an Alert. Include the raw shape
-      // in the message so we can see it on-device without Metro logs.
-      const dump = safeStringify(result);
-      console.warn('Google no idToken — full result:', dump);
       const err = new Error('Google did not return an idToken');
-      (err as any).userFriendlyMessage =
-        `Google 没拿到 idToken。\n返回:${dump.slice(0, 200)}`;
+      (err as any).userFriendlyMessage = 'Google 没返回登录凭证,请重试或换登录方式。';
       throw err;
     }
     return {
@@ -143,12 +138,3 @@ export function isGoogleConfigured() {
   return getConfig().ready;
 }
 
-function safeStringify(v: unknown): string {
-  try {
-    return JSON.stringify(v, (_k, val) =>
-      typeof val === 'string' && val.length > 200 ? `${val.slice(0, 200)}…` : val,
-    );
-  } catch {
-    return String(v);
-  }
-}

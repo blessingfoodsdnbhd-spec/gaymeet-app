@@ -19,8 +19,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
-import { TagChip } from '../../components/TagChip';
-import { INTEREST_TAGS, type InterestTagId } from '../../data/interestTags';
 import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
 
@@ -33,7 +31,12 @@ export function ComposerScreen() {
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [tag, setTag] = useState<InterestTagId | null>(null);
+  // Note: a per-moment interest tag picker used to live here, but the
+  // backend Moment schema has no `tag` field and the 'interest' feed
+  // filter matches by the *author's* shared interests, not a per-post
+  // tag. Selecting a tag in the UI did nothing. Removed to stop misleading
+  // users; if per-post tags become a real feature, wire them through
+  // schema + POST handler + feed filter end-to-end.
 
   const submitMut = useMutation({
     mutationFn: async () => {
@@ -198,28 +201,6 @@ export function ComposerScreen() {
             </View>
           )}
 
-          <Text
-            style={{
-              fontSize: 12,
-              color: theme.colors.muted,
-              letterSpacing: 0.72,
-              textTransform: 'uppercase',
-              marginTop: 24,
-              marginBottom: 10,
-            }}
-          >
-            兴趣标签 (可选)
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {INTEREST_TAGS.map((tg) => (
-              <TagChip
-                key={tg.id}
-                tag={tg}
-                selected={tag === tg.id}
-                onPress={() => setTag(tag === tg.id ? null : tg.id)}
-              />
-            ))}
-          </View>
         </ScrollView>
 
         <View style={{ padding: 20 }}>

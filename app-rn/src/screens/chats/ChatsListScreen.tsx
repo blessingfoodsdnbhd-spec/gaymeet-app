@@ -111,6 +111,26 @@ export function ChatsListScreen() {
         <View style={styles.centerFill}>
           <ActivityIndicator color={theme.colors.primary} />
         </View>
+      ) : threadsQ.isError ? (
+        <View style={styles.centerFill}>
+          <Text style={{ color: theme.colors.muted, fontSize: 14, marginBottom: 12 }}>
+            {t('moments.loadFailed')}
+          </Text>
+          <Pressable
+            onPress={() => threadsQ.refetch()}
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 9,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: theme.colors.line,
+            }}
+          >
+            <Text style={{ color: theme.colors.text, fontSize: 13.5 }}>
+              {t('common.retry')}
+            </Text>
+          </Pressable>
+        </View>
       ) : (
         <FlatList
           data={filtered}

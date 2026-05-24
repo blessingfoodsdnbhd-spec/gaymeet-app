@@ -13,6 +13,15 @@ const { supported: supportedCurrencies } = require('../utils/currency');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Known Google OAuth client IDs for this project — used as a fallback so
+// iOS Sign-In works even when GOOGLE_IOS_CLIENT_ID isn't set on Render.
+// Google client IDs are not secrets (they're shipped in the iOS bundle),
+// so it's safe to embed them. Values come from app-rn/app.json `extra`.
+const GOOGLE_KNOWN_CLIENT_IDS = [
+  '208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com', // Web
+  '208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com', // iOS
+];
+
 // In-memory OTP store: normalizedEmail → { code, expiry }
 // Fine for single-instance; replace with Redis for multi-instance.
 const otpStore = new Map();
@@ -142,13 +151,22 @@ router.post('/google', async (req, res, next) => {
     const { idToken } = req.body;
     if (!idToken) return err(res, 'idToken is required');
 
-    if (!process.env.GOOGLE_CLIENT_ID) {
+    // Accept any of: env-configured ids, plus the known project ids. iOS
+    // tokens have `aud` = the iOS client id, web/Android tokens have `aud`
+    // = the web client id — both must work.
+    const audiences = Array.from(
+      new Set(
+        [
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_IOS_CLIENT_ID,
+          ...GOOGLE_KNOWN_CLIENT_IDS,
+        ].filter(Boolean),
+      ),
+    );
+
+    if (audiences.length === 0) {
       return err(res, 'Google Sign-In not configured on server', 501);
     }
-
-    // Accept tokens issued for either the web/Android client or the iOS client
-    const audiences = [process.env.GOOGLE_CLIENT_ID];
-    if (process.env.GOOGLE_IOS_CLIENT_ID) audiences.push(process.env.GOOGLE_IOS_CLIENT_ID);
 
     let payload;
     try {
@@ -157,7 +175,14 @@ router.post('/google', async (req, res, next) => {
         audience: audiences,
       });
       payload = ticket.getPayload();
-    } catch {
+    } catch (e) {
+      // Surface the real reason in server logs (audience mismatch, expired,
+      // bad signature, …) so a future bug like this is diagnosable from
+      // Render logs instead of a generic 401.
+      console.warn('[auth/google] verifyIdToken failed:', e?.message, {
+        audiences,
+        tokenLen: idToken?.length,
+      });
       return err(res, 'Google 身份验证失败', 401);
     }
 

@@ -93,28 +93,38 @@ export function ChatDetailScreen() {
     enabled: !!otherId,
   });
 
-  // Subscribe to WS events for this match (message + typing)
+  // Subscribe to WS events for this match (message + typing).
+  // wsOn is async (it awaits the socket connect), so the unsubscribe
+  // function only arrives later. If the component unmounts before that
+  // promise resolves, naively storing the result into a ref would leak
+  // the handler. Guard with `cancelled` and tear down inline if so.
   useEffect(() => {
     let unsubRecv: (() => void) | null = null;
     let unsubTyping: (() => void) | null = null;
     let cancelled = false;
 
-    wsOn('chat:receive', (msg: WsChatReceive) => {
-      if (cancelled || msg.matchId !== matchId) return;
-      queryClient.setQueryData<Message[]>(
-        ['chats', 'messages', matchId],
-        (prev) => {
-          const arr = prev ?? [];
-          if (arr.find((m) => m.id === msg.id)) return arr;
-          return [...arr, msg as unknown as Message];
-        },
-      );
-    }).then((u) => { unsubRecv = u; });
+    (async () => {
+      const u1 = await wsOn('chat:receive', (msg: WsChatReceive) => {
+        if (cancelled || msg.matchId !== matchId) return;
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) => {
+            const arr = prev ?? [];
+            if (arr.find((m) => m.id === msg.id)) return arr;
+            return [...arr, msg as unknown as Message];
+          },
+        );
+      });
+      if (cancelled) { u1(); return; }
+      unsubRecv = u1;
 
-    wsOn('chat:typing', (evt: WsChatTyping) => {
-      if (cancelled || evt.matchId !== matchId) return;
-      setTyping(matchId, !!evt.typing);
-    }).then((u) => { unsubTyping = u; });
+      const u2 = await wsOn('chat:typing', (evt: WsChatTyping) => {
+        if (cancelled || evt.matchId !== matchId) return;
+        setTyping(matchId, !!evt.typing);
+      });
+      if (cancelled) { u2(); return; }
+      unsubTyping = u2;
+    })();
 
     return () => {
       cancelled = true;
