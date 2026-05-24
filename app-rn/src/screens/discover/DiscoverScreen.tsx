@@ -81,9 +81,14 @@ export function DiscoverScreen() {
     staleTime: 30_000,
   });
 
+  // Nearby query — keyed on the same filter dimensions as cardsQ so that
+  // applying a new radius or interest set in the FiltersSheet actually
+  // triggers a refetch. (Previously the key was static ['discover','nearby']
+  // and the queryFn hardcoded 10km, so Filters silently did nothing on the
+  // Nearby tab — only Cards reflected filter changes.)
   const nearbyQ = useQuery({
-    queryKey: ['discover', 'nearby'],
-    queryFn: () => getNearby(10),
+    queryKey: ['discover', 'nearby', filters.radiusKm ?? null, filters.interests ?? null],
+    queryFn: () => getNearby(filters.radiusKm ?? 10, filters),
     enabled: mode === 'nearby',
     staleTime: 60_000,
   });

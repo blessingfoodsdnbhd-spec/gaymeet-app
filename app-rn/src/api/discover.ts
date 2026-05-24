@@ -45,5 +45,14 @@ export const getDiscoverCards = (count = 10, filters?: DiscoverFilters) =>
 export const swipe = (userId: string, action: SwipeAction) =>
   unwrap<SwipeResult>(api.post('/discover/swipe', { userId, action }));
 
-export const getNearby = (radiusKm = 10) =>
-  unwrap<DiscoverCardUser[]>(api.get('/discover/nearby', { params: { radiusKm } }));
+export const getNearby = (radiusKm = 10, filters?: DiscoverFilters) =>
+  unwrap<DiscoverCardUser[]>(
+    api.get('/discover/nearby', {
+      params: {
+        radiusKm: filters?.radiusKm ?? radiusKm,
+        ...(filters?.interests && filters.interests.length > 0
+          ? { interests: filters.interests.join(',') }
+          : {}),
+      },
+    }),
+  );
