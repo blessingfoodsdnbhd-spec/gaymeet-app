@@ -73,15 +73,9 @@ export function WelcomeScreen() {
     if (busy) return;
     setBusy('google');
     try {
-      console.warn('[google] starting native sign-in');
       const result = await signInWithGoogle();
-      if (!result) {
-        console.warn('[google] native returned null (cancelled or config)');
-        return;
-      }
-      console.warn('[google] got idToken; calling backend');
+      if (!result) return; // cancelled or config missing — wrapper alerted
       const res = await signInGoogle(result.idToken);
-      console.warn('[google] backend ok, user id:', res.user.id);
       await signIn(res.accessToken, res.refreshToken, res.user);
     } catch (e: any) {
       const status = e?.response?.status;
@@ -92,7 +86,6 @@ export function WelcomeScreen() {
         e?.userFriendlyMessage ||
         e?.message ||
         '登录失败,稍后再试';
-      console.warn('[google] failed', { status, body, error: e });
       Alert.alert(
         'Google 登录',
         `${message}${status ? ` (HTTP ${status})` : ''}`,
