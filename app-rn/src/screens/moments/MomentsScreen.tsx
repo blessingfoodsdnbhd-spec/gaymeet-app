@@ -161,6 +161,18 @@ export function MomentsScreen() {
                 numberOfLines={1}
                 style={{
                   fontSize: 15,
+                  // Explicit lineHeight ≥ 1.3× fontSize. Under
+                  // Fabric/Bridgeless (newArchEnabled: true), a
+                  // <Text numberOfLines={1}> with intrinsic line-height
+                  // can be measured at height ≈ fontSize, which then
+                  // clips CJK glyphs (全部 / 同好 / 附近 / 兴趣) ~2-3px
+                  // top and bottom — the "字被遮一半" report after the
+                  // fontSize 13→15 bump. Pinning lineHeight to 20
+                  // reserves the right line-box height so glyphs render
+                  // in full. (Opposite of the MomentItem caption fix
+                  // in 06e904e where multi-line CJK needed lineHeight
+                  // DROPPED — different RN measurement path.)
+                  lineHeight: 20,
                   fontWeight: '600',
                   // Use primary text colour for inactive chips so the
                   // labels stay legible — text2 (#605F70) was too washed
