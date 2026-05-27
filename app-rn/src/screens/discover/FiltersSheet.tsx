@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
@@ -28,13 +28,17 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
     new Set(initial.interests ?? []),
   );
 
-  // Re-sync when the sheet (re-)opens with new initial values
+  // Re-sync ONLY when the sheet (re-)opens. Watching `initial.radiusKm` here
+  // was previously fine but if the parent ever passed a new `initial` object
+  // mid-edit (e.g. from a re-fetch) it'd stomp the user's selection. Gating
+  // on just `open` is safer — initial values are only relevant at open time.
   useEffect(() => {
     if (open) {
       setRadius(initial.radiusKm ?? DEFAULT_RADIUS);
       setPicked(new Set(initial.interests ?? []));
     }
-  }, [open, initial.radiusKm, initial.interests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const toggle = (id: InterestTagId) => {
     const next = new Set(picked);
@@ -59,62 +63,98 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
   // Show user's own tags first, then the rest — they're the most likely
   // filter dimension.
   const sortedTags = [
-    ...INTEREST_TAGS.filter((t) => myInterests.includes(t.id)),
-    ...INTEREST_TAGS.filter((t) => !myInterests.includes(t.id)),
+    ...INTEREST_TAGS.filter((tag) => myInterests.includes(tag.id)),
+    ...INTEREST_TAGS.filter((tag) => !myInterests.includes(tag.id)),
   ];
 
   return (
     <Sheet open={open} onClose={onClose} maxHeight="80%">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>{t('discover.filters.title')}</Text>
+      {/* Outer column ensures footer stays visible: ScrollView flex:1
+          consumes remaining space, footer stays at natural height at
+          the bottom. Previously both children were sibling auto-height
+          views — on small screens the ScrollView pushed the footer
+          OFF the maxHeight clip line, making Reset/Apply unreachable. */}
+      <View style={styles.outer}>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            {t('discover.filters.title')}
+          </Text>
 
-        <Text style={[styles.section, { color: theme.colors.muted }]}>
-          {t('discover.filters.distance')} · {radius === 100 ? t('discover.filters.unlimited') : `${radius} km`}
-        </Text>
-        <View style={styles.radiusRow}>
-          {RADIUS_OPTIONS.map((r) => {
-            const active = radius === r;
-            return (
-              <View key={r} style={{ flex: 1 }}>
-                <Button
-                  label={r === 100 ? t('discover.filters.unlimited') : `${r}`}
-                  variant={active ? 'soft' : 'ghost'}
+          <Text style={[styles.section, { color: theme.colors.muted }]}>
+            {t('discover.filters.distance')} ·{' '}
+            {radius === 100 ? t('discover.filters.unlimited') : `${radius} km`}
+          </Text>
+          {/* Plain Pressable chips — Button component's internal style
+              array + small + fullWidth + style-override combo was
+              touch-unreliable in a 6-column flex row on Android. Direct
+              Pressable removes the indirection. */}
+          <View style={styles.radiusRow}>
+            {RADIUS_OPTIONS.map((r) => {
+              const active = radius === r;
+              const label = r === 100 ? t('discover.filters.unlimited') : String(r);
+              return (
+                <Pressable
+                  key={r}
                   onPress={() => setRadius(r)}
-                  small
-                  fullWidth
-                  // Button's default `paddingHorizontal: 22` (44px total)
-                  // leaves only ~6px of inner Text width when 6 pills
-                  // share a single flex:1 row on a ~335px sheet. That
-                  // forced "10" / "25" / "All" to wrap character-by-
-                  // character. Override to a tight padding here.
-                  style={styles.radiusPill}
-                />
-              </View>
-            );
-          })}
-        </View>
+                  hitSlop={6}
+                  style={({ pressed }) => [
+                    styles.radiusPill,
+                    {
+                      backgroundColor: active
+                        ? theme.colors.primarySoft
+                        : 'transparent',
+                      borderColor: active
+                        ? theme.colors.primary
+                        : theme.colors.line,
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: active ? theme.colors.primaryDeep : theme.colors.text,
+                      fontWeight: active ? '600' : '500',
+                      fontSize: 13,
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-        <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
-          {t('discover.filters.interests')} · {picked.size === 0 ? t('discover.filters.unlimited') : t('discover.filters.interestsCount', { n: picked.size })}
-        </Text>
-        <View style={styles.tagsRow}>
-          {sortedTags.map((tag) => (
-            <TagChip
-              key={tag.id}
-              tag={tag}
-              selected={picked.has(tag.id)}
-              onPress={() => toggle(tag.id)}
+          <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
+            {t('discover.filters.interests')} ·{' '}
+            {picked.size === 0
+              ? t('discover.filters.unlimited')
+              : t('discover.filters.interestsCount', { n: picked.size })}
+          </Text>
+          <View style={styles.tagsRow}>
+            {sortedTags.map((tag) => (
+              <TagChip
+                key={tag.id}
+                tag={tag}
+                selected={picked.has(tag.id)}
+                onPress={() => toggle(tag.id)}
+              />
+            ))}
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View style={{ flex: 1 }}>
+            <Button
+              label={t('discover.filters.reset')}
+              variant="ghost"
+              onPress={reset}
+              fullWidth
             />
-          ))}
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <View style={{ flex: 1 }}>
-          <Button label={t('discover.filters.reset')} variant="ghost" onPress={reset} fullWidth />
-        </View>
-        <View style={{ flex: 2 }}>
-          <Button label={t('discover.filters.apply')} onPress={apply} fullWidth />
+          </View>
+          <View style={{ flex: 2 }}>
+            <Button label={t('discover.filters.apply')} onPress={apply} fullWidth />
+          </View>
         </View>
       </View>
     </Sheet>
@@ -122,6 +162,12 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
 }
 
 const styles = StyleSheet.create({
+  outer: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
   title: {
     fontSize: 18,
     fontWeight: '700',
@@ -138,6 +184,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   radiusPill: {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 4,
   },
   tagsRow: {
