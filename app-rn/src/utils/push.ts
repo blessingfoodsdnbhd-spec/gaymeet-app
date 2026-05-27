@@ -44,9 +44,18 @@ export async function registerPushToken(): Promise<string | null> {
 
     // Android needs the notification channel set up before pushes can show.
     // HIGH importance → heads-up banner + sound; matches iOS default UX.
-    await Notifications.setNotificationChannelAsync('default', {
+    //
+    // Channel ID is `default_v2` (not `default`) to force creation of a fresh
+    // channel. Android caches channel settings — once a channel exists, you
+    // CANNOT change its sound / vibration / importance for that ID; users
+    // have to manually reset notification settings. Bumping the ID is the
+    // only way to ship our custom sound to users who already had the app.
+    // Keep the backend channelId in sync (utils/push.js android.notification
+    // .channelId must match).
+    await Notifications.setNotificationChannelAsync('default_v2', {
       name: 'default',
       importance: Notifications.AndroidImportance.HIGH,
+      sound: 'notification_sound', // res/raw/notification_sound.wav (no ext)
     });
   }
 
@@ -131,6 +140,12 @@ export function setupPushListeners(): () => void {
           title,
           body,
           data: rm?.data ?? {},
+          // Custom sound. iOS expects the filename (case-sensitive, with
+          // extension) of a file bundled in the .ipa main bundle. Android
+          // expects the res/raw resource name (no extension). The Expo
+          // plugin withCustomNotificationSound.js puts the file in both
+          // places at prebuild time.
+          sound: Platform.OS === 'ios' ? 'notification_sound.caf' : 'notification_sound',
         },
         trigger: null, // immediate
       });
