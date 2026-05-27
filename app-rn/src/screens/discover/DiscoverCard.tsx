@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,11 +24,22 @@ interface Props {
 
 const STAMP_DISTANCE = 120;
 
-export function DiscoverCard({ user, dragX, isTop }: Props) {
+function DiscoverCardInner({ user, dragX, isTop }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
   const initial = (user.nickname || user.email || '?').trim().charAt(0).toUpperCase();
+
+  // Memoize the source object so the reference stays stable across re-renders.
+  // expo-image rebuilds its decoder + replays `transition` when the source
+  // *reference* changes, even if the URI string is identical. That was the
+  // "photo flickers when swiping" bug — card B got new `isTop=true` props
+  // after a swipe, re-rendered, and got a new `{uri}` literal that fooled
+  // expo-image into reloading.
+  const imageSource = useMemo(
+    () => (user.avatarUrl ? { uri: user.avatarUrl } : null),
+    [user.avatarUrl],
+  );
 
   const likeStampStyle = useAnimatedStyle(() => {
     if (!dragX || !isTop) return { opacity: 0 };
@@ -56,12 +67,20 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
       ]}
     >
       <View style={styles.hero}>
-        {user.avatarUrl ? (
+        {imageSource ? (
           <Image
-            source={{ uri: user.avatarUrl }}
+            source={imageSource}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            transition={150}
+            // memory-disk: cache decoded bitmap in RAM + persist. Reappearing
+            // cards (after stack shift) blit from memory instead of decoding
+            // from disk, which would briefly flash an empty hero.
+            cachePolicy="memory-disk"
+            // transition: 0 → no fade. Cards in the stack are already
+            // pre-rendered (we mount top 3), so by the time a card becomes
+            // top its image is already on the GPU. Re-running a 150ms fade
+            // on every re-render was the visible flicker.
+            transition={0}
           />
         ) : (
           <LinearGradient
@@ -145,6 +164,19 @@ export function DiscoverCard({ user, dragX, isTop }: Props) {
     </View>
   );
 }
+
+// React.memo: parent CardStack re-renders on every gesture frame (driven by
+// shared values + animated style). We want each DiscoverCard to render at
+// most once per *card-shape* change (new user, top↔non-top toggle). The
+// shared-value `dragX` ref stays stable so it's safe in the comparator.
+export const DiscoverCard = React.memo(DiscoverCardInner, (prev, next) => {
+  return (
+    prev.user.id === next.user.id &&
+    prev.user.avatarUrl === next.user.avatarUrl &&
+    prev.isTop === next.isTop &&
+    prev.dragX === next.dragX
+  );
+});
 
 const styles = StyleSheet.create({
   card: {

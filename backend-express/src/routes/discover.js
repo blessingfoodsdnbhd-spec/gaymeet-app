@@ -203,7 +203,15 @@ router.post('/swipe', auth, async (req, res, next) => {
 router.get('/nearby', auth, async (req, res, next) => {
   try {
     const me = req.user;
-    const radiusKm = Math.min(parseFloat(req.query.radiusKm) || 10, 100);
+    // Distance handling mirrors /cards (L39-42): missing / 0 / NaN /
+    // negative all mean "no user-applied cap" → fall back to MAX_DISTANCE_M.
+    // The client sends radiusKm=0 as the "不限/unlimited" sentinel from
+    // the FiltersSheet; the prior `|| 10` pattern silently reverted that
+    // to a 10km cap, so users saw FEWER results when picking unlimited.
+    const radiusKmRaw = parseFloat(req.query.radiusKm);
+    const maxDistance = Number.isFinite(radiusKmRaw) && radiusKmRaw > 0
+      ? Math.min(radiusKmRaw * 1000, MAX_DISTANCE_M)
+      : MAX_DISTANCE_M;
 
     // Mirror /cards: optional comma-separated interest filter. When set,
     // only candidates with at least one matching tag are returned.
@@ -243,7 +251,7 @@ router.get('/nearby', auth, async (req, res, next) => {
         $geoNear: {
           near: { type: 'Point', coordinates: [lng, lat] },
           distanceField: 'distanceMeters',
-          maxDistance: radiusKm * 1000,
+          maxDistance,
           spherical: true,
           query: baseQuery,
         },

@@ -16,6 +16,7 @@ import { getMe } from './api/me';
 import { loadFonts } from './theme/fonts';
 import { GlobalMatchListener } from './components/GlobalMatchListener';
 import { MessageBanner } from './components/MessageBanner';
+import { SafetyMenuSheet } from './components/SafetyMenuSheet';
 import {
   registerPushToken,
   setupPushListeners,
@@ -122,6 +123,8 @@ export function App() {
                   NavigationContainer to read the navigator context. */}
               <GlobalMatchListener />
               <MessageBanner />
+              {/* Android-only safety menu sheet (iOS uses native ActionSheetIOS) */}
+              <SafetyMenuSheet />
             </NavigationContainer>
           </ThemeProvider>
         </QueryClientProvider>
