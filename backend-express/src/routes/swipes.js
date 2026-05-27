@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
+const { sendPushToUser } = require('../utils/push');
 
 const FREE_DAILY_SWIPES = 20;
 
@@ -85,9 +86,29 @@ router.post('/', auth, async (req, res, next) => {
           } catch (_) {
             // best effort
           }
+
+          // Best-effort push to the OTHER party — the swiper is currently
+          // in-app and got the matched=true response, so they don't need a
+          // notification. Receiver may have liked us hours/days ago.
+          sendPushToUser(targetUserId, {
+            title: "It's a match! 🎉",
+            body: `You matched with ${me.nickname || 'someone'}`,
+            data: { type: 'match', matchId: match._id.toString() },
+          }).catch(() => { /* never fails the request */ });
         }
 
         return ok(res, { matched: true, matchId: match._id.toString() });
+      }
+
+      // No mutual yet, but if this was a super_like, notify the target so
+      // they know to check their incoming likes (regular likes are silent
+      // to avoid notification spam — they'll see them in the likes feed).
+      if (direction === 'super_like') {
+        sendPushToUser(targetUserId, {
+          title: `${me.nickname || 'Someone'} super liked you ⭐`,
+          body: 'Open Meyou to see who',
+          data: { type: 'like', fromUserId: me._id.toString() },
+        }).catch(() => {});
       }
     }
 

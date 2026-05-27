@@ -7,6 +7,7 @@ const Message = require('../models/Message');
 const CallLog = require('../models/CallLog');
 const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
+const { sendPushToUser } = require('../utils/push');
 
 let io;
 
@@ -138,6 +139,25 @@ function initSocket(server) {
       // was in both the match room AND their personal user room simultaneously.
       io.to(`user:${userId}`).emit('chat:receive', payload);
       io.to(`user:${otherId}`).emit('chat:receive', payload);
+
+      // Best-effort push to the receiver — runs detached so socket emit
+      // is never delayed by the FCM round-trip. Foreground client decides
+      // how/whether to display (handler in app-rn/src/utils/push.ts).
+      if (otherId && otherId !== userId) {
+        (async () => {
+          try {
+            const sender = await User.findById(userId).select('nickname').lean();
+            const senderName = sender?.nickname || 'New message';
+            await sendPushToUser(otherId, {
+              title: senderName,
+              body: message.content.slice(0, 140),
+              data: { type: 'message', matchId },
+            });
+          } catch {
+            /* ignore */
+          }
+        })();
+      }
     });
 
     // ── chat:typing ───────────────────────────────────────────────────────────
