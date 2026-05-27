@@ -23,7 +23,8 @@
         "NSCameraUsageDescription": "Meyou needs camera access for video calls and profile photos.",
         "NSMicrophoneUsageDescription": "Meyou needs microphone access for voice and video calls.",
         "NSPhotoLibraryUsageDescription": "Meyou needs photo access to upload your moments and profile photos.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -63,7 +64,9 @@
       ],
       [
         "react-native-iap",
-        { "paymentProvider": "Play Store" }
+        {
+          "paymentProvider": "Play Store"
+        }
       ],
       "./plugins/withIapAndroidXFix.js",
       [
@@ -72,6 +75,15 @@
           "android": {
             "kotlinVersion": "1.9.25"
           }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-notifications",
+        {
+          "color": "#E25CAE",
+          "defaultChannel": "default"
         }
       ]
     ],
