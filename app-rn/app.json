@@ -74,6 +74,9 @@
         {
           "android": {
             "kotlinVersion": "1.9.25"
+          },
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ],
@@ -85,7 +88,8 @@
           "color": "#E25CAE",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "./plugins/withFirebaseMessagingManifestFix.js"
     ],
     "extra": {
       "apiUrl": "https://gaymeet-api.onrender.com",
