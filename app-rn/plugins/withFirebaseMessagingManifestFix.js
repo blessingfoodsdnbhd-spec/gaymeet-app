@@ -75,8 +75,6 @@ module.exports = (config) =>
         'AndroidManifest.xml',
       );
       if (!fs.existsSync(manifestPath)) {
-        // Prebuild didn't generate it yet — nothing to patch. (This is
-        // rare; would only happen if expo prebuild was skipped.)
         return cfg;
       }
       const before = fs.readFileSync(manifestPath, 'utf8');
