@@ -50,6 +50,8 @@ const interestsRoutes = require('./routes/interests');
 const discoverV2Routes = require('./routes/discover');
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 const subscriptionsGoogleRoutes = require('./routes/subscriptions-google');
+// ⚠️ TEMPORARY admin routes — remove in follow-up PR right after cleanup
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -133,6 +135,8 @@ app.use('/api/me', interestsRoutes);
 app.use('/api/discover', discoverV2Routes);
 app.use('/api/subscriptions', subscriptionsV2Routes);
 app.use('/api/subscriptions', subscriptionsGoogleRoutes);
+// ⚠️ TEMPORARY — remove after one-shot cleanup
+app.use('/api/admin', adminRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
