@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
+const { sendPushToUser } = require('../utils/push');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
 const MOMENTS_NEARBY_KM = 10;
@@ -207,6 +208,23 @@ router.post('/:id/like', auth, async (req, res, next) => {
     }
 
     await moment.save();
+
+    // Push the moment author only when LIKING (not unliking) and only
+    // when the liker isn't the author themselves. Fire-and-forget.
+    if (idx === -1 && String(moment.user) !== String(uid)) {
+      (async () => {
+        try {
+          const liker = await User.findById(uid).select('nickname').lean();
+          const likerName = liker?.nickname || 'Someone';
+          await sendPushToUser(moment.user, {
+            title: `${likerName} liked your moment`,
+            body: moment.content?.slice(0, 80) || '',
+            data: { type: 'comment', momentId: String(moment._id) },
+          });
+        } catch { /* ignore */ }
+      })();
+    }
+
     ok(res, { likeCount: moment.likes.length, isLiked: idx === -1 });
   } catch (e) {
     next(e);
@@ -234,6 +252,15 @@ router.post('/:id/comment', auth, async (req, res, next) => {
     await Moment.findByIdAndUpdate(moment._id, { $inc: { commentsCount: 1 } });
 
     const populated = await comment.populate('user', 'nickname avatarUrl');
+
+    // Push moment author about the new comment (skip self-comment).
+    if (String(moment.user) !== String(req.user._id)) {
+      sendPushToUser(moment.user, {
+        title: `${populated.user?.nickname || 'Someone'} commented`,
+        body: content.slice(0, 120),
+        data: { type: 'comment', momentId: String(moment._id) },
+      }).catch(() => {});
+    }
 
     created(res, {
       ...populated.toObject(),

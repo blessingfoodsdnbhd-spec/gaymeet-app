@@ -49,6 +49,7 @@ const feedRoutes = require('./routes/feed');
 const interestsRoutes = require('./routes/interests');
 const discoverV2Routes = require('./routes/discover');
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
+const subscriptionsGoogleRoutes = require('./routes/subscriptions-google');
 
 const app = express();
 
@@ -131,6 +132,7 @@ app.use('/api/feed', feedRoutes);
 app.use('/api/me', interestsRoutes);
 app.use('/api/discover', discoverV2Routes);
 app.use('/api/subscriptions', subscriptionsV2Routes);
+app.use('/api/subscriptions', subscriptionsGoogleRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

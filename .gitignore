@@ -12,6 +12,18 @@ yarn-error.log*
 .env.*.local
 # Keep .env.example committed for reference
 
+# Google Play Developer API service account (used by EAS submit AND
+# by the backend's /verify-google-purchase + RTDN routes). Treat as a
+# secret — anyone holding it can manage subscriptions on our Play app.
+play-service-account.json
+**/play-service-account.json
+play-service-account*.json
+**/play-service-account*.json
+# Note: app-rn/google-services.json IS committed on purpose — it's
+# bundled into the APK at build time and contains no real secrets
+# (just the API key, which is locked down by package+SHA at Google's
+# side). Matches the precedent of GoogleService-Info.plist on iOS.
+
 # ── Uploads (ephemeral on Render) ─────────────────────────────────────────────
 backend-express/uploads/
 backend/uploads/
