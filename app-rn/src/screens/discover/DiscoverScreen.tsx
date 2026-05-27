@@ -78,7 +78,10 @@ export function DiscoverScreen() {
       }
     }
   };
-  const hasActiveFilters = !!filters.radiusKm || (filters.interests?.length ?? 0) > 0;
+  // Use `!== undefined` (not `!!`) so radiusKm=0 (the "不限/unlimited"
+  // sentinel) registers as an active filter and the filter-dot shows.
+  const hasActiveFilters =
+    filters.radiusKm !== undefined || (filters.interests?.length ?? 0) > 0;
 
   // Cards query — key includes filters so changing them refetches cleanly.
   const cardsQ = useQuery({

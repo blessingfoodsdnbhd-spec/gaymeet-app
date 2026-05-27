@@ -34,7 +34,10 @@ export const getDiscoverCards = (count = 10, filters?: DiscoverFilters) =>
     api.get('/discover/cards', {
       params: {
         count,
-        ...(filters?.radiusKm ? { radiusKm: filters.radiusKm } : {}),
+        // `!= null` (not `?`) so we DO send radiusKm=0 — that's the
+        // "不限 / unlimited" sentinel. Backend treats 0 as "no cap".
+        // Using `?` here would drop 0 → backend reverts to 10km default.
+        ...(filters?.radiusKm != null ? { radiusKm: filters.radiusKm } : {}),
         ...(filters?.interests && filters.interests.length > 0
           ? { interests: filters.interests.join(',') }
           : {}),
@@ -49,6 +52,9 @@ export const getNearby = (radiusKm = 10, filters?: DiscoverFilters) =>
   unwrap<DiscoverCardUser[]>(
     api.get('/discover/nearby', {
       params: {
+        // Use `??` so 0 (the unlimited sentinel from FiltersSheet) passes
+        // through verbatim. Don't use `||` (would treat 0 as falsy and
+        // silently revert to default).
         radiusKm: filters?.radiusKm ?? radiusKm,
         ...(filters?.interests && filters.interests.length > 0
           ? { interests: filters.interests.join(',') }
