@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { forwardRef, useImperativeHandle, useCallback, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
@@ -8,6 +8,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
+import { Image as ExpoImage } from 'expo-image';
 
 import { DiscoverCard } from './DiscoverCard';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -34,6 +35,22 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const top = cards[0];
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
+
+  // Prefetch upcoming cards' avatars into expo-image's disk cache so they
+  // decode instantly the moment they shift into the rendered window. We
+  // render cards 0–2 (top + 2 under); prefetch cards 2–6 covers the
+  // pipeline so even after 4 swipes the next card is already cached.
+  useEffect(() => {
+    const upcoming = cards
+      .slice(2, 7)
+      .map((c) => c.avatarUrl)
+      .filter((url): url is string => !!url);
+    if (upcoming.length === 0) return;
+    // memory-disk so cache survives across this component's lifetime
+    ExpoImage.prefetch(upcoming, 'memory-disk').catch(() => {
+      // best-effort; if a single URL fails the others may still cache
+    });
+  }, [cards]);
 
   const finalize = useCallback(
     (liked: boolean) => {
