@@ -54,7 +54,12 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
 
   const apply = () => {
     onApply({
-      radiusKm: radius === 100 ? undefined : radius,
+      // 100 is the "不限 / unlimited" chip. We send 0 as the explicit
+      // no-cap signal (NOT undefined — undefined would get swallowed by
+      // every downstream `?? 10` fallback and silently revert to 10 km).
+      // Backend treats radiusKm=0 as "no distance filter, sort by
+      // distance only".
+      radiusKm: radius === 100 ? 0 : radius,
       interests: picked.size > 0 ? Array.from(picked) : undefined,
     });
     onClose();
