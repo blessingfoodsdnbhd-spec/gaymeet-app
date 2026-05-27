@@ -114,14 +114,25 @@ async function sendPushToUser(userId, { title, body, data = {} } = {}) {
       android: {
         priority: 'high',
         notification: {
-          channelId: 'default',
-          // Sound default + icon picks up adaptive icon automatically.
+          // Keep in sync with utils/push.ts setNotificationChannelAsync.
+          // Channel sound is immutable after first creation; bumping the
+          // ID was the only way to roll the custom sound out to existing
+          // installs. `notification_sound` resolves to res/raw/
+          // notification_sound.wav (Android resource lookup is by base
+          // name, no extension). Channel-level sound is the authoritative
+          // setting on Android 8+; this per-notification `sound` field is
+          // a redundant belt-and-suspenders.
+          channelId: 'default_v2',
+          sound: 'notification_sound',
         },
       },
       apns: {
         payload: {
           aps: {
-            sound: 'default',
+            // iOS expects the filename with extension. `notification_sound
+            // .caf` is bundled in the .ipa main bundle by the Expo plugin
+            // withCustomNotificationSound.js at prebuild time.
+            sound: 'notification_sound.caf',
             'mutable-content': 1,
             // Badge bumping disabled at the server side for now — clients
             // manage badge locally via expo-notifications. Re-enable here
