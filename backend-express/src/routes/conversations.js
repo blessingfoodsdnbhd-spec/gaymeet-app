@@ -5,6 +5,7 @@ const Match = require('../models/Match');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
+const { sendPushToUser } = require('../utils/push');
 
 // Meyou 密友 v2 — only monetisation is the Premium subscription:
 //   monthly: RM 39.90
@@ -179,6 +180,29 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
         if (otherId) io.to(`user:${otherId}`).emit('chat:receive', payload);
       }
     } catch (_) {}
+
+    // Push notification to receiver. Detached so HTTP response isn't
+    // delayed by the FCM round-trip. Same flow as the WS handler in
+    // socketService.js — most chat messages come through this HTTP path
+    // (client uses api.post /conversations/:matchId/send), so this is
+    // the primary push trigger for chat. (Was missing prior to this fix,
+    // which is why iPhone never saw chat-message notifications.)
+    if (otherId && otherId !== req.user._id.toString()) {
+      (async () => {
+        try {
+          console.log('[push] chat http-route hook firing →', otherId);
+          const sender = await User.findById(req.user._id).select('nickname').lean();
+          const senderName = sender?.nickname || 'New message';
+          await sendPushToUser(otherId, {
+            title: senderName,
+            body: message.content.slice(0, 140),
+            data: { type: 'message', matchId: match._id.toString() },
+          });
+        } catch (e) {
+          console.warn('[push] chat http-route hook failed:', e?.message ?? e);
+        }
+      })();
+    }
 
     ok(res, payload, 201);
   } catch (e) {

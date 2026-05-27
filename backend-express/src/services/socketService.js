@@ -146,6 +146,7 @@ function initSocket(server) {
       if (otherId && otherId !== userId) {
         (async () => {
           try {
+            console.log('[push] chat ws-route hook firing →', otherId);
             const sender = await User.findById(userId).select('nickname').lean();
             const senderName = sender?.nickname || 'New message';
             await sendPushToUser(otherId, {
@@ -153,8 +154,8 @@ function initSocket(server) {
               body: message.content.slice(0, 140),
               data: { type: 'message', matchId },
             });
-          } catch {
-            /* ignore */
+          } catch (e) {
+            console.warn('[push] chat ws-route hook failed:', e?.message ?? e);
           }
         })();
       }
