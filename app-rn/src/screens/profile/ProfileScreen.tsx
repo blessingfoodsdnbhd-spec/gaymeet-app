@@ -8,6 +8,7 @@ import {
   Crown,
   Edit2,
   Globe,
+  Image as ImageIcon,
   Lock,
   ShieldCheck,
   Settings as SettingsIcon,
@@ -26,6 +27,7 @@ import { TagChip } from '../../components/TagChip';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useAuth } from '../../store/auth';
 import { getMyStats } from '../../api/me';
+import { getInbox } from '../../api/privatePhotos';
 import type { RootStackParamList } from '../../navigation/types';
 
 // Profile sub-pages are presented as modals over MainTabs. They aren't
@@ -47,6 +49,16 @@ export function ProfileScreen() {
     staleTime: 60_000,
     enabled: !!user,
   });
+
+  // Surface the pending-request count as a badge on the Photo Requests row.
+  // Auto-refetched when the inbox screen invalidates this key.
+  const photoInboxQ = useQuery({
+    queryKey: ['photoRequests', 'inbox'],
+    queryFn: getInbox,
+    staleTime: 30_000,
+    enabled: !!user,
+  });
+  const pendingPhotoReqs = (photoInboxQ.data?.requests ?? []).filter((r) => r.requester).length;
 
   if (!user) return null;
 
@@ -223,6 +235,13 @@ export function ProfileScreen() {
           />
           <Divider />
           <SettingsRow
+            icon={<ImageIcon size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.photoRequests')}
+            badge={pendingPhotoReqs}
+            onPress={() => nav.navigate('PhotoRequests')}
+          />
+          <Divider />
+          <SettingsRow
             icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.account')}
             onPress={() => nav.navigate('AccountSettings')}
@@ -297,11 +316,14 @@ function SettingsRow({
   icon,
   label,
   detail,
+  badge,
   onPress,
 }: {
   icon: React.ReactNode;
   label: string;
   detail?: string;
+  /** Numeric badge shown when > 0 (e.g. unread count). */
+  badge?: number;
   onPress?: () => void;
 }) {
   const theme = useTheme();
@@ -330,6 +352,21 @@ function SettingsRow({
         {icon}
       </View>
       <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>{label}</Text>
+      {badge != null && badge > 0 && (
+        <View
+          style={{
+            minWidth: 22,
+            height: 22,
+            borderRadius: 11,
+            paddingHorizontal: 7,
+            backgroundColor: theme.colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>{badge}</Text>
+        </View>
+      )}
       {detail && (
         <Text style={{ fontSize: 13, color: theme.colors.muted }}>{detail}</Text>
       )}

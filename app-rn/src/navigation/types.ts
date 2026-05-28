@@ -35,4 +35,5 @@ export type RootStackParamList = {
   UserDetail: { userId: string };
   Premium: undefined;
   LikedMe: undefined;
+  PhotoRequests: undefined;
 };

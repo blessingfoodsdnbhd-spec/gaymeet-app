@@ -50,6 +50,17 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'follow': {
       return safeNavigate('FriendsList');
     }
+    case 'photo_request': {
+      // Owner side: new request landed in their inbox.
+      return safeNavigate('PhotoRequests');
+    }
+    case 'photo_request_approved': {
+      // Requester side: open the owner's profile so the (now unlocked)
+      // private photos block re-renders with the granted photos.
+      const ownerId = data.ownerId ? String(data.ownerId) : null;
+      if (!ownerId) return safeNavigate('Main');
+      return safeNavigate('UserDetail', { userId: ownerId });
+    }
     default:
       return false;
   }

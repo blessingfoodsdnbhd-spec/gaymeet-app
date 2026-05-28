@@ -27,6 +27,10 @@ export interface User {
   premiumExpiresAt?: string | null;
   isBoosted?: boolean;
   boostExpiresAt?: string | null;
+  /** Count of the user's locked photos. Backend strips the actual URLs
+   *  from any public profile object — use getPrivatePhotos(userId) with
+   *  an active grant to view them. */
+  privatePhotosCount?: number;
   distanceLabel?: string | null;
   preferences?: {
     hideDistance?: boolean;

@@ -21,6 +21,7 @@ import { ReportScreen } from '../screens/safety/ReportScreen';
 import { PremiumScreen } from '../screens/premium/PremiumScreen';
 import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
+import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -89,6 +90,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="LikedMe"
             component={LikedMeScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="PhotoRequests"
+            component={PhotoRequestsScreen}
             options={{ animation: 'slide_from_right' }}
           />
         </>

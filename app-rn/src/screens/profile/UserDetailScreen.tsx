@@ -8,14 +8,15 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, MoreHorizontal, Send } from 'lucide-react-native';
+import { ChevronLeft, Crown, Lock, MoreHorizontal, Send } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -24,6 +25,12 @@ import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { getUserById } from '../../api/me';
 import { openConversation } from '../../api/chats';
+import {
+  getPrivatePhotos,
+  getSent,
+  requestPrivatePhotos,
+  type PhotoRequestStatus,
+} from '../../api/privatePhotos';
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -68,6 +75,41 @@ export function UserDetailScreen() {
       includeUnmatch: false,
     });
   };
+
+  // Locate the requester→owner PhotoRequest for granular status (the
+  // /private-photos endpoint collapses rejected/revoked/never-requested
+  // all into 'none', which doesn't let us show distinct UI per state).
+  const sentQ = useQuery({
+    queryKey: ['photoRequests', 'sent'],
+    queryFn: getSent,
+    staleTime: 30_000,
+    enabled: !!user && (user.privatePhotosCount ?? 0) > 0,
+  });
+  const myReqForUser = (sentQ.data?.requests ?? [])
+    .filter((r) => r.owner)
+    .find((r) => r.owner!._id === userId);
+  const reqStatus: PhotoRequestStatus | 'none' = myReqForUser?.status ?? 'none';
+
+  // When approved, fetch the actual photo URLs. The endpoint also handles
+  // owner-self but we never hit that branch on someone else's profile.
+  const privatePhotosQ = useQuery({
+    queryKey: ['user', userId, 'privatePhotos'],
+    queryFn: () => getPrivatePhotos(userId),
+    enabled: reqStatus === 'approved',
+    staleTime: 60_000,
+  });
+
+  const requestMut = useMutation({
+    mutationFn: () => requestPrivatePhotos(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['photoRequests', 'sent'] });
+      Alert.alert(t('userDetail.requestSentToast'));
+    },
+    onError: (e: any) => {
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('userDetail.requestFailed'), detail);
+    },
+  });
 
   // "Send a message" CTA. Premium → openConversation (free if already
   // matched, else creates a DM). Non-premium → paywall. Mirrors
@@ -154,6 +196,66 @@ export function UserDetailScreen() {
             )}
           </View>
 
+          {/* Public photos — horizontal strip of photos[1..] since [0] is
+              already the avatar at the top. Skip rendering when only the
+              avatar exists. */}
+          {user.photos && user.photos.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingTop: 18, gap: 8 }}
+            >
+              {user.photos.slice(1).map((url) => (
+                <ExpoImage
+                  key={url}
+                  source={{ uri: url }}
+                  style={{ width: 140, height: 180, borderRadius: 14 }}
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Locked photos block — only shown if owner has any. Status
+              drives whether the user sees a CTA, a disabled chip, or the
+              actual unlocked photos. */}
+          {(user.privatePhotosCount ?? 0) > 0 && (
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: theme.colors.muted }]}>
+                {t('userDetail.lockedPhotosCount', { n: user.privatePhotosCount })}
+              </Text>
+
+              {reqStatus === 'approved' ? (
+                privatePhotosQ.isLoading ? (
+                  <ActivityIndicator color={theme.colors.primary} />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {(privatePhotosQ.data?.photos ?? []).map((url) => (
+                      <ExpoImage
+                        key={url}
+                        source={{ uri: url }}
+                        style={{ width: 140, height: 180, borderRadius: 14 }}
+                        cachePolicy="memory-disk"
+                        contentFit="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                )
+              ) : (
+                <LockedBlock
+                  status={reqStatus}
+                  busy={requestMut.isPending}
+                  onRequest={() => requestMut.mutate()}
+                />
+              )}
+            </View>
+          )}
+
           {user.prompts && user.prompts.length > 0 && (
             <Card surface2 flat style={{ padding: 14, marginTop: 18 }}>
               <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>
@@ -228,6 +330,70 @@ export function UserDetailScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+/**
+ * The "Request to view" surface shown when the requester is NOT yet
+ * approved. Five states drive the copy/disabled-ness:
+ *   none      → primary CTA
+ *   pending   → disabled chip ("Request sent · pending")
+ *   rejected  → disabled chip ("Try again in 7 days")
+ *   revoked   → primary CTA with revoked copy ("Previously had access")
+ *   expired   → backend-side state nobody currently writes; treat as none.
+ */
+function LockedBlock({
+  status,
+  busy,
+  onRequest,
+}: {
+  status: PhotoRequestStatus | 'none';
+  busy: boolean;
+  onRequest: () => void;
+}) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+
+  const isDisabled =
+    status === 'pending' || status === 'rejected';
+  const label =
+    status === 'pending'
+      ? t('userDetail.requestSent')
+      : status === 'rejected'
+      ? t('userDetail.requestRejected')
+      : status === 'revoked'
+      ? t('userDetail.requestRevoked')
+      : t('userDetail.requestToView');
+
+  return (
+    <Pressable
+      onPress={onRequest}
+      disabled={isDisabled || busy}
+      style={({ pressed }) => [
+        styles.lockedCta,
+        {
+          backgroundColor: isDisabled ? theme.colors.surface2 : theme.colors.primarySoft,
+          borderColor: theme.colors.line,
+          opacity: pressed || busy ? 0.7 : 1,
+        },
+      ]}
+    >
+      <Lock
+        size={18}
+        color={isDisabled ? theme.colors.muted : theme.colors.primaryDeep}
+        strokeWidth={1.8}
+      />
+      <Text
+        style={{
+          fontSize: 14,
+          fontWeight: '600',
+          color: isDisabled ? theme.colors.muted : theme.colors.primaryDeep,
+        }}
+      >
+        {label}
+      </Text>
+      {busy && <ActivityIndicator size="small" color={theme.colors.primaryDeep} />}
+    </Pressable>
   );
 }
 
@@ -306,5 +472,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  lockedCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });
