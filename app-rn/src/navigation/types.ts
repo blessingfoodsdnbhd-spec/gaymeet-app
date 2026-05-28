@@ -34,4 +34,5 @@ export type RootStackParamList = {
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string };
   Premium: undefined;
+  LikedMe: undefined;
 };

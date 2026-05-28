@@ -20,6 +20,7 @@ import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
 import { PremiumScreen } from '../screens/premium/PremiumScreen';
 import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
+import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -83,6 +84,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="UserDetail"
             component={UserDetailScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="LikedMe"
+            component={LikedMeScreen}
             options={{ animation: 'slide_from_right' }}
           />
         </>

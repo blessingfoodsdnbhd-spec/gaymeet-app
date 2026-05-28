@@ -6,14 +6,16 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreHorizontal } from 'lucide-react-native';
+import { ChevronLeft, Crown, MoreHorizontal, Send } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
@@ -21,6 +23,9 @@ import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { getUserById } from '../../api/me';
+import { openConversation } from '../../api/chats';
+import { useAuth } from '../../store/auth';
+import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -40,6 +45,9 @@ export function UserDetailScreen() {
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
+  const queryClient = useQueryClient();
+  const me = useAuth((s) => s.user);
+  const isPremium = !!(me as any)?.isPremium;
   const { userId } = route.params;
 
   const userQ = useQuery({
@@ -59,6 +67,32 @@ export function UserDetailScreen() {
       // Coming from outside a chat context — no unmatch action.
       includeUnmatch: false,
     });
+  };
+
+  // "Send a message" CTA. Premium → openConversation (free if already
+  // matched, else creates a DM). Non-premium → paywall. Mirrors
+  // DiscoverScreen.openIntroChat behaviour for 402 fallbacks.
+  const onSendMessage = async () => {
+    if (!isPremium) {
+      nav.navigate('Premium');
+      return;
+    }
+    try {
+      const res = await openConversation(userId);
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+      nav.replace('ChatDetail', { chatId: res.matchId });
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      if (status === 402 && body?.reason === 'premium_required') {
+        nav.navigate('Premium');
+      } else {
+        Alert.alert(
+          t('discover.openFailedTitle'),
+          body?.error || e?.message || t('discover.openFailedFallback'),
+        );
+      }
+    }
   };
 
   return (
@@ -165,6 +199,32 @@ export function UserDetailScreen() {
               </View>
             </View>
           )}
+
+          <Pressable onPress={onSendMessage} style={{ marginTop: 32 }}>
+            {({ pressed }) => (
+              <LinearGradient
+                colors={[...brandGradient.colors] as [string, string, ...string[]]}
+                locations={[...brandGradient.locations] as [number, number, ...number[]]}
+                start={brandGradient.start}
+                end={brandGradient.end}
+                style={[
+                  styles.sendCta,
+                  pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                <Send size={18} color="#FFFFFF" strokeWidth={2} />
+                <Text style={styles.sendCtaText}>{t('userDetail.sendMessage')}</Text>
+                {!isPremium && (
+                  <View style={styles.proBadge}>
+                    <Crown size={11} color="#FFFFFF" strokeWidth={2.2} />
+                    <Text style={styles.proBadgeText}>
+                      {t('userDetail.sendMessagePremiumOnly')}
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+            )}
+          </Pressable>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -213,4 +273,38 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  sendCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 18,
+    elevation: 6,
+    shadowColor: '#4F8FE8',
+    shadowOpacity: 0.32,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 18,
+  },
+  sendCtaText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  proBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  proBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
 });

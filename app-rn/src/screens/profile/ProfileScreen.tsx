@@ -109,12 +109,17 @@ export function ProfileScreen() {
           />
         </LinearGradient>
 
-        {/* Stats — all three are tappable, each opens its own list screen. */}
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+        {/* Stats — all four are tappable, each opens its own list screen. */}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
           <Stat
             label={t('profile.stats.matches')}
             value={fmt(stats?.matches)}
             onPress={() => nav.navigate('MatchesList')}
+          />
+          <Stat
+            label={t('profile.stats.likes')}
+            value={fmt(stats?.likes)}
+            onPress={() => nav.navigate('LikedMe')}
           />
           <Stat
             label={t('profile.stats.friends')}

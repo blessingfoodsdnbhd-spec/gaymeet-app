@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
+import { Crown, Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +16,7 @@ import { NearbyGrid } from './NearbyGrid';
 import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
+import { BoostButton } from './BoostButton';
 import {
   getDiscoverCards,
   getNearby,
@@ -203,6 +204,7 @@ export function DiscoverScreen() {
         left={null}
         right={
           <>
+            <BoostButton />
             <IconButton onPress={() => setFiltersOpen(true)}>
               <View>
                 <SlidersHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
@@ -354,12 +356,22 @@ function CardsBody({
           onPress={() => onOpenAbout(top)}
         />
         <CircleBtnPrimary onPress={() => stackRef.current?.swipe(true)} />
-        <CircleBtn
-          icon={<Send size={18} color="#B14B59" strokeWidth={2} />}
-          bg={theme.colors.accentRoseSoft}
-          small
-          onPress={() => onSendIntro(top)}
-        />
+        {/* Direct-intro button. Pro corner badge marks it as a Premium
+            feature so Premium users notice it's the entry point for DMing
+            unmatched profiles, and Free users see why their tap surfaces
+            the paywall. */}
+        <View>
+          <CircleBtn
+            icon={<Send size={18} color="#B14B59" strokeWidth={2} />}
+            bg={theme.colors.accentRoseSoft}
+            small
+            onPress={() => onSendIntro(top)}
+          />
+          <View pointerEvents="none" style={styles.proCorner}>
+            <Crown size={9} color="#FFFFFF" strokeWidth={2.4} />
+            <Text style={styles.proCornerText}>PRO</Text>
+          </View>
+        </View>
       </View>
     </>
   );
@@ -479,5 +491,25 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 14,
     paddingHorizontal: 20,
+  },
+  proCorner: {
+    position: 'absolute',
+    top: -6,
+    right: -10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#6B4FE0',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  proCornerText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
 });

@@ -139,7 +139,9 @@
   "userDetail": {
     "aboutSection": "关于",
     "interestsSection": "兴趣",
-    "loadFailed": "无法加载资料"
+    "loadFailed": "无法加载资料",
+    "sendMessage": "发送消息",
+    "sendMessagePremiumOnly": "Premium 功能"
   },
   "nearby": {
     "peopleCount": "{{n}} 人在附近",
@@ -149,7 +151,8 @@
     "stats": {
       "matches": "同频",
       "friends": "好友",
-      "moments": "动态"
+      "moments": "动态",
+      "likes": "喜欢你"
     },
     "editProfile": "编辑资料",
     "interestsTitle": "我的兴趣",
@@ -266,6 +269,24 @@
     "unmatchConfirmTitle": "取消与 {{name}} 的同频?",
     "unmatchConfirmBody": "聊天将被移除,无法恢复。",
     "unmatchAction": "取消同频"
+  },
+  "likedMe": {
+    "title": "喜欢你的人",
+    "empty": "还没有人喜欢你",
+    "upgradeCta": "升级看清楚是谁",
+    "loadFailed": "无法加载"
+  },
+  "boost": {
+    "button": "曝光加大",
+    "activeFor": "曝光中 · {{time}}",
+    "activated": "30 分钟曝光已启动",
+    "confirmTitle": "启动 Boost 曝光?",
+    "confirmBody": "你的卡片将在 30 分钟内显示给 10 倍多的人。",
+    "confirmCta": "启动",
+    "alreadyActive": "Boost 已在进行",
+    "activateFailed": "启动 Boost 失败",
+    "premiumTitle": "Boost 是 Premium 功能",
+    "premiumBody": "用 Boost 获得更多 Match — 升级解锁。"
   },
   "report": {
     "title": "举报 {{name}}",

@@ -23,6 +23,10 @@ export interface User {
   // Optional / legacy fields read by some screens
   isOnline?: boolean;
   isVerified?: boolean;
+  isPremium?: boolean;
+  premiumExpiresAt?: string | null;
+  isBoosted?: boolean;
+  boostExpiresAt?: string | null;
   distanceLabel?: string | null;
   preferences?: {
     hideDistance?: boolean;
@@ -62,6 +66,10 @@ export interface MyStats {
   matches: number;
   following: number;
   moments: number;
+  /** Inbound likes count — added with the "Who Liked You" feature.
+   *  Optional so the client doesn't crash if hitting an older backend
+   *  before the field rolls out. */
+  likes?: number;
 }
 export const getMyStats = () => unwrap<MyStats>(api.get('/me/stats'));
 
@@ -91,3 +99,23 @@ export const getUserById = (userId: string) =>
  * password — because most users sign in via OTP / Apple / Google. */
 export const deleteAccount = () =>
   unwrap<{ success: true; message: string }>(api.delete('/account'));
+
+/** Inbound likes — users who swiped LIKE/SUPER_LIKE on me. Backend gates
+ *  on Premium: non-premium gets blurred placeholder rows (nickname '??',
+ *  no avatar) so the count is still visible but identities are not. */
+export interface LikerUser {
+  _id: string;
+  nickname: string;
+  avatarUrl?: string | null;
+  age?: number | null;
+  isOnline?: boolean;
+  isBlurred?: boolean;
+  isPremium?: boolean;
+  isVerified?: boolean;
+}
+export interface LikedMeResponse {
+  count: number;
+  users: LikerUser[];
+}
+export const getLikedMe = () =>
+  unwrap<LikedMeResponse>(api.get('/users/likes'));

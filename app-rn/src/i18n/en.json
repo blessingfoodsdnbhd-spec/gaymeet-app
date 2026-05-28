@@ -139,7 +139,9 @@
   "userDetail": {
     "aboutSection": "About",
     "interestsSection": "Interests",
-    "loadFailed": "Couldn't load profile"
+    "loadFailed": "Couldn't load profile",
+    "sendMessage": "Send a message",
+    "sendMessagePremiumOnly": "Premium feature"
   },
   "nearby": {
     "peopleCount": "{{n}} nearby",
@@ -149,7 +151,8 @@
     "stats": {
       "matches": "Matches",
       "friends": "Friends",
-      "moments": "Moments"
+      "moments": "Moments",
+      "likes": "Likes"
     },
     "editProfile": "Edit profile",
     "interestsTitle": "My interests",
@@ -266,6 +269,24 @@
     "unmatchConfirmTitle": "Unmatch with {{name}}?",
     "unmatchConfirmBody": "The chat will be removed and cannot be restored.",
     "unmatchAction": "Unmatch"
+  },
+  "likedMe": {
+    "title": "Who Liked You",
+    "empty": "No one yet",
+    "upgradeCta": "Upgrade to see who they are",
+    "loadFailed": "Couldn't load"
+  },
+  "boost": {
+    "button": "Boost",
+    "activeFor": "Boosted · {{time}}",
+    "activated": "Boost activated for 30 min",
+    "confirmTitle": "Activate Boost?",
+    "confirmBody": "Your card will be shown to 10x more people for 30 minutes.",
+    "confirmCta": "Activate",
+    "alreadyActive": "Boost already active",
+    "activateFailed": "Couldn't activate Boost",
+    "premiumTitle": "Boost is Premium",
+    "premiumBody": "Get more matches with Boost — upgrade to unlock."
   },
   "report": {
     "title": "Report {{name}}",
