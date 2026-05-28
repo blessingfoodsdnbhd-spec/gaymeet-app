@@ -45,14 +45,15 @@ export async function registerPushToken(): Promise<string | null> {
     // Android needs the notification channel set up before pushes can show.
     // HIGH importance → heads-up banner + sound; matches iOS default UX.
     //
-    // Channel ID is `default_v2` (not `default`) to force creation of a fresh
+    // Channel ID is `default_v3` (not `default`) to force creation of a fresh
     // channel. Android caches channel settings — once a channel exists, you
     // CANNOT change its sound / vibration / importance for that ID; users
     // have to manually reset notification settings. Bumping the ID is the
     // only way to ship our custom sound to users who already had the app.
+    // v2 → v3 to roll out the louder (+12 dB) notification_sound.wav.
     // Keep the backend channelId in sync (utils/push.js android.notification
     // .channelId must match).
-    await Notifications.setNotificationChannelAsync('default_v2', {
+    await Notifications.setNotificationChannelAsync('default_v3', {
       name: 'default',
       importance: Notifications.AndroidImportance.HIGH,
       sound: 'notification_sound', // res/raw/notification_sound.wav (no ext)
