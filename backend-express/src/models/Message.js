@@ -34,6 +34,15 @@ const messageSchema = new mongoose.Schema(
       lng: { type: Number, default: null },
       label: { type: String, default: null },
     },
+    // Image-message expiry. Set by the send routes to now + 30d for
+    // type='image'; null for text / sticker / location (which never
+    // expire). The GET /messages handler lazily rotates the mediaUrl
+    // to null + flags expired:true once expiresAt passes — real B2
+    // cleanup is done by the admin endpoint (after a 7-day grace).
+    expiresAt: { type: Date, default: null, index: true },
+    // Stamped by the admin cleanup pass once mediaUrl has been
+    // nullified and the underlying B2 object has been removed.
+    cleanedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
