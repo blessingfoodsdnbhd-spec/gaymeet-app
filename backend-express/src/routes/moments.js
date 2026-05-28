@@ -8,7 +8,7 @@ const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
-const MOMENTS_NEARBY_KM = 10;
+const MOMENTS_NEARBY_KM = 50;
 
 // ── GET /api/moments ──────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res, next) => {
