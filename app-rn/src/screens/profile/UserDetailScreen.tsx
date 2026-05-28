@@ -354,8 +354,12 @@ function LockedBlock({
   const theme = useTheme();
   const { t } = useTranslation();
 
-  const isDisabled =
-    status === 'pending' || status === 'rejected';
+  // Only pending is disabled — rejected/revoked/none are all tappable
+  // (a fresh request creates a new PhotoRequest row, the prior one stays
+  // as audit). The visual distinguishes rejected with muted color so
+  // the user understands they were denied previously.
+  const isDisabled = status === 'pending';
+  const isMutedTone = status === 'rejected';
   const label =
     status === 'pending'
       ? t('userDetail.requestSent')
@@ -372,7 +376,11 @@ function LockedBlock({
       style={({ pressed }) => [
         styles.lockedCta,
         {
-          backgroundColor: isDisabled ? theme.colors.surface2 : theme.colors.primarySoft,
+          backgroundColor: isDisabled
+            ? theme.colors.surface2
+            : isMutedTone
+            ? theme.colors.surface2
+            : theme.colors.primarySoft,
           borderColor: theme.colors.line,
           opacity: pressed || busy ? 0.7 : 1,
         },
@@ -380,14 +388,17 @@ function LockedBlock({
     >
       <Lock
         size={18}
-        color={isDisabled ? theme.colors.muted : theme.colors.primaryDeep}
+        color={isDisabled || isMutedTone ? theme.colors.muted : theme.colors.primaryDeep}
         strokeWidth={1.8}
       />
       <Text
         style={{
           fontSize: 14,
           fontWeight: '600',
-          color: isDisabled ? theme.colors.muted : theme.colors.primaryDeep,
+          color:
+            isDisabled || isMutedTone
+              ? theme.colors.muted
+              : theme.colors.primaryDeep,
         }}
       >
         {label}

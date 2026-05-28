@@ -146,7 +146,7 @@
     "requestToView": "申请查看",
     "requestSent": "已申请 · 等待批准",
     "requestApproved": "点击查看",
-    "requestRejected": "申请被拒。7 天后可重新申请。",
+    "requestRejected": "申请被拒 · 点击重新申请",
     "requestRevoked": "之前有访问权 · 重新申请",
     "requestSentToast": "申请已发送",
     "requestFailed": "发送申请失败"

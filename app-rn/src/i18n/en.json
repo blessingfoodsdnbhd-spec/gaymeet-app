@@ -146,7 +146,7 @@
     "requestToView": "Request to view",
     "requestSent": "Request sent · pending",
     "requestApproved": "Tap to view",
-    "requestRejected": "Request denied. Try again in 7 days.",
+    "requestRejected": "Request denied · Tap to request again",
     "requestRevoked": "Previously had access · Request again",
     "requestSentToast": "Request sent",
     "requestFailed": "Couldn't send request"
