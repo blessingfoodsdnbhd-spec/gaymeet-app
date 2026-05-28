@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   FlatList,
+  RefreshControl,
   ScrollView,
   Pressable,
   ActivityIndicator,
@@ -12,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Flame } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigation } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -21,6 +22,7 @@ import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { useChats } from '../../store/chats';
+import { on as wsOn } from '../../api/ws';
 import type { RootStackParamList } from '../../navigation/types';
 import { hhmm, shortTime } from '../../utils/time';
 
@@ -46,6 +48,7 @@ export function ChatsListScreen() {
   const [q, setQ] = useState('');
 
   const setThreads = useChats((s) => s.setThreads);
+  const queryClient = useQueryClient();
   const threadsQ = useQuery({
     queryKey: ['chats', 'list'],
     queryFn: getConversations,
@@ -58,6 +61,44 @@ export function ChatsListScreen() {
   useEffect(() => {
     if (threadsQ.data) setThreads(threadsQ.data);
   }, [threadsQ.data, setThreads]);
+
+  // Re-fetch on tab focus. The user might have just been in ChatDetail
+  // (where new messages arrived but only invalidate-from-detail would
+  // catch them), or might be coming back after a while of being on
+  // Discover/Profile. Without this the list could sit on a 30s-stale
+  // cache until the next reload.
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+    }, [queryClient]),
+  );
+
+  // Real-time: any chat:receive event implies SOME thread's preview /
+  // unreadCount / lastMessageAt changed. Invalidate so the list reflects.
+  // Important: ChatDetailScreen has its own chat:receive listener but
+  // it ignores messages for matches other than the one on screen, so
+  // without this listener the list goes stale whenever the user is on
+  // the Chats tab and another conversation receives a message.
+  useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    (async () => {
+      const u = await wsOn('chat:receive', () => {
+        if (!cancelled) {
+          queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+        }
+      });
+      if (cancelled) {
+        u();
+        return;
+      }
+      unsub = u;
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, [queryClient]);
 
   const filtered = useMemo(() => {
     const list = threadsQ.data ?? [];
@@ -135,6 +176,14 @@ export function ChatsListScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(t) => t.matchId}
+          refreshControl={
+            <RefreshControl
+              refreshing={threadsQ.isRefetching && !threadsQ.isLoading}
+              onRefresh={() => threadsQ.refetch()}
+              tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
+            />
+          }
           ListHeaderComponent={
             newMatches.length > 0 ? (
               <NewMatchesStrip

@@ -123,7 +123,14 @@ export function ChatDetailScreen() {
 
     (async () => {
       const u1 = await wsOn('chat:receive', (msg: WsChatReceive) => {
-        if (cancelled || msg.matchId !== matchId) return;
+        if (cancelled) return;
+        // Any incoming message — whether for this match or another —
+        // changes some thread's preview / unreadCount / lastMessageAt,
+        // so invalidate the chats-list cache. Done before the matchId
+        // gate so cross-match messages still bubble the list when the
+        // user pops back from this screen.
+        queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+        if (msg.matchId !== matchId) return;
         queryClient.setQueryData<Message[]>(
           ['chats', 'messages', matchId],
           (prev) => {
