@@ -122,7 +122,7 @@ async function sendPushToUser(userId, { title, body, data = {} } = {}) {
           // name, no extension). Channel-level sound is the authoritative
           // setting on Android 8+; this per-notification `sound` field is
           // a redundant belt-and-suspenders.
-          channelId: 'default_v2',
+          channelId: 'default_v3',
           sound: 'notification_sound',
         },
       },
