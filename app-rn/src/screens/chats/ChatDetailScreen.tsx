@@ -271,21 +271,33 @@ export function ChatDetailScreen() {
         </Pressable>
         {thread && (
           <>
-            <Avatar
-              name={thread.user.nickname}
-              uri={thread.user.avatarUrl}
-              avatarIdx={idxFor(thread.user.id)}
-              size={38}
-              showOnline={thread.user.isOnline}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-                {thread.user.nickname}
-              </Text>
-              <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
-                {otherTyping ? t('chats.detail.typing') : thread.user.isOnline ? t('chats.detail.online') : t('chats.detail.offline')}
-              </Text>
-            </View>
+            {/* Avatar + name → tap to open this user's full profile.
+                Wrapped in one Pressable so the whole strip between back
+                arrow and safety-menu icon is tappable — matches Insta
+                / WhatsApp UX. */}
+            <Pressable
+              onPress={() =>
+                nav.navigate('UserDetail', { userId: thread.user.id })
+              }
+              hitSlop={4}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+            >
+              <Avatar
+                name={thread.user.nickname}
+                uri={thread.user.avatarUrl}
+                avatarIdx={idxFor(thread.user.id)}
+                size={38}
+                showOnline={thread.user.isOnline}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
+                  {thread.user.nickname}
+                </Text>
+                <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
+                  {otherTyping ? t('chats.detail.typing') : thread.user.isOnline ? t('chats.detail.online') : t('chats.detail.offline')}
+                </Text>
+              </View>
+            </Pressable>
             <Pressable
               style={iconBtn(theme)}
               onPress={() =>

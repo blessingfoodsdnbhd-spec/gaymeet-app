@@ -136,6 +136,21 @@
     "interestsCount": "Interests · {{n}} in common",
     "likeCta": "Like {{name}}"
   },
+  "userDetail": {
+    "aboutSection": "About",
+    "interestsSection": "Interests",
+    "loadFailed": "Couldn't load profile",
+    "sendMessage": "Send a message",
+    "sendMessagePremiumOnly": "Premium feature",
+    "lockedPhotosCount": "🔒 {{n}} locked photos",
+    "requestToView": "Request to view",
+    "requestSent": "Request sent · pending",
+    "requestApproved": "Tap to view",
+    "requestRejected": "Request denied · Tap to request again",
+    "requestRevoked": "Previously had access · Request again",
+    "requestSentToast": "Request sent",
+    "requestFailed": "Couldn't send request"
+  },
   "nearby": {
     "peopleCount": "{{n}} nearby",
     "footnote": "Showing people who allow Nearby"
@@ -144,9 +159,24 @@
     "stats": {
       "matches": "Matches",
       "friends": "Friends",
-      "moments": "Moments"
+      "moments": "Moments",
+      "likes": "Likes"
     },
     "editProfile": "Edit profile",
+    "publicPhotos": "Public photos",
+    "publicPhotosLimit": "Public photos · {{count}} / 5",
+    "privatePhotos": "Private photos 🔒",
+    "privatePhotosLimit": "Private photos 🔒 · {{count}} / 5",
+    "privatePhotosHint": "Only people you approve can see these.",
+    "revokeAllAccess": "Revoke all access · {{n}} viewers",
+    "revokeAllConfirmTitle": "Revoke all access?",
+    "revokeAllConfirmBody": "All {{n}} approved viewers will need to request again.",
+    "revokeAllAction": "Revoke",
+    "revoked": "Access revoked",
+    "photoUploadFailed": "Couldn't upload photo",
+    "photoDeleteFailed": "Couldn't delete photo",
+    "deletePhotoTitle": "Delete this photo?",
+    "deletePhotoAction": "Delete",
     "interestsTitle": "My interests",
     "interestsEmpty": "No interests yet",
     "interestsManage": "+ Manage",
@@ -163,7 +193,8 @@
       "language": "Language",
       "languageValueZh": "Chinese",
       "languageValueEn": "English",
-      "account": "Account & security"
+      "account": "Account & security",
+      "photoRequests": "Photo requests"
     },
     "edit": {
       "title": "Edit profile",
@@ -261,6 +292,37 @@
     "unmatchConfirmTitle": "Unmatch with {{name}}?",
     "unmatchConfirmBody": "The chat will be removed and cannot be restored.",
     "unmatchAction": "Unmatch"
+  },
+  "photoRequests": {
+    "title": "Photo Requests",
+    "pendingHeader": "{{n}} pending",
+    "approvedHeader": "Already approved · {{n}} viewers",
+    "approve": "Approve",
+    "deny": "Deny",
+    "approveFailed": "Couldn't approve",
+    "denyFailed": "Couldn't deny",
+    "empty": "No requests yet",
+    "tapAvatarHint": "Tap an avatar to see their profile first.",
+    "loadFailed": "Couldn't load requests",
+    "revokeAll": "Revoke all"
+  },
+  "likedMe": {
+    "title": "Who Liked You",
+    "empty": "No one yet",
+    "upgradeCta": "Upgrade to see who they are",
+    "loadFailed": "Couldn't load"
+  },
+  "boost": {
+    "button": "Boost",
+    "activeFor": "Boosted · {{time}}",
+    "activated": "Boost activated for 30 min",
+    "confirmTitle": "Activate Boost?",
+    "confirmBody": "Your card will be shown to 10x more people for 30 minutes.",
+    "confirmCta": "Activate",
+    "alreadyActive": "Boost already active",
+    "activateFailed": "Couldn't activate Boost",
+    "premiumTitle": "Boost is Premium",
+    "premiumBody": "Get more matches with Boost — upgrade to unlock."
   },
   "report": {
     "title": "Report {{name}}",

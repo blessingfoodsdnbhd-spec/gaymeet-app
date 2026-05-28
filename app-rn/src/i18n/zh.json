@@ -113,19 +113,19 @@
   "chats": {
     "searchPlaceholder": "搜索",
     "empty": "还没有消息 — 去发现 tab 找同频的人吧",
-    "newMatchesHeader": "新密友 · {{n}}",
+    "newMatchesHeader": "新同频 · {{n}}",
     "sayHi": "说声你好吧 →",
     "detail": {
       "typing": "正在输入…",
       "online": "在线",
       "offline": "离线",
       "messagePlaceholder": "说点什么…",
-      "unmatchFailed": "取消配对失败"
+      "unmatchFailed": "取消同频失败"
     }
   },
   "match": {
     "title": "It's a Meyou!",
-    "subtitle": "你们成为密友了",
+    "subtitle": "你们同频了 ✨",
     "bothLove": "你和 {{name}} 都对",
     "sendCta": "发条消息打招呼",
     "later": "稍后再说",
@@ -136,6 +136,21 @@
     "interestsCount": "兴趣 · {{n}} 个共同",
     "likeCta": "想认识 {{name}}"
   },
+  "userDetail": {
+    "aboutSection": "关于",
+    "interestsSection": "兴趣",
+    "loadFailed": "无法加载资料",
+    "sendMessage": "发送消息",
+    "sendMessagePremiumOnly": "Premium 功能",
+    "lockedPhotosCount": "🔒 {{n}} 张私密照",
+    "requestToView": "申请查看",
+    "requestSent": "已申请 · 等待批准",
+    "requestApproved": "点击查看",
+    "requestRejected": "申请被拒 · 点击重新申请",
+    "requestRevoked": "之前有访问权 · 重新申请",
+    "requestSentToast": "申请已发送",
+    "requestFailed": "发送申请失败"
+  },
   "nearby": {
     "peopleCount": "{{n}} 人在附近",
     "footnote": "仅显示开启了「附近」的同好"
@@ -144,9 +159,24 @@
     "stats": {
       "matches": "同频",
       "friends": "好友",
-      "moments": "动态"
+      "moments": "动态",
+      "likes": "喜欢你"
     },
     "editProfile": "编辑资料",
+    "publicPhotos": "公开照片",
+    "publicPhotosLimit": "公开照片 · {{count}} / 5",
+    "privatePhotos": "私密照片 🔒",
+    "privatePhotosLimit": "私密照片 🔒 · {{count}} / 5",
+    "privatePhotosHint": "只有你批准的人能看到。",
+    "revokeAllAccess": "撤销所有访问 · {{n}} 人",
+    "revokeAllConfirmTitle": "撤销所有访问?",
+    "revokeAllConfirmBody": "所有 {{n}} 个已批准的人需要重新申请。",
+    "revokeAllAction": "撤销",
+    "revoked": "访问已撤销",
+    "photoUploadFailed": "上传照片失败",
+    "photoDeleteFailed": "删除照片失败",
+    "deletePhotoTitle": "删除这张照片?",
+    "deletePhotoAction": "删除",
     "interestsTitle": "我的兴趣",
     "interestsEmpty": "还没有兴趣",
     "interestsManage": "+ 管理",
@@ -163,7 +193,8 @@
       "language": "语言",
       "languageValueZh": "中文",
       "languageValueEn": "English",
-      "account": "账户与安全"
+      "account": "账户与安全",
+      "photoRequests": "私密照申请"
     },
     "edit": {
       "title": "编辑资料",
@@ -199,8 +230,8 @@
       }
     },
     "matchesList": {
-      "empty": "还没有同频好友 — 去发现卡片",
-      "matchedAt": "{{date}} 配对"
+      "empty": "还没有同频 — 去发现卡片",
+      "matchedAt": "{{date}} 同频"
     },
     "friendsList": {
       "empty": "还没有好友"
@@ -242,7 +273,7 @@
     "signOutConfirmBody": "确定要退出吗?",
     "signOutButton": "退出",
     "deleteStep1Title": "删除账号",
-    "deleteStep1Body": "所有聊天、动态、匹配将被永久删除。这个操作无法撤销。",
+    "deleteStep1Body": "所有聊天、动态、同频将被永久删除。这个操作无法撤销。",
     "deleteStep1Continue": "继续",
     "deleteStep2Title": "再次确认",
     "deleteStep2Body": "最终确认 — 你的账号和所有数据将立即被删除。",
@@ -252,15 +283,46 @@
   "safetyMenu": {
     "report": "举报",
     "block": "屏蔽 (Block)",
-    "unmatch": "解除匹配 (Unmatch)",
+    "unmatch": "取消同频 (Unmatch)",
     "cancel": "取消",
     "blockConfirmTitle": "屏蔽 {{name}}?",
-    "blockConfirmBody": "你们彼此不再可见,聊天和匹配将被移除。",
+    "blockConfirmBody": "你们彼此不再可见,聊天和同频将被移除。",
     "blockAction": "屏蔽",
     "blockFailed": "屏蔽失败",
-    "unmatchConfirmTitle": "解除与 {{name}} 的匹配?",
+    "unmatchConfirmTitle": "取消与 {{name}} 的同频?",
     "unmatchConfirmBody": "聊天将被移除,无法恢复。",
-    "unmatchAction": "解除"
+    "unmatchAction": "取消同频"
+  },
+  "photoRequests": {
+    "title": "私密照申请",
+    "pendingHeader": "{{n}} 个待处理",
+    "approvedHeader": "已批准 · {{n}} 人",
+    "approve": "批准",
+    "deny": "拒绝",
+    "approveFailed": "批准失败",
+    "denyFailed": "拒绝失败",
+    "empty": "暂无申请",
+    "tapAvatarHint": "点击头像先看资料",
+    "loadFailed": "无法加载申请",
+    "revokeAll": "撤销全部"
+  },
+  "likedMe": {
+    "title": "喜欢你的人",
+    "empty": "还没有人喜欢你",
+    "upgradeCta": "升级看清楚是谁",
+    "loadFailed": "无法加载"
+  },
+  "boost": {
+    "button": "曝光加大",
+    "activeFor": "曝光中 · {{time}}",
+    "activated": "30 分钟曝光已启动",
+    "confirmTitle": "启动 Boost 曝光?",
+    "confirmBody": "你的卡片将在 30 分钟内显示给 10 倍多的人。",
+    "confirmCta": "启动",
+    "alreadyActive": "Boost 已在进行",
+    "activateFailed": "启动 Boost 失败",
+    "premiumTitle": "Boost 是 Premium 功能",
+    "premiumBody": "用 Boost 获得更多 Match — 升级解锁。"
   },
   "report": {
     "title": "举报 {{name}}",
@@ -287,7 +349,7 @@
     "expiresAt": "到期: {{date}}",
     "benefitsSection": "专属权益",
     "benefits": {
-      "directIntro": "给还没 match 的人直接发消息",
+      "directIntro": "给还没同频的人直接发消息",
       "seeLikes": "看谁喜欢了你",
       "unlimitedSwipes": "无限滑卡片",
       "readReceipts": "「已读」回执",
