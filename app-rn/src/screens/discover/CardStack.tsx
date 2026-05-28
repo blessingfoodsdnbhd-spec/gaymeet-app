@@ -107,6 +107,38 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     ],
   }));
 
+  // Non-top card styles. Each non-top card "previews" its next position
+  // (smaller → bigger) as the top card is dragged. Without this, the
+  // moment the top card flies off + parent re-renders, the behind card
+  // SNAPS from scale 0.96 → 1.0 — the visible "pop bigger" flash the
+  // user reported. With this, the behind card has already grown to
+  // ~1.0 by the time the swipe completes, so when it becomes the new
+  // top (with topStyle at scale 1.0), there's no visual jump.
+  //
+  // Math:
+  //   idx=1 (behind):     scale 0.96 → 1.00, translateY 10 → 0, opacity 1.0
+  //   idx=2 (behind 2):   scale 0.92 → 0.96, translateY 20 → 10, opacity 0.92 → 1.0
+  // Progress is |tx|/THRESHOLD clamped to [0, 1] so even an over-drag
+  // doesn't push past target. Doing both like + nope (positive +
+  // negative tx) makes the preview symmetric.
+  const card1Style = useAnimatedStyle(() => {
+    const progress = Math.min(Math.abs(tx.value) / SWIPE_THRESHOLD, 1);
+    const scale = 0.96 + (1.0 - 0.96) * progress;
+    const y = 10 + (0 - 10) * progress;
+    return { transform: [{ translateY: y }, { scale }] };
+  });
+
+  const card2Style = useAnimatedStyle(() => {
+    const progress = Math.min(Math.abs(tx.value) / SWIPE_THRESHOLD, 1);
+    const scale = 0.92 + (0.96 - 0.92) * progress;
+    const y = 20 + (10 - 20) * progress;
+    const opacity = 0.92 + (1.0 - 0.92) * progress;
+    return {
+      transform: [{ translateY: y }, { scale }],
+      opacity,
+    };
+  });
+
   // Hoist the GestureDetector ABOVE the cards map so it doesn't unmount
   // and remount when the top card changes after a swipe. Previously each
   // card was conditionally wrapped — `<GestureDetector><Animated.View>`
@@ -125,10 +157,11 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       <View style={styles.wrap}>
         {cards.slice(0, 3).reverse().map((card, i, arr) => {
           const idx = arr.length - 1 - i; // 0 = top
-          const isTop = idx === 0;
-          const scale = 1 - idx * 0.04;
-          const offsetY = idx * 10;
 
+          // Opacity / scale / translateY now all live inside the animated
+          // styles (topStyle / card1Style / card2Style). Base only carries
+          // layout + z-order so React doesn't have to bake transform
+          // values into props that would later conflict with the worklet.
           const baseStyle = {
             position: 'absolute' as const,
             top: 0,
@@ -136,20 +169,18 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
             right: 0,
             bottom: 0,
             zIndex: 10 - idx,
-            opacity: idx === 2 ? 0.92 : 1,
           };
 
+          const animStyle =
+            idx === 0 ? topStyle : idx === 1 ? card1Style : card2Style;
+
           return (
-            <Animated.View
-              key={card.id}
-              style={[
-                baseStyle,
-                isTop
-                  ? topStyle
-                  : { transform: [{ translateY: offsetY }, { scale }] },
-              ]}
-            >
-              <DiscoverCard user={card} dragX={isTop ? tx : undefined} isTop={isTop} />
+            <Animated.View key={card.id} style={[baseStyle, animStyle]}>
+              <DiscoverCard
+                user={card}
+                dragX={idx === 0 ? tx : undefined}
+                isTop={idx === 0}
+              />
             </Animated.View>
           );
         })}
