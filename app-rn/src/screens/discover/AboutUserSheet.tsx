@@ -20,6 +20,7 @@ import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
 import { openConversation } from '../../api/chats';
+import { getMe } from '../../api/me';
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -37,7 +38,25 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
-  const isPremium = !!(me as any)?.isPremium;
+  const setMe = useAuth((s) => s.setUser);
+
+  // Refetch self every time the sheet opens. The Premium gate was rendering
+  // off the cached auth.user, which can lag behind reality if the user
+  // upgraded on another device or the boot-time getMe() hadn't fired by the
+  // time they opened a sheet. We also fall back to vipLevel>0 as a belt
+  // for any edge where toPublicJSON's isPremium derivation differs from the
+  // VIP-tier truth (premium expiry vs vip expiry, etc.).
+  const meQ = useQuery({
+    queryKey: ['user', 'me-self'],
+    queryFn: getMe,
+    enabled: open,
+    staleTime: 60_000,
+  });
+  React.useEffect(() => {
+    if (meQ.data) setMe(meQ.data);
+  }, [meQ.data, setMe]);
+  const meFresh: any = meQ.data ?? me;
+  const isPremium = !!(meFresh?.isPremium || (meFresh?.vipLevel ?? 0) > 0);
 
   // Local "I just liked this person" flag so the button greys immediately.
   // The backend swipe is idempotent (findOneAndUpdate upsert), so even if
@@ -117,12 +136,21 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
   const onMore = () => {
     if (!user) return;
-    showSafetyMenu({
-      userId: user.id,
-      userName: user.nickname,
-      nav,
-      onBlocked: onClose,
-    });
+    // On Android, opening the SafetyMenuSheet's <Modal> while our parent
+    // <Sheet> is already a <Modal> stacks the new Modal BEHIND the existing
+    // one (a long-standing RN nested-Modal limitation), so the user
+    // sees nothing happen when they tap the "..." button. Other call sites
+    // (UserDetailScreen, ChatDetailScreen, MomentItem) don't hit this
+    // because they're plain screens, not Modals. Fix: dismiss the Sheet
+    // first, then open the safety menu after its slide-out (~220ms).
+    // The iOS path uses ActionSheetIOS which renders above any Modal, so
+    // the delay is harmless there too.
+    const userId = user.id;
+    const userName = user.nickname;
+    onClose();
+    setTimeout(() => {
+      showSafetyMenu({ userId, userName, nav });
+    }, 250);
   };
 
   return (
