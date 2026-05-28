@@ -1,18 +1,23 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { Heart, MoreHorizontal, X } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { Heart, MessageCircle, MoreHorizontal, UserPlus, X } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
 import { TagChip } from '../../components/TagChip';
-import { Button } from '../../components/Button';
 import { IconButton } from '../../components/TopBar';
 import { Card } from '../../components/Card';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useAuth } from '../../store/auth';
+import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
+import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
+import { openConversation } from '../../api/chats';
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -28,6 +33,77 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
+  const queryClient = useQueryClient();
+  const me = useAuth((s) => s.user);
+  const isPremium = !!(me as any)?.isPremium;
+
+  // Local "I just liked this person" flag so the button greys immediately.
+  // The backend swipe is idempotent (findOneAndUpdate upsert), so even if
+  // the user re-opens the sheet a moment later we don't accidentally
+  // double-swipe — but `liked` is reset on each open to keep state honest
+  // across different target users.
+  const [liked, setLiked] = useState(false);
+
+  // Reset local liked flag when the target user changes.
+  React.useEffect(() => {
+    setLiked(false);
+  }, [user?.id]);
+
+  // Follow-state query. Only enabled while the sheet is open and we have
+  // a target — avoids speculative requests while the parent component is
+  // mounted but the sheet is dismissed.
+  const followQ = useQuery({
+    queryKey: ['follow', user?.id],
+    queryFn: () => fetchIsFollowing(user!.id),
+    enabled: open && !!user,
+    staleTime: 30_000,
+  });
+  const isAlreadyFollowing = !!followQ.data?.following;
+
+  const followMut = useMutation({
+    mutationFn: () => toggleFollow(user!.id),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['follow', user?.id], data);
+      // The friends list ('following list') count changed — refetch so
+      // ProfileScreen stats stay in sync.
+      queryClient.invalidateQueries({ queryKey: ['me', 'stats'] });
+    },
+    onError: (e: any) => {
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('about.followFailed'), detail);
+    },
+  });
+
+  const onFollow = () => {
+    if (!user || followMut.isPending) return;
+    // Tap-to-follow only: if already following, ignore (we don't toggle off
+    // from here — that's what FriendsList is for). Backend still toggles,
+    // so we explicitly skip rather than firing.
+    if (isAlreadyFollowing) return;
+    followMut.mutate();
+  };
+
+  const onMessage = async () => {
+    if (!user) return;
+    try {
+      const res = await openConversation(user.id);
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+      onClose();
+      nav.navigate('ChatDetail', { chatId: res.matchId });
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      if (status === 402 && body?.reason === 'premium_required') {
+        onClose();
+        nav.navigate('Premium');
+      } else {
+        Alert.alert(
+          t('about.messageFailed'),
+          body?.error || e?.message || '',
+        );
+      }
+    }
+  };
 
   const onMore = () => {
     if (!user) return;
@@ -116,16 +192,151 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </View>
           </View>
 
-          <Button
-            label={t('about.likeCta', { name: user.nickname })}
-            onPress={onLike}
-            leadingIcon={<Heart size={18} color="#FFFFFF" fill="#FFFFFF" />}
-            fullWidth
-            style={{ marginTop: 22, marginBottom: 8 }}
-          />
+          {/* Action row — Follow / Like / Message (Premium only).
+              Like is the primary action and gets the gradient treatment.
+              Follow and Message are equal-weight secondary actions. */}
+          <View style={[styles.actionRow, { marginTop: 22, marginBottom: 8 }]}>
+            <SecondaryAction
+              icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+              label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
+              done={isAlreadyFollowing}
+              busy={followMut.isPending || followQ.isLoading}
+              onPress={onFollow}
+            />
+            <PrimaryLikeAction
+              label={liked ? t('about.liked') : t('about.like')}
+              done={liked}
+              onPress={() => {
+                if (liked) return;
+                setLiked(true);
+                onLike();
+              }}
+            />
+            {isPremium && (
+              <SecondaryAction
+                icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+                label={t('about.message')}
+                done={false}
+                busy={false}
+                onPress={onMessage}
+              />
+            )}
+          </View>
         </ScrollView>
       )}
     </Sheet>
+  );
+}
+
+function SecondaryAction({
+  icon,
+  label,
+  done,
+  busy,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  done: boolean;
+  busy: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={done || busy}
+      style={({ pressed }) => [
+        styles.secondaryBtn,
+        {
+          backgroundColor: done ? theme.colors.surface2 : theme.colors.primarySoft,
+          opacity: pressed || busy ? 0.7 : 1,
+        },
+      ]}
+    >
+      {icon}
+      <Text
+        numberOfLines={1}
+        style={{
+          color: done ? theme.colors.muted : theme.colors.primaryDeep,
+          fontSize: 13,
+          fontWeight: '600',
+          marginTop: 6,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function PrimaryLikeAction({
+  label,
+  done,
+  onPress,
+}: {
+  label: string;
+  done: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={done}
+      style={({ pressed }) => [
+        styles.primaryBtn,
+        { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.98 }] : [] },
+      ]}
+    >
+      {done ? (
+        <View
+          style={[
+            styles.primaryInner,
+            { backgroundColor: theme.colors.surface2 },
+          ]}
+        >
+          <Heart
+            size={18}
+            color={theme.colors.muted}
+            fill={theme.colors.muted}
+            strokeWidth={2}
+          />
+          <Text
+            numberOfLines={1}
+            style={{
+              color: theme.colors.muted,
+              fontSize: 13,
+              fontWeight: '700',
+              marginTop: 6,
+            }}
+          >
+            {label}
+          </Text>
+        </View>
+      ) : (
+        <LinearGradient
+          colors={[...brandGradient.colors] as [string, string, ...string[]]}
+          locations={[...brandGradient.locations] as [number, number, ...number[]]}
+          start={brandGradient.start}
+          end={brandGradient.end}
+          style={styles.primaryInner}
+        >
+          <Heart size={18} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
+          <Text
+            numberOfLines={1}
+            style={{
+              color: '#FFFFFF',
+              fontSize: 13,
+              fontWeight: '700',
+              marginTop: 6,
+            }}
+          >
+            {label}
+          </Text>
+        </LinearGradient>
+      )}
+    </Pressable>
   );
 }
 
@@ -144,4 +355,28 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  secondaryBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryBtn: {
+    flex: 1.2,
+    borderRadius: 14,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#4F8FE8',
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+  },
+  primaryInner: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+  },
 });
