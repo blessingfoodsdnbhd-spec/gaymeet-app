@@ -113,19 +113,19 @@
   "chats": {
     "searchPlaceholder": "搜索",
     "empty": "还没有消息 — 去发现 tab 找同频的人吧",
-    "newMatchesHeader": "新密友 · {{n}}",
+    "newMatchesHeader": "新同频 · {{n}}",
     "sayHi": "说声你好吧 →",
     "detail": {
       "typing": "正在输入…",
       "online": "在线",
       "offline": "离线",
       "messagePlaceholder": "说点什么…",
-      "unmatchFailed": "取消配对失败"
+      "unmatchFailed": "取消同频失败"
     }
   },
   "match": {
     "title": "It's a Meyou!",
-    "subtitle": "你们成为密友了",
+    "subtitle": "你们同频了 ✨",
     "bothLove": "你和 {{name}} 都对",
     "sendCta": "发条消息打招呼",
     "later": "稍后再说",
@@ -204,8 +204,8 @@
       }
     },
     "matchesList": {
-      "empty": "还没有同频好友 — 去发现卡片",
-      "matchedAt": "{{date}} 配对"
+      "empty": "还没有同频 — 去发现卡片",
+      "matchedAt": "{{date}} 同频"
     },
     "friendsList": {
       "empty": "还没有好友"
@@ -247,7 +247,7 @@
     "signOutConfirmBody": "确定要退出吗?",
     "signOutButton": "退出",
     "deleteStep1Title": "删除账号",
-    "deleteStep1Body": "所有聊天、动态、匹配将被永久删除。这个操作无法撤销。",
+    "deleteStep1Body": "所有聊天、动态、同频将被永久删除。这个操作无法撤销。",
     "deleteStep1Continue": "继续",
     "deleteStep2Title": "再次确认",
     "deleteStep2Body": "最终确认 — 你的账号和所有数据将立即被删除。",
@@ -257,15 +257,15 @@
   "safetyMenu": {
     "report": "举报",
     "block": "屏蔽 (Block)",
-    "unmatch": "解除匹配 (Unmatch)",
+    "unmatch": "取消同频 (Unmatch)",
     "cancel": "取消",
     "blockConfirmTitle": "屏蔽 {{name}}?",
-    "blockConfirmBody": "你们彼此不再可见,聊天和匹配将被移除。",
+    "blockConfirmBody": "你们彼此不再可见,聊天和同频将被移除。",
     "blockAction": "屏蔽",
     "blockFailed": "屏蔽失败",
-    "unmatchConfirmTitle": "解除与 {{name}} 的匹配?",
+    "unmatchConfirmTitle": "取消与 {{name}} 的同频?",
     "unmatchConfirmBody": "聊天将被移除,无法恢复。",
-    "unmatchAction": "解除"
+    "unmatchAction": "取消同频"
   },
   "report": {
     "title": "举报 {{name}}",
@@ -292,7 +292,7 @@
     "expiresAt": "到期: {{date}}",
     "benefitsSection": "专属权益",
     "benefits": {
-      "directIntro": "给还没 match 的人直接发消息",
+      "directIntro": "给还没同频的人直接发消息",
       "seeLikes": "看谁喜欢了你",
       "unlimitedSwipes": "无限滑卡片",
       "readReceipts": "「已读」回执",
