@@ -148,8 +148,25 @@ export function EditProfileScreen() {
       const r = await uploadProfilePhoto(uri);
       if (user) setUser({ ...user, avatarUrl: r.avatarUrl, photos: r.photos });
     } catch (e: any) {
-      const detail = e?.response?.data?.error || e?.message || '';
-      Alert.alert(t('profile.photoUploadFailed'), detail);
+      // Surface a rich error so users (and us via console logs) actually
+      // see what failed — bare e.message is often empty on RN network
+      // errors. Include the HTTP status when present.
+      console.error('[upload-public] failed', {
+        uri,
+        status: e?.response?.status,
+        data: e?.response?.data,
+        message: e?.message,
+        code: e?.code,
+      });
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error ||
+        e?.message ||
+        (status ? `HTTP ${status}` : 'network error');
+      Alert.alert(
+        t('profile.photoUploadFailed'),
+        `${detail}${status ? ` (HTTP ${status})` : ''}`,
+      );
     } finally {
       setPublicBusy(false);
     }
@@ -190,8 +207,22 @@ export function EditProfileScreen() {
         });
       }
     } catch (e: any) {
-      const detail = e?.response?.data?.error || e?.message || '';
-      Alert.alert(t('profile.photoUploadFailed'), detail);
+      console.error('[upload-private] failed', {
+        uri,
+        status: e?.response?.status,
+        data: e?.response?.data,
+        message: e?.message,
+        code: e?.code,
+      });
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error ||
+        e?.message ||
+        (status ? `HTTP ${status}` : 'network error');
+      Alert.alert(
+        t('profile.photoUploadFailed'),
+        `${detail}${status ? ` (HTTP ${status})` : ''}`,
+      );
     } finally {
       setPrivateBusy(false);
     }

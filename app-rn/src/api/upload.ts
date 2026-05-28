@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -8,18 +9,39 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 }
 
 /**
- * Build a FormData entry from an Expo image-picker URI. RN FormData accepts
- * a `{ uri, name, type }` triple as the third positional FormData arg; this
- * is not standard DOM behavior but is the documented RN pattern.
+ * Copy any URI (content://, ph://, file://, etc.) into a predictable
+ * cache-dir file:// path and return a FormData ready for multipart upload.
+ *
+ * Why we copy: ImagePicker on Android 13+ with the new Photo Picker can
+ * return `content://media/...` URIs. RN's FormData reader is supposed to
+ * resolve these via ContentResolver but in practice it fails silently on
+ * a chunk of devices — the request either sends an empty body or hangs
+ * past timeout with no actionable error. Copying via expo-file-system
+ * (which uses ContentResolver itself) gives a known-readable file:// path
+ * that every RN networking path handles. On iOS the copy is cheap and
+ * the side-effect (predictable extension) helps the multipart filename.
  */
-function fileFromUri(uri: string, fieldName: string) {
-  const filename = uri.split('/').pop() || `upload-${Date.now()}.jpg`;
-  const ext = (filename.split('.').pop() || 'jpg').toLowerCase();
+async function fileFromUri(uri: string, fieldName: string): Promise<FormData> {
+  const rawExt = (uri.split('?')[0].split('.').pop() || '').toLowerCase();
+  const safeExt = ['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(rawExt)
+    ? rawExt
+    : 'jpg';
+  const dest = `${FileSystem.cacheDirectory}upload-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.${safeExt}`;
+  await FileSystem.copyAsync({ from: uri, to: dest });
+
+  const filename = dest.split('/').pop()!;
   const mime =
-    ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
+    safeExt === 'png'
+      ? 'image/png'
+      : safeExt === 'heic'
+      ? 'image/heic'
+      : safeExt === 'webp'
+      ? 'image/webp'
+      : 'image/jpeg';
   const fd = new FormData();
-  // RN's FormData accepts this shape — cast to any to satisfy lib.dom.
-  fd.append(fieldName, { uri, name: filename, type: mime } as any);
+  fd.append(fieldName, { uri: dest, name: filename, type: mime } as any);
   return fd;
 }
 
@@ -35,7 +57,7 @@ function fileFromUri(uri: string, fieldName: string) {
 const UPLOAD_TIMEOUT_MS = 60_000;
 
 export async function uploadFile(uri: string): Promise<string> {
-  const fd = fileFromUri(uri, 'file');
+  const fd = await fileFromUri(uri, 'file');
   const res = await api.post('/upload', fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
     transformRequest: (data) => data, // axios would JSON.stringify FormData otherwise
@@ -57,7 +79,7 @@ export interface PhotosUploadResult {
 }
 
 export async function uploadProfilePhoto(uri: string): Promise<PhotosUploadResult> {
-  const fd = fileFromUri(uri, 'photo');
+  const fd = await fileFromUri(uri, 'photo');
   // "Change avatar" UX → backend prepends instead of appending so the new
   // upload becomes photos[0] (the avatar). Without this the old photos[0]
   // sticks and the avatar visually never updates.
