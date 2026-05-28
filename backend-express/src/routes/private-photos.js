@@ -4,11 +4,27 @@ const fs        = require('fs');
 const User        = require('../models/User');
 const PhotoRequest = require('../models/PhotoRequest');
 const { auth }    = require('../middleware/auth');
-const { upload }  = require('../middleware/upload');
+const { uploadMem, uploadDir } = require('../middleware/upload');
+const r2          = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
-const env         = require('../config/env');
+const { sendPushToUser } = require('../utils/push');
 
-const MAX_PRIVATE_PHOTOS  = 5;
+const MAX_PRIVATE_PHOTOS = 5;
+const REJECT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Persist a multer memory-buffer either to R2 (preferred) or to local disk
+ * as a fallback. Mirrors photos.js storePhoto — keep both in sync. Render's
+ * filesystem is ephemeral, so disk fallback is only safe for local dev.
+ */
+async function storePhoto(file, req) {
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const key = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+  const r2Url = await r2.uploadFile(file.buffer, key, file.mimetype);
+  if (r2Url) return r2Url;
+  await fs.promises.writeFile(path.join(uploadDir, key), file.buffer);
+  return `${req.protocol}://${req.get('host')}/uploads/${key}`;
+}
 
 // ── POST /api/users/private-photos/relock — revoke all approved viewers ──────
 // Owner-initiated kill switch. Every PhotoRequest where owner=me and
@@ -43,19 +59,16 @@ router.get('/private-photos/approved-count', auth, async (req, res, next) => {
 });
 
 // ── POST /api/users/private-photos — upload a private photo ──────────────────
-router.post('/private-photos', auth, upload.single('photo'), async (req, res, next) => {
+router.post('/private-photos', auth, uploadMem.single('photo'), async (req, res, next) => {
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
     const user = await User.findById(req.user._id);
     if (user.privatePhotos.length >= MAX_PRIVATE_PHOTOS) {
-      // Clean up uploaded file
-      try { fs.unlinkSync(req.file.path); } catch (_) {}
       return err(res, `Maximum ${MAX_PRIVATE_PHOTOS} private photos allowed`);
     }
 
-    const host = `${req.protocol}://${req.get('host')}`;
-    const url  = `${host}/uploads/${req.file.filename}`;
+    const url = await storePhoto(req.file, req);
 
     user.privatePhotos.push(url);
     await user.save();
@@ -80,12 +93,18 @@ router.delete('/private-photos', auth, async (req, res, next) => {
     user.privatePhotos = user.privatePhotos.filter((p) => p !== url);
     await user.save();
 
-    // Best-effort delete physical file
-    try {
-      const filename = path.basename(new URL(url).pathname);
-      const filePath = path.join(path.resolve(env.UPLOAD_DIR), filename);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch (_) {}
+    // Best-effort delete from R2 first; fall through to local disk for old
+    // pre-R2 uploads that may still be on the ephemeral filesystem.
+    const r2Key = r2.keyFromUrl(url);
+    if (r2Key) {
+      r2.deleteFile(r2Key).catch(() => {});
+    } else {
+      try {
+        const filename = path.basename(new URL(url).pathname);
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch (_) {}
+    }
 
     ok(res, { privatePhotos: user.privatePhotos });
   } catch (e) {
@@ -107,7 +126,19 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       return err(res, 'This user has no private photos');
     }
 
-    // Check for existing active request
+    // Block check (both directions). Either party blocking the other should
+    // hide the entire request flow.
+    const meBlockedOwner = (req.user.blockedUsers || []).some(
+      (id) => id.toString() === ownerId
+    );
+    const ownerBlockedMe = (owner.blockedUsers || []).some(
+      (id) => id.toString() === req.user._id.toString()
+    );
+    if (meBlockedOwner || ownerBlockedMe) {
+      return err(res, 'Cannot request photos from this user', 403);
+    }
+
+    // Dedupe active requests.
     const existing = await PhotoRequest.findOne({
       requester: req.user._id,
       owner: ownerId,
@@ -117,10 +148,33 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       return err(res, `Request already ${existing.status}`, 409);
     }
 
+    // 7-day cooldown after a rejection — prevents harassment loops where
+    // someone keeps re-requesting after being denied.
+    const recentReject = await PhotoRequest.findOne({
+      requester: req.user._id,
+      owner: ownerId,
+      status: 'rejected',
+      respondedAt: { $gt: new Date(Date.now() - REJECT_COOLDOWN_MS) },
+    });
+    if (recentReject) {
+      return err(res, 'You can request again 7 days after a rejection', 429);
+    }
+
     const request = await PhotoRequest.create({
       requester: req.user._id,
       owner: ownerId,
     });
+
+    // Push the owner. Best-effort; never fail the request on push errors.
+    sendPushToUser(ownerId, {
+      title: 'New photo request',
+      body: `${req.user.nickname || 'Someone'} wants to see your private photos`,
+      data: {
+        type: 'photo_request',
+        requestId: request._id.toString(),
+        fromUserId: req.user._id.toString(),
+      },
+    }).catch(() => {});
 
     created(res, { requestId: request._id, status: request.status });
   } catch (e) {
@@ -138,7 +192,10 @@ router.get('/inbox', auth, async (req, res, next) => {
       .sort({ createdAt: -1 })
       .populate('requester', 'nickname avatarUrl level isOnline distance');
 
-    ok(res, { requests });
+    // Drop entries where the requester was deleted (populate returns null) —
+    // same defense-in-depth pattern as /users/likes. count stays consistent.
+    const filtered = requests.filter((r) => r.requester);
+    ok(res, { requests: filtered });
   } catch (e) {
     next(e);
   }
@@ -162,6 +219,19 @@ router.post('/:id/respond', auth, async (req, res, next) => {
     request.status      = status;
     request.respondedAt = new Date();
     await request.save();
+
+    // Push the requester ONLY when approved — silent reject avoids the
+    // "you were rejected" notification spam (and the awkward back-and-forth).
+    if (status === 'approved') {
+      sendPushToUser(request.requester, {
+        title: 'Photo request approved',
+        body: `${req.user.nickname || 'Someone'} approved your photo request`,
+        data: {
+          type: 'photo_request_approved',
+          ownerId: req.user._id.toString(),
+        },
+      }).catch(() => {});
+    }
 
     ok(res, { requestId: request._id, status: request.status });
   } catch (e) {
@@ -211,7 +281,8 @@ router.get('/sent', auth, async (req, res, next) => {
       .limit(50)
       .populate('owner', 'nickname avatarUrl level');
 
-    ok(res, { requests });
+    const filtered = requests.filter((r) => r.owner);
+    ok(res, { requests: filtered });
   } catch (e) {
     next(e);
   }
