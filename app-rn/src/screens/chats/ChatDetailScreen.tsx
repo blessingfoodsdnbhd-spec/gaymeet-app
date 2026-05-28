@@ -259,12 +259,31 @@ export function ChatDetailScreen() {
   // Render a virtual list with time-divider rows interspersed
   const items = useMemo(() => buildItems(msgsQ.data ?? []), [msgsQ.data]);
 
-  useEffect(() => {
-    // scroll to bottom on initial load or new message
-    if (items.length > 0) {
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
-    }
+  // First-render scroll uses animated:false so we *jump* to the bottom
+  // instead of animating from the top — the latter is visible to the
+  // user as a "rolling up from old messages" effect on entry. Subsequent
+  // scrolls (new messages) animate smoothly. The flag lives in a ref so
+  // toggling it doesn't re-render.
+  const hasScrolledInitially = useRef(false);
+
+  // onContentSizeChange fires AFTER the FlatList has measured its
+  // children — strictly more reliable than the previous
+  // `useEffect + requestAnimationFrame` pair, which raced the layout
+  // pass and left the user halfway up the thread on entry. It also
+  // covers the "new message arrives" case since the content height
+  // grows when a row is appended.
+  const onMsgsContentSizeChange = useCallback(() => {
+    if (items.length === 0) return;
+    listRef.current?.scrollToEnd({ animated: hasScrolledInitially.current });
+    hasScrolledInitially.current = true;
   }, [items.length]);
+
+  // Reset the initial-scroll flag whenever the thread itself changes,
+  // so navigating from one chat to another also performs a jump-to-end
+  // on the new thread's first content-size measurement.
+  useEffect(() => {
+    hasScrolledInitially.current = false;
+  }, [matchId]);
 
   return (
     <SafeAreaView
@@ -357,6 +376,7 @@ export function ChatDetailScreen() {
             data={items}
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
+            onContentSizeChange={onMsgsContentSizeChange}
             renderItem={({ item }) => {
               if (item.kind === 'time') {
                 return (
