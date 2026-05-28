@@ -113,7 +113,8 @@ router.patch('/privacy', auth, async (req, res, next) => {
 router.get('/stats', auth, async (req, res, next) => {
   try {
     const uid = req.user._id;
-    const [matchDocs, following, moments] = await Promise.all([
+    const Swipe = require('../models/Swipe');
+    const [matchDocs, following, moments, likes] = await Promise.all([
       // Don't filter `source: 'match'` in the Mongo query — that drops
       // legacy documents that have no source field at all. conversations.js
       // treats `m.source ?? 'match'` as the wire value, so a missing field
@@ -124,6 +125,13 @@ router.get('/stats', auth, async (req, res, next) => {
         .lean(),
       Follow.countDocuments({ follower: uid }),
       Moment.countDocuments({ user: uid, isActive: true }),
+      // Inbound likes — mirrors GET /api/users/likes count (the Who Liked
+      // You list). Exposed here too so ProfileScreen's "Likes" stat shows
+      // the same number without a second round-trip.
+      Swipe.countDocuments({
+        toUser: uid,
+        direction: { $in: ['like', 'super_like'] },
+      }),
     ]);
     const matches = matchDocs.filter((m) => {
       const validUsers = (m.users || []).filter(Boolean);
@@ -132,7 +140,7 @@ router.get('/stats', auth, async (req, res, next) => {
       const src = m.source ?? 'match';
       return src === 'match';
     }).length;
-    ok(res, { matches, following, moments });
+    ok(res, { matches, following, moments, likes });
   } catch (e) {
     next(e);
   }
