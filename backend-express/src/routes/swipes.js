@@ -91,8 +91,8 @@ router.post('/', auth, async (req, res, next) => {
           // in-app and got the matched=true response, so they don't need a
           // notification. Receiver may have liked us hours/days ago.
           sendPushToUser(targetUserId, {
-            title: "It's a match! 🎉",
-            body: `You matched with ${me.nickname || 'someone'}`,
+            title: "It's a Vibe! ✨",
+            body: `You vibed with ${me.nickname || 'someone'}`,
             data: { type: 'match', matchId: match._id.toString() },
           }).catch(() => { /* never fails the request */ });
         }
