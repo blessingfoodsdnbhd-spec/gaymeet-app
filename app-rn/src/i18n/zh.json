@@ -110,6 +110,48 @@
       "failed": "删除失败"
     }
   },
+  "chat": {
+    "composer": {
+      "camera": "拍照",
+      "gallery": "相簿",
+      "location": "位置",
+      "cancel": "取消",
+      "cameraPermTitle": "需要相机权限",
+      "cameraPermBody": "在系统设置中允许 Meyou 访问相机。",
+      "locationPermTitle": "需要位置权限",
+      "locationPermBody": "在系统设置中允许 Meyou 访问你的位置。",
+      "locationFailed": "无法获取你的位置"
+    },
+    "image": {
+      "expired": "照片已过期",
+      "failed": "发送失败",
+      "uploadFailed": "无法发送照片"
+    },
+    "location": {
+      "label": "分享位置",
+      "tapToOpen": "点击在地图打开",
+      "openFailed": "无法打开地图",
+      "sendFailed": "无法分享位置"
+    },
+    "message": {
+      "edited": "(已编辑)",
+      "editTitle": "编辑消息",
+      "editPlaceholder": "编辑你的消息…",
+      "editFailed": "编辑失败",
+      "editExpired": "只能编辑 24 小时内的消息",
+      "deleteConfirm": "删除这则消息?",
+      "deleteAction": "删除",
+      "deleteFailed": "删除失败",
+      "copied": "已复制",
+      "premiumOnly": "Premium 功能",
+      "actions": {
+        "edit": "编辑",
+        "delete": "删除",
+        "copy": "复制",
+        "cancel": "取消"
+      }
+    }
+  },
   "chats": {
     "searchPlaceholder": "搜索",
     "empty": "还没有消息 — 去发现 tab 找同频的人吧",

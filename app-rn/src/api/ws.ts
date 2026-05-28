@@ -72,9 +72,12 @@ export type WsChatReceive = {
   matchId: string;
   senderId: string;
   content: string;
-  type: 'text' | 'sticker' | 'image' | 'audio';
+  type: 'text' | 'sticker' | 'image' | 'location';
   createdAt: string;
   readBy?: string[];
+  mediaUrl?: string | null;
+  mediaType?: 'image' | 'gif' | null;
+  location?: { lat: number; lng: number; label?: string | null } | null;
 };
 
 export type WsChatTyping = {
@@ -86,11 +89,26 @@ export type WsChatTyping = {
 export type WsChatRead = { matchId: string; readBy: string };
 export type WsPresence = { userId: string; online: boolean };
 
+export type WsChatEdited = {
+  id: string;
+  matchId: string;
+  content: string;
+  edited: boolean;
+  editedAt: string;
+};
+
+export type WsChatDeleted = {
+  matchId: string;
+  messageId: string;
+};
+
 export interface WsEventMap {
   'match:new': WsMatchNew;
   'chat:receive': WsChatReceive;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
+  'chat:edited': WsChatEdited;
+  'chat:deleted': WsChatDeleted;
   'user:online': WsPresence;
   'user:offline': WsPresence;
 }

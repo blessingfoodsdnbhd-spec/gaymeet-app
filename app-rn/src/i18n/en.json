@@ -110,6 +110,48 @@
       "failed": "Delete failed"
     }
   },
+  "chat": {
+    "composer": {
+      "camera": "Camera",
+      "gallery": "Photo",
+      "location": "Location",
+      "cancel": "Cancel",
+      "cameraPermTitle": "Camera permission required",
+      "cameraPermBody": "Allow Meyou to access the camera in Settings.",
+      "locationPermTitle": "Location permission required",
+      "locationPermBody": "Allow Meyou to access your location in Settings.",
+      "locationFailed": "Couldn't get your location"
+    },
+    "image": {
+      "expired": "Photo expired",
+      "failed": "Failed to send",
+      "uploadFailed": "Couldn't send photo"
+    },
+    "location": {
+      "label": "Sharing location",
+      "tapToOpen": "Tap to open in Maps",
+      "openFailed": "Couldn't open Maps",
+      "sendFailed": "Couldn't share location"
+    },
+    "message": {
+      "edited": "(edited)",
+      "editTitle": "Edit message",
+      "editPlaceholder": "Edit your message…",
+      "editFailed": "Couldn't edit",
+      "editExpired": "Can only edit messages within 24h",
+      "deleteConfirm": "Delete this message?",
+      "deleteAction": "Delete",
+      "deleteFailed": "Couldn't delete",
+      "copied": "Copied",
+      "premiumOnly": "Premium feature",
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "copy": "Copy",
+        "cancel": "Cancel"
+      }
+    }
+  },
   "chats": {
     "searchPlaceholder": "Search",
     "empty": "No messages yet — head to Discover to find your wavelength",
