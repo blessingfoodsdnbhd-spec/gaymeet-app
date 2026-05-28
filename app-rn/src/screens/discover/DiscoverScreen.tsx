@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -28,12 +29,22 @@ import { openConversation } from '../../api/chats';
 import { useAuth } from '../../store/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { brandGradient } from '../../theme/tokens';
-import type { InterestTagId } from '../../data/interestTags';
+import { tagById, type InterestTagId } from '../../data/interestTags';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type Mode = 'cards' | 'nearby';
+
+/**
+ * Device-scoped persistence key for the Discover/Nearby filter selection.
+ * v1 schema = { radiusKm?: number; interests?: string[] } JSON-encoded.
+ *
+ * Per-device (not per-user) — same pattern as the language preference.
+ * Account switching does NOT clear this; if that ever becomes a UX
+ * problem we can namespace with userId.
+ */
+const FILTERS_STORAGE_KEY = 'meyou:discover-filters:v1';
 
 export function DiscoverScreen() {
   const theme = useTheme();
@@ -53,7 +64,52 @@ export function DiscoverScreen() {
   >(null);
   const [filters, setFilters] = useState<DiscoverFilters>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Gate persistence-back-to-storage until the initial load resolves —
+  // without it, the empty useState({}) would clobber stored values on
+  // every cold start before AsyncStorage.getItem returns.
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
   const stackRef = useRef<CardStackHandle>(null);
+
+  // Load persisted filters once on mount. Stale interest IDs (tags
+  // retired since the user set them) are dropped silently — they'd
+  // otherwise render as missing chips in the FiltersSheet picker.
+  useEffect(() => {
+    AsyncStorage.getItem(FILTERS_STORAGE_KEY)
+      .then((raw) => {
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw) as {
+            radiusKm?: unknown;
+            interests?: unknown;
+          };
+          const validInterests = (
+            Array.isArray(parsed.interests) ? parsed.interests : []
+          ).filter(
+            (id): id is InterestTagId =>
+              typeof id === 'string' && !!tagById(id as InterestTagId),
+          );
+          setFilters({
+            radiusKm:
+              typeof parsed.radiusKm === 'number' ? parsed.radiusKm : undefined,
+            interests: validInterests.length > 0 ? validInterests : undefined,
+          });
+        } catch {
+          // Corrupt storage — fall back to defaults
+        }
+      })
+      .catch(() => {})
+      .finally(() => setFiltersHydrated(true));
+  }, []);
+
+  // Persist whenever filters change, but only after the initial load
+  // has completed (see comment on filtersHydrated). Errors swallowed —
+  // a failed write just means next cold start sees the prior value.
+  useEffect(() => {
+    if (!filtersHydrated) return;
+    AsyncStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters)).catch(
+      () => {},
+    );
+  }, [filters, filtersHydrated]);
 
   const openIntroChat = async (user: DiscoverCardUser) => {
     try {
