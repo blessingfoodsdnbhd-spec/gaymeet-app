@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Heart, MessageCircle, MoreHorizontal, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
+import { PhotoViewer } from '../../components/PhotoViewer';
 import { TagChip } from '../../components/TagChip';
 import { IconButton } from '../../components/TopBar';
 import { Card } from '../../components/Card';
@@ -43,6 +45,14 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   // double-swipe — but `liked` is reset on each open to keep state honest
   // across different target users.
   const [liked, setLiked] = useState(false);
+
+  // null = viewer closed; number = open at that photo index.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  // Backend nearby/discover endpoints already include user.photos via
+  // toPublicJSON — no extra fetch needed. Cap at 5 so the gallery stays
+  // within the same product limit enforced on upload (Phase 1 backend).
+  const galleryPhotos = (user?.photos ?? []).slice(0, 5);
 
   // Reset local liked flag when the target user changes.
   React.useEffect(() => {
@@ -173,6 +183,28 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </View>
           )}
 
+          {/* Public photos — horizontal scroll. Tap any to open the
+              full-screen PhotoViewer at that index. Section is omitted
+              entirely when the target has no photos. */}
+          {galleryPhotos.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingTop: 18 }}
+            >
+              {galleryPhotos.map((url, idx) => (
+                <Pressable key={`${idx}-${url}`} onPress={() => setViewerIndex(idx)}>
+                  <ExpoImage
+                    source={{ uri: url }}
+                    style={{ width: 96, height: 96, borderRadius: 12 }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
               {t('about.interestsCount', { n: (user.sharedTags ?? []).length })}
@@ -224,6 +256,13 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           </View>
         </ScrollView>
       )}
+
+      <PhotoViewer
+        open={viewerIndex !== null}
+        photos={galleryPhotos}
+        initialIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+      />
     </Sheet>
   );
 }
