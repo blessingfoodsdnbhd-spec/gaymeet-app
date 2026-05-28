@@ -130,9 +130,29 @@ router.post('/open/:userId', auth, async (req, res, next) => {
 // Also emits via Socket.io so the receiver gets real-time delivery if online.
 router.post('/:matchId/send', auth, async (req, res, next) => {
   try {
-    const { content, type = 'text' } = req.body;
-    if (!content?.trim()) return err(res, 'content required', 400);
-    if (content.length > 2000) return err(res, 'message too long', 400);
+    const { content, type = 'text', mediaUrl, location } = req.body;
+
+    const ALLOWED = ['text', 'sticker', 'image', 'location'];
+    const msgType = ALLOWED.includes(type) ? type : 'text';
+
+    // Per-type validation. Each branch returns 400 with a precise reason
+    // so the client can show the field-level error.
+    if (msgType === 'text' || msgType === 'sticker') {
+      if (!content?.trim()) return err(res, 'content required', 400);
+      if (content.length > 2000) return err(res, 'message too long', 400);
+    } else if (msgType === 'image') {
+      if (!mediaUrl || !String(mediaUrl).trim()) {
+        return err(res, 'mediaUrl required for image', 400);
+      }
+    } else if (msgType === 'location') {
+      if (
+        !location ||
+        typeof location.lat !== 'number' ||
+        typeof location.lng !== 'number'
+      ) {
+        return err(res, 'location.lat and location.lng required', 400);
+      }
+    }
 
     const match = await Match.findOne({
       _id: req.params.matchId,
@@ -141,21 +161,39 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     });
     if (!match) return err(res, 'Conversation not found', 404);
 
-    const msgType = ['text', 'sticker'].includes(type) ? type : 'text';
-    const message = await Message.create({
+    const messageData = {
       matchId: match._id,
       senderId: req.user._id,
-      content: content.trim(),
       type: msgType,
       readBy: [req.user._id],
-    });
+    };
+    if (content?.trim()) messageData.content = content.trim();
+    if (msgType === 'image') {
+      messageData.mediaUrl = String(mediaUrl).trim();
+      messageData.mediaType = 'image';
+    }
+    if (msgType === 'location') {
+      messageData.location = {
+        lat: location.lat,
+        lng: location.lng,
+        label:
+          typeof location.label === 'string'
+            ? location.label.trim().slice(0, 200)
+            : null,
+      };
+    }
+    const message = await Message.create(messageData);
 
     const otherId = match.users
       .find((u) => u.toString() !== req.user._id.toString())
       ?.toString();
 
+    // previewOf collapses image/location to a glyph + label so chats-list
+    // and push body show "📷 Photo" / "📍 Location" instead of raw URLs.
+    const preview = Message.previewOf(message);
+
     await Match.findByIdAndUpdate(match._id, {
-      lastMessage: content.trim().slice(0, 100),
+      lastMessage: preview,
       lastMessageAt: new Date(),
       lastMessageBy: req.user._id,
       ...(otherId ? { $inc: { [`unreadCounts.${otherId}`]: 1 } } : {}),
@@ -165,8 +203,17 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       id: message._id.toString(),
       matchId: match._id.toString(),
       senderId: req.user._id.toString(),
-      content: message.content,
+      content: message.content || '',
       type: message.type,
+      mediaUrl: message.mediaUrl || null,
+      mediaType: message.mediaType || null,
+      location: message.location
+        ? {
+            lat: message.location.lat,
+            lng: message.location.lng,
+            label: message.location.label || null,
+          }
+        : null,
       createdAt: message.createdAt.toISOString(),
       readBy: [req.user._id.toString()],
     };
@@ -190,12 +237,12 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     if (otherId && otherId !== req.user._id.toString()) {
       (async () => {
         try {
-          console.log('[push] chat http-route hook firing →', otherId);
+          console.log('[push] chat http-route hook firing →', otherId, 'type=', msgType);
           const sender = await User.findById(req.user._id).select('nickname').lean();
           const senderName = sender?.nickname || 'New message';
           await sendPushToUser(otherId, {
             title: senderName,
-            body: message.content.slice(0, 140),
+            body: preview.slice(0, 140),
             data: { type: 'message', matchId: match._id.toString() },
           });
         } catch (e) {
