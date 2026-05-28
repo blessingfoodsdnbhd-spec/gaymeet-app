@@ -317,6 +317,161 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
   }
 });
 
+// ── Helper: refresh Match.lastMessage from the current newest message ────────
+// Called after an edit (latest's content may have changed) or delete
+// (the deleted row may have been the latest). One small query each.
+async function refreshMatchLastMessage(matchId) {
+  const newest = await Message.findOne({ matchId }).sort({ createdAt: -1 });
+  await Match.findByIdAndUpdate(matchId, {
+    lastMessage: newest ? Message.previewOf(newest) : null,
+    lastMessageAt: newest ? newest.createdAt : null,
+    lastMessageBy: newest ? newest.senderId : null,
+  });
+}
+
+const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// ── PATCH /api/conversations/:matchId/messages/:msgId ────────────────────────
+// Premium-only. Text messages only. Within 24h of send. Owner only.
+//
+// Body: { content }
+// Returns updated message payload; broadcasts chat:edited to both parties.
+router.patch('/:matchId/messages/:msgId', auth, async (req, res, next) => {
+  try {
+    if (!isPremiumActive(req.user)) {
+      return err(res, 'Premium required', 402);
+    }
+    const { content } = req.body;
+    if (!content || !String(content).trim()) {
+      return err(res, 'content required', 400);
+    }
+    if (String(content).length > 2000) {
+      return err(res, 'message too long', 400);
+    }
+
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const message = await Message.findOne({
+      _id: req.params.msgId,
+      matchId: match._id,
+    });
+    if (!message) return err(res, 'Message not found', 404);
+
+    // Ownership
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return err(res, 'Forbidden', 403);
+    }
+    // Only text is editable. image/sticker/location stay immutable.
+    if (message.type !== 'text') {
+      return err(res, 'Only text messages can be edited', 400);
+    }
+    // 24h window
+    if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
+      return err(res, 'Edit window expired', 410);
+    }
+
+    message.content = String(content).trim();
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    // If this is the latest message in the thread the preview also changed.
+    // Easier than guarding: always recompute.
+    await refreshMatchLastMessage(match._id);
+
+    const payload = {
+      id: message._id.toString(),
+      matchId: match._id.toString(),
+      content: message.content,
+      edited: true,
+      editedAt: message.editedAt.toISOString(),
+    };
+
+    // Broadcast to both parties (sender gets confirmation, receiver
+    // updates their bubble). Mirrors the chat:receive emit pattern.
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users
+          .find((u) => u.toString() !== req.user._id.toString())
+          ?.toString();
+        io.to(`user:${req.user._id.toString()}`).emit('chat:edited', payload);
+        if (otherId) io.to(`user:${otherId}`).emit('chat:edited', payload);
+      }
+    } catch (_) {}
+
+    ok(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/conversations/:matchId/messages/:msgId ────────────────────────
+// Premium-only. Owner only. Any type. Hard-deletes the row; image
+// messages also B2-delete their mediaUrl (best effort).
+router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
+  try {
+    if (!isPremiumActive(req.user)) {
+      return err(res, 'Premium required', 402);
+    }
+
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const message = await Message.findOne({
+      _id: req.params.msgId,
+      matchId: match._id,
+    });
+    if (!message) return err(res, 'Message not found', 404);
+
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return err(res, 'Forbidden', 403);
+    }
+
+    // If this carried an image, best-effort B2 cleanup. The DB row
+    // goes away regardless so the user isn't blocked by a bucket
+    // hiccup.
+    if (message.type === 'image' && message.mediaUrl) {
+      const r2 = require('../services/r2Service');
+      const key = r2.keyFromUrl(message.mediaUrl);
+      if (key) r2.deleteFile(key).catch(() => {});
+    }
+
+    await message.deleteOne();
+    await refreshMatchLastMessage(match._id);
+
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users
+          .find((u) => u.toString() !== req.user._id.toString())
+          ?.toString();
+        const payload = {
+          matchId: match._id.toString(),
+          messageId: req.params.msgId,
+        };
+        io.to(`user:${req.user._id.toString()}`).emit('chat:deleted', payload);
+        if (otherId) io.to(`user:${otherId}`).emit('chat:deleted', payload);
+      }
+    } catch (_) {}
+
+    ok(res, { messageId: req.params.msgId });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── DELETE /api/conversations/:matchId — unmatch ──────────────────────────────
 // Tombstones the match: sets isActive=false so it disappears from both users'
 // chat lists. Messages stay in the DB for moderation review.

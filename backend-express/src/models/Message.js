@@ -43,6 +43,10 @@ const messageSchema = new mongoose.Schema(
     // Stamped by the admin cleanup pass once mediaUrl has been
     // nullified and the underlying B2 object has been removed.
     cleanedAt: { type: Date, default: null },
+    // Edit metadata. Owners can edit their own text messages within 24h
+    // (Premium-gated; see routes/conversations.js PATCH).
+    edited: { type: Boolean, default: false },
+    editedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
