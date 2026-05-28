@@ -208,7 +208,27 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   };
 
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="85%">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      maxHeight="85%"
+      overlay={
+        <>
+          <PhotoViewer
+            open={viewerIndex !== null}
+            photos={galleryPhotos}
+            initialIndex={viewerIndex ?? 0}
+            onClose={() => setViewerIndex(null)}
+          />
+          <PhotoViewer
+            open={privateViewerIndex !== null}
+            photos={unlockedPhotos}
+            initialIndex={privateViewerIndex ?? 0}
+            onClose={() => setPrivateViewerIndex(null)}
+          />
+        </>
+      }
+    >
       {user && (
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -386,23 +406,6 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
         </ScrollView>
       )}
 
-      <PhotoViewer
-        open={viewerIndex !== null}
-        photos={galleryPhotos}
-        initialIndex={viewerIndex ?? 0}
-        onClose={() => setViewerIndex(null)}
-      />
-
-      {/* Second viewer instance for the unlocked private photos. They
-          share the PhotoViewer component but each owns its own open
-          state — separate index keeps the public/private galleries from
-          stepping on each other. */}
-      <PhotoViewer
-        open={privateViewerIndex !== null}
-        photos={unlockedPhotos}
-        initialIndex={privateViewerIndex ?? 0}
-        onClose={() => setPrivateViewerIndex(null)}
-      />
     </Sheet>
   );
 }

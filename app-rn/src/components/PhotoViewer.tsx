@@ -1,8 +1,8 @@
 import React from 'react';
 import {
+  BackHandler,
   Dimensions,
   FlatList,
-  Modal,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -22,12 +22,16 @@ interface Props {
 }
 
 /**
- * Full-screen, swipeable photo viewer rendered as a transparent Modal
- * over the current screen. Drives off a paged horizontal FlatList — no
- * pinch-zoom in v1 (would need a gesture-handler dep), but swipe + page
- * indicator + X close are all there. On Android the hardware back key
- * routes to onRequestClose, so back closes the viewer before propagating
- * to any parent Modal (e.g. the AboutUserSheet that owns this).
+ * Full-screen, swipeable photo viewer. Renders as an absolute-fill View
+ * (NOT a Modal) so it can be placed inside a parent Modal — e.g. the
+ * AboutUserSheet's Sheet — without hitting Android's nested-Modal
+ * stacking bug (a second Modal opened while the first is up renders
+ * behind it, invisibly).
+ *
+ * The parent should mount this via the Sheet's `overlay` prop so it
+ * lands as a Modal-root sibling, above the backdrop and the sheet card.
+ * Hardware back is intercepted via BackHandler when open so back closes
+ * the viewer first instead of dismissing the parent Modal.
  */
 export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) {
   const { width, height } = Dimensions.get('window');
@@ -37,77 +41,82 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
   React.useEffect(() => {
     if (!open) return;
     setCurrentIndex(initialIndex);
-    // Defer to next tick so FlatList has measured before we scroll.
     const id = setTimeout(() => {
       try {
         flatRef.current?.scrollToIndex({ index: initialIndex, animated: false });
       } catch {
-        // scrollToIndex can throw if data not yet rendered — ignore;
-        // initialScrollIndex on FlatList handles the cold case anyway.
+        // scrollToIndex can throw if data hasn't rendered — initialScrollIndex
+        // on FlatList handles the cold case anyway.
       }
     }, 30);
     return () => clearTimeout(id);
   }, [open, initialIndex]);
+
+  // Intercept Android hardware back so it closes the viewer first
+  // instead of falling through to the parent Modal's onRequestClose
+  // (which would dismiss the whole sheet).
+  React.useEffect(() => {
+    if (!open) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [open, onClose]);
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / width);
     setCurrentIndex(Math.min(Math.max(idx, 0), photos.length - 1));
   };
 
+  if (!open) return null;
+
   return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
+    <View style={[StyleSheet.absoluteFill, styles.root]}>
       <StatusBar hidden />
-      <View style={styles.root}>
-        <FlatList
-          ref={flatRef}
-          data={photos}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          initialScrollIndex={initialIndex}
-          onMomentumScrollEnd={onMomentumEnd}
-          keyExtractor={(item, idx) => `${idx}-${item}`}
-          getItemLayout={(_, index) => ({
-            length: width,
-            offset: width * index,
-            index,
-          })}
-          renderItem={({ item }) => (
-            <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-              <ExpoImage
-                source={{ uri: item }}
-                style={{ width, height }}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
-            </View>
-          )}
-        />
-
-        <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-          <X size={24} color="#FFFFFF" strokeWidth={2} />
-        </Pressable>
-
-        {photos.length > 1 && (
-          <View style={styles.indicator}>
-            <Text style={styles.indicatorText}>
-              {currentIndex + 1} / {photos.length}
-            </Text>
+      <FlatList
+        ref={flatRef}
+        data={photos}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={initialIndex}
+        onMomentumScrollEnd={onMomentumEnd}
+        keyExtractor={(item, idx) => `${idx}-${item}`}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
+        renderItem={({ item }) => (
+          <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+            <ExpoImage
+              source={{ uri: item }}
+              style={{ width, height }}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
           </View>
         )}
-      </View>
-    </Modal>
+      />
+
+      <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+        <X size={24} color="#FFFFFF" strokeWidth={2} />
+      </Pressable>
+
+      {photos.length > 1 && (
+        <View style={styles.indicator}>
+          <Text style={styles.indicatorText}>
+            {currentIndex + 1} / {photos.length}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { backgroundColor: '#000' },
   closeBtn: {
     position: 'absolute',
     top: 56,
