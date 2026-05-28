@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Lock, MoreHorizontal, Send } from 'lucide-react-native';
+import { ChevronLeft, Crown, MoreHorizontal, Send } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -20,6 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
@@ -247,7 +248,7 @@ export function UserDetailScreen() {
                   </ScrollView>
                 )
               ) : (
-                <LockedBlock
+                <LockedPhotosBlock
                   status={reqStatus}
                   busy={requestMut.isPending}
                   onRequest={() => requestMut.mutate()}
@@ -333,81 +334,6 @@ export function UserDetailScreen() {
   );
 }
 
-/**
- * The "Request to view" surface shown when the requester is NOT yet
- * approved. Five states drive the copy/disabled-ness:
- *   none      → primary CTA
- *   pending   → disabled chip ("Request sent · pending")
- *   rejected  → disabled chip ("Try again in 7 days")
- *   revoked   → primary CTA with revoked copy ("Previously had access")
- *   expired   → backend-side state nobody currently writes; treat as none.
- */
-function LockedBlock({
-  status,
-  busy,
-  onRequest,
-}: {
-  status: PhotoRequestStatus | 'none';
-  busy: boolean;
-  onRequest: () => void;
-}) {
-  const theme = useTheme();
-  const { t } = useTranslation();
-
-  // Only pending is disabled — rejected/revoked/none are all tappable
-  // (a fresh request creates a new PhotoRequest row, the prior one stays
-  // as audit). The visual distinguishes rejected with muted color so
-  // the user understands they were denied previously.
-  const isDisabled = status === 'pending';
-  const isMutedTone = status === 'rejected';
-  const label =
-    status === 'pending'
-      ? t('userDetail.requestSent')
-      : status === 'rejected'
-      ? t('userDetail.requestRejected')
-      : status === 'revoked'
-      ? t('userDetail.requestRevoked')
-      : t('userDetail.requestToView');
-
-  return (
-    <Pressable
-      onPress={onRequest}
-      disabled={isDisabled || busy}
-      style={({ pressed }) => [
-        styles.lockedCta,
-        {
-          backgroundColor: isDisabled
-            ? theme.colors.surface2
-            : isMutedTone
-            ? theme.colors.surface2
-            : theme.colors.primarySoft,
-          borderColor: theme.colors.line,
-          opacity: pressed || busy ? 0.7 : 1,
-        },
-      ]}
-    >
-      <Lock
-        size={18}
-        color={isDisabled || isMutedTone ? theme.colors.muted : theme.colors.primaryDeep}
-        strokeWidth={1.8}
-      />
-      <Text
-        style={{
-          fontSize: 14,
-          fontWeight: '600',
-          color:
-            isDisabled || isMutedTone
-              ? theme.colors.muted
-              : theme.colors.primaryDeep,
-        }}
-      >
-        {label}
-      </Text>
-      {busy && <ActivityIndicator size="small" color={theme.colors.primaryDeep} />}
-    </Pressable>
-  );
-}
-
 /** Deterministic avatar gradient index based on userId — same algorithm
  *  the discover cards use so the same user gets the same color
  *  everywhere. Lifted from chats/ChatDetailScreen so it stays consistent. */
@@ -483,15 +409,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
-  },
-  lockedCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
   },
 });
