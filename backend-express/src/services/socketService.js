@@ -137,6 +137,8 @@ function initSocket(server) {
         if (msgType === 'image') {
           messageData.mediaUrl = String(mediaUrl).trim();
           messageData.mediaType = 'image';
+          // 30-day TTL — see routes/conversations.js for the rationale.
+          messageData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         }
         if (msgType === 'location') {
           messageData.location = {

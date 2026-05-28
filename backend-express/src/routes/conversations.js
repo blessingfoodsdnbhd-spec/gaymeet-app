@@ -171,6 +171,11 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     if (msgType === 'image') {
       messageData.mediaUrl = String(mediaUrl).trim();
       messageData.mediaType = 'image';
+      // 30-day TTL on image URLs. After this the GET handler rotates
+      // mediaUrl to null with expired:true so the client can render a
+      // "Photo expired" placeholder; real B2 delete happens via the
+      // admin cleanup endpoint after a further 7-day grace.
+      messageData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
     if (msgType === 'location') {
       messageData.location = {
@@ -277,17 +282,34 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
       .limit(parseInt(limit))
       .lean();
 
-    // Read receipts are a Premium feature. For non-premium requesters,
-    // strip the `readBy` array so a "your message was read" tick can't
-    // be inferred from the response. (Premium gating must be server-
-    // side — a custom client could otherwise just read the field.)
+    // Two transforms per row:
+    //   1) Image-expiry: type=image whose 30-day TTL has passed gets
+    //      mediaUrl=null + expired=true so the client can render a
+    //      "Photo expired" placeholder. We DO NOT mutate the DB here
+    //      — real cleanup runs on the admin endpoint with B2 delete.
+    //      A row that has already been cleaned (mediaUrl was nullified
+    //      out-of-band) gets expired=true regardless of expiresAt.
+    //   2) Premium gating on readBy. Free users never see the array so
+    //      "your message was read" can't be inferred client-side.
     const isPremium = isPremiumActive(req.user);
-    const sanitized = isPremium
-      ? messages
-      : messages.map((m) => {
-          const { readBy, ...rest } = m;
-          return rest;
-        });
+    const now = Date.now();
+    const sanitized = messages.map((raw) => {
+      let m = raw;
+      if (m.type === 'image') {
+        const ttl = m.expiresAt ? new Date(m.expiresAt).getTime() : null;
+        if (ttl !== null && ttl < now) {
+          m = { ...m, mediaUrl: null, expired: true };
+        } else if (m.mediaUrl == null) {
+          // already cleaned by the admin pass
+          m = { ...m, expired: true };
+        }
+      }
+      if (!isPremium) {
+        const { readBy, ...rest } = m;
+        m = rest;
+      }
+      return m;
+    });
 
     ok(res, sanitized.reverse());
   } catch (e) {
