@@ -99,8 +99,25 @@ router.get('/cards', auth, async (req, res, next) => {
         },
       },
       { $addFields: { sharedCount: { $size: '$sharedTags' } } },
-      // Sort: overlap desc → distance asc
-      { $sort: { sharedCount: -1, distanceMeters: 1 } },
+      // Premium Boost — surface boosted-and-not-expired users first. Without
+      // this, POST /api/users/boost was an orphan (it set isBoosted=true but
+      // /cards never consulted the field). The expiry guard is critical:
+      // boostExpiresAt stays in the doc indefinitely after activation, so a
+      // naive `$sort: { isBoosted: -1 }` would keep a long-expired user
+      // pinned at the top forever.
+      {
+        $addFields: {
+          isActiveBoosted: {
+            $and: [
+              { $eq: [{ $ifNull: ['$isBoosted', false] }, true] },
+              { $ne: ['$boostExpiresAt', null] },
+              { $gt: ['$boostExpiresAt', '$$NOW'] },
+            ],
+          },
+        },
+      },
+      // Sort: active boost first, then overlap desc, then distance asc.
+      { $sort: { isActiveBoosted: -1, sharedCount: -1, distanceMeters: 1 } },
       { $limit: count },
       {
         $project: {
