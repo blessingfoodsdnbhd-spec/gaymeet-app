@@ -72,7 +72,11 @@ export function LikedMeScreen() {
         </View>
       ) : (
         <FlatList
-          data={likesQ.data?.users ?? []}
+          // Defense-in-depth: filter out null/undefined entries even though
+          // the backend is supposed to do this server-side. populate() on a
+          // Swipe whose fromUser was deleted returns null; rendering a null
+          // row crashes FlatList via the keyExtractor + LikerRow._id access.
+          data={(likesQ.data?.users ?? []).filter(Boolean)}
           keyExtractor={(u) => u._id}
           contentContainerStyle={{ paddingVertical: 4 }}
           ListHeaderComponent={
