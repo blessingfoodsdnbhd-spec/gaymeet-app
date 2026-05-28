@@ -7,6 +7,8 @@ const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2 = require('../services/r2Service');
 const { ok, err } = require('../utils/respond');
 
+const MAX_PUBLIC_PHOTOS = 5;
+
 /**
  * Store a multer memory-buffer either in R2 (if configured) or on disk.
  * Returns the public URL.
@@ -34,12 +36,19 @@ router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) =
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
-    const url = await storePhoto(req.file, req);
-    // Default-true: must opt out with '0' or 'false' to append-only.
+    const user = await User.findById(req.user._id);
     const raw = req.body?.primary;
     const asPrimary = !(raw === '0' || raw === 'false' || raw === false);
 
-    const user = await User.findById(req.user._id);
+    // Enforce 5-photo cap. The avatar-swap path replaces photos[0] (net
+    // delta +1 if the URL is new); the append path also adds one. Either
+    // way, refuse when already at the cap.
+    if (user.photos.length >= MAX_PUBLIC_PHOTOS) {
+      return err(res, `Maximum ${MAX_PUBLIC_PHOTOS} public photos allowed`);
+    }
+
+    const url = await storePhoto(req.file, req);
+
     if (asPrimary) {
       // Avatar-change semantics: new photo becomes photos[0] (the avatar)
       // and any pre-existing copy of this URL is removed.

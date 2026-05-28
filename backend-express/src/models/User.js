@@ -247,6 +247,16 @@ userSchema.methods.toPublicJSON = function (distanceMeters) {
   delete obj.dailySwipes;
   delete obj.dailySwipesDate;
   delete obj.__v;
+  // Never leak private photo URLs in the public profile object. Viewers
+  // get the eventual approved URLs only via the dedicated
+  // GET /:id/private-photos endpoint, which checks the PhotoRequest table.
+  // Expose only the count so the UI can decide whether to show the
+  // "Request to view" CTA.
+  const privatePhotosCount = Array.isArray(obj.privatePhotos)
+    ? obj.privatePhotos.length
+    : 0;
+  delete obj.privatePhotos;
+  obj.privatePhotosCount = privatePhotosCount;
 
   // Expose distance as a human-readable label
   if (distanceMeters != null) {
