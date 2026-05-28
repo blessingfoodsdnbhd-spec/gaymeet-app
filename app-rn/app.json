@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/logo.jpg",

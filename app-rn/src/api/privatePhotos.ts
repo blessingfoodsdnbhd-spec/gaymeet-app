@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -8,18 +9,32 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 }
 
 /**
- * RN FormData accepts a `{ uri, name, type }` triple as the third
- * positional FormData arg; this is not standard DOM behavior but is the
- * documented RN pattern. Lifted from utils/upload.ts so this module
- * doesn't take a hard dep on it.
+ * Normalize source URI to a cache file:// path then wrap in FormData.
+ * Same defense as api/upload.ts:fileFromUri — Android Photo Picker
+ * can return content:// URIs that RN FormData mis-handles. Copying via
+ * expo-file-system gives a predictable readable file path for multipart.
  */
-function fileFromUri(uri: string, fieldName: string) {
-  const filename = uri.split('/').pop() || `upload-${Date.now()}.jpg`;
-  const ext = (filename.split('.').pop() || 'jpg').toLowerCase();
+async function fileFromUri(uri: string, fieldName: string): Promise<FormData> {
+  const rawExt = (uri.split('?')[0].split('.').pop() || '').toLowerCase();
+  const safeExt = ['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(rawExt)
+    ? rawExt
+    : 'jpg';
+  const dest = `${FileSystem.cacheDirectory}upload-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.${safeExt}`;
+  await FileSystem.copyAsync({ from: uri, to: dest });
+
+  const filename = dest.split('/').pop()!;
   const mime =
-    ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
+    safeExt === 'png'
+      ? 'image/png'
+      : safeExt === 'heic'
+      ? 'image/heic'
+      : safeExt === 'webp'
+      ? 'image/webp'
+      : 'image/jpeg';
   const fd = new FormData();
-  fd.append(fieldName, { uri, name: filename, type: mime } as any);
+  fd.append(fieldName, { uri: dest, name: filename, type: mime } as any);
   return fd;
 }
 
@@ -33,7 +48,7 @@ export interface UploadPrivatePhotoResult {
 }
 
 export async function uploadPrivatePhoto(uri: string) {
-  const fd = fileFromUri(uri, 'photo');
+  const fd = await fileFromUri(uri, 'photo');
   return unwrap<UploadPrivatePhotoResult>(
     api.post('/users/private-photos', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },

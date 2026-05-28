@@ -134,7 +134,14 @@
   "about": {
     "section": "About",
     "interestsCount": "Interests · {{n}} in common",
-    "likeCta": "Like {{name}}"
+    "likeCta": "Like {{name}}",
+    "follow": "Follow",
+    "following": "Following",
+    "followFailed": "Couldn't follow",
+    "like": "Like",
+    "liked": "Liked",
+    "message": "Message",
+    "messageFailed": "Couldn't open chat"
   },
   "userDetail": {
     "aboutSection": "About",
@@ -160,7 +167,8 @@
       "matches": "Matches",
       "friends": "Friends",
       "moments": "Moments",
-      "likes": "Likes"
+      "likes": "Likes",
+      "privatePhotos": "Private"
     },
     "editProfile": "Edit profile",
     "publicPhotos": "Public photos",

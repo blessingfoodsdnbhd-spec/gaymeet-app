@@ -1,14 +1,23 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Bell,
+  Camera,
   ChevronRight,
   Crown,
-  Edit2,
   Globe,
-  Image as ImageIcon,
   Lock,
   ShieldCheck,
   Settings as SettingsIcon,
@@ -16,33 +25,58 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
-import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
+import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useAuth } from '../../store/auth';
-import { getMyStats } from '../../api/me';
-import { getInbox } from '../../api/privatePhotos';
+import { getMyStats, patchMe } from '../../api/me';
+import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
+import {
+  uploadPrivatePhoto,
+  deletePrivatePhoto,
+  getPrivatePhotos,
+  getApprovedCount,
+  relockAll,
+} from '../../api/privatePhotos';
 import type { RootStackParamList } from '../../navigation/types';
 
-// Profile sub-pages are presented as modals over MainTabs. They aren't
-// declared in RootStackParamList yet — using string literals; once we add
-// them we can re-type to NativeStackNavigationProp<ProfileStackParamList>.
 type AnyNav = NativeStackNavigationProp<any>;
 
+const PHOTO_MAX = 5;
+
+/**
+ * Self profile (Me tab) — inline editor. No separate EditProfileScreen
+ * is reachable from here; nickname/bio/age are inline TextInputs that
+ * auto-save on blur, avatar + photo grids edit directly.
+ *
+ * UserDetailScreen handles viewing OTHER people's profiles (read-only).
+ * This screen is always the current user's own profile.
+ */
 export function ProfileScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const nav = useNavigation<AnyNav>();
   const user = useAuth((s) => s.user);
+  const setUser = useAuth((s) => s.setUser);
+  const queryClient = useQueryClient();
 
-  // The stats endpoint is cheap (three countDocuments calls) but we still
-  // cache for a minute — the profile tab is bounced into often.
+  // Inline editable fields — local state, auto-saved onEndEditing.
+  const [nickname, setNickname] = useState(user?.nickname ?? '');
+  const [bio, setBio] = useState(user?.bio ?? '');
+  const [age, setAge] = useState(user?.age != null ? String(user.age) : '');
+
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [publicBusy, setPublicBusy] = useState(false);
+  const [privateBusy, setPrivateBusy] = useState(false);
+
+  // Stats — single endpoint covers matches/likes/following/moments.
   const statsQ = useQuery({
     queryKey: ['me', 'stats'],
     queryFn: getMyStats,
@@ -50,15 +84,42 @@ export function ProfileScreen() {
     enabled: !!user,
   });
 
-  // Surface the pending-request count as a badge on the Photo Requests row.
-  // Auto-refetched when the inbox screen invalidates this key.
-  const photoInboxQ = useQuery({
-    queryKey: ['photoRequests', 'inbox'],
-    queryFn: getInbox,
-    staleTime: 30_000,
+  // Self's private photo URLs. Backend special-cases self → returns the
+  // real URLs with status='owner'. toPublicJSON strips these from /me.
+  const myPrivatePhotosQ = useQuery({
+    queryKey: ['me', 'privatePhotos'],
+    queryFn: () => getPrivatePhotos(user!.id),
     enabled: !!user,
+    staleTime: 60_000,
   });
-  const pendingPhotoReqs = (photoInboxQ.data?.requests ?? []).filter((r) => r.requester).length;
+  const privatePhotos = myPrivatePhotosQ.data?.photos ?? [];
+
+  // Approved viewer count — drives the 5th stat tile ("Private") and the
+  // "Revoke all" CTA. Not Premium-gated server-side; works for everyone.
+  const approvedQ = useQuery({
+    queryKey: ['photoRequests', 'approvedCount'],
+    queryFn: getApprovedCount,
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+  const approvedCount = approvedQ.data?.count ?? 0;
+
+  const saveMut = useMutation({
+    mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
+    onSuccess: (updated) => setUser(updated),
+    onError: (e: any) => {
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('profile.edit.saveFailed'), detail);
+    },
+  });
+
+  const relockMut = useMutation({
+    mutationFn: relockAll,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['photoRequests', 'approvedCount'] });
+      queryClient.invalidateQueries({ queryKey: ['photoRequests', 'inbox'] });
+    },
+  });
 
   if (!user) return null;
 
@@ -66,6 +127,157 @@ export function ProfileScreen() {
   const prompts = user.prompts ?? [];
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
+
+  // Auto-save helpers — only fire if the value actually changed vs the
+  // last-known user object, to avoid spamming the API with no-op patches.
+  const saveNickname = () => {
+    const next = nickname.trim();
+    if (!next || next === user.nickname) return;
+    saveMut.mutate({ nickname: next });
+  };
+  const saveBio = () => {
+    const next = bio.trim();
+    if (next === (user.bio ?? '').trim()) return;
+    saveMut.mutate({ bio: next });
+  };
+  const saveAge = () => {
+    const n = age ? parseInt(age, 10) : undefined;
+    if (n === user.age) return;
+    if (n !== undefined && (isNaN(n) || n < 18 || n > 99)) return;
+    saveMut.mutate({ age: n });
+  };
+
+  // Pick + upload helpers — used for avatar tap, public grid, private grid.
+  const pickFromLibrary = async (): Promise<string | null> => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
+      return null;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    return res.canceled ? null : res.assets[0].uri;
+  };
+
+  const pickAvatar = async () => {
+    if (uploadingAvatar) return;
+    const uri = await pickFromLibrary();
+    if (!uri) return;
+    setUploadingAvatar(true);
+    try {
+      const r = await uploadProfilePhoto(uri);
+      setUser({ ...user, avatarUrl: r.avatarUrl ?? user.avatarUrl, photos: r.photos ?? user.photos });
+    } catch (e: any) {
+      console.error('[upload-avatar] failed', { uri, status: e?.response?.status, message: e?.message });
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.message || (status ? `HTTP ${status}` : 'network error');
+      Alert.alert(t('profile.edit.uploadFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const addPublicPhoto = async () => {
+    if (publicBusy) return;
+    const uri = await pickFromLibrary();
+    if (!uri) return;
+    setPublicBusy(true);
+    try {
+      const r = await uploadProfilePhoto(uri);
+      setUser({ ...user, avatarUrl: r.avatarUrl, photos: r.photos });
+    } catch (e: any) {
+      console.error('[upload-public] failed', { uri, status: e?.response?.status, message: e?.message });
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.message || (status ? `HTTP ${status}` : 'network error');
+      Alert.alert(t('profile.photoUploadFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
+    } finally {
+      setPublicBusy(false);
+    }
+  };
+
+  const removePublicPhoto = (url: string) => {
+    Alert.alert(t('profile.deletePhotoTitle'), '', [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.deletePhotoAction'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const r = await deleteProfilePhoto(url);
+            setUser({ ...user, avatarUrl: r.avatarUrl, photos: r.photos });
+          } catch (e: any) {
+            const detail = e?.response?.data?.error || e?.message || '';
+            Alert.alert(t('profile.photoDeleteFailed'), detail);
+          }
+        },
+      },
+    ]);
+  };
+
+  const addPrivatePhoto = async () => {
+    if (privateBusy) return;
+    const uri = await pickFromLibrary();
+    if (!uri) return;
+    setPrivateBusy(true);
+    try {
+      await uploadPrivatePhoto(uri);
+      await queryClient.invalidateQueries({ queryKey: ['me', 'privatePhotos'] });
+      setUser({ ...user, privatePhotosCount: (user.privatePhotosCount ?? 0) + 1 });
+    } catch (e: any) {
+      console.error('[upload-private] failed', { uri, status: e?.response?.status, message: e?.message });
+      const status = e?.response?.status;
+      const detail =
+        e?.response?.data?.error || e?.message || (status ? `HTTP ${status}` : 'network error');
+      Alert.alert(t('profile.photoUploadFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
+    } finally {
+      setPrivateBusy(false);
+    }
+  };
+
+  const removePrivatePhoto = (url: string) => {
+    Alert.alert(t('profile.deletePhotoTitle'), '', [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.deletePhotoAction'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePrivatePhoto(url);
+            await queryClient.invalidateQueries({ queryKey: ['me', 'privatePhotos'] });
+            setUser({
+              ...user,
+              privatePhotosCount: Math.max(0, (user.privatePhotosCount ?? 1) - 1),
+            });
+          } catch (e: any) {
+            const detail = e?.response?.data?.error || e?.message || '';
+            Alert.alert(t('profile.photoDeleteFailed'), detail);
+          }
+        },
+      },
+    ]);
+  };
+
+  const onRevokeAll = () => {
+    if (approvedCount === 0) return;
+    Alert.alert(
+      t('profile.revokeAllConfirmTitle'),
+      t('profile.revokeAllConfirmBody', { n: approvedCount }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.revokeAllAction'),
+          style: 'destructive',
+          onPress: () => relockMut.mutate(),
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
@@ -79,186 +291,288 @@ export function ProfileScreen() {
         }
       />
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-        {/* Hero card */}
-        <LinearGradient
-          colors={['#E8E3F5', '#FCE3F0', '#FFE0CC']}
-          locations={[0, 0.55, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.hero, theme.shadows.soft]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Avatar
-            name={user.nickname}
-            uri={user.avatarUrl}
-            avatarIdx={0}
-            size={72}
-            shape="circle"
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 22, fontWeight: '700', color: '#3C2A4E' }}>
-              {user.nickname}
-            </Text>
-            <Text style={{ fontSize: 13, color: 'rgba(60,42,78,0.7)', marginTop: 4 }}>
-              {user.age ? `${user.age}` : ''}
-            </Text>
-            {user.bio ? (
-              <Text
-                numberOfLines={2}
-                style={{ fontSize: 13, color: 'rgba(60,42,78,0.85)', marginTop: 8, lineHeight: 19 }}
-              >
-                {user.bio}
-              </Text>
-            ) : null}
+          {/* Avatar — tap to change. Photos[0] is always the avatar. */}
+          <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 6 }}>
+            <Pressable onPress={pickAvatar} disabled={uploadingAvatar} hitSlop={6}>
+              <Avatar
+                name={nickname || user.nickname}
+                uri={user.avatarUrl}
+                avatarIdx={0}
+                size={96}
+                shape="circle"
+              />
+              {/* Camera badge — bottom-right of avatar */}
+              <View style={[styles.cameraBadge, { backgroundColor: theme.colors.primary }]}>
+                <Camera size={14} color="#FFFFFF" strokeWidth={2} />
+              </View>
+              {uploadingAvatar && (
+                <View style={[StyleSheet.absoluteFill, styles.avatarSpinner]}>
+                  <ActivityIndicator color="#FFFFFF" />
+                </View>
+              )}
+            </Pressable>
+
+            <TextInput
+              value={nickname}
+              onChangeText={setNickname}
+              onEndEditing={saveNickname}
+              placeholder={t('profile.edit.nickname')}
+              placeholderTextColor={theme.colors.muted}
+              maxLength={30}
+              style={[styles.nicknameInput, { color: theme.colors.text }]}
+            />
           </View>
-          <Button
-            label={t('profile.editProfile')}
-            variant="soft"
-            small
-            leadingIcon={<Edit2 size={14} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            onPress={() => nav.navigate('EditProfile')}
-            style={{ alignSelf: 'flex-start' }}
-          />
-        </LinearGradient>
 
-        {/* Stats — all four are tappable, each opens its own list screen. */}
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-          <Stat
-            label={t('profile.stats.matches')}
-            value={fmt(stats?.matches)}
-            onPress={() => nav.navigate('MatchesList')}
-          />
-          <Stat
-            label={t('profile.stats.likes')}
-            value={fmt(stats?.likes)}
-            onPress={() => nav.navigate('LikedMe')}
-          />
-          <Stat
-            label={t('profile.stats.friends')}
-            value={fmt(stats?.following)}
-            onPress={() => nav.navigate('FriendsList')}
-          />
-          <Stat
-            label={t('profile.stats.moments')}
-            value={fmt(stats?.moments)}
-            onPress={() => nav.navigate('MyMoments')}
-          />
-        </View>
+          {/* Stats — 5 tiles. Tap any to drill into the corresponding list. */}
+          <View style={styles.statsRow}>
+            <Stat
+              label={t('profile.stats.matches')}
+              value={fmt(stats?.matches)}
+              onPress={() => nav.navigate('MatchesList')}
+            />
+            <Stat
+              label={t('profile.stats.likes')}
+              value={fmt(stats?.likes)}
+              onPress={() => nav.navigate('LikedMe')}
+            />
+            <Stat
+              label={t('profile.stats.friends')}
+              value={fmt(stats?.following)}
+              onPress={() => nav.navigate('FriendsList')}
+            />
+            <Stat
+              label={t('profile.stats.moments')}
+              value={fmt(stats?.moments)}
+              onPress={() => nav.navigate('MyMoments')}
+            />
+            <Stat
+              label={t('profile.stats.privatePhotos')}
+              value={fmt(approvedQ.data?.count)}
+              onPress={() => nav.navigate('PhotoRequests')}
+            />
+          </View>
 
-        {/* My interests */}
-        <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
-        <View style={[styles.tagsRow]}>
-          {interests.length > 0 ? (
-            interests.map((id) => {
-              const tag = tagById(id);
-              if (!tag) return null;
-              return <TagChip key={id} tag={tag} shared />;
-            })
-          ) : (
-            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.interestsEmpty')}</Text>
+          {/* Public photos */}
+          <SectionTitle>
+            {t('profile.publicPhotosLimit', { count: user.photos?.length ?? 0 })}
+          </SectionTitle>
+          <PhotoGridEditor
+            photos={user.photos ?? []}
+            max={PHOTO_MAX}
+            busy={publicBusy}
+            onAdd={addPublicPhoto}
+            onRemove={removePublicPhoto}
+          />
+
+          {/* Private photos */}
+          <SectionTitle>
+            {t('profile.privatePhotosLimit', { count: privatePhotos.length })}
+          </SectionTitle>
+          <PhotoGridEditor
+            photos={privatePhotos}
+            max={PHOTO_MAX}
+            busy={privateBusy || myPrivatePhotosQ.isLoading}
+            onAdd={addPrivatePhoto}
+            onRemove={removePrivatePhoto}
+            badgeIcon={<Lock size={12} color="#FFFFFF" strokeWidth={2.2} />}
+          />
+          <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
+            {t('profile.privatePhotosHint')}
+          </Text>
+          {approvedCount > 0 && (
+            <Pressable
+              onPress={onRevokeAll}
+              disabled={relockMut.isPending}
+              style={({ pressed }) => ({
+                marginTop: 10,
+                paddingVertical: 8,
+                opacity: pressed || relockMut.isPending ? 0.55 : 1,
+              })}
+            >
+              <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '500' }}>
+                {t('profile.revokeAllAccess', { n: approvedCount })}
+              </Text>
+            </Pressable>
           )}
-          <Pressable
-            onPress={() => nav.navigate('TagsEdit')}
+
+          {/* Interests */}
+          <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
+          <View style={styles.tagsRow}>
+            {interests.length > 0 ? (
+              interests.map((id) => {
+                const tag = tagById(id);
+                if (!tag) return null;
+                return <TagChip key={id} tag={tag} shared />;
+              })
+            ) : (
+              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
+                {t('profile.interestsEmpty')}
+              </Text>
+            )}
+            <Pressable
+              onPress={() => nav.navigate('TagsEdit')}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: theme.colors.line,
+              }}
+            >
+              <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
+                {t('profile.interestsManage')}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Prompts */}
+          <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>
+          {prompts.length > 0 ? (
+            prompts.map((p, i) => (
+              <Card key={i} surface2 flat style={{ padding: 14, marginBottom: 10 }}>
+                <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 6 }}>
+                  {p.q}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: 'Fraunces',
+                    fontStyle: 'italic',
+                    fontWeight: '500',
+                    fontSize: 15,
+                    lineHeight: 23,
+                    color: theme.colors.text,
+                  }}
+                >
+                  &ldquo;{p.a}&rdquo;
+                </Text>
+              </Card>
+            ))
+          ) : (
+            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
+              {t('profile.promptsEmpty')}
+            </Text>
+          )}
+          <Pressable onPress={() => nav.navigate('PromptsEdit')} style={{ marginTop: 6 }}>
+            <Text style={{ color: theme.colors.primary, fontSize: 13.5, fontWeight: '500' }}>
+              {t('profile.promptsAdd')}
+            </Text>
+          </Pressable>
+
+          {/* About — bio + age inline. Auto-save on blur. */}
+          <SectionTitle>{t('profile.edit.bio')}</SectionTitle>
+          <TextInput
+            value={bio}
+            onChangeText={setBio}
+            onEndEditing={saveBio}
+            placeholder={t('profile.edit.bioPlaceholder')}
+            placeholderTextColor={theme.colors.muted}
+            maxLength={140}
+            multiline
+            style={[
+              styles.inlineField,
+              {
+                color: theme.colors.text,
+                borderColor: theme.colors.line,
+                backgroundColor: theme.colors.surface,
+                minHeight: 88,
+                textAlignVertical: 'top',
+              },
+            ]}
+          />
+          <Text
             style={{
-              paddingHorizontal: 14,
-              paddingVertical: 9,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderStyle: 'dashed',
-              borderColor: theme.colors.line,
+              marginTop: 4,
+              fontSize: 11,
+              color: theme.colors.muted,
+              textAlign: 'right',
             }}
           >
-            <Text style={{ color: theme.colors.text2, fontSize: 14 }}>{t('profile.interestsManage')}</Text>
-          </Pressable>
-        </View>
-
-        {/* My prompts */}
-        <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>
-        {prompts.length > 0 ? (
-          prompts.map((p, i) => (
-            <Card key={i} surface2 flat style={{ padding: 14, marginBottom: 10 }}>
-              <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 6 }}>
-                {p.q}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: 'Fraunces',
-                  fontStyle: 'italic',
-                  fontWeight: '500',
-                  fontSize: 15,
-                  lineHeight: 23,
-                  color: theme.colors.text,
-                }}
-              >
-                &ldquo;{p.a}&rdquo;
-              </Text>
-            </Card>
-          ))
-        ) : (
-          <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
-            {t('profile.promptsEmpty')}
+            {bio.length} / 140
           </Text>
-        )}
-        <Pressable onPress={() => nav.navigate('PromptsEdit')} style={{ marginTop: 6 }}>
-          <Text style={{ color: theme.colors.primary, fontSize: 13.5, fontWeight: '500' }}>
-            {t('profile.promptsAdd')}
+
+          <SectionTitle>{t('profile.edit.age')}</SectionTitle>
+          <TextInput
+            value={age}
+            onChangeText={(v) => setAge(v.replace(/\D/g, '').slice(0, 2))}
+            onEndEditing={saveAge}
+            keyboardType="number-pad"
+            maxLength={2}
+            style={[
+              styles.inlineField,
+              {
+                color: theme.colors.text,
+                borderColor: theme.colors.line,
+                backgroundColor: theme.colors.surface,
+                width: 90,
+              },
+            ]}
+          />
+
+          {/* Settings */}
+          <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
+          <Card flat style={{ paddingVertical: 4 }}>
+            <SettingsRow
+              icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('profile.rows.premium')}
+              detail={
+                (user as any).isPremium
+                  ? t('profile.rows.premiumActive')
+                  : t('profile.rows.premiumUpgrade')
+              }
+              onPress={() => nav.navigate('Premium')}
+            />
+            <Divider />
+            <SettingsRow
+              icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('profile.rows.privacy')}
+              onPress={() => nav.navigate('PrivacySettings')}
+            />
+            <Divider />
+            <SettingsRow
+              icon={<Bell size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('profile.rows.notifications')}
+              onPress={() => nav.navigate('NotificationSettings')}
+            />
+            <Divider />
+            <SettingsRow
+              icon={<Globe size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('profile.rows.language')}
+              detail={
+                i18n.language.startsWith('zh')
+                  ? t('profile.rows.languageValueZh')
+                  : t('profile.rows.languageValueEn')
+              }
+              onPress={() => nav.navigate('LanguageSettings')}
+            />
+            <Divider />
+            <SettingsRow
+              icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('profile.rows.account')}
+              onPress={() => nav.navigate('AccountSettings')}
+            />
+          </Card>
+
+          <Text
+            style={{
+              textAlign: 'center',
+              marginTop: 32,
+              color: theme.colors.muted,
+              fontSize: 11.5,
+            }}
+          >
+            Meyou · v2.0.0
           </Text>
-        </Pressable>
-
-        {/* Settings rows */}
-        <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
-        <Card flat style={{ paddingVertical: 4 }}>
-          <SettingsRow
-            icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.premium')}
-            detail={(user as any).isPremium ? t('profile.rows.premiumActive') : t('profile.rows.premiumUpgrade')}
-            onPress={() => nav.navigate('Premium')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.privacy')}
-            onPress={() => nav.navigate('PrivacySettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<Bell size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.notifications')}
-            onPress={() => nav.navigate('NotificationSettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<Globe size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.language')}
-            detail={i18n.language.startsWith('zh') ? t('profile.rows.languageValueZh') : t('profile.rows.languageValueEn')}
-            onPress={() => nav.navigate('LanguageSettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<ImageIcon size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.photoRequests')}
-            badge={pendingPhotoReqs}
-            onPress={() => nav.navigate('PhotoRequests')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.account')}
-            onPress={() => nav.navigate('AccountSettings')}
-          />
-        </Card>
-
-        <Text
-          style={{
-            textAlign: 'center',
-            marginTop: 32,
-            color: theme.colors.muted,
-            fontSize: 11.5,
-          }}
-        >
-          Meyou · v2.0.0
-        </Text>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -283,13 +597,18 @@ function Stat({
         borderRadius: theme.radius.l,
         borderWidth: 1,
         borderColor: theme.colors.line,
-        paddingVertical: 14,
+        paddingVertical: 12,
         alignItems: 'center',
         opacity: pressed && onPress ? 0.7 : 1,
       })}
     >
-      <Text style={{ fontSize: 20, fontWeight: '700', color: theme.colors.text }}>{value}</Text>
-      <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 4 }}>{label}</Text>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text }}>{value}</Text>
+      <Text
+        numberOfLines={1}
+        style={{ fontSize: 11, color: theme.colors.muted, marginTop: 4 }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -316,14 +635,11 @@ function SettingsRow({
   icon,
   label,
   detail,
-  badge,
   onPress,
 }: {
   icon: React.ReactNode;
   label: string;
   detail?: string;
-  /** Numeric badge shown when > 0 (e.g. unread count). */
-  badge?: number;
   onPress?: () => void;
 }) {
   const theme = useTheme();
@@ -352,24 +668,7 @@ function SettingsRow({
         {icon}
       </View>
       <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>{label}</Text>
-      {badge != null && badge > 0 && (
-        <View
-          style={{
-            minWidth: 22,
-            height: 22,
-            borderRadius: 11,
-            paddingHorizontal: 7,
-            backgroundColor: theme.colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>{badge}</Text>
-        </View>
-      )}
-      {detail && (
-        <Text style={{ fontSize: 13, color: theme.colors.muted }}>{detail}</Text>
-      )}
+      {detail && <Text style={{ fontSize: 13, color: theme.colors.muted }}>{detail}</Text>}
       <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.6} />
     </Pressable>
   );
@@ -389,17 +688,48 @@ function Divider() {
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    borderRadius: 22,
-    padding: 18,
-    flexDirection: 'row',
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
-    gap: 14,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  avatarSpinner: {
+    borderRadius: 48,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nicknameInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 14,
+    textAlign: 'center',
+    minWidth: 120,
+    paddingVertical: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 18,
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 0,
+  },
+  inlineField: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
   },
 });
