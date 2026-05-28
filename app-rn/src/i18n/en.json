@@ -75,7 +75,7 @@
     "empty": "No moments yet",
     "emptyByFilter": {
       "all": "No moments yet — be the first to post",
-      "friends": "No moments from people you follow yet — find people in Discover",
+      "friends": "No moments from your friends or matches yet — find people in Discover",
       "nearby": "No moments nearby yet — try a wider area or check back later",
       "interest": "No matching moments — pick interests in Profile → Interests so we can match you to a feed"
     },
