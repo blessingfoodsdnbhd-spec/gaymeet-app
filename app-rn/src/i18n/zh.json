@@ -68,14 +68,14 @@
   "moments": {
     "filters": {
       "all": "全部",
-      "friends": "同好",
+      "friends": "好友",
       "nearby": "附近",
       "interest": "兴趣"
     },
     "empty": "这里还没有动态",
     "emptyByFilter": {
       "all": "还没有动态 — 来发第一条吧",
-      "friends": "你关注的人还没发动态 — 去「发现」找同好",
+      "friends": "你关注的人还没发动态 — 去「发现」找好友",
       "nearby": "附近还没有动态 — 换个范围或晚点再来看",
       "interest": "没有匹配的兴趣动态 — 去「我 → 兴趣」补全标签,我们会按兴趣推荐"
     },
@@ -167,7 +167,7 @@
       "matches": "同频",
       "friends": "好友",
       "moments": "动态",
-      "likes": "喜欢你"
+      "likes": "想认识"
     },
     "editProfile": "编辑资料",
     "publicPhotos": "公开照片",
@@ -314,8 +314,8 @@
     "revokeAll": "撤销全部"
   },
   "likedMe": {
-    "title": "喜欢你的人",
-    "empty": "还没有人喜欢你",
+    "title": "想认识你的人",
+    "empty": "还没有人想认识你",
     "upgradeCta": "升级看清楚是谁",
     "loadFailed": "无法加载"
   },
@@ -357,7 +357,7 @@
     "benefitsSection": "专属权益",
     "benefits": {
       "directIntro": "给还没同频的人直接发消息",
-      "seeLikes": "看谁喜欢了你",
+      "seeLikes": "看谁想认识你",
       "unlimitedSwipes": "无限滑卡片",
       "readReceipts": "「已读」回执",
       "biggerBoost": "加大 Boost 曝光"
