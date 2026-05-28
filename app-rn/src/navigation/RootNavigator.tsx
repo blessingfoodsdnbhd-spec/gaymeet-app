@@ -19,6 +19,7 @@ import { CommentsScreen } from '../screens/moments/CommentsScreen';
 import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
 import { PremiumScreen } from '../screens/premium/PremiumScreen';
+import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -77,6 +78,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="Premium"
             component={PremiumScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="UserDetail"
+            component={UserDetailScreen}
             options={{ animation: 'slide_from_right' }}
           />
         </>

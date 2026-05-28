@@ -68,7 +68,7 @@
   "moments": {
     "filters": {
       "all": "All",
-      "friends": "Friends",
+      "friends": "Wanna meet",
       "nearby": "Nearby",
       "interest": "Interests"
     },
@@ -113,19 +113,19 @@
   "chats": {
     "searchPlaceholder": "Search",
     "empty": "No messages yet — head to Discover to find your wavelength",
-    "newMatchesHeader": "New friends · {{n}}",
+    "newMatchesHeader": "New vibes · {{n}}",
     "sayHi": "Say hi →",
     "detail": {
       "typing": "typing…",
       "online": "online",
       "offline": "offline",
       "messagePlaceholder": "Say something…",
-      "unmatchFailed": "Unmatch failed"
+      "unmatchFailed": "Unvibe failed"
     }
   },
   "match": {
     "title": "It's a Meyou!",
-    "subtitle": "You're now close friends",
+    "subtitle": "You're now vibing",
     "bothLove": "You and {{name}} both love",
     "sendCta": "Send a message",
     "later": "Maybe later",
@@ -136,14 +136,19 @@
     "interestsCount": "Interests · {{n}} in common",
     "likeCta": "Like {{name}}"
   },
+  "userDetail": {
+    "aboutSection": "About",
+    "interestsSection": "Interests",
+    "loadFailed": "Couldn't load profile"
+  },
   "nearby": {
     "peopleCount": "{{n}} nearby",
     "footnote": "Showing people who allow Nearby"
   },
   "profile": {
     "stats": {
-      "matches": "Matches",
-      "friends": "Friends",
+      "matches": "Vibes",
+      "friends": "Wanna meet",
       "moments": "Moments"
     },
     "editProfile": "Edit profile",
@@ -199,11 +204,11 @@
       }
     },
     "matchesList": {
-      "empty": "No matches yet — head to Discover",
-      "matchedAt": "Matched · {{date}}"
+      "empty": "No vibes yet — head to Discover",
+      "matchedAt": "Vibed · {{date}}"
     },
     "friendsList": {
-      "empty": "No friends yet"
+      "empty": "Nobody you wanna meet yet"
     }
   },
   "languageSettings": {
@@ -242,7 +247,7 @@
     "signOutConfirmBody": "Are you sure you want to sign out?",
     "signOutButton": "Sign out",
     "deleteStep1Title": "Delete account",
-    "deleteStep1Body": "All chats, moments, and matches will be permanently deleted. This cannot be undone.",
+    "deleteStep1Body": "All chats, moments, and vibes will be permanently deleted. This cannot be undone.",
     "deleteStep1Continue": "Continue",
     "deleteStep2Title": "Confirm again",
     "deleteStep2Body": "Final confirmation — your account and all data will be deleted immediately.",
@@ -252,15 +257,15 @@
   "safetyMenu": {
     "report": "Report",
     "block": "Block",
-    "unmatch": "Unmatch",
+    "unmatch": "Unvibe",
     "cancel": "Cancel",
     "blockConfirmTitle": "Block {{name}}?",
-    "blockConfirmBody": "You will no longer see each other; chats and matches will be removed.",
+    "blockConfirmBody": "You will no longer see each other; chats and vibes will be removed.",
     "blockAction": "Block",
     "blockFailed": "Block failed",
-    "unmatchConfirmTitle": "Unmatch with {{name}}?",
+    "unmatchConfirmTitle": "Unvibe with {{name}}?",
     "unmatchConfirmBody": "The chat will be removed and cannot be restored.",
-    "unmatchAction": "Unmatch"
+    "unmatchAction": "Unvibe"
   },
   "report": {
     "title": "Report {{name}}",
@@ -287,7 +292,7 @@
     "expiresAt": "Expires: {{date}}",
     "benefitsSection": "Benefits",
     "benefits": {
-      "directIntro": "Message anyone before matching",
+      "directIntro": "Message anyone before vibing",
       "seeLikes": "See who liked you",
       "unlimitedSwipes": "Unlimited swipes",
       "readReceipts": "Read receipts",

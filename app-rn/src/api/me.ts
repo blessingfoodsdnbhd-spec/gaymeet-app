@@ -81,6 +81,11 @@ export interface FollowedUser {
 export const getFollowing = (userId: string) =>
   unwrap<FollowedUser[]>(api.get(`/users/${userId}/following`));
 
+/** Public profile for any user by id. Backend returns User.toPublicJSON()
+ *  minus the sensitive fields (password/fcmToken/blockedUsers/swipes). */
+export const getUserById = (userId: string) =>
+  unwrap<User>(api.get(`/users/${userId}`));
+
 /** Permanently delete the current account. Backend wipes matches, messages,
  * moments, and the user document itself. JWT alone is required — no
  * password — because most users sign in via OTP / Apple / Google. */
