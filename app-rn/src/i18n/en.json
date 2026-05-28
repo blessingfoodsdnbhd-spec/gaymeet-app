@@ -167,7 +167,8 @@
       "matches": "Matches",
       "friends": "Friends",
       "moments": "Moments",
-      "likes": "Likes"
+      "likes": "Likes",
+      "privatePhotos": "Private"
     },
     "editProfile": "Edit profile",
     "publicPhotos": "Public photos",
