@@ -373,7 +373,11 @@ router.get('/likes', auth, async (req, res, next) => {
       .populate('fromUser', '-password -fcmToken -blockedUsers -dailySwipes -dailySwipesDate')
       .lean();
 
-    const likers = swipes.map((s) => s.fromUser);
+    // Drop null entries — populate('fromUser') returns null when the liker
+    // has been deleted, but the Swipe row stays behind. Including those as
+    // nulls in the wire array crashes mobile clients that key/render off
+    // user._id, and makes the count disagree with the array length.
+    const likers = swipes.map((s) => s.fromUser).filter(Boolean);
 
     const { isPremiumActive } = require('../utils/premium');
     if (isPremiumActive(me)) {
