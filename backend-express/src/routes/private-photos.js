@@ -10,7 +10,6 @@ const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 
 const MAX_PRIVATE_PHOTOS = 5;
-const REJECT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Persist a multer memory-buffer either to R2 (preferred) or to local disk
@@ -138,7 +137,9 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       return err(res, 'Cannot request photos from this user', 403);
     }
 
-    // Dedupe active requests.
+    // Dedupe only on active states. rejected and revoked rows are kept
+    // as audit history but don't block a fresh request — the user can
+    // try again immediately after a denial.
     const existing = await PhotoRequest.findOne({
       requester: req.user._id,
       owner: ownerId,
@@ -146,18 +147,6 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
     });
     if (existing) {
       return err(res, `Request already ${existing.status}`, 409);
-    }
-
-    // 7-day cooldown after a rejection — prevents harassment loops where
-    // someone keeps re-requesting after being denied.
-    const recentReject = await PhotoRequest.findOne({
-      requester: req.user._id,
-      owner: ownerId,
-      status: 'rejected',
-      respondedAt: { $gt: new Date(Date.now() - REJECT_COOLDOWN_MS) },
-    });
-    if (recentReject) {
-      return err(res, 'You can request again 7 days after a rejection', 429);
     }
 
     const request = await PhotoRequest.create({
