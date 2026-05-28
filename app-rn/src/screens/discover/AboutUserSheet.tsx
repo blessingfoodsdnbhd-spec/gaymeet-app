@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Heart, MessageCircle, MoreHorizontal, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +10,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
+import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
+import { PhotoViewer } from '../../components/PhotoViewer';
 import { TagChip } from '../../components/TagChip';
 import { IconButton } from '../../components/TopBar';
 import { Card } from '../../components/Card';
@@ -18,6 +21,13 @@ import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
 import { openConversation } from '../../api/chats';
+import { getMe } from '../../api/me';
+import {
+  getPrivatePhotos,
+  getSent,
+  requestPrivatePhotos,
+  type PhotoRequestStatus,
+} from '../../api/privatePhotos';
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -35,7 +45,25 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
-  const isPremium = !!(me as any)?.isPremium;
+  const setMe = useAuth((s) => s.setUser);
+
+  // Refetch self every time the sheet opens. The Premium gate was rendering
+  // off the cached auth.user, which can lag behind reality if the user
+  // upgraded on another device or the boot-time getMe() hadn't fired by the
+  // time they opened a sheet. We also fall back to vipLevel>0 as a belt
+  // for any edge where toPublicJSON's isPremium derivation differs from the
+  // VIP-tier truth (premium expiry vs vip expiry, etc.).
+  const meQ = useQuery({
+    queryKey: ['user', 'me-self'],
+    queryFn: getMe,
+    enabled: open,
+    staleTime: 60_000,
+  });
+  React.useEffect(() => {
+    if (meQ.data) setMe(meQ.data);
+  }, [meQ.data, setMe]);
+  const meFresh: any = meQ.data ?? me;
+  const isPremium = !!(meFresh?.isPremium || (meFresh?.vipLevel ?? 0) > 0);
 
   // Local "I just liked this person" flag so the button greys immediately.
   // The backend swipe is idempotent (findOneAndUpdate upsert), so even if
@@ -44,10 +72,65 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   // across different target users.
   const [liked, setLiked] = useState(false);
 
+  // null = viewer closed; number = open at that photo index. Two viewers
+  // — one for the public gallery, one for the unlocked private photos.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [privateViewerIndex, setPrivateViewerIndex] = useState<number | null>(null);
+
+  // Backend nearby/discover endpoints already include user.photos via
+  // toPublicJSON — no extra fetch needed. Cap at 5 so the gallery stays
+  // within the same product limit enforced on upload (Phase 1 backend).
+  const galleryPhotos = (user?.photos ?? []).slice(0, 5);
+
+  // Self-guard: hide the entire locked-photos block when the target is
+  // the current user. The Nearby grid prepends self, and we'd otherwise
+  // render a "Request to view" CTA pointing at the user's own photos.
+  const isSelf = !!user && !!meFresh?.id && user.id === meFresh.id;
+  const hasPrivate = !isSelf && (user?.privatePhotosCount ?? 0) > 0;
+
   // Reset local liked flag when the target user changes.
   React.useEffect(() => {
     setLiked(false);
+    setPrivateViewerIndex(null);
+    setViewerIndex(null);
   }, [user?.id]);
+
+  // Private-photo request status — lifted from UserDetailScreen. We use
+  // getSent() rather than getPrivatePhotos() for the gating because the
+  // latter collapses rejected/revoked/none into a single 'none' status,
+  // so we can't render distinct CTAs without the granular row.
+  const sentQ = useQuery({
+    queryKey: ['photoRequests', 'sent'],
+    queryFn: getSent,
+    enabled: open && hasPrivate,
+    staleTime: 30_000,
+  });
+  const myReqForUser = (sentQ.data?.requests ?? [])
+    .filter((r) => r.owner)
+    .find((r) => r.owner!._id === user?.id);
+  const reqStatus: PhotoRequestStatus | 'none' = myReqForUser?.status ?? 'none';
+
+  // Pull the actual photo URLs only after approval. Same shape as
+  // UserDetailScreen — keys by userId so switching targets refetches.
+  const privatePhotosQ = useQuery({
+    queryKey: ['user', user?.id, 'privatePhotos'],
+    queryFn: () => getPrivatePhotos(user!.id),
+    enabled: open && hasPrivate && reqStatus === 'approved',
+    staleTime: 60_000,
+  });
+  const unlockedPhotos = privatePhotosQ.data?.photos ?? [];
+
+  const requestMut = useMutation({
+    mutationFn: () => requestPrivatePhotos(user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['photoRequests', 'sent'] });
+      Alert.alert(t('userDetail.requestSentToast'));
+    },
+    onError: (e: any) => {
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('userDetail.requestFailed'), detail);
+    },
+  });
 
   // Follow-state query. Only enabled while the sheet is open and we have
   // a target — avoids speculative requests while the parent component is
@@ -107,16 +190,45 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
   const onMore = () => {
     if (!user) return;
-    showSafetyMenu({
-      userId: user.id,
-      userName: user.nickname,
-      nav,
-      onBlocked: onClose,
-    });
+    // On Android, opening the SafetyMenuSheet's <Modal> while our parent
+    // <Sheet> is already a <Modal> stacks the new Modal BEHIND the existing
+    // one (a long-standing RN nested-Modal limitation), so the user
+    // sees nothing happen when they tap the "..." button. Other call sites
+    // (UserDetailScreen, ChatDetailScreen, MomentItem) don't hit this
+    // because they're plain screens, not Modals. Fix: dismiss the Sheet
+    // first, then open the safety menu after its slide-out (~220ms).
+    // The iOS path uses ActionSheetIOS which renders above any Modal, so
+    // the delay is harmless there too.
+    const userId = user.id;
+    const userName = user.nickname;
+    onClose();
+    setTimeout(() => {
+      showSafetyMenu({ userId, userName, nav });
+    }, 250);
   };
 
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="85%">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      maxHeight="85%"
+      overlay={
+        <>
+          <PhotoViewer
+            open={viewerIndex !== null}
+            photos={galleryPhotos}
+            initialIndex={viewerIndex ?? 0}
+            onClose={() => setViewerIndex(null)}
+          />
+          <PhotoViewer
+            open={privateViewerIndex !== null}
+            photos={unlockedPhotos}
+            initialIndex={privateViewerIndex ?? 0}
+            onClose={() => setPrivateViewerIndex(null)}
+          />
+        </>
+      }
+    >
       {user && (
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -173,6 +285,75 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </View>
           )}
 
+          {/* Private-photo locked block — only rendered when the target
+              actually has private photos AND we're not viewing ourselves.
+              Five-state UI lives in the shared LockedPhotosBlock; the
+              approved branch renders the unlocked photos inline as a
+              horizontal scroll that opens the PhotoViewer on tap. */}
+          {hasPrivate && (
+            <View style={{ marginTop: 18 }}>
+              <Text style={[styles.section, { color: theme.colors.muted }]}>
+                {t('userDetail.lockedPhotosCount', { n: user.privatePhotosCount })}
+              </Text>
+              {reqStatus === 'approved' ? (
+                privatePhotosQ.isLoading ? (
+                  <View style={{ paddingVertical: 12 }}>
+                    {/* Lightweight spinner — same theme color as elsewhere */}
+                    <Text style={{ color: theme.colors.muted, fontSize: 13 }}>…</Text>
+                  </View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {unlockedPhotos.map((url, idx) => (
+                      <Pressable
+                        key={`pp-${idx}-${url}`}
+                        onPress={() => setPrivateViewerIndex(idx)}
+                      >
+                        <ExpoImage
+                          source={{ uri: url }}
+                          style={{ width: 96, height: 96, borderRadius: 12 }}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                        />
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )
+              ) : (
+                <LockedPhotosBlock
+                  status={reqStatus}
+                  busy={requestMut.isPending}
+                  onRequest={() => requestMut.mutate()}
+                />
+              )}
+            </View>
+          )}
+
+          {/* Public photos — horizontal scroll. Tap any to open the
+              full-screen PhotoViewer at that index. Section is omitted
+              entirely when the target has no photos. */}
+          {galleryPhotos.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingTop: 18 }}
+            >
+              {galleryPhotos.map((url, idx) => (
+                <Pressable key={`${idx}-${url}`} onPress={() => setViewerIndex(idx)}>
+                  <ExpoImage
+                    source={{ uri: url }}
+                    style={{ width: 96, height: 96, borderRadius: 12 }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
               {t('about.interestsCount', { n: (user.sharedTags ?? []).length })}
@@ -224,6 +405,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           </View>
         </ScrollView>
       )}
+
     </Sheet>
   );
 }

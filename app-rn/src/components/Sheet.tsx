@@ -13,9 +13,18 @@ interface Props {
   onClose: () => void;
   children: React.ReactNode;
   maxHeight?: number | `${number}%`;
+  /**
+   * Rendered as the topmost sibling INSIDE this Sheet's own Modal —
+   * above the backdrop and the sheet card. Use for full-screen overlays
+   * (e.g. PhotoViewer) that would otherwise need their own Modal; on
+   * Android, opening a second Modal while this one is up stacks the
+   * new Modal behind the existing one (RN nested-Modal limitation),
+   * so we keep them in one window via this prop.
+   */
+  overlay?: React.ReactNode;
 }
 
-export function Sheet({ open, onClose, children, maxHeight = '85%' }: Props) {
+export function Sheet({ open, onClose, children, maxHeight = '85%', overlay }: Props) {
   const theme = useTheme();
   const { height: winH } = useWindowDimensions();
   const ty = useSharedValue(winH);
@@ -70,6 +79,7 @@ export function Sheet({ open, onClose, children, maxHeight = '85%' }: Props) {
         />
         {children}
       </Animated.View>
+      {overlay}
     </Modal>
   );
 }
