@@ -29,7 +29,16 @@
     "revoke": "Revoke access",
     "premiumLimit": "Free users can join 2 topics. Premium can join 8.",
     "otherTopicsHeader": "More from this person",
-    "noOtherTopics": "They haven't joined other topics yet"
+    "noOtherTopics": "They haven't joined other topics yet",
+    "personaNicknamePlaceholder": "e.g. Glasses Guy",
+    "photoCapTitle": "Photo limit reached",
+    "photoCapBody": "Max {{max}} photos per persona.",
+    "personaLimitTitle": "Topic limit reached",
+    "saveFailed": "Couldn't save",
+    "deleteFailed": "Couldn't leave topic",
+    "deleteConfirmTitle": "Leave this topic?",
+    "deleteConfirmBody": "Your persona will stop appearing in this topic. You can re-join later.",
+    "allJoined": "You've joined every topic"
   },
   "welcome": {
     "tagline": "Meet people who love the same things.",
@@ -262,6 +271,8 @@
     "interestsTitle": "My interests",
     "interestsEmpty": "No interests yet",
     "interestsManage": "+ Manage",
+    "personasTitle": "Topic personas",
+    "personasEmpty": "You haven't joined any topics yet",
     "promptsTitle": "Prompts",
     "promptsEmpty": "Add a prompt so people get to know you",
     "promptsAdd": "+ Add prompt",

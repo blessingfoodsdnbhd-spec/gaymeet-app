@@ -36,4 +36,9 @@ export type RootStackParamList = {
   Premium: undefined;
   LikedMe: undefined;
   PhotoRequests: undefined;
+  TopicPersonaEdit: {
+    topicSlug: string;
+    topicName: string;
+    topicIcon?: string;
+  };
 };
