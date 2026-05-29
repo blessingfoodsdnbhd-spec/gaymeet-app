@@ -139,6 +139,12 @@ export function ProfileScreen() {
   });
   const incomingCount = (incomingQ.data ?? []).length;
 
+  // Per-persona photo cap mirrors the cap on TopicPersonaEditScreen:
+  // Free 3, Premium 5. The list row label "已上傳 X/Y 張" was previously
+  // hardcoded to Y=5 which over-reported the available slots for Free
+  // users.
+  const personaPhotoMax = (user as any)?.isPremium ? 5 : 3;
+
   const saveMut = useMutation({
     mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
     onSuccess: (updated) => setUser(updated),
@@ -482,7 +488,7 @@ export function ProfileScreen() {
                         {label}
                       </Text>
                       <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 2 }}>
-                        {p.nickname} · {t('topics.uploadPhotos', { count: p.photos.length, max: 5 })}
+                        {p.nickname} · {t('topics.uploadPhotos', { count: p.photos.length, max: personaPhotoMax })}
                       </Text>
                     </View>
                     <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.8} />
