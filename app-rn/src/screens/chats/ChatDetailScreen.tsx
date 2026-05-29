@@ -641,6 +641,19 @@ export function ChatDetailScreen() {
   const onMsgsContentSizeChange = useCallback(() => {
     if (items.length === 0) return;
     listRef.current?.scrollToEnd({ animated: hasScrolledInitially.current });
+    // Belt-and-suspenders for FlatList virtualization on first entry:
+    // the initial scrollToEnd lands at the end of the *currently
+    // rendered* window (default initialNumToRender = 10), not the
+    // absolute end of the data array. The virtualized rows below
+    // mount on the next frame; firing a second non-animated scrollToEnd
+    // ~50ms later lands at the true bottom. Subsequent calls (after
+    // hasScrolledInitially flips) animate normally, so this only
+    // affects the chat-entry moment.
+    if (!hasScrolledInitially.current) {
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+    }
     hasScrolledInitially.current = true;
   }, [items.length]);
 
