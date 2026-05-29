@@ -287,6 +287,8 @@ export function DiscoverScreen() {
       ) : (
         <TopicPersonaList
           slug={mode.slug}
+          topic={topics.find((tp) => tp.slug === mode.slug)}
+          locale={locale}
           onOpenPersona={(it) =>
             setOpenPersona({ slug: mode.slug, userId: it.userId })
           }

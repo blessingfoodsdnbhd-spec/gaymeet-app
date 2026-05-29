@@ -46,7 +46,9 @@
     "unknownUser": "Someone",
     "approveFailed": "Couldn't approve",
     "rejectFailed": "Couldn't reject",
-    "upgrade": "Upgrade to Premium"
+    "upgrade": "Upgrade to Premium",
+    "joinThisTopic": "Join this topic",
+    "youBadge": "ME"
   },
   "welcome": {
     "tagline": "Meet people who love the same things.",

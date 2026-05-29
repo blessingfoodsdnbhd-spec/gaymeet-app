@@ -26,15 +26,18 @@ const PAGE_DEFAULT = 24;
 const PAGE_MAX = 60;
 
 // Resolve the set of user ids the requester should never see in any
-// listing — me, anyone I've blocked, anyone who's blocked me. Same
-// pattern as routes/discover.js.
-async function getExclusionIds(me) {
+// listing — anyone they've blocked, anyone who's blocked them. Same
+// pattern as routes/discover.js. Self is NOT included: the topic-tab
+// list deliberately shows the user's own persona at the top with an
+// "isSelf" flag so they can confirm their upload actually went
+// through (user feedback: "I uploaded a photo but the topic looks
+// empty" — that was because we were filtering self out).
+async function getBlockedIds(me) {
   const usersWhoBlockedMe = await User.find(
     { blockedUsers: me._id },
     { _id: 1 },
   ).lean();
   return new Set([
-    me._id.toString(),
     ...(me.blockedUsers || []).map((id) => id.toString()),
     ...usersWhoBlockedMe.map((u) => u._id.toString()),
   ]);
@@ -64,9 +67,13 @@ router.get('/', auth, async (_req, res, next) => {
 
 // ── GET /api/topics/:slug/personas ─────────────────────────────────────────
 // Cursor pagination: ?before=<ISO updatedAt> returns rows older than
-// the cursor. Self + blocked excluded. Each row carries enough for the
-// grid card to render without a second roundtrip (nickname, first
-// photo, photo count, age).
+// the cursor. Blocked users excluded. Self is INCLUDED with an
+// `isSelf: true` flag and sorted to the top of the first page — so
+// users can see their own persona appears in the topic they joined
+// (otherwise "I uploaded but nothing's there!" UX).
+//
+// Self-sort applies only to the first page (no cursor). On subsequent
+// pages there's no self to surface anyway.
 router.get('/:slug/personas', auth, async (req, res, next) => {
   try {
     const slug = String(req.params.slug || '').trim();
@@ -82,17 +89,18 @@ router.get('/:slug/personas', auth, async (req, res, next) => {
     );
     const beforeRaw = req.query.before;
     const beforeDate = beforeRaw ? new Date(String(beforeRaw)) : null;
-    const cursorClause =
-      beforeDate && !Number.isNaN(beforeDate.getTime())
-        ? { updatedAt: { $lt: beforeDate } }
-        : {};
+    const isFirstPage = !beforeDate || Number.isNaN(beforeDate?.getTime?.());
+    const cursorClause = isFirstPage
+      ? {}
+      : { updatedAt: { $lt: beforeDate } };
 
-    const excluded = await getExclusionIds(req.user);
+    const blocked = await getBlockedIds(req.user);
+    const meId = req.user._id.toString();
 
     const personas = await TopicPersona.find({
       topicSlug: slug,
       isActive: true,
-      userId: { $nin: Array.from(excluded) },
+      userId: { $nin: Array.from(blocked) },
       ...cursorClause,
     })
       .sort({ updatedAt: -1 })
@@ -112,8 +120,9 @@ router.get('/:slug/personas', auth, async (req, res, next) => {
 
     const items = slice.map((p) => {
       const u = userMap.get(p.userId.toString()) || {};
+      const pidStr = p.userId.toString();
       return {
-        userId: p.userId.toString(),
+        userId: pidStr,
         nickname: p.nickname,
         photo0: p.photos[0] || null,
         photoCount: p.photos.length,
@@ -121,8 +130,15 @@ router.get('/:slug/personas', auth, async (req, res, next) => {
         lastActiveAt: u.lastActiveAt
           ? new Date(u.lastActiveAt).toISOString()
           : null,
+        isSelf: pidStr === meId,
       };
     });
+
+    // First-page self-sort: pin the requester's row to the top so the
+    // empty-topic UX doesn't hide their own upload.
+    if (isFirstPage) {
+      items.sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0));
+    }
 
     const cursor = hasMore
       ? slice[slice.length - 1].updatedAt.toISOString()
@@ -144,12 +160,15 @@ router.get('/:slug/personas/:userId', auth, async (req, res, next) => {
       return err(res, 'Invalid slug or userId');
     }
 
-    const excluded = await getExclusionIds(req.user);
-    if (excluded.has(targetId)) {
+    const blocked = await getBlockedIds(req.user);
+    if (blocked.has(targetId)) {
       // Treat as 404 rather than 403 — we don't tell the requester that
       // a block exists (privacy + symmetry with discover).
       return err(res, 'Persona not found', 404);
     }
+    // Self IS allowed to fetch their own persona detail (so the user
+    // can preview what others see). The mainProfile attach below is
+    // a no-op for self — TopicUnlock(self, self) never exists.
 
     const persona = await TopicPersona.findOne({
       userId: targetId,
