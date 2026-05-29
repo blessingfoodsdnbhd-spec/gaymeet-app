@@ -18,6 +18,10 @@ import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
 import { BoostButton } from './BoostButton';
+import { TopicTabs, type ActiveTab } from './TopicTabs';
+import { TopicPersonaList } from './TopicPersonaList';
+import { TopicPersonaSheet } from './TopicPersonaSheet';
+import { getTopics } from '../../api/topics';
 import {
   getDiscoverCards,
   getNearby,
@@ -34,7 +38,10 @@ import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-type Mode = 'cards' | 'nearby';
+// Tab state is now a discriminated union — system tabs (cards/nearby)
+// plus dynamic topic tabs identified by slug. See TopicTabs.tsx for the
+// union definition.
+type Mode = ActiveTab;
 
 /**
  * Device-scoped persistence key for the Discover/Nearby filter selection.
@@ -48,12 +55,30 @@ const FILTERS_STORAGE_KEY = 'meyou:discover-filters:v1';
 
 export function DiscoverScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
   const me = useAuth((s) => s.user);
   const queryClient = useQueryClient();
   const nav = useNavigation<Nav>();
 
-  const [mode, setMode] = useState<Mode>('cards');
+  const [mode, setMode] = useState<Mode>({ kind: 'cards' });
+  // Currently-open topic persona, identified by (slug, userId). Null when
+  // the persona sheet is closed. Keyed independently of `mode` so closing
+  // the sheet doesn't switch tabs.
+  const [openPersona, setOpenPersona] = useState<{
+    slug: string;
+    userId: string;
+  } | null>(null);
+
+  // Topic strip — loaded once and reused. Falls back to empty so the
+  // user always sees at least 推薦 + 附近 even if the topics endpoint
+  // is unreachable.
+  const topicsQ = useQuery({
+    queryKey: ['topics', 'list'],
+    queryFn: getTopics,
+    staleTime: 5 * 60_000,
+  });
+  const topics = topicsQ.data ?? [];
   const [aboutUser, setAboutUser] = useState<DiscoverCardUser | null>(null);
   // matchId is the freshly-created Match document id from the mutual-like
   // backend response. We need it to navigate the user from the celebration
@@ -155,7 +180,7 @@ export function DiscoverScreen() {
   const nearbyQ = useQuery({
     queryKey: ['discover', 'nearby', filters.radiusKm ?? null, filters.interests ?? null],
     queryFn: () => getNearby(filters.radiusKm ?? 10, filters),
-    enabled: mode === 'nearby',
+    enabled: mode.kind === 'nearby',
     staleTime: 60_000,
   });
 
@@ -213,50 +238,7 @@ export function DiscoverScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <TopBar
-        center={
-          <View
-            style={{
-              flexDirection: 'row',
-              padding: 3,
-              borderRadius: 999,
-              backgroundColor: theme.colors.surface2,
-              borderWidth: 1,
-              borderColor: theme.colors.line,
-            }}
-          >
-            {([
-              { id: 'cards', label: t('discover.modeCards') },
-              { id: 'nearby', label: t('discover.modeNearby') },
-            ] as { id: Mode; label: string }[]).map((tab) => {
-              const active = mode === tab.id;
-              return (
-                <Pressable
-                  key={tab.id}
-                  onPress={() => setMode(tab.id)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 7,
-                    borderRadius: 999,
-                    backgroundColor: active ? theme.colors.surface : 'transparent',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: '600',
-                      // muted (#8E8DA0) was too washed out for an
-                      // interactive segmented control — use text2 so the
-                      // inactive label still reads clearly.
-                      color: active ? theme.colors.text : theme.colors.text2,
-                    }}
-                  >
-                    {tab.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        }
+        center={null}
         left={null}
         right={
           <>
@@ -283,7 +265,16 @@ export function DiscoverScreen() {
         }
       />
 
-      {mode === 'cards' ? (
+      {/* Horizontal pill-tab strip below the TopBar. 推薦/附近 first,
+          then dynamic topics from /api/topics. */}
+      <TopicTabs
+        topics={topics}
+        active={mode}
+        onChange={setMode}
+        locale={locale}
+      />
+
+      {mode.kind === 'cards' ? (
         <CardsBody
           cardsQ={cardsQ}
           stackRef={stackRef}
@@ -291,8 +282,15 @@ export function DiscoverScreen() {
           onSwiped={handleSwiped}
           onSendIntro={openIntroChat}
         />
-      ) : (
+      ) : mode.kind === 'nearby' ? (
         <NearbyBody nearbyQ={nearbyQ} onOpen={(u) => setAboutUser(u)} />
+      ) : (
+        <TopicPersonaList
+          slug={mode.slug}
+          onOpenPersona={(it) =>
+            setOpenPersona({ slug: mode.slug, userId: it.userId })
+          }
+        />
       )}
 
       <AboutUserSheet
@@ -326,6 +324,15 @@ export function DiscoverScreen() {
         myInterests={(me?.interests ?? []) as InterestTagId[]}
         onApply={(f) => setFilters(f)}
         onClose={() => setFiltersOpen(false)}
+      />
+
+      {/* Topic persona detail sheet — keyed on (slug, userId). Closing
+          clears the state so the next tap mounts fresh. */}
+      <TopicPersonaSheet
+        open={openPersona != null}
+        slug={openPersona?.slug ?? null}
+        userId={openPersona?.userId ?? null}
+        onClose={() => setOpenPersona(null)}
       />
     </SafeAreaView>
   );
