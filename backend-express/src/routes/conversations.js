@@ -294,7 +294,14 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
     const isPremium = isPremiumActive(req.user);
     const now = Date.now();
     const sanitized = messages.map((raw) => {
-      let m = raw;
+      // Normalize _id → id so the client uses the same shape across all
+      // three message-delivery paths (GET messages, POST send response,
+      // WS chat:receive). Without this, every image bubble loaded via
+      // this endpoint had msg.id = undefined → ImageBubble cached to
+      // chat-images/undefined.jpg and ALL images aliased to whichever
+      // bytes happened to land there first. Edit/Delete URLs also went
+      // to /messages/undefined and silently 404'd.
+      let m = { ...raw, id: raw._id.toString() };
       if (m.type === 'image') {
         const ttl = m.expiresAt ? new Date(m.expiresAt).getTime() : null;
         if (ttl !== null && ttl < now) {
