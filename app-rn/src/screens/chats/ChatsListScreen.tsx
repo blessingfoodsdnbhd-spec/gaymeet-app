@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Flame } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -61,17 +61,6 @@ export function ChatsListScreen() {
   useEffect(() => {
     if (threadsQ.data) setThreads(threadsQ.data);
   }, [threadsQ.data, setThreads]);
-
-  // Re-fetch on tab focus. The user might have just been in ChatDetail
-  // (where new messages arrived but only invalidate-from-detail would
-  // catch them), or might be coming back after a while of being on
-  // Discover/Profile. Without this the list could sit on a 30s-stale
-  // cache until the next reload.
-  useFocusEffect(
-    useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
-    }, [queryClient]),
-  );
 
   // Real-time: any chat:receive event implies SOME thread's preview /
   // unreadCount / lastMessageAt changed. Invalidate so the list reflects.
