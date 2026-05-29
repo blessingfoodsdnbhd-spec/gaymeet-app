@@ -438,43 +438,15 @@ export function ProfileScreen() {
             </Pressable>
           )}
 
-          {/* Interests */}
-          <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
-          <View style={styles.tagsRow}>
-            {interests.length > 0 ? (
-              interests.map((id) => {
-                const tag = tagById(id);
-                if (!tag) return null;
-                return <TagChip key={id} tag={tag} shared />;
-              })
-            ) : (
-              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
-                {t('profile.interestsEmpty')}
-              </Text>
-            )}
-            <Pressable
-              onPress={() => nav.navigate('TagsEdit')}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 9,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderStyle: 'dashed',
-                borderColor: theme.colors.line,
-              }}
-            >
-              <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
-                {t('profile.interestsManage')}
-              </Text>
-            </Pressable>
-          </View>
-
           {/* Topic Personas — each row jumps into the edit screen for
               its slug; the "+" CTA opens the TopicPickerSheet to choose
               a new topic to join. Backend caps the number of active
               personas (Free 2 / Premium 8); we don't enforce client-
               side so the limit-reached path surfaces a real 402 alert
-              from the edit-screen save mutation. */}
+              from the edit-screen save mutation.
+              Order: sits directly under the Private Photos block per
+              user feedback — topics are now more central than the
+              interests tags, so they get prime real estate. */}
           <SectionTitle>{t('profile.personasTitle')}</SectionTitle>
           {(myPersonasQ.data ?? []).filter((p) => p.isActive).length === 0 ? (
             <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
@@ -566,6 +538,39 @@ export function ProfileScreen() {
                   </Text>
                 </View>
               )}
+            </Pressable>
+          </View>
+
+          {/* Interests — moved below Topic Personas per user feedback
+              (Topic Personas section is now adjacent to Photos which
+              is the more useful adjacency). */}
+          <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
+          <View style={styles.tagsRow}>
+            {interests.length > 0 ? (
+              interests.map((id) => {
+                const tag = tagById(id);
+                if (!tag) return null;
+                return <TagChip key={id} tag={tag} shared />;
+              })
+            ) : (
+              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
+                {t('profile.interestsEmpty')}
+              </Text>
+            )}
+            <Pressable
+              onPress={() => nav.navigate('TagsEdit')}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: theme.colors.line,
+              }}
+            >
+              <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
+                {t('profile.interestsManage')}
+              </Text>
             </Pressable>
           </View>
 
