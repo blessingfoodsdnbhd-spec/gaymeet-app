@@ -59,9 +59,11 @@ export function PremiumScreen() {
 
   // Restore previously-purchased subscription. Apple guideline 3.1.1
   // requires this button on every IAP-using screen — review rejects
-  // builds without it. Calls the native restore flow, then replays the
-  // returned receipt through the same /verify-apple-receipt backend
-  // path that the purchase flow uses, so the server re-grants premium.
+  // builds without it; Play has the same expectation in policy. Calls
+  // the native restore flow, then replays the returned receipt /
+  // purchaseToken through the matching verify backend path
+  // (verify-apple-receipt on iOS, verify-google-purchase on Android),
+  // so the server re-grants premium.
   const onRestore = async () => {
     if (restoring || busy) return;
     setRestoring(true);
