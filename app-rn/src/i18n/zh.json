@@ -1,4 +1,8 @@
 {
+  "announcement": {
+    "dontShowAgain": "今後不顯示",
+    "close": "關閉"
+  },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",
     "continueApple": "用 Apple 继续",

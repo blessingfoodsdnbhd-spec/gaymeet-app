@@ -1,4 +1,8 @@
 {
+  "announcement": {
+    "dontShowAgain": "Don't show again",
+    "close": "Close"
+  },
   "welcome": {
     "tagline": "Meet people who love the same things.",
     "continueApple": "Continue with Apple",

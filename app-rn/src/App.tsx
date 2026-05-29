@@ -17,6 +17,7 @@ import { loadFonts } from './theme/fonts';
 import { GlobalMatchListener } from './components/GlobalMatchListener';
 import { MessageBanner } from './components/MessageBanner';
 import { SafetyMenuSheet } from './components/SafetyMenuSheet';
+import { AnnouncementBootstrap } from './components/AnnouncementBootstrap';
 import {
   registerPushToken,
   setupPushListeners,
@@ -125,6 +126,11 @@ export function App() {
               <MessageBanner />
               {/* Android-only safety menu sheet (iOS uses native ActionSheetIOS) */}
               <SafetyMenuSheet />
+              {/* Post-login announcement modal — fetches /current iff
+                  authed and renders the Modal on top of everything else
+                  inside the container. Renders nothing when there's no
+                  active announcement or it's been "don't show again". */}
+              <AnnouncementBootstrap />
             </NavigationContainer>
           </ThemeProvider>
         </QueryClientProvider>
