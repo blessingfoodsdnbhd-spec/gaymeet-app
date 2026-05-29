@@ -29,7 +29,16 @@
     "revoke": "撤回授權",
     "premiumLimit": "免費用戶可加入 2 個主題,Premium 可加入 8 個。",
     "otherTopicsHeader": "對方的其他主題",
-    "noOtherTopics": "對方尚未加入其他主題"
+    "noOtherTopics": "對方尚未加入其他主題",
+    "personaNicknamePlaceholder": "例如:眼鏡男",
+    "photoCapTitle": "照片數量已達上限",
+    "photoCapBody": "每個主題最多 {{max}} 張照片。",
+    "personaLimitTitle": "主題數量已達上限",
+    "saveFailed": "儲存失敗",
+    "deleteFailed": "離開主題失敗",
+    "deleteConfirmTitle": "確定要離開這個主題?",
+    "deleteConfirmBody": "你的身份將不再出現在這個主題,日後仍可重新加入。",
+    "allJoined": "你已加入所有主題"
   },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",
@@ -262,6 +271,8 @@
     "interestsTitle": "我的兴趣",
     "interestsEmpty": "还没有兴趣",
     "interestsManage": "+ 管理",
+    "personasTitle": "主題身份",
+    "personasEmpty": "你尚未加入任何主題",
     "promptsTitle": "个人答题",
     "promptsEmpty": "添加 prompt 让人更了解你",
     "promptsAdd": "+ 添加问题",

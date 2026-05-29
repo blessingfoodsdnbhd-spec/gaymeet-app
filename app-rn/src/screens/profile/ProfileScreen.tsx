@@ -35,6 +35,9 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { tagById, type InterestTagId } from '../../data/interestTags';
+import { TopicPickerSheet } from './TopicPickerSheet';
+import { getMyPersonas } from '../../api/mePersonas';
+import { getTopics, type Topic } from '../../api/topics';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
@@ -103,6 +106,26 @@ export function ProfileScreen() {
     staleTime: 30_000,
   });
   const approvedCount = approvedQ.data?.count ?? 0;
+
+  // Topic Personas — list mine + the full topic catalog so we can label
+  // each persona row with its topic name + icon for the locale.
+  const myPersonasQ = useQuery({
+    queryKey: ['me', 'topic-personas'],
+    queryFn: getMyPersonas,
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+  const topicsQ = useQuery({
+    queryKey: ['topics', 'list'],
+    queryFn: getTopics,
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+  });
+  const topicBySlug = new Map<string, Topic>(
+    (topicsQ.data ?? []).map((tp) => [tp.slug, tp]),
+  );
+  const personaLocale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
+  const [topicPickerOpen, setTopicPickerOpen] = useState(false);
 
   const saveMut = useMutation({
     mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
@@ -434,6 +457,73 @@ export function ProfileScreen() {
             </Pressable>
           </View>
 
+          {/* Topic Personas — each row jumps into the edit screen for
+              its slug; the "+" CTA opens the TopicPickerSheet to choose
+              a new topic to join. Backend caps the number of active
+              personas (Free 2 / Premium 8); we don't enforce client-
+              side so the limit-reached path surfaces a real 402 alert
+              from the edit-screen save mutation. */}
+          <SectionTitle>{t('profile.personasTitle')}</SectionTitle>
+          {(myPersonasQ.data ?? []).filter((p) => p.isActive).length === 0 ? (
+            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
+              {t('profile.personasEmpty')}
+            </Text>
+          ) : (
+            (myPersonasQ.data ?? [])
+              .filter((p) => p.isActive)
+              .map((p) => {
+                const tp = topicBySlug.get(p.topicSlug);
+                const label = tp?.name?.[personaLocale] ?? tp?.name?.en ?? p.topicSlug;
+                return (
+                  <Pressable
+                    key={p.id}
+                    onPress={() =>
+                      nav.navigate('TopicPersonaEdit', {
+                        topicSlug: p.topicSlug,
+                        topicName: label,
+                        topicIcon: tp?.icon,
+                      })
+                    }
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      paddingVertical: 12,
+                      opacity: pressed ? 0.7 : 1,
+                    })}
+                  >
+                    <Text style={{ fontSize: 20 }}>{tp?.icon || '•'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.colors.text, fontSize: 15, fontWeight: '600' }}>
+                        {label}
+                      </Text>
+                      <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 2 }}>
+                        {p.nickname} · {t('topics.uploadPhotos', { count: p.photos.length, max: 5 })}
+                      </Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.8} />
+                  </Pressable>
+                );
+              })
+          )}
+          <Pressable
+            onPress={() => setTopicPickerOpen(true)}
+            style={{
+              marginTop: 8,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderStyle: 'dashed',
+              borderColor: theme.colors.line,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
+              + {t('topics.join')}
+            </Text>
+          </Pressable>
+
           {/* Prompts */}
           <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>
           {prompts.length > 0 ? (
@@ -573,6 +663,19 @@ export function ProfileScreen() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <TopicPickerSheet
+        open={topicPickerOpen}
+        onClose={() => setTopicPickerOpen(false)}
+        onPick={(tp) => {
+          setTopicPickerOpen(false);
+          nav.navigate('TopicPersonaEdit', {
+            topicSlug: tp.slug,
+            topicName: tp.name[personaLocale] ?? tp.name.en ?? tp.slug,
+            topicIcon: tp.icon,
+          });
+        }}
+      />
     </SafeAreaView>
   );
 }
