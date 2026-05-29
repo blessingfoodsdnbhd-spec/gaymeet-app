@@ -22,6 +22,7 @@ import { brandGradient } from '../../theme/tokens';
 import { useAuth } from '../../store/auth';
 import { getPricing, IAP_SKUS } from '../../api/subscription';
 import { purchaseSubscription, restoreSubscriptions } from '../../utils/iap';
+import { PRIVACY_URL, TERMS_URL, openLegal } from '../../utils/legalUrls';
 
 const BENEFIT_KEYS = [
   'directIntro',
@@ -216,6 +217,47 @@ export function PremiumScreen() {
           {t('premium.disclaimer')}
         </Text>
 
+        {/* Legal links — Apple guideline 3.1.2(c) requires the
+            subscription screen to expose functional Terms of Use and
+            Privacy Policy links. Both URLs are served from the
+            backend's /privacy and /terms routes (see backend-express
+            public/{privacy,terms}.html). */}
+        <View style={styles.legalRow}>
+          <Pressable
+            onPress={() => openLegal(TERMS_URL)}
+            hitSlop={10}
+            style={{ padding: 6 }}
+          >
+            <Text
+              style={{
+                color: theme.colors.primaryDeep,
+                fontSize: 12,
+                fontWeight: '500',
+                textDecorationLine: 'underline',
+              }}
+            >
+              {t('premium.termsOfUse')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: theme.colors.muted, fontSize: 12 }}>·</Text>
+          <Pressable
+            onPress={() => openLegal(PRIVACY_URL)}
+            hitSlop={10}
+            style={{ padding: 6 }}
+          >
+            <Text
+              style={{
+                color: theme.colors.primaryDeep,
+                fontSize: 12,
+                fontWeight: '500',
+                textDecorationLine: 'underline',
+              }}
+            >
+              {t('premium.privacyPolicy')}
+            </Text>
+          </Pressable>
+        </View>
+
         {/* Restore Purchases — Apple guideline 3.1.1. Subtle link
             under the disclaimer; primary CTA stays the subscribe
             button below. */}
@@ -223,7 +265,7 @@ export function PremiumScreen() {
           onPress={onRestore}
           disabled={restoring || busy}
           hitSlop={10}
-          style={{ alignSelf: 'center', marginTop: 14, padding: 6 }}
+          style={{ alignSelf: 'center', marginTop: 8, padding: 6 }}
         >
           <Text
             style={{
@@ -316,6 +358,13 @@ function PlanCard({
 }
 
 const styles = StyleSheet.create({
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 10,
+  },
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,

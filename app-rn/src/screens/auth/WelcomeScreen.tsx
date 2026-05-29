@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
+import { PRIVACY_URL, TERMS_URL, openLegal } from '../../utils/legalUrls';
 import { signInApple, signInGoogle } from '../../api/auth';
 import { signInWithGoogle } from '../../utils/googleSignin';
 import type { AuthStackParamList } from '../../navigation/types';
@@ -209,6 +210,44 @@ export function WelcomeScreen() {
         >
           {t('welcome.disclaimer')}
         </Text>
+        {/* Functional Terms / Privacy links — required for App Store
+            review (3.1.2(c) for in-app subscriptions, and good
+            practice for the pre-login disclaimer line too). */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            marginTop: 6,
+          }}
+        >
+          <Pressable onPress={() => openLegal(TERMS_URL)} hitSlop={10}>
+            <Text
+              style={{
+                fontSize: 11.5,
+                color: theme.colors.primaryDeep,
+                fontWeight: '500',
+                textDecorationLine: 'underline',
+              }}
+            >
+              {t('premium.termsOfUse')}
+            </Text>
+          </Pressable>
+          <Text style={{ fontSize: 11.5, color: theme.colors.muted }}>·</Text>
+          <Pressable onPress={() => openLegal(PRIVACY_URL)} hitSlop={10}>
+            <Text
+              style={{
+                fontSize: 11.5,
+                color: theme.colors.primaryDeep,
+                fontWeight: '500',
+                textDecorationLine: 'underline',
+              }}
+            >
+              {t('premium.privacyPolicy')}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
