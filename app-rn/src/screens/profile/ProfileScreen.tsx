@@ -38,6 +38,7 @@ import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { getMyPersonas } from '../../api/mePersonas';
 import { getTopics, type Topic } from '../../api/topics';
+import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
@@ -126,6 +127,17 @@ export function ProfileScreen() {
   );
   const personaLocale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
   const [topicPickerOpen, setTopicPickerOpen] = useState(false);
+
+  // Pending unlock-request count drives the badge on the inbox link
+  // shown under the Personas section. Always-on so the user sees new
+  // requests the moment they land on Profile.
+  const incomingQ = useQuery({
+    queryKey: ['topic-unlocks', 'incoming'],
+    queryFn: getIncomingUnlocks,
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+  const incomingCount = (incomingQ.data ?? []).length;
 
   const saveMut = useMutation({
     mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
@@ -506,23 +518,56 @@ export function ProfileScreen() {
                 );
               })
           )}
-          <Pressable
-            onPress={() => setTopicPickerOpen(true)}
-            style={{
-              marginTop: 8,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderStyle: 'dashed',
-              borderColor: theme.colors.line,
-              alignSelf: 'flex-start',
-            }}
-          >
-            <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
-              + {t('topics.join')}
-            </Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <Pressable
+              onPress={() => setTopicPickerOpen(true)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: theme.colors.line,
+              }}
+            >
+              <Text style={{ color: theme.colors.text2, fontSize: 14 }}>
+                + {t('topics.join')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => nav.navigate('UnlockRequests')}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: theme.colors.primarySoft,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ color: theme.colors.primaryDeep, fontSize: 14, fontWeight: '600' }}>
+                {t('topics.inboxLink')}
+              </Text>
+              {incomingCount > 0 && (
+                <View
+                  style={{
+                    minWidth: 18,
+                    height: 18,
+                    paddingHorizontal: 5,
+                    borderRadius: 9,
+                    backgroundColor: theme.colors.primary,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                    {incomingCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
 
           {/* Prompts */}
           <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>

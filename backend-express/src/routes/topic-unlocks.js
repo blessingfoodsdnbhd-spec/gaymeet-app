@@ -21,6 +21,18 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
+const { sendPushToUser } = require('../utils/push');
+
+// Best-effort WS emit. We require socketService at call time (not at
+// module top) to avoid a circular import — socketService.js itself
+// requires routes via app.js. Same pattern as conversations.js.
+function emitToUser(userId, event, payload) {
+  try {
+    const { getIO } = require('../services/socketService');
+    const io = getIO();
+    if (io) io.to(`user:${String(userId)}`).emit(event, payload);
+  } catch (_) {}
+}
 
 const FREE_DAILY_REQUEST_LIMIT = 3;
 const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -107,6 +119,24 @@ router.post('/request', auth, async (req, res, next) => {
       status: 'pending',
       requestedAt: new Date(),
     });
+
+    // Notify the owner — WS push for the in-app inbox to refresh, and a
+    // best-effort FCM/APNs push so they see it cold. Detached so the
+    // HTTP response isn't gated on push delivery.
+    emitToUser(ownerId, 'topic-unlock:requested', shape(fresh));
+    (async () => {
+      try {
+        const viewer = await User.findById(req.user._id)
+          .select('nickname')
+          .lean();
+        await sendPushToUser(ownerId, {
+          title: 'Meyou',
+          body: `${viewer?.nickname || 'Someone'} wants to see your other topics`,
+          data: { type: 'topic_unlock_requested', unlockId: fresh._id.toString() },
+        });
+      } catch (_) {}
+    })();
+
     created(res, shape(fresh));
   } catch (e) {
     next(e);
@@ -140,6 +170,24 @@ router.post('/:id/approve', auth, async (req, res, next) => {
     unlock.status = 'approved';
     unlock.approvedAt = new Date();
     await unlock.save();
+
+    // Notify the viewer — they get cross-topic visibility now.
+    emitToUser(unlock.viewerId, 'topic-unlock:approved', shape(unlock));
+    // Also tell the owner (other devices / tabs) so the inbox refreshes.
+    emitToUser(unlock.ownerId, 'topic-unlock:approved', shape(unlock));
+    (async () => {
+      try {
+        const owner = await User.findById(unlock.ownerId)
+          .select('nickname')
+          .lean();
+        await sendPushToUser(unlock.viewerId, {
+          title: 'Meyou',
+          body: `${owner?.nickname || 'They'} let you see their other topics`,
+          data: { type: 'topic_unlock_approved', unlockId: unlock._id.toString(), ownerId: unlock.ownerId.toString() },
+        });
+      } catch (_) {}
+    })();
+
     ok(res, shape(unlock));
   } catch (e) {
     next(e);
@@ -154,6 +202,9 @@ router.post('/:id/reject', auth, async (req, res, next) => {
     unlock.status = 'rejected';
     unlock.rejectedAt = new Date();
     await unlock.save();
+    // No push notification on reject — that would be needlessly bruising.
+    // Just an inbox refresh ping for the owner's other devices.
+    emitToUser(unlock.ownerId, 'topic-unlock:rejected', shape(unlock));
     ok(res, shape(unlock));
   } catch (e) {
     next(e);
@@ -173,6 +224,9 @@ router.post('/:id/revoke', auth, async (req, res, next) => {
     unlock.status = 'revoked';
     unlock.revokedAt = new Date();
     await unlock.save();
+    // Tell the viewer their access dropped + owner's other devices.
+    emitToUser(unlock.viewerId, 'topic-unlock:revoked', shape(unlock));
+    emitToUser(unlock.ownerId, 'topic-unlock:revoked', shape(unlock));
     ok(res, shape(unlock));
   } catch (e) {
     next(e);

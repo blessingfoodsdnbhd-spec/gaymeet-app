@@ -61,6 +61,19 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!ownerId) return safeNavigate('Main');
       return safeNavigate('UserDetail', { userId: ownerId });
     }
+    case 'topic_unlock_requested': {
+      // Owner side: jump into the unlock inbox.
+      return safeNavigate('UnlockRequests');
+    }
+    case 'topic_unlock_approved': {
+      // Viewer side: cross-topic visibility just unlocked for them.
+      // Best landing is the discover tab — they'll see the persona's
+      // sheet next time they open it. We don't have a slug here so we
+      // just deep-link to the requester's profile.
+      const ownerId = data.ownerId ? String(data.ownerId) : null;
+      if (!ownerId) return safeNavigate('Main');
+      return safeNavigate('UserDetail', { userId: ownerId });
+    }
     default:
       return false;
   }
