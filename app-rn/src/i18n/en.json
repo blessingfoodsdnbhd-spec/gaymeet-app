@@ -38,7 +38,14 @@
     "deleteFailed": "Couldn't leave topic",
     "deleteConfirmTitle": "Leave this topic?",
     "deleteConfirmBody": "Your persona will stop appearing in this topic. You can re-join later.",
-    "allJoined": "You've joined every topic"
+    "allJoined": "You've joined every topic",
+    "inboxLink": "Unlock requests",
+    "inboxTitle": "Unlock requests",
+    "inboxEmpty": "No pending requests",
+    "wantsToSeeOtherTopics": "wants to see your other topics",
+    "unknownUser": "Someone",
+    "approveFailed": "Couldn't approve",
+    "rejectFailed": "Couldn't reject"
   },
   "welcome": {
     "tagline": "Meet people who love the same things.",

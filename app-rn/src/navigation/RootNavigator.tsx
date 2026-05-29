@@ -23,6 +23,7 @@ import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
+import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -96,6 +97,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="TopicPersonaEdit"
             component={TopicPersonaEditScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="UnlockRequests"
+            component={UnlockRequestsScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

@@ -102,6 +102,21 @@ export type WsChatDeleted = {
   messageId: string;
 };
 
+// Topic Personas unlock events — fire when a viewer requests cross-topic
+// visibility on an owner, when the owner responds, or when they revoke.
+// Payload is the full TopicUnlock row shape; the client just invalidates
+// the relevant query caches on receipt.
+export type WsTopicUnlock = {
+  id: string;
+  ownerId: string;
+  viewerId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  requestedAt: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  revokedAt: string | null;
+};
+
 export interface WsEventMap {
   'match:new': WsMatchNew;
   'chat:receive': WsChatReceive;
@@ -111,6 +126,10 @@ export interface WsEventMap {
   'chat:deleted': WsChatDeleted;
   'user:online': WsPresence;
   'user:offline': WsPresence;
+  'topic-unlock:requested': WsTopicUnlock;
+  'topic-unlock:approved': WsTopicUnlock;
+  'topic-unlock:rejected': WsTopicUnlock;
+  'topic-unlock:revoked': WsTopicUnlock;
 }
 
 /**

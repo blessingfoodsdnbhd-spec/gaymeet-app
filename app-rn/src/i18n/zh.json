@@ -38,7 +38,14 @@
     "deleteFailed": "離開主題失敗",
     "deleteConfirmTitle": "確定要離開這個主題?",
     "deleteConfirmBody": "你的身份將不再出現在這個主題,日後仍可重新加入。",
-    "allJoined": "你已加入所有主題"
+    "allJoined": "你已加入所有主題",
+    "inboxLink": "解鎖請求",
+    "inboxTitle": "解鎖請求",
+    "inboxEmpty": "目前沒有待處理請求",
+    "wantsToSeeOtherTopics": "想看你的其他主題",
+    "unknownUser": "某人",
+    "approveFailed": "同意失敗",
+    "rejectFailed": "婉拒失敗"
   },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",

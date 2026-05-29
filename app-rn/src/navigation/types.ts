@@ -41,4 +41,5 @@ export type RootStackParamList = {
     topicName: string;
     topicIcon?: string;
   };
+  UnlockRequests: undefined;
 };
