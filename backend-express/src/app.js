@@ -39,6 +39,8 @@ const energyRoutes = require('./routes/energy');
 const questionsRoutes = require('./routes/questions');
 const groupsRoutes = require('./routes/groups');
 const privatePhotosRoutes = require('./routes/private-photos');
+const photoLibraryRoutes = require('./routes/photo-library');
+const adminCleanupRoutes = require('./routes/admin-cleanup');
 const safeRoutesRoutes = require('./routes/safe-date');
 const businessRoutes = require('./routes/business');
 const dateRoomsRoutes = require('./routes/date-rooms');
@@ -122,6 +124,8 @@ app.use('/api/questions', questionsRoutes);  // /inbox, /ask/:id, /:id/answer, /
 app.use('/api/groups', groupsRoutes);
 app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-photos, /:id/private-photos
 app.use('/api/photo-requests', privatePhotosRoutes); // /inbox, /sent, /:id/respond
+app.use('/api/photo-library', photoLibraryRoutes); // GET / POST / DELETE /:id / POST /:id/touch
+app.use('/api/admin', adminCleanupRoutes); // POST /cleanup-expired-photos (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);

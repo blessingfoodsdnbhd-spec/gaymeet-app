@@ -130,9 +130,29 @@ router.post('/open/:userId', auth, async (req, res, next) => {
 // Also emits via Socket.io so the receiver gets real-time delivery if online.
 router.post('/:matchId/send', auth, async (req, res, next) => {
   try {
-    const { content, type = 'text' } = req.body;
-    if (!content?.trim()) return err(res, 'content required', 400);
-    if (content.length > 2000) return err(res, 'message too long', 400);
+    const { content, type = 'text', mediaUrl, location } = req.body;
+
+    const ALLOWED = ['text', 'sticker', 'image', 'location'];
+    const msgType = ALLOWED.includes(type) ? type : 'text';
+
+    // Per-type validation. Each branch returns 400 with a precise reason
+    // so the client can show the field-level error.
+    if (msgType === 'text' || msgType === 'sticker') {
+      if (!content?.trim()) return err(res, 'content required', 400);
+      if (content.length > 2000) return err(res, 'message too long', 400);
+    } else if (msgType === 'image') {
+      if (!mediaUrl || !String(mediaUrl).trim()) {
+        return err(res, 'mediaUrl required for image', 400);
+      }
+    } else if (msgType === 'location') {
+      if (
+        !location ||
+        typeof location.lat !== 'number' ||
+        typeof location.lng !== 'number'
+      ) {
+        return err(res, 'location.lat and location.lng required', 400);
+      }
+    }
 
     const match = await Match.findOne({
       _id: req.params.matchId,
@@ -141,21 +161,44 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     });
     if (!match) return err(res, 'Conversation not found', 404);
 
-    const msgType = ['text', 'sticker'].includes(type) ? type : 'text';
-    const message = await Message.create({
+    const messageData = {
       matchId: match._id,
       senderId: req.user._id,
-      content: content.trim(),
       type: msgType,
       readBy: [req.user._id],
-    });
+    };
+    if (content?.trim()) messageData.content = content.trim();
+    if (msgType === 'image') {
+      messageData.mediaUrl = String(mediaUrl).trim();
+      messageData.mediaType = 'image';
+      // 30-day TTL on image URLs. After this the GET handler rotates
+      // mediaUrl to null with expired:true so the client can render a
+      // "Photo expired" placeholder; real B2 delete happens via the
+      // admin cleanup endpoint after a further 7-day grace.
+      messageData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
+    if (msgType === 'location') {
+      messageData.location = {
+        lat: location.lat,
+        lng: location.lng,
+        label:
+          typeof location.label === 'string'
+            ? location.label.trim().slice(0, 200)
+            : null,
+      };
+    }
+    const message = await Message.create(messageData);
 
     const otherId = match.users
       .find((u) => u.toString() !== req.user._id.toString())
       ?.toString();
 
+    // previewOf collapses image/location to a glyph + label so chats-list
+    // and push body show "📷 Photo" / "📍 Location" instead of raw URLs.
+    const preview = Message.previewOf(message);
+
     await Match.findByIdAndUpdate(match._id, {
-      lastMessage: content.trim().slice(0, 100),
+      lastMessage: preview,
       lastMessageAt: new Date(),
       lastMessageBy: req.user._id,
       ...(otherId ? { $inc: { [`unreadCounts.${otherId}`]: 1 } } : {}),
@@ -165,8 +208,17 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       id: message._id.toString(),
       matchId: match._id.toString(),
       senderId: req.user._id.toString(),
-      content: message.content,
+      content: message.content || '',
       type: message.type,
+      mediaUrl: message.mediaUrl || null,
+      mediaType: message.mediaType || null,
+      location: message.location
+        ? {
+            lat: message.location.lat,
+            lng: message.location.lng,
+            label: message.location.label || null,
+          }
+        : null,
       createdAt: message.createdAt.toISOString(),
       readBy: [req.user._id.toString()],
     };
@@ -190,12 +242,12 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     if (otherId && otherId !== req.user._id.toString()) {
       (async () => {
         try {
-          console.log('[push] chat http-route hook firing →', otherId);
+          console.log('[push] chat http-route hook firing →', otherId, 'type=', msgType);
           const sender = await User.findById(req.user._id).select('nickname').lean();
           const senderName = sender?.nickname || 'New message';
           await sendPushToUser(otherId, {
             title: senderName,
-            body: message.content.slice(0, 140),
+            body: preview.slice(0, 140),
             data: { type: 'message', matchId: match._id.toString() },
           });
         } catch (e) {
@@ -230,19 +282,191 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
       .limit(parseInt(limit))
       .lean();
 
-    // Read receipts are a Premium feature. For non-premium requesters,
-    // strip the `readBy` array so a "your message was read" tick can't
-    // be inferred from the response. (Premium gating must be server-
-    // side — a custom client could otherwise just read the field.)
+    // Two transforms per row:
+    //   1) Image-expiry: type=image whose 30-day TTL has passed gets
+    //      mediaUrl=null + expired=true so the client can render a
+    //      "Photo expired" placeholder. We DO NOT mutate the DB here
+    //      — real cleanup runs on the admin endpoint with B2 delete.
+    //      A row that has already been cleaned (mediaUrl was nullified
+    //      out-of-band) gets expired=true regardless of expiresAt.
+    //   2) Premium gating on readBy. Free users never see the array so
+    //      "your message was read" can't be inferred client-side.
     const isPremium = isPremiumActive(req.user);
-    const sanitized = isPremium
-      ? messages
-      : messages.map((m) => {
-          const { readBy, ...rest } = m;
-          return rest;
-        });
+    const now = Date.now();
+    const sanitized = messages.map((raw) => {
+      let m = raw;
+      if (m.type === 'image') {
+        const ttl = m.expiresAt ? new Date(m.expiresAt).getTime() : null;
+        if (ttl !== null && ttl < now) {
+          m = { ...m, mediaUrl: null, expired: true };
+        } else if (m.mediaUrl == null) {
+          // already cleaned by the admin pass
+          m = { ...m, expired: true };
+        }
+      }
+      if (!isPremium) {
+        const { readBy, ...rest } = m;
+        m = rest;
+      }
+      return m;
+    });
 
     ok(res, sanitized.reverse());
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── Helper: refresh Match.lastMessage from the current newest message ────────
+// Called after an edit (latest's content may have changed) or delete
+// (the deleted row may have been the latest). One small query each.
+async function refreshMatchLastMessage(matchId) {
+  const newest = await Message.findOne({ matchId }).sort({ createdAt: -1 });
+  await Match.findByIdAndUpdate(matchId, {
+    lastMessage: newest ? Message.previewOf(newest) : null,
+    lastMessageAt: newest ? newest.createdAt : null,
+    lastMessageBy: newest ? newest.senderId : null,
+  });
+}
+
+const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// ── PATCH /api/conversations/:matchId/messages/:msgId ────────────────────────
+// Premium-only. Text messages only. Within 24h of send. Owner only.
+//
+// Body: { content }
+// Returns updated message payload; broadcasts chat:edited to both parties.
+router.patch('/:matchId/messages/:msgId', auth, async (req, res, next) => {
+  try {
+    if (!isPremiumActive(req.user)) {
+      return err(res, 'Premium required', 402);
+    }
+    const { content } = req.body;
+    if (!content || !String(content).trim()) {
+      return err(res, 'content required', 400);
+    }
+    if (String(content).length > 2000) {
+      return err(res, 'message too long', 400);
+    }
+
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const message = await Message.findOne({
+      _id: req.params.msgId,
+      matchId: match._id,
+    });
+    if (!message) return err(res, 'Message not found', 404);
+
+    // Ownership
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return err(res, 'Forbidden', 403);
+    }
+    // Only text is editable. image/sticker/location stay immutable.
+    if (message.type !== 'text') {
+      return err(res, 'Only text messages can be edited', 400);
+    }
+    // 24h window
+    if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
+      return err(res, 'Edit window expired', 410);
+    }
+
+    message.content = String(content).trim();
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    // If this is the latest message in the thread the preview also changed.
+    // Easier than guarding: always recompute.
+    await refreshMatchLastMessage(match._id);
+
+    const payload = {
+      id: message._id.toString(),
+      matchId: match._id.toString(),
+      content: message.content,
+      edited: true,
+      editedAt: message.editedAt.toISOString(),
+    };
+
+    // Broadcast to both parties (sender gets confirmation, receiver
+    // updates their bubble). Mirrors the chat:receive emit pattern.
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users
+          .find((u) => u.toString() !== req.user._id.toString())
+          ?.toString();
+        io.to(`user:${req.user._id.toString()}`).emit('chat:edited', payload);
+        if (otherId) io.to(`user:${otherId}`).emit('chat:edited', payload);
+      }
+    } catch (_) {}
+
+    ok(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/conversations/:matchId/messages/:msgId ────────────────────────
+// Premium-only. Owner only. Any type. Hard-deletes the row; image
+// messages also B2-delete their mediaUrl (best effort).
+router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
+  try {
+    if (!isPremiumActive(req.user)) {
+      return err(res, 'Premium required', 402);
+    }
+
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const message = await Message.findOne({
+      _id: req.params.msgId,
+      matchId: match._id,
+    });
+    if (!message) return err(res, 'Message not found', 404);
+
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return err(res, 'Forbidden', 403);
+    }
+
+    // If this carried an image, best-effort B2 cleanup. The DB row
+    // goes away regardless so the user isn't blocked by a bucket
+    // hiccup.
+    if (message.type === 'image' && message.mediaUrl) {
+      const r2 = require('../services/r2Service');
+      const key = r2.keyFromUrl(message.mediaUrl);
+      if (key) r2.deleteFile(key).catch(() => {});
+    }
+
+    await message.deleteOne();
+    await refreshMatchLastMessage(match._id);
+
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users
+          .find((u) => u.toString() !== req.user._id.toString())
+          ?.toString();
+        const payload = {
+          matchId: match._id.toString(),
+          messageId: req.params.msgId,
+        };
+        io.to(`user:${req.user._id.toString()}`).emit('chat:deleted', payload);
+        if (otherId) io.to(`user:${otherId}`).emit('chat:deleted', payload);
+      }
+    } catch (_) {}
+
+    ok(res, { messageId: req.params.msgId });
   } catch (e) {
     next(e);
   }

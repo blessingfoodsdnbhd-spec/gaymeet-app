@@ -89,77 +89,131 @@ function initSocket(server) {
     });
 
     // ── chat:send ─────────────────────────────────────────────────────────────
-    // Payload: { matchId: string, content: string, type?: 'text'|'sticker' }
-    socket.on('chat:send', async ({ matchId, content, type = 'text' } = {}) => {
-      if (!matchId || !content?.trim()) return;
-      if (content.length > 2000) return;
+    // Payload (any of the supported types):
+    //   { matchId, type: 'text'|'sticker', content }
+    //   { matchId, type: 'image',          mediaUrl }
+    //   { matchId, type: 'location',       location: { lat, lng, label? } }
+    // Mirrors the validation in routes/conversations.js POST /send.
+    socket.on(
+      'chat:send',
+      async ({ matchId, content, type = 'text', mediaUrl, location } = {}) => {
+        if (!matchId) return;
 
-      // Verify sender is in the match
-      const match = await Match.findOne({
-        _id: matchId,
-        users: userId,
-        isActive: true,
-      });
-      if (!match) return;
+        const ALLOWED = ['text', 'sticker', 'image', 'location'];
+        const msgType = ALLOWED.includes(type) ? type : 'text';
 
-      // Persist message
-      const message = await Message.create({
-        matchId,
-        senderId: userId,
-        content: content.trim(),
-        type: ['text', 'sticker'].includes(type) ? type : 'text',
-        readBy: [userId],
-      });
-
-      // Find the other user
-      const otherId = match.users
-        .find((u) => u.toString() !== userId)
-        ?.toString();
-
-      // Increment unread for the other user
-      await Match.findByIdAndUpdate(matchId, {
-        lastMessage: content.trim().slice(0, 100),
-        lastMessageAt: new Date(),
-        lastMessageBy: userId,
-        $inc: { [`unreadCounts.${otherId}`]: 1 },
-      });
-
-      const payload = {
-        id: message._id.toString(),
-        matchId,
-        senderId: userId,
-        content: message.content,
-        type: message.type,
-        createdAt: message.createdAt.toISOString(),
-        readBy: [userId],
-      };
-
-      // Exactly one delivery each: sender gets confirmation, receiver gets the message.
-      // Using personal rooms avoids the double-delivery that occurred when the receiver
-      // was in both the match room AND their personal user room simultaneously.
-      io.to(`user:${userId}`).emit('chat:receive', payload);
-      io.to(`user:${otherId}`).emit('chat:receive', payload);
-
-      // Best-effort push to the receiver — runs detached so socket emit
-      // is never delayed by the FCM round-trip. Foreground client decides
-      // how/whether to display (handler in app-rn/src/utils/push.ts).
-      if (otherId && otherId !== userId) {
-        (async () => {
-          try {
-            console.log('[push] chat ws-route hook firing →', otherId);
-            const sender = await User.findById(userId).select('nickname').lean();
-            const senderName = sender?.nickname || 'New message';
-            await sendPushToUser(otherId, {
-              title: senderName,
-              body: message.content.slice(0, 140),
-              data: { type: 'message', matchId },
-            });
-          } catch (e) {
-            console.warn('[push] chat ws-route hook failed:', e?.message ?? e);
+        // Per-type guards; silent drop on invalid since WS has no
+        // response channel (HTTP path returns 400 with a reason).
+        if (msgType === 'text' || msgType === 'sticker') {
+          if (!content?.trim()) return;
+          if (content.length > 2000) return;
+        } else if (msgType === 'image') {
+          if (!mediaUrl || !String(mediaUrl).trim()) return;
+        } else if (msgType === 'location') {
+          if (
+            !location ||
+            typeof location.lat !== 'number' ||
+            typeof location.lng !== 'number'
+          ) {
+            return;
           }
-        })();
-      }
-    });
+        }
+
+        // Verify sender is in the match
+        const match = await Match.findOne({
+          _id: matchId,
+          users: userId,
+          isActive: true,
+        });
+        if (!match) return;
+
+        const messageData = {
+          matchId,
+          senderId: userId,
+          type: msgType,
+          readBy: [userId],
+        };
+        if (content?.trim()) messageData.content = content.trim();
+        if (msgType === 'image') {
+          messageData.mediaUrl = String(mediaUrl).trim();
+          messageData.mediaType = 'image';
+          // 30-day TTL — see routes/conversations.js for the rationale.
+          messageData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        }
+        if (msgType === 'location') {
+          messageData.location = {
+            lat: location.lat,
+            lng: location.lng,
+            label:
+              typeof location.label === 'string'
+                ? location.label.trim().slice(0, 200)
+                : null,
+          };
+        }
+        const message = await Message.create(messageData);
+
+        // Find the other user
+        const otherId = match.users
+          .find((u) => u.toString() !== userId)
+          ?.toString();
+
+        // Preview goes to Match.lastMessage AND the push body so both
+        // surfaces show "📷 Photo" / "📍 Location" instead of raw URLs.
+        const preview = Message.previewOf(message);
+
+        await Match.findByIdAndUpdate(matchId, {
+          lastMessage: preview,
+          lastMessageAt: new Date(),
+          lastMessageBy: userId,
+          $inc: { [`unreadCounts.${otherId}`]: 1 },
+        });
+
+        const payload = {
+          id: message._id.toString(),
+          matchId,
+          senderId: userId,
+          content: message.content || '',
+          type: message.type,
+          mediaUrl: message.mediaUrl || null,
+          mediaType: message.mediaType || null,
+          location: message.location
+            ? {
+                lat: message.location.lat,
+                lng: message.location.lng,
+                label: message.location.label || null,
+              }
+            : null,
+          createdAt: message.createdAt.toISOString(),
+          readBy: [userId],
+        };
+
+        // Exactly one delivery each: sender gets confirmation, receiver gets the message.
+        // Using personal rooms avoids the double-delivery that occurred when the receiver
+        // was in both the match room AND their personal user room simultaneously.
+        io.to(`user:${userId}`).emit('chat:receive', payload);
+        io.to(`user:${otherId}`).emit('chat:receive', payload);
+
+        // Best-effort push to the receiver — runs detached so socket emit
+        // is never delayed by the FCM round-trip. Foreground client decides
+        // how/whether to display (handler in app-rn/src/utils/push.ts).
+        if (otherId && otherId !== userId) {
+          (async () => {
+            try {
+              console.log('[push] chat ws-route hook firing →', otherId, 'type=', msgType);
+              const sender = await User.findById(userId).select('nickname').lean();
+              const senderName = sender?.nickname || 'New message';
+              await sendPushToUser(otherId, {
+                title: senderName,
+                body: preview.slice(0, 140),
+                data: { type: 'message', matchId },
+              });
+            } catch (e) {
+              console.warn('[push] chat ws-route hook failed:', e?.message ?? e);
+            }
+          })();
+        }
+      },
+    );
 
     // ── chat:typing ───────────────────────────────────────────────────────────
     // Payload: { matchId: string, typing: boolean }

@@ -8,7 +8,7 @@ const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
-const MOMENTS_NEARBY_KM = 10;
+const MOMENTS_NEARBY_KM = 50;
 
 // ── GET /api/moments ──────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res, next) => {
@@ -21,11 +21,30 @@ router.get('/', auth, async (req, res, next) => {
     if (userId) {
       filter = { isActive: true, user: userId, visibility: 'public' };
     } else if (feed === 'following' || feed === 'friends') {
+      // Union of (a) users I follow + (b) the OTHER party of every
+      // active match I'm in. Product wording uses "好友 / Friends" to
+      // mean both audiences — followers I've explicitly added AND
+      // people I've mutual-liked into a chat thread. Dedupe via a Map
+      // keyed on stringified ObjectId since ObjectIds are reference
+      // types and a plain Set wouldn't dedupe across instances.
       const Follow = require('../models/Follow');
-      const followDocs = await Follow.find({ follower: req.user._id })
-        .select('following')
-        .lean();
-      followingIds = followDocs.map((f) => f.following);
+      const Match = require('../models/Match');
+      const [followDocs, matchDocs] = await Promise.all([
+        Follow.find({ follower: req.user._id }).select('following').lean(),
+        Match.find({ users: req.user._id, isActive: true })
+          .select('users')
+          .lean(),
+      ]);
+      const meStr = req.user._id.toString();
+      const idMap = new Map();
+      followDocs.forEach((f) => idMap.set(f.following.toString(), f.following));
+      matchDocs.forEach((m) => {
+        m.users.forEach((u) => {
+          const s = u.toString();
+          if (s !== meStr) idMap.set(s, u);
+        });
+      });
+      followingIds = Array.from(idMap.values());
       filter = {
         isActive: true,
         user: { $in: followingIds },
