@@ -48,7 +48,8 @@
     "rejectFailed": "Couldn't reject",
     "upgrade": "Upgrade to Premium",
     "joinThisTopic": "Join this topic",
-    "youBadge": "ME"
+    "youBadge": "ME",
+    "editNickname": "Edit nickname"
   },
   "welcome": {
     "tagline": "Meet people who love the same things.",

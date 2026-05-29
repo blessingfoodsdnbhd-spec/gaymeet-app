@@ -17,6 +17,7 @@ import {
   Camera,
   ChevronRight,
   Crown,
+  Edit2,
   Globe,
   Lock,
   ShieldCheck,
@@ -36,8 +37,9 @@ import { TagChip } from '../../components/TagChip';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
-import { getMyPersonas } from '../../api/mePersonas';
+import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { getTopics, type Topic } from '../../api/topics';
+import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
@@ -144,6 +146,84 @@ export function ProfileScreen() {
   // hardcoded to Y=5 which over-reported the available slots for Free
   // users.
   const personaPhotoMax = (user as any)?.isPremium ? 5 : 3;
+
+  // Per-persona "currently uploading" tracker so each row's
+  // PhotoGridEditor renders its own spinner. Set<slug>.
+  const [personaUploading, setPersonaUploading] = useState<Set<string>>(
+    new Set(),
+  );
+  const markPersonaUploading = (slug: string, on: boolean) =>
+    setPersonaUploading((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(slug);
+      else next.delete(slug);
+      return next;
+    });
+
+  // Add a photo to an existing persona — pick from library, upload to
+  // B2, PATCH the persona row with the new photos array, then
+  // invalidate so the local list re-renders. Server caps the array at
+  // personaPhotoMax (3 / 5) and returns 402 with reason
+  // 'premium_required' if exceeded — we surface that as an alert,
+  // matching the existing TopicPersonaEditScreen behaviour.
+  const addPersonaPhoto = async (slug: string, currentPhotos: string[]) => {
+    if (personaUploading.has(slug)) return;
+    if (currentPhotos.length >= personaPhotoMax) {
+      Alert.alert(
+        t('topics.photoCapTitle'),
+        t('topics.photoCapBody', { max: personaPhotoMax }),
+      );
+      return;
+    }
+    const uri = await pickFromLibrary();
+    if (!uri) return;
+    markPersonaUploading(slug, true);
+    try {
+      const b2Url = await uploadFile(uri);
+      await updatePersona(slug, { photos: [...currentPhotos, b2Url] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'topic-personas'] });
+      queryClient.invalidateQueries({ queryKey: ['topics', slug, 'personas'] });
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      if (status === 402 && body?.reason === 'premium_required') {
+        Alert.alert(
+          t('topics.personaLimitTitle'),
+          body?.error || t('topics.premiumLimit'),
+        );
+      } else {
+        Alert.alert(
+          t('profile.photoUploadFailed'),
+          body?.error || e?.message || '',
+        );
+      }
+    } finally {
+      markPersonaUploading(slug, false);
+    }
+  };
+
+  const removePersonaPhoto = async (
+    slug: string,
+    currentPhotos: string[],
+    url: string,
+  ) => {
+    if (personaUploading.has(slug)) return;
+    markPersonaUploading(slug, true);
+    try {
+      await updatePersona(slug, {
+        photos: currentPhotos.filter((p) => p !== url),
+      });
+      queryClient.invalidateQueries({ queryKey: ['me', 'topic-personas'] });
+      queryClient.invalidateQueries({ queryKey: ['topics', slug, 'personas'] });
+    } catch (e: any) {
+      Alert.alert(
+        t('topics.saveFailed'),
+        e?.response?.data?.error || e?.message || '',
+      );
+    } finally {
+      markPersonaUploading(slug, false);
+    }
+  };
 
   const saveMut = useMutation({
     mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
@@ -465,34 +545,62 @@ export function ProfileScreen() {
                 const tp = topicBySlug.get(p.topicSlug);
                 const label = tp?.name?.[personaLocale] ?? tp?.name?.en ?? p.topicSlug;
                 return (
-                  <Pressable
-                    key={p.id}
-                    onPress={() =>
-                      nav.navigate('TopicPersonaEdit', {
-                        topicSlug: p.topicSlug,
-                        topicName: label,
-                        topicIcon: tp?.icon,
-                      })
-                    }
-                    style={({ pressed }) => ({
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 10,
-                      paddingVertical: 12,
-                      opacity: pressed ? 0.7 : 1,
-                    })}
-                  >
-                    <Text style={{ fontSize: 20 }}>{tp?.icon || '•'}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: theme.colors.text, fontSize: 15, fontWeight: '600' }}>
-                        {label}
-                      </Text>
-                      <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 2 }}>
-                        {p.nickname} · {t('topics.uploadPhotos', { count: p.photos.length, max: personaPhotoMax })}
-                      </Text>
+                  <View key={p.id} style={{ paddingVertical: 12 }}>
+                    {/* Header row: icon + topic name + nickname/count
+                        subtitle, with a small pencil button on the
+                        right that jumps into TopicPersonaEditScreen
+                        for nickname edit / leave actions. Photo
+                        add/remove happens inline below — no nav. */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <Text style={{ fontSize: 20 }}>{tp?.icon || '•'}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: theme.colors.text, fontSize: 15, fontWeight: '600' }}>
+                          {label}
+                        </Text>
+                        <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 2 }}>
+                          {p.nickname} · {t('topics.uploadPhotos', { count: p.photos.length, max: personaPhotoMax })}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() =>
+                          nav.navigate('TopicPersonaEdit', {
+                            topicSlug: p.topicSlug,
+                            topicName: label,
+                            topicIcon: tp?.icon,
+                          })
+                        }
+                        hitSlop={8}
+                        style={({ pressed }) => ({
+                          padding: 6,
+                          opacity: pressed ? 0.6 : 1,
+                        })}
+                        accessibilityLabel={t('topics.editNickname')}
+                      >
+                        <Edit2 size={16} color={theme.colors.muted} strokeWidth={1.8} />
+                      </Pressable>
                     </View>
-                    <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.8} />
-                  </Pressable>
+                    {/* Inline photo grid — same UX as public + private
+                        photo grids above. Each removal/add hits PATCH
+                        /api/me/topic-personas/:slug then invalidates
+                        the personas query. */}
+                    <View style={{ marginTop: 10 }}>
+                      <PhotoGridEditor
+                        photos={p.photos}
+                        max={personaPhotoMax}
+                        busy={personaUploading.has(p.topicSlug)}
+                        onAdd={() => addPersonaPhoto(p.topicSlug, p.photos)}
+                        onRemove={(url) =>
+                          removePersonaPhoto(p.topicSlug, p.photos, url)
+                        }
+                      />
+                    </View>
+                  </View>
                 );
               })
           )}
