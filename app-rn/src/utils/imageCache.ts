@@ -12,7 +12,12 @@ import * as FileSystem from 'expo-file-system';
  * on the Message row and we'll re-download on next view.
  */
 
-const CACHE_DIR = `${FileSystem.cacheDirectory}chat-images/`;
+// Bumped chat-images → chat-images-v2 alongside the backend fix that
+// adds id to GET /messages responses. The old dir may contain
+// `undefined.jpg` polluted by the _id-vs-id mismatch — orphaning it
+// here means every client loads against a clean directory after this
+// build, and the OS will GC the old one under cache pressure.
+const CACHE_DIR = `${FileSystem.cacheDirectory}chat-images-v2/`;
 
 let ensured = false;
 async function ensureDir(): Promise<void> {
