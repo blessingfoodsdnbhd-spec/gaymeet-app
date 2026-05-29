@@ -248,9 +248,11 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                 {user.distance ?? ''}
               </Text>
             </View>
-            <IconButton onPress={onMore}>
-              <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
+            {!isSelf && (
+              <IconButton onPress={onMore}>
+                <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
+              </IconButton>
+            )}
             <IconButton onPress={onClose}>
               <X size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
@@ -375,34 +377,41 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
           {/* Action row — Follow / Like / Message (Premium only).
               Like is the primary action and gets the gradient treatment.
-              Follow and Message are equal-weight secondary actions. */}
-          <View style={[styles.actionRow, { marginTop: 22, marginBottom: 8 }]}>
-            <SecondaryAction
-              icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
-              label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
-              done={isAlreadyFollowing}
-              busy={followMut.isPending || followQ.isLoading}
-              onPress={onFollow}
-            />
-            <PrimaryLikeAction
-              label={liked ? t('about.liked') : t('about.like')}
-              done={liked}
-              onPress={() => {
-                if (liked) return;
-                setLiked(true);
-                onLike();
-              }}
-            />
-            {isPremium && (
+              Follow and Message are equal-weight secondary actions.
+              Hidden entirely when viewing self — there's nothing to follow,
+              like, or message about yourself, and tapping Message used to
+              fall through to a "cannot open conversation with yourself"
+              alert. The Nearby grid prepends self at the top, so this
+              self-view path is reachable in production. */}
+          {!isSelf && (
+            <View style={[styles.actionRow, { marginTop: 22, marginBottom: 8 }]}>
               <SecondaryAction
-                icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
-                label={t('about.message')}
-                done={false}
-                busy={false}
-                onPress={onMessage}
+                icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+                label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
+                done={isAlreadyFollowing}
+                busy={followMut.isPending || followQ.isLoading}
+                onPress={onFollow}
               />
-            )}
-          </View>
+              <PrimaryLikeAction
+                label={liked ? t('about.liked') : t('about.like')}
+                done={liked}
+                onPress={() => {
+                  if (liked) return;
+                  setLiked(true);
+                  onLike();
+                }}
+              />
+              {isPremium && (
+                <SecondaryAction
+                  icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+                  label={t('about.message')}
+                  done={false}
+                  busy={false}
+                  onPress={onMessage}
+                />
+              )}
+            </View>
+          )}
         </ScrollView>
       )}
 
