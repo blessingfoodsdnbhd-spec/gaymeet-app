@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { TopicPersonaListItem } from '../../api/topics';
@@ -8,124 +9,122 @@ import type { TopicPersonaListItem } from '../../api/topics';
 interface Props {
   item: TopicPersonaListItem;
   width: number;
+  height?: number;
   onPress: () => void;
 }
 
 /**
- * A single persona card in the topic-tab grid. Shows the first photo
- * (or a colored placeholder) with the persona's per-topic nickname
- * overlaid bottom-left, and a small age chip top-right.
+ * Topic-tab grid tile. Visual structure mirrors NearbyGrid.Tile so the
+ * topic tab feels like an extension of Nearby rather than a separate
+ * grid system — same square-with-gradient-overlay look, same compact
+ * caption (nickname + optional age line below).
+ *
+ * The "ME" badge in the top-right is the one detail that doesn't
+ * appear in Nearby — it's specific to topic personas where the user's
+ * own row is pinned to the top of the first page so they can confirm
+ * their upload landed.
  */
-export function TopicPersonaCard({ item, width, onPress }: Props) {
+export function TopicPersonaCard({ item, width, height, onPress }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const aspectH = Math.round(width * 1.25);
+  // Square by default (matching NearbyGrid). Caller may override.
+  const tileH = height ?? width;
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          width,
-          height: aspectH,
-          backgroundColor: theme.colors.surface2,
-          opacity: pressed ? 0.88 : 1,
-        },
-      ]}
+      style={({ pressed }) => ({
+        width,
+        height: tileH,
+        opacity: pressed ? 0.85 : 1,
+      })}
     >
-      {item.photo0 ? (
-        <ExpoImage
-          source={{ uri: item.photo0 }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={200}
-        />
-      ) : (
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: theme.colors.surface2 },
-          ]}
-        />
-      )}
-
-      {/* Bottom gradient for legibility — single-color rgba instead of
-          dragging in LinearGradient again. */}
-      <View style={styles.scrim} />
-
-      {/* ME badge — only present on the requester's own persona card.
-          Backend pins these to the top of the first page so a fresh
-          uploader sees their photo immediately. */}
-      {item.isSelf && (
-        <View
-          style={[
-            styles.selfBadge,
-            { backgroundColor: theme.colors.primary },
-          ]}
-        >
-          <Text style={styles.selfBadgeText}>{t('topics.youBadge')}</Text>
-        </View>
-      )}
-
-      <View style={styles.bottom}>
-        <Text style={styles.nickname} numberOfLines={1}>
-          {item.nickname}
-        </Text>
-        {item.age != null && (
-          <Text style={styles.age}>· {item.age}</Text>
+      <View style={[styles.tileBg, { backgroundColor: theme.colors.surface2 }]}>
+        {item.photo0 ? (
+          <ExpoImage
+            source={{ uri: item.photo0 }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={120}
+          />
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: theme.colors.surface2 },
+            ]}
+          />
         )}
+
+        {/* ME badge — only on the requester's own persona, pinned by
+            the backend to the top of the first page. */}
+        {item.isSelf && (
+          <View
+            style={[
+              styles.selfBadge,
+              { backgroundColor: theme.colors.primary },
+            ]}
+          >
+            <Text style={styles.selfBadgeText}>{t('topics.youBadge')}</Text>
+          </View>
+        )}
+
+        {/* Bottom gradient + caption — colors / sizing match
+            NearbyGrid.Tile so the two tabs read as a single design. */}
+        <LinearGradient
+          colors={['rgba(20,10,5,0)', 'rgba(20,10,5,0.65)']}
+          style={styles.tileOverlay}
+        >
+          <Text style={styles.tileName} numberOfLines={1}>
+            {item.nickname}
+          </Text>
+          {item.age != null && (
+            <Text style={styles.tileSub}>· {item.age}</Text>
+          )}
+        </LinearGradient>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
+  tileBg: {
+    flex: 1,
+    borderRadius: 10,
     overflow: 'hidden',
   },
-  scrim: {
+  tileOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: '40%',
-    backgroundColor: 'rgba(0,0,0,0.32)',
+    paddingHorizontal: 8,
+    paddingBottom: 7,
+    paddingTop: 22,
   },
-  bottom: {
-    position: 'absolute',
-    left: 10,
-    right: 10,
-    bottom: 10,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  nickname: {
+  tileName: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '600',
   },
-  age: {
+  tileSub: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 10,
+    fontVariant: ['tabular-nums'],
   },
   selfBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    top: 7,
+    right: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 999,
   },
   selfBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
 });
