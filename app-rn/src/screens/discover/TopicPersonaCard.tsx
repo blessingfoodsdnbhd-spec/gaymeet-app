@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { TopicPersonaListItem } from '../../api/topics';
 
@@ -17,6 +18,7 @@ interface Props {
  */
 export function TopicPersonaCard({ item, width, onPress }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const aspectH = Math.round(width * 1.25);
 
   return (
@@ -52,6 +54,20 @@ export function TopicPersonaCard({ item, width, onPress }: Props) {
       {/* Bottom gradient for legibility — single-color rgba instead of
           dragging in LinearGradient again. */}
       <View style={styles.scrim} />
+
+      {/* ME badge — only present on the requester's own persona card.
+          Backend pins these to the top of the first page so a fresh
+          uploader sees their photo immediately. */}
+      {item.isSelf && (
+        <View
+          style={[
+            styles.selfBadge,
+            { backgroundColor: theme.colors.primary },
+          ]}
+        >
+          <Text style={styles.selfBadgeText}>{t('topics.youBadge')}</Text>
+        </View>
+      )}
 
       <View style={styles.bottom}>
         <Text style={styles.nickname} numberOfLines={1}>
@@ -97,5 +113,19 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.92)',
     fontSize: 13,
     fontWeight: '500',
+  },
+  selfBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  selfBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
 });

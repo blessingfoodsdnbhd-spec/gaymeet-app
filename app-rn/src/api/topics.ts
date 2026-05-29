@@ -14,6 +14,10 @@ export interface TopicPersonaListItem {
   photoCount: number;
   age: number | null;
   lastActiveAt: string | null;
+  // Backend pins the requester's own persona at the top of the first
+  // page with this flag set — client renders a "ME / 你" badge and may
+  // suppress unlock-request affordances on tap.
+  isSelf?: boolean;
 }
 
 export interface TopicPersonaListPage {

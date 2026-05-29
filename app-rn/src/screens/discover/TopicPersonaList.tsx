@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -10,17 +11,29 @@ import {
 } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   getTopicPersonas,
+  type Topic,
   type TopicPersonaListItem,
   type TopicPersonaListPage,
 } from '../../api/topics';
 import { TopicPersonaCard } from './TopicPersonaCard';
+import type { RootStackParamList } from '../../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 interface Props {
   slug: string;
+  // Full Topic object so the join CTA can pass name + icon to the
+  // edit screen without an extra lookup. Optional for back-compat.
+  topic?: Topic;
+  // Locale for picking name.en vs name.zh on the join CTA. Optional;
+  // default 'en'.
+  locale?: 'en' | 'zh';
   onOpenPersona: (item: TopicPersonaListItem) => void;
 }
 
@@ -29,10 +42,25 @@ interface Props {
  * useInfiniteQuery against /api/topics/:slug/personas with cursor
  * pagination on updatedAt. Pull-to-refresh resets to the head.
  */
-export function TopicPersonaList({ slug, onOpenPersona }: Props) {
+export function TopicPersonaList({
+  slug,
+  topic,
+  locale = 'en',
+  onOpenPersona,
+}: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  const nav = useNavigation<Nav>();
+
+  const goJoin = () => {
+    if (!topic) return;
+    nav.navigate('TopicPersonaEdit', {
+      topicSlug: topic.slug,
+      topicName: topic.name[locale] ?? topic.name.en ?? topic.slug,
+      topicIcon: topic.icon,
+    });
+  };
 
   const cols = 2;
   const horizontalPad = 14;
@@ -49,6 +77,11 @@ export function TopicPersonaList({ slug, onOpenPersona }: Props) {
 
   const flat: TopicPersonaListItem[] =
     q.data?.pages.flatMap((p) => p.items) ?? [];
+
+  // Has the requester already joined? Self is pinned to the top of the
+  // first page by the backend, so we can derive this without a
+  // separate /api/me/topic-personas query.
+  const meHasJoined = flat.some((it) => it.isSelf);
 
   const onEnd = useCallback(() => {
     if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
@@ -75,9 +108,32 @@ export function TopicPersonaList({ slug, onOpenPersona }: Props) {
   if (flat.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
+        <Text
+          style={{
+            color: theme.colors.muted,
+            fontSize: 13,
+            textAlign: 'center',
+            marginBottom: 14,
+          }}
+        >
           {t('topics.emptyList')}
         </Text>
+        {topic && (
+          <Pressable
+            onPress={goJoin}
+            style={({ pressed }) => [
+              styles.joinPill,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.joinPillText}>
+              + {t('topics.joinThisTopic')}
+            </Text>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -110,6 +166,26 @@ export function TopicPersonaList({ slug, onOpenPersona }: Props) {
           tintColor={theme.colors.primary}
         />
       }
+      ListHeaderComponent={
+        !meHasJoined && topic ? (
+          <Pressable
+            onPress={goJoin}
+            style={({ pressed }) => [
+              styles.joinPill,
+              {
+                backgroundColor: theme.colors.primary,
+                alignSelf: 'center',
+                marginBottom: 12,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.joinPillText}>
+              + {t('topics.joinThisTopic')}
+            </Text>
+          </Pressable>
+        ) : null
+      }
       ListFooterComponent={
         q.isFetchingNextPage ? (
           <View style={{ paddingVertical: 16 }}>
@@ -127,5 +203,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+  },
+  joinPill: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
+  joinPillText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
