@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Crown, X } from 'lucide-react-native';
 
 import { Sheet } from '../../components/Sheet';
+import { PhotoViewer } from '../../components/PhotoViewer';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopicPersona } from '../../api/topics';
 import { TopicUnlockRequestSheet } from './TopicUnlockRequestSheet';
@@ -38,8 +38,11 @@ interface Props {
 export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
   const [unlockRequestOpen, setUnlockRequestOpen] = useState(false);
+  // Full-screen photo viewer state — index of the photo to show. Null
+  // = closed. Same pattern as AboutUserSheet so the photo gallery UX
+  // matches across the two sheets.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const enabled = open && !!slug && !!userId;
   const q = useQuery({
@@ -51,13 +54,29 @@ export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
 
   const persona = q.data;
   const hasUnlock = !!persona?.mainProfile;
+  const galleryPhotos = persona?.photos ?? [];
 
-  // Photo carousel sizing — width minus the sheet's padding.
-  const photoW = Math.min(width - 40, 360);
-  const photoH = Math.round(photoW * 1.2);
+  // Reset viewer state when the sheet's target persona changes —
+  // otherwise opening a second persona keeps the prior PhotoViewer
+  // index, which would be a phantom open on first paint.
+  React.useEffect(() => {
+    setViewerIndex(null);
+  }, [userId, slug]);
 
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="92%">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      maxHeight="92%"
+      overlay={
+        <PhotoViewer
+          open={viewerIndex !== null}
+          photos={galleryPhotos}
+          initialIndex={viewerIndex ?? 0}
+          onClose={() => setViewerIndex(null)}
+        />
+      }
+    >
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text }]}>
           {persona ? persona.nickname : t('topics.loading')}
@@ -88,25 +107,33 @@ export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
 
       {persona && (
         <ScrollView showsVerticalScrollIndicator={false}>
-          {persona.photos.length > 0 && (
+          {/* Photo gallery — 96x96 horizontal-scroll thumbnails that
+              open the full-screen PhotoViewer on tap. Matches the
+              public-photos block on AboutUserSheet exactly so the two
+              sheets feel like one design. */}
+          {galleryPhotos.length > 0 && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingVertical: 6 }}
+              contentContainerStyle={{ gap: 8, paddingTop: 8 }}
             >
-              {persona.photos.map((url, i) => (
-                <ExpoImage
-                  key={`${i}-${url}`}
-                  source={{ uri: url }}
-                  style={{
-                    width: photoW,
-                    height: photoH,
-                    borderRadius: 16,
-                    backgroundColor: theme.colors.surface2,
-                  }}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
+              {galleryPhotos.map((url, idx) => (
+                <Pressable
+                  key={`${idx}-${url}`}
+                  onPress={() => setViewerIndex(idx)}
+                >
+                  <ExpoImage
+                    source={{ uri: url }}
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: 12,
+                      backgroundColor: theme.colors.surface2,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                </Pressable>
               ))}
             </ScrollView>
           )}

@@ -62,9 +62,11 @@ export function TopicPersonaList({
     });
   };
 
-  const cols = 2;
+  // 4-col square grid matching NearbyGrid — same horizontalPad and
+  // gap so the two tabs look visually identical at the tile level.
+  const cols = 4;
   const horizontalPad = 14;
-  const gap = 10;
+  const gap = 4;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
 
   const q = useInfiniteQuery<TopicPersonaListPage, Error>({
