@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./src/assets/logo.jpg",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAFAFC"
+      "backgroundColor": "#A78BFA"
     },
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
