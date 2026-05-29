@@ -52,6 +52,8 @@ const interestsRoutes = require('./routes/interests');
 const discoverV2Routes = require('./routes/discover');
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 const subscriptionsGoogleRoutes = require('./routes/subscriptions-google');
+const announcementsRoutes = require('./routes/announcements');
+const adminAnnouncementsRoutes = require('./routes/admin-announcements');
 
 const app = express();
 
@@ -126,6 +128,8 @@ app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-pho
 app.use('/api/photo-requests', privatePhotosRoutes); // /inbox, /sent, /:id/respond
 app.use('/api/photo-library', photoLibraryRoutes); // GET / POST / DELETE /:id / POST /:id/touch
 app.use('/api/admin', adminCleanupRoutes); // POST /cleanup-expired-photos (X-Admin-Token)
+app.use('/api/announcements', announcementsRoutes); // GET /current
+app.use('/api/admin', adminAnnouncementsRoutes); // POST/GET/PATCH/DELETE /announcements (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
