@@ -139,8 +139,60 @@ function isConfigured() {
   return !!parsed;
 }
 
+// Diagnostic helper — surfaces credential status WITHOUT leaking the
+// private_key. Used by GET /api/subscriptions/google-status so an
+// operator can curl-check the Play service account after configuring
+// GOOGLE_PLAY_SERVICE_ACCOUNT_JSON on the deploy.
+//
+// `attemptToken: true` triggers an actual androidpublisher access-token
+// mint — that proves both the JSON parses AND the service account is
+// enabled in the linked Google Cloud project. We only do it on-demand
+// because it's an outbound network call.
+async function describeStatus({ attemptToken = false } = {}) {
+  let credInfo;
+  try {
+    credInfo = loadCredentials();
+  } catch (e) {
+    return {
+      configured: false,
+      source: null,
+      clientEmail: null,
+      tokenTest: null,
+      error: `loadCredentials failed: ${e.message}`,
+    };
+  }
+  if (!credInfo.parsed) {
+    return {
+      configured: false,
+      source: null,
+      clientEmail: null,
+      tokenTest: null,
+      error:
+        'Neither GOOGLE_PLAY_SERVICE_ACCOUNT_JSON nor GOOGLE_PLAY_SERVICE_ACCOUNT_PATH is set',
+    };
+  }
+  const out = {
+    configured: true,
+    source: credInfo.source,
+    clientEmail: credInfo.parsed.client_email,
+    projectId: credInfo.parsed.project_id || null,
+    tokenTest: null,
+  };
+  if (attemptToken) {
+    try {
+      const tok = await getAccessToken();
+      out.tokenTest = tok ? 'ok' : 'empty';
+    } catch (e) {
+      out.tokenTest = 'failed';
+      out.tokenError = e?.message || String(e);
+    }
+  }
+  return out;
+}
+
 module.exports = {
   getSubscriptionV2,
   acknowledgeSubscription,
   isConfigured,
+  describeStatus,
 };

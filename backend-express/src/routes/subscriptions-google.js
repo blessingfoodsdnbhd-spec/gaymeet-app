@@ -345,4 +345,29 @@ router.post('/google-webhook', async (req, res) => {
   }
 });
 
+// ── GET /api/subscriptions/google-status ─────────────────────────────────────
+// Admin-only diagnostic. Reports whether the Google Play service account
+// credential is loaded and (with ?ping=1) whether it can actually mint an
+// access token against androidpublisher. Use this from a curl after setting
+// GOOGLE_PLAY_SERVICE_ACCOUNT_JSON on the deploy:
+//
+//   curl -H "X-Admin-Token: $ADMIN_TOKEN" \
+//     https://gaymeet-api.onrender.com/api/subscriptions/google-status?ping=1
+//
+// Fail-closed: if ADMIN_TOKEN env is unset, returns 503 — so a forgotten
+// env var doesn't accidentally expose the client_email publicly.
+router.get('/google-status', async (req, res) => {
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken) {
+    return res.status(503).json({ error: 'ADMIN_TOKEN env not set on backend' });
+  }
+  const provided = req.headers['x-admin-token'];
+  if (provided !== adminToken) {
+    return res.status(401).json({ error: 'invalid or missing X-Admin-Token' });
+  }
+  const ping = req.query.ping === '1' || req.query.ping === 'true';
+  const status = await googlePlay.describeStatus({ attemptToken: ping });
+  return res.json({ data: status });
+});
+
 module.exports = router;

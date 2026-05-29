@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   StyleSheet,
   Alert,
@@ -16,21 +17,54 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  Camera,
   ChevronLeft,
+  Copy,
+  Edit2,
+  Image as ImageIcon,
+  MapPin,
   MoreHorizontal,
+  Plus,
   Send,
   Smile,
+  Trash2,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import * as Clipboard from 'expo-clipboard';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Bubble } from '../../components/Bubble';
+import { Sheet } from '../../components/Sheet';
+import { PhotoViewer } from '../../components/PhotoViewer';
+import { ImageBubble } from './ImageBubble';
+import { LocationBubble } from './LocationBubble';
 import { useAuth } from '../../store/auth';
 import { useChats } from '../../store/chats';
-import { deleteConversation, getMessages, sendMessage, type Message, type ChatThread } from '../../api/chats';
-import { on as wsOn, emit as wsEmit, type WsChatReceive, type WsChatTyping } from '../../api/ws';
+import {
+  deleteConversation,
+  deleteMessage,
+  editMessage,
+  getMessages,
+  sendMessage,
+  sendImageMessage,
+  sendLocationMessage,
+  type Message,
+  type ChatThread,
+} from '../../api/chats';
+import { uploadFile } from '../../api/upload';
+import {
+  on as wsOn,
+  emit as wsEmit,
+  type WsChatReceive,
+  type WsChatTyping,
+  type WsChatEdited,
+  type WsChatDeleted,
+} from '../../api/ws';
+import { downloadAndCache, deleteCachedImage } from '../../utils/imageCache';
 import type { RootStackParamList } from '../../navigation/types';
 import { hhmm } from '../../utils/time';
 
@@ -64,6 +98,16 @@ export function ChatDetailScreen() {
 
   const [composing, setComposing] = useState('');
   const [showStickers, setShowStickers] = useState(false);
+  // +-button action sheet (camera / gallery / location)
+  const [composerActionsOpen, setComposerActionsOpen] = useState(false);
+  // Long-press action sheet target message (null = closed)
+  const [actionsFor, setActionsFor] = useState<Message | null>(null);
+  // Edit sheet state
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  // Image viewer Modal
+  const [viewerImage, setViewerImage] = useState<Message | null>(null);
+  const isPremium = !!(me as any)?.isPremium;
   const listRef = useRef<FlatList<ListItem>>(null);
   const setTyping = useChats((s) => s.setTyping);
   // Typing emit debouncer state — tracks the last "I'm typing" we sent so we
@@ -123,7 +167,19 @@ export function ChatDetailScreen() {
 
     (async () => {
       const u1 = await wsOn('chat:receive', (msg: WsChatReceive) => {
-        if (cancelled || msg.matchId !== matchId) return;
+        if (cancelled) return;
+        // Any incoming message — whether for this match or another —
+        // changes some thread's preview / unreadCount / lastMessageAt,
+        // so invalidate the chats-list cache. Done before the matchId
+        // gate so cross-match messages still bubble the list when the
+        // user pops back from this screen.
+        queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+        if (msg.matchId !== matchId) return;
+        // Prefetch image into local cache so the bubble renders from
+        // disk on first paint instead of streaming over the network.
+        if (msg.type === 'image' && msg.mediaUrl) {
+          downloadAndCache(msg.id, msg.mediaUrl).catch(() => {});
+        }
         queryClient.setQueryData<Message[]>(
           ['chats', 'messages', matchId],
           (prev) => {
@@ -133,8 +189,43 @@ export function ChatDetailScreen() {
           },
         );
       });
-      if (cancelled) { u1(); return; }
-      unsubRecv = u1;
+
+      // chat:edited — server-side edit broadcast. Update the matching
+      // row's content + edited flags in our message cache. Cross-match
+      // events are ignored.
+      const uE = await wsOn('chat:edited', (evt: WsChatEdited) => {
+        if (cancelled) return;
+        queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+        if (evt.matchId !== matchId) return;
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) =>
+            (prev ?? []).map((m) =>
+              m.id === evt.id
+                ? {
+                    ...m,
+                    content: evt.content,
+                    edited: true,
+                    editedAt: evt.editedAt,
+                  }
+                : m,
+            ),
+        );
+      });
+
+      // chat:deleted — drop the row + any cached image file.
+      const uD = await wsOn('chat:deleted', (evt: WsChatDeleted) => {
+        if (cancelled) return;
+        queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+        if (evt.matchId !== matchId) return;
+        deleteCachedImage(evt.messageId).catch(() => {});
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) => (prev ?? []).filter((m) => m.id !== evt.messageId),
+        );
+      });
+      if (cancelled) { u1(); uE(); uD(); return; }
+      unsubRecv = () => { u1(); uE(); uD(); };
 
       const u2 = await wsOn('chat:typing', (evt: WsChatTyping) => {
         if (cancelled || evt.matchId !== matchId) return;
@@ -249,15 +340,316 @@ export function ChatDetailScreen() {
     [sendMut],
   );
 
+  /**
+   * Push an optimistic image message into the cache, upload the file to
+   * B2, then POST /send with the resulting URL. Mirrors sendMut's
+   * onSuccess dedupe: if the WS chat:receive echo already added the
+   * real message we drop our optimistic copy instead of double-rendering.
+   */
+  const sendImageFromUri = useCallback(
+    async (uri: string) => {
+      const pendingId = `tmp-img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const optimistic: Message = {
+        id: pendingId,
+        pendingId,
+        matchId,
+        senderId: me?.id ?? 'me',
+        content: '',
+        type: 'image',
+        mediaUrl: uri,
+        mediaType: 'image',
+        createdAt: new Date().toISOString(),
+        status: 'sending',
+      };
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) => [...(prev ?? []), optimistic],
+      );
+      try {
+        const b2Url = await uploadFile(uri);
+        const real = await sendImageMessage(matchId, b2Url);
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) => {
+            const arr = prev ?? [];
+            const wsAlreadyHasIt = arr.some(
+              (m) => m.id === real.id && m.pendingId !== pendingId,
+            );
+            if (wsAlreadyHasIt) {
+              return arr.filter((m) => m.pendingId !== pendingId);
+            }
+            return arr.map((m) =>
+              m.pendingId === pendingId ? { ...real, status: 'sent' } : m,
+            );
+          },
+        );
+        // Seed the cache with the picked file under the real msg id so
+        // the bubble doesn't re-download a fresh copy from B2 — same
+        // bytes anyway. Best-effort.
+        if (real.id) downloadAndCache(real.id, b2Url).catch(() => {});
+      } catch (e: any) {
+        console.error('[chat-image] send failed', {
+          uri,
+          status: e?.response?.status,
+          message: e?.message,
+        });
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) =>
+            (prev ?? []).map((m) =>
+              m.pendingId === pendingId ? { ...m, status: 'failed' } : m,
+            ),
+        );
+        const detail = e?.response?.data?.error || e?.message || '';
+        Alert.alert(t('chat.image.uploadFailed'), detail);
+      }
+    },
+    [matchId, me, queryClient, t],
+  );
+
+  const pickCamera = useCallback(async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('chat.composer.cameraPermTitle'), t('chat.composer.cameraPermBody'));
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (res.canceled) return;
+    sendImageFromUri(res.assets[0].uri);
+  }, [sendImageFromUri, t]);
+
+  const pickGallery = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (res.canceled) return;
+    sendImageFromUri(res.assets[0].uri);
+  }, [sendImageFromUri, t]);
+
+  const shareLocation = useCallback(async () => {
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(
+        t('chat.composer.locationPermTitle'),
+        t('chat.composer.locationPermBody'),
+      );
+      return;
+    }
+    let lat: number;
+    let lng: number;
+    try {
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch {
+      Alert.alert(t('chat.composer.locationFailed'));
+      return;
+    }
+    let label: string | null = null;
+    try {
+      const places = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lng,
+      });
+      const p = places?.[0];
+      if (p) {
+        label =
+          [p.name, p.street, p.city, p.region]
+            .filter((s): s is string => !!s && s.trim().length > 0)
+            .slice(0, 3)
+            .join(', ')
+            .slice(0, 200) || null;
+      }
+    } catch {
+      // reverse geocode is optional — proceed with lat/lng fallback
+    }
+
+    const pendingId = `tmp-loc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const optimistic: Message = {
+      id: pendingId,
+      pendingId,
+      matchId,
+      senderId: me?.id ?? 'me',
+      content: '',
+      type: 'location',
+      location: { lat, lng, label },
+      createdAt: new Date().toISOString(),
+      status: 'sending',
+    };
+    queryClient.setQueryData<Message[]>(
+      ['chats', 'messages', matchId],
+      (prev) => [...(prev ?? []), optimistic],
+    );
+    try {
+      const real = await sendLocationMessage(matchId, lat, lng, label);
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) => {
+          const arr = prev ?? [];
+          const wsAlreadyHasIt = arr.some(
+            (m) => m.id === real.id && m.pendingId !== pendingId,
+          );
+          if (wsAlreadyHasIt) {
+            return arr.filter((m) => m.pendingId !== pendingId);
+          }
+          return arr.map((m) =>
+            m.pendingId === pendingId ? { ...real, status: 'sent' } : m,
+          );
+        },
+      );
+    } catch (e: any) {
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) =>
+          (prev ?? []).map((m) =>
+            m.pendingId === pendingId ? { ...m, status: 'failed' } : m,
+          ),
+      );
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('chat.location.sendFailed'), detail);
+    }
+  }, [matchId, me, queryClient, t]);
+
+  // Edit / delete mutations for Phase 2f. Both gated by Premium server-side;
+  // the long-press action sheet hides options the caller doesn't meet, but
+  // the routes also enforce — so a custom client can't slip past either.
+  const editMut = useMutation({
+    mutationFn: ({ msgId, content }: { msgId: string; content: string }) =>
+      editMessage(matchId, msgId, content),
+    onSuccess: (data) => {
+      // Optimistic local update so the new content shows immediately —
+      // WS chat:edited will also arrive and re-set the same fields.
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) =>
+          (prev ?? []).map((m) =>
+            m.id === data.id
+              ? {
+                  ...m,
+                  content: data.content,
+                  edited: true,
+                  editedAt: data.editedAt,
+                }
+              : m,
+          ),
+      );
+    },
+    onError: (e: any) => {
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.error || e?.message || '';
+      if (status === 410) {
+        Alert.alert(t('chat.message.editExpired'));
+      } else if (status === 402) {
+        Alert.alert(t('chat.message.premiumOnly'));
+      } else {
+        Alert.alert(t('chat.message.editFailed'), detail);
+      }
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (msgId: string) => deleteMessage(matchId, msgId),
+    onSuccess: (data) => {
+      // Local cache + image cache drop; WS chat:deleted will catch up.
+      deleteCachedImage(data.messageId).catch(() => {});
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) => (prev ?? []).filter((m) => m.id !== data.messageId),
+      );
+    },
+    onError: (e: any) => {
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.error || e?.message || '';
+      if (status === 402) {
+        Alert.alert(t('chat.message.premiumOnly'));
+      } else {
+        Alert.alert(t('chat.message.deleteFailed'), detail);
+      }
+    },
+  });
+
+  /** Compute which long-press actions to show for a given message. */
+  const actionsAvailable = useMemo(() => {
+    if (!actionsFor) {
+      return { canEdit: false, canDelete: false };
+    }
+    const mine = actionsFor.senderId === me?.id;
+    const within24h =
+      Date.now() - new Date(actionsFor.createdAt).getTime() < 24 * 60 * 60 * 1000;
+    return {
+      canEdit:
+        mine && isPremium && actionsFor.type === 'text' && within24h,
+      canDelete: mine && isPremium,
+    };
+  }, [actionsFor, me, isPremium]);
+
+  const onCopyMessage = useCallback(async (msg: Message) => {
+    let text = msg.content || '';
+    if (msg.type === 'location' && msg.location) {
+      text = msg.location.label
+        ? `${msg.location.label} (${msg.location.lat}, ${msg.location.lng})`
+        : `${msg.location.lat}, ${msg.location.lng}`;
+    } else if (msg.type === 'image' && msg.mediaUrl) {
+      text = msg.mediaUrl;
+    }
+    if (!text) return;
+    await Clipboard.setStringAsync(text);
+    Alert.alert(t('chat.message.copied'));
+  }, [t]);
+
+  const onConfirmDelete = useCallback(
+    (msg: Message) => {
+      Alert.alert(t('chat.message.deleteConfirm'), '', [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('chat.message.deleteAction'),
+          style: 'destructive',
+          onPress: () => deleteMut.mutate(msg.id),
+        },
+      ]);
+    },
+    [deleteMut, t],
+  );
+
   // Render a virtual list with time-divider rows interspersed
   const items = useMemo(() => buildItems(msgsQ.data ?? []), [msgsQ.data]);
 
-  useEffect(() => {
-    // scroll to bottom on initial load or new message
-    if (items.length > 0) {
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
-    }
+  // First-render scroll uses animated:false so we *jump* to the bottom
+  // instead of animating from the top — the latter is visible to the
+  // user as a "rolling up from old messages" effect on entry. Subsequent
+  // scrolls (new messages) animate smoothly. The flag lives in a ref so
+  // toggling it doesn't re-render.
+  const hasScrolledInitially = useRef(false);
+
+  // onContentSizeChange fires AFTER the FlatList has measured its
+  // children — strictly more reliable than the previous
+  // `useEffect + requestAnimationFrame` pair, which raced the layout
+  // pass and left the user halfway up the thread on entry. It also
+  // covers the "new message arrives" case since the content height
+  // grows when a row is appended.
+  const onMsgsContentSizeChange = useCallback(() => {
+    if (items.length === 0) return;
+    listRef.current?.scrollToEnd({ animated: hasScrolledInitially.current });
+    hasScrolledInitially.current = true;
   }, [items.length]);
+
+  // Reset the initial-scroll flag whenever the thread itself changes,
+  // so navigating from one chat to another also performs a jump-to-end
+  // on the new thread's first content-size measurement.
+  useEffect(() => {
+    hasScrolledInitially.current = false;
+  }, [matchId]);
 
   return (
     <SafeAreaView
@@ -350,6 +742,7 @@ export function ChatDetailScreen() {
             data={items}
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
+            onContentSizeChange={onMsgsContentSizeChange}
             renderItem={({ item }) => {
               if (item.kind === 'time') {
                 return (
@@ -365,15 +758,61 @@ export function ChatDetailScreen() {
                   </Text>
                 );
               }
-              const mine = item.msg.senderId === me?.id;
-              const failed = item.msg.status === 'failed';
+              const msg = item.msg;
+              const mine = msg.senderId === me?.id;
+              const failed = msg.status === 'failed';
+              const onLongPress = () => setActionsFor(msg);
+
+              let bubble: React.ReactNode;
+              if (msg.type === 'image') {
+                bubble = (
+                  <Pressable
+                    onPress={() =>
+                      !msg.expired && msg.mediaUrl ? setViewerImage(msg) : null
+                    }
+                    onLongPress={onLongPress}
+                    delayLongPress={350}
+                  >
+                    <ImageBubble msg={msg} from={mine ? 'me' : 'them'} onPress={() => null} />
+                  </Pressable>
+                );
+              } else if (msg.type === 'location') {
+                bubble = (
+                  <Pressable onLongPress={onLongPress} delayLongPress={350}>
+                    <LocationBubble msg={msg} from={mine ? 'me' : 'them'} />
+                  </Pressable>
+                );
+              } else {
+                bubble = (
+                  <Pressable onLongPress={onLongPress} delayLongPress={350}>
+                    <Bubble
+                      text={msg.content}
+                      from={mine ? 'me' : 'them'}
+                      style={failed ? { opacity: 0.6 } : undefined}
+                    />
+                  </Pressable>
+                );
+              }
               return (
-                <View style={{ flexDirection: 'row', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-                  <Bubble
-                    text={item.msg.content}
-                    from={mine ? 'me' : 'them'}
-                    style={failed ? { opacity: 0.6 } : undefined}
-                  />
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    alignItems: mine ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  {bubble}
+                  {msg.edited && (
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        color: theme.colors.muted,
+                        marginTop: 2,
+                        marginHorizontal: 8,
+                      }}
+                    >
+                      {t('chat.message.edited')}
+                    </Text>
+                  )}
                 </View>
               );
             }}
@@ -422,6 +861,9 @@ export function ChatDetailScreen() {
             { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
           ]}
         >
+          <Pressable onPress={() => setComposerActionsOpen(true)} hitSlop={8}>
+            <Plus size={24} color={theme.colors.muted} strokeWidth={1.6} />
+          </Pressable>
           <Pressable onPress={() => setShowStickers((s) => !s)} hitSlop={8}>
             <Smile size={24} color={theme.colors.muted} strokeWidth={1.6} />
           </Pressable>
@@ -470,7 +912,233 @@ export function ChatDetailScreen() {
           ) : null}
         </View>
       </KeyboardAvoidingView>
+
+      {/* +-button action sheet: Camera / Gallery / Location */}
+      <Sheet
+        open={composerActionsOpen}
+        onClose={() => setComposerActionsOpen(false)}
+        maxHeight="40%"
+      >
+        <ActionRow
+          icon={<Camera size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+          label={t('chat.composer.camera')}
+          onPress={() => {
+            setComposerActionsOpen(false);
+            pickCamera();
+          }}
+        />
+        <ActionRow
+          icon={<ImageIcon size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+          label={t('chat.composer.gallery')}
+          onPress={() => {
+            setComposerActionsOpen(false);
+            pickGallery();
+          }}
+        />
+        <ActionRow
+          icon={<MapPin size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+          label={t('chat.composer.location')}
+          onPress={() => {
+            setComposerActionsOpen(false);
+            shareLocation();
+          }}
+        />
+        <ActionRow
+          label={t('chat.composer.cancel')}
+          centered
+          onPress={() => setComposerActionsOpen(false)}
+        />
+      </Sheet>
+
+      {/* Long-press action sheet for an individual message */}
+      <Sheet
+        open={!!actionsFor}
+        onClose={() => setActionsFor(null)}
+        maxHeight="40%"
+      >
+        {actionsFor && (
+          <>
+            {actionsAvailable.canEdit && (
+              <ActionRow
+                icon={<Edit2 size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('chat.message.actions.edit')}
+                onPress={() => {
+                  const m = actionsFor;
+                  setActionsFor(null);
+                  setEditingMsg(m);
+                  setEditDraft(m.content);
+                }}
+              />
+            )}
+            <ActionRow
+              icon={<Copy size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+              label={t('chat.message.actions.copy')}
+              onPress={() => {
+                const m = actionsFor;
+                setActionsFor(null);
+                onCopyMessage(m);
+              }}
+            />
+            {actionsAvailable.canDelete && (
+              <ActionRow
+                icon={<Trash2 size={20} color="#D14B4B" strokeWidth={1.8} />}
+                label={t('chat.message.actions.delete')}
+                labelColor="#D14B4B"
+                onPress={() => {
+                  const m = actionsFor;
+                  setActionsFor(null);
+                  onConfirmDelete(m);
+                }}
+              />
+            )}
+            <ActionRow
+              label={t('chat.message.actions.cancel')}
+              centered
+              onPress={() => setActionsFor(null)}
+            />
+          </>
+        )}
+      </Sheet>
+
+      {/* Edit sheet — TextInput prefilled with the message content */}
+      <Sheet
+        open={!!editingMsg}
+        onClose={() => setEditingMsg(null)}
+        maxHeight="50%"
+      >
+        {editingMsg && (
+          <View style={{ paddingHorizontal: 4 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '700',
+                color: theme.colors.text,
+                marginBottom: 14,
+              }}
+            >
+              {t('chat.message.editTitle')}
+            </Text>
+            <TextInput
+              value={editDraft}
+              onChangeText={setEditDraft}
+              placeholder={t('chat.message.editPlaceholder')}
+              placeholderTextColor={theme.colors.muted}
+              multiline
+              autoFocus
+              style={{
+                backgroundColor: theme.colors.surface,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: theme.colors.line,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                color: theme.colors.text,
+                minHeight: 88,
+                maxHeight: 200,
+                textAlignVertical: 'top',
+              }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+              <Pressable
+                onPress={() => setEditingMsg(null)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  backgroundColor: theme.colors.surface2,
+                }}
+              >
+                <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
+                  {t('common.cancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  const m = editingMsg;
+                  const draft = editDraft.trim();
+                  if (!m || !draft || draft === m.content) {
+                    setEditingMsg(null);
+                    return;
+                  }
+                  editMut.mutate({ msgId: m.id, content: draft });
+                  setEditingMsg(null);
+                }}
+                disabled={editMut.isPending}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  backgroundColor: theme.colors.primary,
+                  opacity: editMut.isPending ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                  {t('common.save')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </Sheet>
+
+      {/* Full-screen photo viewer. ChatDetailScreen is a pushed screen
+          (NOT a Modal), so a single Modal here is safe — no nested-Modal
+          stacking problem like the one we had on AboutUserSheet. */}
+      <Modal
+        visible={!!viewerImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewerImage(null)}
+        statusBarTranslucent
+      >
+        <PhotoViewer
+          open={!!viewerImage}
+          photos={viewerImage?.mediaUrl ? [viewerImage.mediaUrl] : []}
+          initialIndex={0}
+          onClose={() => setViewerImage(null)}
+        />
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+interface ActionRowProps {
+  icon?: React.ReactNode;
+  label: string;
+  labelColor?: string;
+  centered?: boolean;
+  onPress: () => void;
+}
+
+function ActionRow({ icon, label, labelColor, centered, onPress }: ActionRowProps) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        justifyContent: centered ? 'center' : 'flex-start',
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      {icon}
+      <Text
+        style={{
+          fontSize: 15,
+          fontWeight: '600',
+          color: labelColor ?? theme.colors.text,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
