@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme/ThemeProvider';
 import { requestUnlock } from '../../api/topicUnlocks';
+import { PremiumGateSheet } from '../../components/PremiumGateSheet';
 
 interface Props {
   open: boolean;
@@ -32,6 +33,7 @@ export function TopicUnlockRequestSheet({
 }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const mut = useMutation({
     mutationFn: () => requestUnlock(ownerId),
@@ -47,10 +49,9 @@ export function TopicUnlockRequestSheet({
       const status = e?.response?.status;
       const body = e?.response?.data;
       if (status === 402 && body?.reason === 'premium_required') {
-        Alert.alert(
-          t('topics.requestLimitTitle'),
-          body?.error || t('topics.requestLimitBody'),
-        );
+        // Don't dismiss the parent sheet — pop the paywall on top so
+        // the user can return here if they cancel the upgrade.
+        setPaywallOpen(true);
       } else {
         Alert.alert(
           t('topics.requestFailed'),
@@ -101,6 +102,13 @@ export function TopicUnlockRequestSheet({
           </Text>
         </Pressable>
       </View>
+
+      <PremiumGateSheet
+        open={paywallOpen}
+        title={t('topics.requestLimitTitle')}
+        body={t('topics.requestLimitBody')}
+        onClose={() => setPaywallOpen(false)}
+      />
     </Sheet>
   );
 }

@@ -21,6 +21,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { Button } from '../../components/Button';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
+import { PremiumGateSheet } from '../../components/PremiumGateSheet';
 import { uploadFile } from '../../api/upload';
 import {
   createOrUpsertPersona,
@@ -65,6 +66,7 @@ export function TopicPersonaEditScreen() {
   const [nickname, setNickname] = useState(existing?.nickname ?? '');
   const [photos, setPhotos] = useState<string[]>(existing?.photos ?? []);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [paywall, setPaywall] = useState<{ title: string; body: string } | null>(null);
 
   // Hydrate once when the query resolves AFTER the screen mounted with
   // no cached data. (If there was cached data the useState init already
@@ -80,7 +82,14 @@ export function TopicPersonaEditScreen() {
   const pickAndUpload = async () => {
     if (uploadBusy) return;
     if (photos.length >= photoMax) {
-      Alert.alert(t('topics.photoCapTitle'), t('topics.photoCapBody', { max: photoMax }));
+      if (!isPremium) {
+        setPaywall({
+          title: t('topics.photoCapTitle'),
+          body: t('topics.premiumLimit'),
+        });
+      } else {
+        Alert.alert(t('topics.photoCapTitle'), t('topics.photoCapBody', { max: photoMax }));
+      }
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -132,10 +141,10 @@ export function TopicPersonaEditScreen() {
       const status = e?.response?.status;
       const body = e?.response?.data;
       if (status === 402 && body?.reason === 'premium_required') {
-        Alert.alert(
-          t('topics.personaLimitTitle'),
-          body?.error || t('topics.premiumLimit'),
-        );
+        setPaywall({
+          title: t('topics.personaLimitTitle'),
+          body: body?.error || t('topics.premiumLimit'),
+        });
       } else {
         Alert.alert(
           t('topics.saveFailed'),
@@ -256,6 +265,13 @@ export function TopicPersonaEditScreen() {
           </View>
         )}
       </ScrollView>
+
+      <PremiumGateSheet
+        open={paywall != null}
+        title={paywall?.title ?? ''}
+        body={paywall?.body ?? ''}
+        onClose={() => setPaywall(null)}
+      />
     </SafeAreaView>
   );
 }
