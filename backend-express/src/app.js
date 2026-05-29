@@ -54,6 +54,10 @@ const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 const subscriptionsGoogleRoutes = require('./routes/subscriptions-google');
 const announcementsRoutes = require('./routes/announcements');
 const adminAnnouncementsRoutes = require('./routes/admin-announcements');
+const topicsRoutes = require('./routes/topics');
+const meTopicPersonasRoutes = require('./routes/me-topic-personas');
+const topicUnlocksRoutes = require('./routes/topic-unlocks');
+const adminTopicsRoutes = require('./routes/admin-topics');
 
 const app = express();
 
@@ -130,6 +134,10 @@ app.use('/api/photo-library', photoLibraryRoutes); // GET / POST / DELETE /:id /
 app.use('/api/admin', adminCleanupRoutes); // POST /cleanup-expired-photos (X-Admin-Token)
 app.use('/api/announcements', announcementsRoutes); // GET /current
 app.use('/api/admin', adminAnnouncementsRoutes); // POST/GET/PATCH/DELETE /announcements (X-Admin-Token)
+app.use('/api/topics', topicsRoutes); // GET /, GET /:slug/personas, GET /:slug/personas/:userId
+app.use('/api/me/topic-personas', meTopicPersonasRoutes); // GET/POST/PATCH/DELETE
+app.use('/api/topic-unlocks', topicUnlocksRoutes); // request/approve/reject/revoke/incoming/outgoing/approved
+app.use('/api/admin', adminTopicsRoutes); // POST /seed-topics + CRUD /topics (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
