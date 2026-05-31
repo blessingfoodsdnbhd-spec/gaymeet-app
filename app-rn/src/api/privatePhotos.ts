@@ -133,7 +133,31 @@ export const getSent = () =>
  */
 export type ViewerStatus = 'owner' | 'approved' | 'pending' | 'none';
 
+// One private photo, detailed. Private-bucket photos (C-1) are served as
+// short-lived SIGNED urls and may need refreshing (refreshPrivatePhotoUrl)
+// during a long viewing session; legacy public photos have signed=false and
+// never expire. `ref` is the stable server-side handle used to re-sign.
+export interface PrivatePhotoItem {
+  url: string;
+  ref: string;
+  signed: boolean;
+  expiresIn?: number;
+}
+
+// `photos` is the back-compat string[] every installed client already reads
+// (signed URLs for private-bucket photos, passthrough for legacy). Newer
+// backends also send `photosDetailed` so we can refresh expiring signed URLs.
 export const getPrivatePhotos = (ownerId: string) =>
-  unwrap<{ photos: string[]; status: ViewerStatus }>(
-    api.get(`/users/${ownerId}/private-photos`),
+  unwrap<{
+    photos: string[];
+    photosDetailed?: PrivatePhotoItem[];
+    status: ViewerStatus;
+  }>(api.get(`/users/${ownerId}/private-photos`));
+
+// Mint a fresh short-lived signed URL for one private-bucket photo. For legacy
+// public photos the backend returns the same url with signed=false. Use when a
+// cached signed URL is about to expire.
+export const refreshPrivatePhotoUrl = (ownerId: string, ref: string) =>
+  unwrap<{ url: string; signed: boolean; expiresIn?: number }>(
+    api.post('/users/private-photos/signed-url', { ownerId, ref }) as any,
   );

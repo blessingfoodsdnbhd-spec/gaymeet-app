@@ -12,17 +12,52 @@ const { sendPushToUser } = require('../utils/push');
 const MAX_PRIVATE_PHOTOS = 5;
 
 /**
- * Persist a multer memory-buffer either to R2 (preferred) or to local disk
- * as a fallback. Mirrors photos.js storePhoto — keep both in sync. Render's
- * filesystem is ephemeral, so disk fallback is only safe for local dev.
+ * Persist a PRIVATE multer memory-buffer.
+ *
+ * Preference order:
+ *   1. Private B2 bucket → returns a `b2priv://<key>` sentinel (bytes are NOT
+ *      publicly reachable; served only via short-lived signed URLs). C-1.
+ *   2. Public B2 bucket (legacy) → returns a public URL. Used until the
+ *      private-bucket envs are set; logs a warning at startup (r2Service).
+ *   3. Local disk (dev only — Render's FS is ephemeral).
  */
 async function storePhoto(file, req) {
   const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
-  const key = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+  const key = `private/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+
+  // 1) Private bucket (preferred).
+  const privRef = await r2.uploadPrivate(file.buffer, key, file.mimetype);
+  if (privRef) return privRef;
+
+  // 2) Public bucket fallback.
   const r2Url = await r2.uploadFile(file.buffer, key, file.mimetype);
   if (r2Url) return r2Url;
-  await fs.promises.writeFile(path.join(uploadDir, key), file.buffer);
-  return `${req.protocol}://${req.get('host')}/uploads/${key}`;
+
+  // 3) Local disk (dev).
+  const flatKey = key.replace(/\//g, '_');
+  await fs.promises.writeFile(path.join(uploadDir, flatKey), file.buffer);
+  return `${req.protocol}://${req.get('host')}/uploads/${flatKey}`;
+}
+
+/**
+ * Resolve a list of stored private-photo refs into URLs the client can load.
+ * Private-bucket refs (`b2priv://…`) become short-lived signed URLs; legacy
+ * public URLs pass through unchanged. Returns objects so the client can tell
+ * signed (expiring) from direct, and re-fetch before expiry.
+ * @param {string[]} refs
+ * @param {number} [ttl=300]
+ */
+async function resolvePrivatePhotos(refs, ttl = 300) {
+  const out = [];
+  for (const ref of refs || []) {
+    if (r2.isPrivateRef(ref)) {
+      const url = await r2.signedGetUrl(ref, ttl);
+      out.push({ url, ref, signed: true, expiresIn: ttl });
+    } else {
+      out.push({ url: ref, ref, signed: false });
+    }
+  }
+  return out;
 }
 
 // ── POST /api/users/private-photos/relock — revoke all approved viewers ──────
@@ -92,17 +127,22 @@ router.delete('/private-photos', auth, async (req, res, next) => {
     user.privatePhotos = user.privatePhotos.filter((p) => p !== url);
     await user.save();
 
-    // Best-effort delete from R2 first; fall through to local disk for old
-    // pre-R2 uploads that may still be on the ephemeral filesystem.
-    const r2Key = r2.keyFromUrl(url);
-    if (r2Key) {
-      r2.deleteFile(r2Key).catch(() => {});
+    // Best-effort delete of the underlying object.
+    if (r2.isPrivateRef(url)) {
+      // Private-bucket object.
+      const key = r2.keyFromPrivateRef(url);
+      r2.deleteFile(key, r2.PRIVATE_BUCKET_ID).catch(() => {});
     } else {
-      try {
-        const filename = path.basename(new URL(url).pathname);
-        const filePath = path.join(uploadDir, filename);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      } catch (_) {}
+      const r2Key = r2.keyFromUrl(url);
+      if (r2Key) {
+        r2.deleteFile(r2Key).catch(() => {});
+      } else {
+        try {
+          const filename = path.basename(new URL(url).pathname);
+          const filePath = path.join(uploadDir, filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (_) {}
+      }
     }
 
     ok(res, { privatePhotos: user.privatePhotos });
@@ -236,7 +276,15 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
     // Owner can always see their own photos
     if (ownerId === req.user._id.toString()) {
       const me = await User.findById(req.user._id).select('privatePhotos');
-      return ok(res, { photos: me.privatePhotos, status: 'owner' });
+      const photos = await resolvePrivatePhotos(me.privatePhotos);
+      // `photos`: legacy clients read the array of strings via `.url`; new
+      // clients use the {url, ref, signed, expiresIn} objects to refresh
+      // expiring signed URLs. `photoUrls` kept for older client builds.
+      return ok(res, {
+        photos,
+        photoUrls: photos.map((p) => p.url),
+        status: 'owner',
+      });
     }
 
     const approved = await PhotoRequest.findOne({
@@ -251,12 +299,56 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
         owner: ownerId,
         status: 'pending',
       });
-      if (pending) return ok(res, { photos: [], status: 'pending' });
-      return ok(res, { photos: [], status: 'none' });
+      if (pending) return ok(res, { photos: [], photoUrls: [], status: 'pending' });
+      return ok(res, { photos: [], photoUrls: [], status: 'none' });
     }
 
     const owner = await User.findById(ownerId).select('privatePhotos');
-    ok(res, { photos: owner.privatePhotos, status: 'approved' });
+    const photos = await resolvePrivatePhotos(owner.privatePhotos);
+    ok(res, {
+      photos,
+      photoUrls: photos.map((p) => p.url),
+      status: 'approved',
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/private-photos/signed-url — refresh an expiring URL ───────
+// Mints a fresh short-lived signed URL for ONE private-bucket photo. Gated:
+// the caller must be the owner OR have an approved PhotoRequest, AND the ref
+// must actually belong to that owner. Body: { ownerId, ref }.
+// (POST, not GET — keeps the object key out of access logs / URLs.)
+router.post('/private-photos/signed-url', auth, async (req, res, next) => {
+  try {
+    const { ownerId, ref } = req.body;
+    if (!ownerId || !ref) return err(res, 'ownerId and ref required');
+    if (!r2.isPrivateRef(ref)) {
+      // Legacy public URL — nothing to sign, hand it back as-is.
+      return ok(res, { url: ref, signed: false });
+    }
+
+    const isOwner = ownerId === req.user._id.toString();
+    if (!isOwner) {
+      const approved = await PhotoRequest.findOne({
+        requester: req.user._id,
+        owner: ownerId,
+        status: 'approved',
+      });
+      if (!approved) return err(res, 'Not authorized to view these photos', 403);
+    }
+
+    // The ref must belong to the named owner — stops a user with one approval
+    // from signing arbitrary keys.
+    const owner = await User.findById(ownerId).select('privatePhotos');
+    if (!owner || !(owner.privatePhotos || []).includes(ref)) {
+      return err(res, 'Photo not found', 404);
+    }
+
+    const url = await r2.signedGetUrl(ref, 300);
+    if (!url) return err(res, 'Signed URLs unavailable', 503);
+    ok(res, { url, signed: true, expiresIn: 300 });
   } catch (e) {
     next(e);
   }

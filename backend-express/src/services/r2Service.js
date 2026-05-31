@@ -32,6 +32,33 @@ const R2_PUBLIC_URL = configured
   ? process.env.R2_PUBLIC_URL.replace(/^<|>$/g, '').replace(/\/+$/, '')
   : '';
 
+// ── Private bucket (C-1) ─────────────────────────────────────────────────────
+// Private photos must NOT live at guessable public URLs. When a separate
+// private bucket is configured, uploads go there and are served only via
+// short-lived signed download URLs (b2_get_download_authorization). Until the
+// envs are set we fall back to the public bucket (legacy behavior) + warn.
+const PRIVATE_BUCKET_NAME = (process.env.B2_PRIVATE_BUCKET_NAME || '')
+  .replace(/[<>]/g, '')
+  .trim();
+const PRIVATE_BUCKET_ID = (process.env.B2_PRIVATE_BUCKET_ID || '')
+  .replace(/[<>]/g, '')
+  .trim();
+const privateConfigured = !!(configured && PRIVATE_BUCKET_NAME && PRIVATE_BUCKET_ID);
+
+// Sentinel prefix marking a stored value as a private-bucket OBJECT KEY (not a
+// public URL). Lets the API + client tell "needs a signed URL" from a legacy
+// direct URL during the migration window.
+const PRIVATE_KEY_PREFIX = 'b2priv://';
+
+if (configured && !privateConfigured) {
+  console.warn(
+    '[b2] Private bucket NOT configured (B2_PRIVATE_BUCKET_NAME / ' +
+      'B2_PRIVATE_BUCKET_ID). Private photos will fall back to the PUBLIC ' +
+      'bucket at guessable URLs. Set both envs + restart to activate signed ' +
+      'private storage (no code redeploy needed).'
+  );
+}
+
 // Cache auth token; B2 tokens last 24h, refresh after 23h.
 let authCache = null;
 const AUTH_TTL_MS = 23 * 60 * 60 * 1000;
@@ -183,16 +210,19 @@ async function uploadFile(buffer, key, contentType) {
 
 /**
  * Delete a file from B2 by key (object name within bucket).
+ * @param {string} key       object name
+ * @param {string} [bucketId] target bucket (defaults to the public bucket)
  * Silently ignores errors.
  */
-async function deleteFile(key) {
+async function deleteFile(key, bucketId) {
   if (!configured || !key) return;
   try {
     const auth = await authorize();
+    const targetBucket = bucketId || auth.bucketId;
     // Look up the fileId for this name
     const listRes = await axios.post(
       `${auth.apiUrl}/b2api/v3/b2_list_file_versions`,
-      { bucketId: auth.bucketId, startFileName: key, maxFileCount: 1 },
+      { bucketId: targetBucket, startFileName: key, maxFileCount: 1 },
       { headers: { Authorization: auth.authToken } },
     );
     const file = (listRes.data.files || []).find((f) => f.fileName === key);
@@ -207,6 +237,114 @@ async function deleteFile(key) {
   }
 }
 
+// ── Private bucket helpers (C-1) ─────────────────────────────────────────────
+
+/**
+ * Upload a buffer to the PRIVATE bucket.
+ * @returns {Promise<string|null>} A sentinel `b2priv://<key>` reference on
+ *   success (NOT a public URL — the bytes are not publicly reachable), or null
+ *   if the private bucket isn't configured (caller should fall back).
+ */
+async function uploadPrivate(buffer, key, contentType) {
+  if (!privateConfigured) return null;
+  const auth = await authorize();
+
+  // 1) one-shot upload URL for the PRIVATE bucket
+  let uploadUrl, uploadAuthToken;
+  try {
+    const urlRes = await axios.post(
+      `${auth.apiUrl}/b2api/v3/b2_get_upload_url`,
+      { bucketId: PRIVATE_BUCKET_ID },
+      { headers: { Authorization: auth.authToken } },
+    );
+    uploadUrl = urlRes.data.uploadUrl;
+    uploadAuthToken = urlRes.data.authorizationToken;
+  } catch (e) {
+    console.error(
+      '[b2] private b2_get_upload_url FAILED:',
+      e?.response?.status,
+      e?.response?.data || e?.message,
+    );
+    authCache = null;
+    throw new Error(
+      `b2_get_upload_url(private) ${e?.response?.status || ''}: ${
+        e?.response?.data?.message || e?.message
+      }`,
+    );
+  }
+
+  const sha1 = crypto.createHash('sha1').update(buffer).digest('hex');
+  try {
+    await axios.post(uploadUrl, buffer, {
+      headers: {
+        Authorization: uploadAuthToken,
+        'X-Bz-File-Name': encodeURIComponent(key),
+        'Content-Type': contentType || 'image/jpeg',
+        'Content-Length': buffer.length,
+        'X-Bz-Content-Sha1': sha1,
+      },
+      transformRequest: [(d) => d],
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
+  } catch (e) {
+    console.error(
+      '[b2] private upload POST FAILED:',
+      e?.response?.status,
+      e?.response?.data || e?.message,
+    );
+    throw new Error(
+      `b2 private upload ${e?.response?.status || ''}: ${
+        e?.response?.data?.message || e?.message
+      }`,
+    );
+  }
+
+  console.log('[b2] private upload OK →', `${PRIVATE_KEY_PREFIX}${key}`);
+  return `${PRIVATE_KEY_PREFIX}${key}`;
+}
+
+/**
+ * Mint a short-lived signed download URL for a private-bucket object.
+ * @param {string} ref  either a `b2priv://<key>` sentinel or a bare key.
+ * @param {number} [ttlSeconds=300] validity window (default 5 min).
+ * @returns {Promise<string|null>} a tokenized download URL, or null if the
+ *   private bucket isn't configured.
+ */
+async function signedGetUrl(ref, ttlSeconds = 300) {
+  if (!privateConfigured || !ref) return null;
+  const key = ref.startsWith(PRIVATE_KEY_PREFIX)
+    ? ref.slice(PRIVATE_KEY_PREFIX.length)
+    : ref;
+  const auth = await authorize();
+  // Authorize download of just this one object name for the TTL window.
+  const res = await axios.post(
+    `${auth.apiUrl}/b2api/v3/b2_get_download_authorization`,
+    {
+      bucketId: PRIVATE_BUCKET_ID,
+      fileNamePrefix: key,
+      validDurationInSeconds: Math.max(1, Math.min(604800, ttlSeconds)),
+    },
+    { headers: { Authorization: auth.authToken } },
+  );
+  const token = res.data.authorizationToken;
+  // downloadUrl is account-level (cached in authorize()).
+  return `${auth.downloadUrl}/file/${PRIVATE_BUCKET_NAME}/${encodeURIComponent(
+    key,
+  )}?Authorization=${token}`;
+}
+
+/** True when a stored value is a private-bucket key (needs a signed URL). */
+function isPrivateRef(value) {
+  return typeof value === 'string' && value.startsWith(PRIVATE_KEY_PREFIX);
+}
+
+/** Strip the sentinel prefix → bare object key. */
+function keyFromPrivateRef(value) {
+  if (!isPrivateRef(value)) return null;
+  return value.slice(PRIVATE_KEY_PREFIX.length);
+}
+
 /**
  * Extract the object key from a full public URL.
  * Returns null if the URL is not from our bucket.
@@ -218,4 +356,16 @@ function keyFromUrl(url) {
   return clean.slice(R2_PUBLIC_URL.length).replace(/^\//, '');
 }
 
-module.exports = { configured, uploadFile, deleteFile, keyFromUrl };
+module.exports = {
+  configured,
+  privateConfigured,
+  uploadFile,
+  uploadPrivate,
+  signedGetUrl,
+  deleteFile,
+  keyFromUrl,
+  isPrivateRef,
+  keyFromPrivateRef,
+  PRIVATE_KEY_PREFIX,
+  PRIVATE_BUCKET_ID,
+};
