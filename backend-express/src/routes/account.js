@@ -22,6 +22,7 @@ const PhotoRequest = require('../models/PhotoRequest');
 const PhotoLibrary = require('../models/PhotoLibrary');
 const GiftTransaction = require('../models/GiftTransaction');
 const Payment = require('../models/Payment');
+const RefreshToken = require('../models/RefreshToken');
 const r2 = require('../services/r2Service');
 
 // ── GET /api/account/export ───────────────────────────────────────────────────
@@ -120,6 +121,8 @@ router.delete('/', auth, async (req, res, next) => {
       // Scrub the deleted user out of OTHER users' references.
       User.updateMany({ blockedUsers: uid }, { $pull: { blockedUsers: uid } }),
       Moment.updateMany({ likes: uid }, { $pull: { likes: uid } }),
+      // Revoke every session (refresh tokens) for the deleted account.
+      RefreshToken.revokeAllForUser(uid),
       // Finally the account row itself.
       User.findByIdAndDelete(uid),
     ]);

@@ -11,6 +11,7 @@ const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
 const { sendEmail } = require('../utils/email');
+const RefreshToken = require('../models/RefreshToken');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -77,6 +78,7 @@ router.post('/register', async (req, res, next) => {
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
 
     created(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
@@ -137,6 +139,7 @@ router.post('/login', async (req, res, next) => {
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
 
     ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
@@ -209,6 +212,7 @@ router.post('/google', async (req, res, next) => {
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
     ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
     next(e);
@@ -255,6 +259,7 @@ router.post('/apple', async (req, res, next) => {
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
     ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
     next(e);
@@ -323,6 +328,7 @@ router.post('/verify-otp', async (req, res, next) => {
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
     ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
   } catch (e) {
     next(e);
@@ -345,8 +351,16 @@ router.post('/refresh', async (req, res, next) => {
     const user = await User.findById(payload.sub);
     if (!user) return err(res, 'User not found', 401);
 
+    // HIGH-C: reject tokens whose session was revoked (logout-all / password
+    // reset / account compromise). Legacy tokens (issued before tracking) have
+    // no record and pass, then get recorded on rotation below.
+    if (await RefreshToken.isRevoked(refreshToken)) {
+      return err(res, 'Session revoked, please sign in again', 401);
+    }
+
     const accessToken = signAccess(user._id.toString());
     const newRefreshToken = signRefresh(user._id.toString());
+    await RefreshToken.rotate(refreshToken, user._id, newRefreshToken);
 
     ok(res, { accessToken, refreshToken: newRefreshToken });
   } catch (e) {
@@ -450,7 +464,21 @@ router.post('/reset-password', async (req, res, next) => {
     user.resetCodeExpiry = undefined;
     await user.save();
 
+    // HIGH-C: a password change kills every existing session.
+    await RefreshToken.revokeAllForUser(user._id);
+
     ok(res, { success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/logout-all — revoke every session for this user ───────────
+router.post('/logout-all', auth, async (req, res, next) => {
+  try {
+    const result = await RefreshToken.revokeAllForUser(req.user._id);
+    await User.findByIdAndUpdate(req.user._id, { isOnline: false });
+    ok(res, { success: true, revoked: result.modifiedCount });
   } catch (e) {
     next(e);
   }
