@@ -109,7 +109,8 @@ export function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <NavigationContainer
               ref={navigationRef}
@@ -134,6 +135,7 @@ export function App() {
             </NavigationContainer>
           </ThemeProvider>
         </QueryClientProvider>
+    </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
