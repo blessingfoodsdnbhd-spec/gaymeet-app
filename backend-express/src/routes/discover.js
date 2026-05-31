@@ -204,7 +204,8 @@ router.post('/swipe', auth, async (req, res, next) => {
             if (io) {
               io.to(`user:${userId}`).emit('match:new', {
                 id: match._id.toString(),
-                user: me.toPublicJSON(),
+                // Sent to the OTHER user → self:false (don't leak my email).
+                user: me.toPublicJSON(undefined, { self: false }),
               });
             }
           } catch (_) {

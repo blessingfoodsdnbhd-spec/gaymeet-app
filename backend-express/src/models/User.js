@@ -238,88 +238,128 @@ userSchema.methods.comparePassword = function (plain) {
   return bcrypt.compare(plain, this.password);
 };
 
-// Fields that must NEVER appear in any API response, for any user. Shared by
-// toPublicJSON and the aggregation/lean projections (see PUBLIC_USER_PROJECTION).
-// `email` is handled separately — owners may see their own.
-const SENSITIVE_USER_FIELDS = [
-  'password',
-  'resetCode',
-  'resetCodeExpiry',
-  'otpCode',
-  'otpExpiry',
-  'googleId',
-  'appleId',
-  'appleOriginalTransactionId',
-  'googleOriginalPurchaseToken',
-  'deviceFingerprint',
-  'devices', // contains login IPs + refresh tokens
-  'blockedUsers',
-  'fcmToken',
-  'dailySwipes',
-  'dailySwipesDate',
-  'loginAttempts',
-  'lockoutUntil',
-  '__v',
+// ── User serialization — ALLOWLIST model ────────────────────────────────────
+// Security posture: we expose ONLY the fields named below. Anything not on a
+// list (now or added to the schema later) is hidden by default — the opposite
+// of a blacklist, which silently leaks every new field until someone remembers
+// to add it to the delete list. See SENSITIVE_USER_FIELDS for the audit trail
+// of what must NEVER ship.
+
+// Fields safe to show to ANY viewer (public profile surface).
+const PUBLIC_USER_FIELDS = [
+  '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
+  'interests', 'interestsOnboardedAt', 'prompts',
+  'height', 'weight', 'age', 'countryCode', 'location',
+  'lastActiveAt', 'isOnline',
+  'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
+  'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',
+  'level', 'currentExp', 'popularityScore',
+  'lookingFor', 'role', 'zodiac', 'mbti', 'bloodType', 'kinks',
+  'followersCount', 'followingCount', 'totalLikesReceived', 'profileViews',
+  'createdAt', 'updatedAt',
+  // computed below: id, privatePhotosCount, distanceLabel
 ];
 
-// Exclusion projection ($project / .select) for queries that bypass this
-// method (aggregations bypass select:false; .lean() skips toPublicJSON).
-// Includes `email` because aggregate/lean callers never serve the owner's
-// own record specially. 0 = exclude.
-const PUBLIC_USER_PROJECTION = SENSITIVE_USER_FIELDS.reduce(
+// Fields shown ONLY to the account owner viewing their own record (self=true).
+// PII + personal economy/state nobody else should see.
+const SELF_ONLY_FIELDS = [
+  'email', 'coins', 'currency',
+  'ticketBalance', 'ticketRefillDate', 'dailyTicketsReceived', 'dailyTicketsDate',
+  'dailyFreeGiftsDate', 'dailyFreeGiftsUsed',
+  'dailyEnergySends', 'dailyEnergySendsDate',
+  'ownedStickerPacks', 'totalExpReceived', 'referralCode', 'referralCount',
+  'isDeleted', 'deletedAt', 'deleteScheduledAt',
+];
+
+// Preference keys safe to show to other users (display hints only). The full
+// preferences object also holds virtualLat/Lng (teleport) + stealth internals,
+// which must never reach another user — so non-self viewers get this subset.
+const PUBLIC_PREFERENCE_FIELDS = ['hideDistance', 'hideOnlineStatus'];
+
+// Documentation-only: the fields the allowlist deliberately excludes for
+// EVERYONE. Kept so reviewers can see the intent at a glance and so the
+// PUBLIC_PROJECTION (for aggregation/lean callers) stays in sync.
+const SENSITIVE_USER_FIELDS = [
+  'password', 'resetCode', 'resetCodeExpiry', 'otpCode', 'otpExpiry',
+  'googleId', 'appleId', 'appleOriginalTransactionId',
+  'googleOriginalPurchaseToken', 'deviceFingerprint',
+  'devices', // login IPs + refresh tokens
+  'blockedUsers', 'fcmToken', 'dailySwipes', 'dailySwipesDate',
+  'loginAttempts', 'lockoutUntil', 'referredBy', '__v',
+];
+
+// Exclusion projection for queries that bypass toPublicJSON (aggregations
+// bypass select:false; .lean() skips the method). Strips every sensitive field
+// AND every self-only field (aggregate/lean callers serve lists of OTHER users,
+// never the owner's own record). 0 = exclude.
+const PUBLIC_USER_PROJECTION = [...SENSITIVE_USER_FIELDS, ...SELF_ONLY_FIELDS].reduce(
   (acc, f) => {
     acc[f] = 0;
     return acc;
   },
-  { email: 0 }
+  {}
 );
 
 /**
- * Serialize a user for API output.
+ * Serialize a user for API output using a strict allowlist.
  * @param {number} [distanceMeters] optional distance to annotate.
- * @param {{ self?: boolean }} [opts] when self=true (the account owner viewing
- *   their own profile) the `email` field is retained; otherwise it is stripped.
+ * @param {{ self?: boolean }} [opts] self=true → the account owner viewing
+ *   their own record; adds SELF_ONLY_FIELDS (email, coins, economy state, full
+ *   preferences). Defaults to true so own-profile callsites need no change;
+ *   any endpoint returning ANOTHER user must pass { self: false }.
  */
 userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
-  // Default self=true (keep email) so the many own-profile callsites are
-  // unaffected. Other-user endpoints pass { self: false } to strip email.
   const { self = true } = opts;
-  const obj = this.toObject({ virtuals: false });
-  obj.id = obj._id.toString(); // Flutter reads 'id', not '_id'
-  // Strip every secret / internal field. Several are select:false and thus
-  // usually absent, but we delete defensively in case the doc was loaded with
-  // +field selection.
-  for (const f of SENSITIVE_USER_FIELDS) delete obj[f];
-  // Email is PII — only the account owner may see their own.
-  if (!self) delete obj.email;
-  // Never leak private photo URLs in the public profile object. Viewers
-  // get the eventual approved URLs only via the dedicated
-  // GET /:id/private-photos endpoint, which checks the PhotoRequest table.
-  // Expose only the count so the UI can decide whether to show the
-  // "Request to view" CTA.
-  const privatePhotosCount = Array.isArray(obj.privatePhotos)
-    ? obj.privatePhotos.length
-    : 0;
-  delete obj.privatePhotos;
-  obj.privatePhotosCount = privatePhotosCount;
+  const src = this.toObject({ virtuals: false });
 
-  // Expose distance as a human-readable label
-  if (distanceMeters != null) {
-    if (distanceMeters < 1000) {
-      obj.distanceLabel = `${Math.round(distanceMeters)} m`;
-    } else {
-      obj.distanceLabel = `${(distanceMeters / 1000).toFixed(1)} km`;
+  // Build the output from the allowlist only — nothing leaks by omission.
+  const obj = {};
+  for (const f of PUBLIC_USER_FIELDS) {
+    if (src[f] !== undefined) obj[f] = src[f];
+  }
+  if (self) {
+    for (const f of SELF_ONLY_FIELDS) {
+      if (src[f] !== undefined) obj[f] = src[f];
     }
   }
 
-  // Expire boost
+  obj.id = src._id.toString(); // Flutter reads 'id', not '_id'
+
+  // Preferences: full object for self; a safe display subset for others.
+  if (src.preferences) {
+    if (self) {
+      obj.preferences = { ...src.preferences };
+    } else {
+      obj.preferences = {};
+      for (const k of PUBLIC_PREFERENCE_FIELDS) {
+        if (src.preferences[k] !== undefined) obj.preferences[k] = src.preferences[k];
+      }
+    }
+  }
+
+  // Private photo URLs are never inlined — only a count so the UI can show the
+  // "Request to view" CTA. The URLs come from GET /:id/private-photos, gated by
+  // the PhotoRequest table.
+  obj.privatePhotosCount = Array.isArray(src.privatePhotos)
+    ? src.privatePhotos.length
+    : 0;
+
+  // Human-readable distance label.
+  if (distanceMeters != null) {
+    obj.distanceLabel =
+      distanceMeters < 1000
+        ? `${Math.round(distanceMeters)} m`
+        : `${(distanceMeters / 1000).toFixed(1)} km`;
+  }
+
+  // Expire boost.
   if (obj.isBoosted && obj.boostExpiresAt && new Date() > obj.boostExpiresAt) {
     obj.isBoosted = false;
   }
 
-  // Compute isPremium from vipLevel (new tier system) OR legacy isPremium field
+  // Compute isPremium from vipLevel (new tier) OR legacy isPremium field.
   const vipActive =
-    (obj.vipLevel > 0) &&
+    obj.vipLevel > 0 &&
     (!obj.vipExpiresAt || new Date() < new Date(obj.vipExpiresAt));
   if (vipActive) {
     obj.isPremium = true;
@@ -327,7 +367,7 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
     obj.isPremium = false;
   }
 
-  // Expire timed stealth
+  // Expire timed stealth (only meaningful in the self preferences object).
   if (
     obj.preferences?.stealthUntil &&
     new Date() > new Date(obj.preferences.stealthUntil)
@@ -340,9 +380,11 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
 };
 
 const UserModel = mongoose.model('User', userSchema);
-// Reusable exclusion projection for queries that bypass toPublicJSON
-// (aggregations + .lean()). Use as: .select(User.PUBLIC_PROJECTION) or as a
-// $project stage. Strips all sensitive fields incl. email.
+// Exclusion projection for aggregation/lean callers (which bypass
+// toPublicJSON). Use as a $project stage or .select(). Strips all sensitive +
+// self-only fields. Allowlist serialization still lives in toPublicJSON.
 UserModel.PUBLIC_PROJECTION = PUBLIC_USER_PROJECTION;
+UserModel.PUBLIC_FIELDS = PUBLIC_USER_FIELDS;
+UserModel.SELF_ONLY_FIELDS = SELF_ONLY_FIELDS;
 UserModel.SENSITIVE_FIELDS = SENSITIVE_USER_FIELDS;
 module.exports = UserModel;
