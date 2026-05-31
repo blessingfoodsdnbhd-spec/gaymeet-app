@@ -2,7 +2,7 @@
  * Account management routes
  *
  * GET    /api/account/export  → export all user data as JSON
- * DELETE /api/account         → permanently delete account
+ * DELETE /api/account         → permanently delete account + cascade
  */
 
 const router = require('express').Router();
@@ -19,8 +19,10 @@ const Follow = require('../models/Follow');
 const TopicPersona = require('../models/TopicPersona');
 const TopicUnlock = require('../models/TopicUnlock');
 const PhotoRequest = require('../models/PhotoRequest');
+const PhotoLibrary = require('../models/PhotoLibrary');
 const GiftTransaction = require('../models/GiftTransaction');
 const Payment = require('../models/Payment');
+const r2 = require('../services/r2Service');
 
 // ── GET /api/account/export ───────────────────────────────────────────────────
 router.get('/export', auth, async (req, res, next) => {
@@ -33,7 +35,6 @@ router.get('/export', auth, async (req, res, next) => {
 
     const [messages, moments, comments, swipes, follows, gifts, payments] =
       await Promise.all([
-        // Every message in any conversation the user took part in.
         Message.find({ matchId: { $in: matchIds } }).lean(),
         Moment.find({ user: uid }).lean(),
         MomentComment.find({ user: uid }).lean(),
@@ -65,57 +66,92 @@ router.get('/export', auth, async (req, res, next) => {
 
 // ── DELETE /api/account ───────────────────────────────────────────────────────
 // Apple guideline 5.1.1(v) — users must be able to delete their account
-// in-app. Most Meyou users sign in via OTP / Apple / Google and never set
-// a password, so we cannot require one here. The JWT itself proves the
-// caller controls the account.
+// in-app. Most Meyou users sign in via OTP / Apple / Google and never set a
+// password, so we cannot require one here. The JWT itself proves the caller
+// controls the account.
+//
+// Order: (1) gather every photo URL the user owns BEFORE deleting the rows;
+// (2) cascade-delete all DB rows referencing the user; (3) best-effort delete
+// the photo objects from R2/B2. Returns a summary of what was removed.
 router.delete('/', auth, async (req, res, next) => {
   try {
     const uid = req.user._id;
 
-    // Resolve the user's match IDs first so we can purge BOTH sides of every
-    // conversation (messages are keyed by matchId, not just the sender).
+    // ── (1) Collect all photo URLs owned by this user (public + private +
+    //         avatar + topic-persona + moment images + chat-image messages +
+    //         photo library) so the bytes can be purged from storage too.
     const matchIds = await Match.find({ users: uid }).distinct('_id');
+    const [personas, moments, msgs, libRows] = await Promise.all([
+      TopicPersona.find({ userId: uid }, { photos: 1 }).lean(),
+      Moment.find({ user: uid }, { imageUrls: 1 }).lean(),
+      Message.find(
+        { senderId: uid, mediaUrl: { $ne: null } },
+        { mediaUrl: 1 }
+      ).lean(),
+      PhotoLibrary.find({ user: uid }, { photoUrl: 1 }).lean(),
+    ]);
 
-    // Remove all data that belongs to (or references) this user. Run in
-    // parallel; allSettled so one failing collection never blocks the rest.
-    const results = await Promise.allSettled([
-      // Conversations + every message in them (both directions).
+    const photoUrls = new Set();
+    const add = (v) => { if (v) photoUrls.add(v); };
+    add(req.user.avatarUrl);
+    (req.user.photos || []).forEach(add);
+    (req.user.privatePhotos || []).forEach(add);
+    personas.forEach((p) => (p.photos || []).forEach(add));
+    moments.forEach((m) => (m.imageUrls || []).forEach(add));
+    msgs.forEach((m) => add(m.mediaUrl));
+    libRows.forEach((l) => add(l.photoUrl));
+
+    // ── (2) Cascade-delete every DB row referencing the user. allSettled so
+    //         one failing collection never blocks the rest.
+    const dbResults = await Promise.allSettled([
       Message.deleteMany({ matchId: { $in: matchIds } }),
       Message.deleteMany({ senderId: uid }), // belt-and-suspenders
       Match.deleteMany({ users: uid }),
-      // Content the user authored.
       Moment.deleteMany({ user: uid }),
       MomentComment.deleteMany({ user: uid }),
-      // Interaction graph.
       Swipe.deleteMany({ $or: [{ fromUser: uid }, { toUser: uid }] }),
       Follow.deleteMany({ $or: [{ follower: uid }, { following: uid }] }),
-      // Topic personas + cross-topic unlock grants on either side.
       TopicPersona.deleteMany({ userId: uid }),
       TopicUnlock.deleteMany({ $or: [{ ownerId: uid }, { viewerId: uid }] }),
-      // Private-photo access requests on either side.
       PhotoRequest.deleteMany({ $or: [{ owner: uid }, { requester: uid }] }),
-      // Gifts + payments referencing the user.
+      PhotoLibrary.deleteMany({ user: uid }),
       GiftTransaction.deleteMany({ $or: [{ sender: uid }, { receiver: uid }] }),
       Payment.deleteMany({ user: uid }),
-      // Scrub the deleted user out of OTHER users' references so we don't
-      // leave dangling ObjectIds behind.
+      // Scrub the deleted user out of OTHER users' references.
       User.updateMany({ blockedUsers: uid }, { $pull: { blockedUsers: uid } }),
       Moment.updateMany({ likes: uid }, { $pull: { likes: uid } }),
-      // Finally remove the account itself.
+      // Finally the account row itself.
       User.findByIdAndDelete(uid),
     ]);
 
-    // Surface any partial failures in logs without failing the request — the
-    // user has the right to delete and a stuck collection shouldn't block it.
-    const failed = results.filter((r) => r.status === 'rejected');
-    if (failed.length) {
+    const dbFailed = dbResults.filter((r) => r.status === 'rejected');
+    if (dbFailed.length) {
       console.error(
-        `[account.delete] ${failed.length} cascade step(s) failed for ${uid}:`,
-        failed.map((f) => f.reason?.message || f.reason)
+        `[account.delete] ${dbFailed.length} DB cascade step(s) failed for ${uid}:`,
+        dbFailed.map((f) => f.reason?.message || f.reason)
       );
     }
 
-    ok(res, { success: true, message: 'Account permanently deleted.' });
+    // ── (3) Best-effort purge of photo objects from storage. deleteByUrl
+    //         swallows its own errors; we just count outcomes.
+    let photosDeleted = 0;
+    const urls = [...photoUrls];
+    const photoResults = await Promise.allSettled(
+      urls.map((u) => r2.deleteByUrl(u))
+    );
+    photoResults.forEach((r) => {
+      if (r.status === 'fulfilled' && r.value) photosDeleted += 1;
+    });
+
+    ok(res, {
+      success: true,
+      message: 'Account permanently deleted.',
+      deleted: {
+        photosFound: urls.length,
+        photosDeleted,
+        dbStepsFailed: dbFailed.length,
+      },
+    });
   } catch (e) {
     next(e);
   }
