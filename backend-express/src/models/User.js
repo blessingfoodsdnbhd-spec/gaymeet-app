@@ -238,15 +238,60 @@ userSchema.methods.comparePassword = function (plain) {
   return bcrypt.compare(plain, this.password);
 };
 
-userSchema.methods.toPublicJSON = function (distanceMeters) {
+// Fields that must NEVER appear in any API response, for any user. Shared by
+// toPublicJSON and the aggregation/lean projections (see PUBLIC_USER_PROJECTION).
+// `email` is handled separately — owners may see their own.
+const SENSITIVE_USER_FIELDS = [
+  'password',
+  'resetCode',
+  'resetCodeExpiry',
+  'otpCode',
+  'otpExpiry',
+  'googleId',
+  'appleId',
+  'appleOriginalTransactionId',
+  'googleOriginalPurchaseToken',
+  'deviceFingerprint',
+  'devices', // contains login IPs + refresh tokens
+  'blockedUsers',
+  'fcmToken',
+  'dailySwipes',
+  'dailySwipesDate',
+  'loginAttempts',
+  'lockoutUntil',
+  '__v',
+];
+
+// Exclusion projection ($project / .select) for queries that bypass this
+// method (aggregations bypass select:false; .lean() skips toPublicJSON).
+// Includes `email` because aggregate/lean callers never serve the owner's
+// own record specially. 0 = exclude.
+const PUBLIC_USER_PROJECTION = SENSITIVE_USER_FIELDS.reduce(
+  (acc, f) => {
+    acc[f] = 0;
+    return acc;
+  },
+  { email: 0 }
+);
+
+/**
+ * Serialize a user for API output.
+ * @param {number} [distanceMeters] optional distance to annotate.
+ * @param {{ self?: boolean }} [opts] when self=true (the account owner viewing
+ *   their own profile) the `email` field is retained; otherwise it is stripped.
+ */
+userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
+  // Default self=true (keep email) so the many own-profile callsites are
+  // unaffected. Other-user endpoints pass { self: false } to strip email.
+  const { self = true } = opts;
   const obj = this.toObject({ virtuals: false });
   obj.id = obj._id.toString(); // Flutter reads 'id', not '_id'
-  delete obj.password;
-  delete obj.blockedUsers;
-  delete obj.fcmToken;
-  delete obj.dailySwipes;
-  delete obj.dailySwipesDate;
-  delete obj.__v;
+  // Strip every secret / internal field. Several are select:false and thus
+  // usually absent, but we delete defensively in case the doc was loaded with
+  // +field selection.
+  for (const f of SENSITIVE_USER_FIELDS) delete obj[f];
+  // Email is PII — only the account owner may see their own.
+  if (!self) delete obj.email;
   // Never leak private photo URLs in the public profile object. Viewers
   // get the eventual approved URLs only via the dedicated
   // GET /:id/private-photos endpoint, which checks the PhotoRequest table.
@@ -294,4 +339,10 @@ userSchema.methods.toPublicJSON = function (distanceMeters) {
   return obj;
 };
 
-module.exports = mongoose.model('User', userSchema);
+const UserModel = mongoose.model('User', userSchema);
+// Reusable exclusion projection for queries that bypass toPublicJSON
+// (aggregations + .lean()). Use as: .select(User.PUBLIC_PROJECTION) or as a
+// $project stage. Strips all sensitive fields incl. email.
+UserModel.PUBLIC_PROJECTION = PUBLIC_USER_PROJECTION;
+UserModel.SENSITIVE_FIELDS = SENSITIVE_USER_FIELDS;
+module.exports = UserModel;

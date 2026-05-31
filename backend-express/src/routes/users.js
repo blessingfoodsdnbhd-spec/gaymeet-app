@@ -222,8 +222,15 @@ router.get('/nearby', auth, async (req, res, next) => {
       { $limit: parseInt(limit) },
       {
         $project: {
+          // $aggregate bypasses Mongoose select:false — every secret must be
+          // excluded explicitly (email, devices/IPs, OTP/reset, IAP tokens…).
           password: 0, fcmToken: 0, dailySwipes: 0,
           dailySwipesDate: 0, blockedUsers: 0, __v: 0,
+          email: 0, devices: 0, deviceFingerprint: 0,
+          appleOriginalTransactionId: 0, googleOriginalPurchaseToken: 0,
+          loginAttempts: 0, lockoutUntil: 0,
+          resetCode: 0, resetCodeExpiry: 0, otpCode: 0, otpExpiry: 0,
+          googleId: 0, appleId: 0,
         },
       },
       { $addFields: { id: { $toString: '$_id' } } },
@@ -313,8 +320,15 @@ router.get('/discover', auth, async (req, res, next) => {
       { $sample: { size: 30 } },
       {
         $project: {
+          // $aggregate bypasses Mongoose select:false — every secret must be
+          // excluded explicitly (email, devices/IPs, OTP/reset, IAP tokens…).
           password: 0, fcmToken: 0, dailySwipes: 0,
           dailySwipesDate: 0, blockedUsers: 0, __v: 0,
+          email: 0, devices: 0, deviceFingerprint: 0,
+          appleOriginalTransactionId: 0, googleOriginalPurchaseToken: 0,
+          loginAttempts: 0, lockoutUntil: 0,
+          resetCode: 0, resetCodeExpiry: 0, otpCode: 0, otpExpiry: 0,
+          googleId: 0, appleId: 0,
         },
       },
       { $addFields: { id: { $toString: '$_id' } } },
@@ -470,7 +484,8 @@ router.get('/:id', auth, async (req, res, next) => {
       '-password -fcmToken -blockedUsers -dailySwipes -dailySwipesDate'
     );
     if (!user) return err(res, 'User not found', 404);
-    ok(res, user.toPublicJSON());
+    // self=false → strip the viewed user's email (PII) from the response.
+    ok(res, user.toPublicJSON(undefined, { self: false }));
   } catch (e) {
     next(e);
   }
