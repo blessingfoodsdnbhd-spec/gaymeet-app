@@ -4,6 +4,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const env = require('./config/env');
+const { initSentry, captureException } = require('./lib/sentry');
+initSentry();
 const { globalLimiter, authLimiter } = require('./middleware/rateLimit');
 
 const authRoutes = require('./routes/auth');
@@ -157,6 +159,7 @@ app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, _next) => {
   console.error(err);
+  captureException(err);
   const status = err.status || 500;
   res.status(status).json({ error: err.message || 'Internal server error' });
 });
