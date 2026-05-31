@@ -336,3 +336,36 @@ Premium 解鎖路徑(代碼層完全一致 iOS / Android):
 - `req.user.isPremium === true` && `premiumExpiresAt > now`(via `isPremiumActive`)
 - 後端 gate:`boost.js`、`who-liked-you.js`、`direct-intro`、`read-receipts`、`conversations.js`(edit/delete 訊息)
 - 客戶端 gate:`(user as any).isPremium === true`
+
+---
+
+## Crash Reporting (Sentry) — HIGH-B
+
+Sentry is wired on both backend and client but **disabled by default** and
+dependency-soft, so nothing fires until explicitly enabled (no build/deploy
+impact until then).
+
+### Backend (`backend-express`)
+1. `cd backend-express && npm i @sentry/node`
+2. Render env: `SENTRY_DSN=<your-dsn>` (requires `NODE_ENV=production`, already set)
+3. Redeploy. Look for `[sentry] backend crash reporting initialized` in logs.
+
+Code: `src/lib/sentry.js` (`initSentry()` called in `src/app.js`;
+`captureException(err)` invoked in the global error handler).
+
+### Client (`app-rn`) — requires a new EAS build (native module)
+1. `cd app-rn && npx expo install @sentry/react-native`
+2. `app.json`: add `expo.extra.sentryDsn = "<your-dsn>"` and the
+   `@sentry/react-native/expo` plugin to `expo.plugins`.
+3. Rebuild via EAS.
+
+Code: `src/lib/sentry.ts` (`initSentry()` called at `App.tsx` module load;
+`ErrorBoundary` also forwards caught render errors).
+
+### Env summary
+| Var | Where | Required to enable |
+|-----|-------|--------------------|
+| `SENTRY_DSN` | Render (backend) | yes |
+| `expo.extra.sentryDsn` | app.json (client) | yes |
+
+Both stay no-ops (and never throw) if the package is missing or the DSN unset.
