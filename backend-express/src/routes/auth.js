@@ -10,6 +10,7 @@ const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
+const { sendEmail } = require('../utils/email');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -275,8 +276,14 @@ router.post('/send-otp', async (req, res, next) => {
 
     otpStore.set(normalizedEmail, { code, expiry });
 
-    // TODO: send real email
-    console.log(`[OTP] ${normalizedEmail} → ${code} (expires in 10 min)`);
+    // Deliver via the email abstraction (console in dev, real provider in prod
+    // once configured — utils/email.js). Never logs the code in prod; never
+    // throws, so it can't break the login flow.
+    await sendEmail(
+      normalizedEmail,
+      'Your Meyou login code',
+      `Your Meyou verification code is ${code}. It expires in 10 minutes.`
+    );
 
     ok(res, { success: true });
   } catch (e) {
@@ -413,7 +420,13 @@ router.post('/forgot-password', async (req, res, next) => {
 
     await User.findByIdAndUpdate(user._id, { resetCode: code, resetCodeExpiry: expiry });
 
-    console.log(`[RESET CODE] ${email} → ${code} (expires ${expiry.toISOString()})`);
+    // Deliver via the email abstraction (see utils/email.js). Never logs the
+    // code in prod; never throws.
+    await sendEmail(
+      email,
+      'Reset your Meyou password',
+      `Your Meyou password reset code is ${code}. It expires in 10 minutes.`
+    );
     ok(res, { success: true });
   } catch (e) {
     next(e);
