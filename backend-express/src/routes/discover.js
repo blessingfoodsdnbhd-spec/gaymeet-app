@@ -122,6 +122,13 @@ router.get('/cards', auth, async (req, res, next) => {
       {
         $project: {
           password: 0,
+          email: 0,
+          devices: 0,
+          deviceFingerprint: 0,
+          appleOriginalTransactionId: 0,
+          googleOriginalPurchaseToken: 0,
+          loginAttempts: 0,
+          lockoutUntil: 0,
           fcmToken: 0,
           dailySwipes: 0,
           dailySwipesDate: 0,
@@ -185,7 +192,7 @@ router.post('/swipe', auth, async (req, res, next) => {
         const otherUser = await User.findById(userId);
         const payload = {
           id: match._id.toString(),
-          user: otherUser ? otherUser.toPublicJSON() : null,
+          user: otherUser ? otherUser.toPublicJSON(undefined, { self: false }) : null,
         };
 
         // Push to the OTHER user so they get a MatchOverlay too.
@@ -284,6 +291,13 @@ router.get('/nearby', auth, async (req, res, next) => {
       {
         $project: {
           password: 0,
+          email: 0,
+          devices: 0,
+          deviceFingerprint: 0,
+          appleOriginalTransactionId: 0,
+          googleOriginalPurchaseToken: 0,
+          loginAttempts: 0,
+          lockoutUntil: 0,
           fcmToken: 0,
           dailySwipes: 0,
           dailySwipesDate: 0,
