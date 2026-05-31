@@ -5,11 +5,11 @@
     "scheme": "meyou",
     "version": "2.0",
     "orientation": "portrait",
-    "icon": "./src/assets/logo.jpg",
+    "icon": "./src/assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./src/assets/logo.jpg",
+      "image": "./src/assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAFAFC"
     },
@@ -34,7 +34,7 @@
       "versionCode": 5,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/logo.jpg",
+        "foregroundImage": "./src/assets/logo.png",
         "backgroundColor": "#FAFAFC"
       },
       "permissions": [
