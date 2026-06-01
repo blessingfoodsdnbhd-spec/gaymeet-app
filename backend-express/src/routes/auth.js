@@ -284,13 +284,23 @@ router.post('/send-otp', async (req, res, next) => {
     // Deliver via the email abstraction (console in dev, real provider in prod
     // once configured — utils/email.js). Never logs the code in prod; never
     // throws, so it can't break the login flow.
-    await sendEmail(
+    const mail = await sendEmail(
       normalizedEmail,
       'Your Meyou login code',
       `Your Meyou verification code is ${code}. It expires in 10 minutes.`
     );
 
-    ok(res, { success: true });
+    // FALLBACK (temporary): when no REAL email provider delivered the code
+    // (provider is 'console' or 'noop', or send failed), return the code in
+    // the response so login still works while a provider is being wired.
+    // ⚠️ SECURITY: anyone who calls send-otp for an email gets that email's
+    // login code. Remove `devCode` the moment a real MAIL_PROVIDER is set —
+    // sendEmail returns { ok:true, provider:'resend'|... } then and we omit it.
+    const realEmailSent = mail && mail.ok && mail.provider !== 'console';
+    const body = { success: true };
+    if (!realEmailSent) body.devCode = code;
+
+    ok(res, body);
   } catch (e) {
     next(e);
   }

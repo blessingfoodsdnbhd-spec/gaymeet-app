@@ -27,8 +27,10 @@ export function EmailEntryScreen() {
     if (!valid || busy) return;
     setBusy(true);
     try {
-      await sendOtp(email);
-      nav.navigate('OTPCode', { email });
+      const res = await sendOtp(email);
+      // devCode present only while no real email provider is configured —
+      // pass it through so the OTP screen can auto-fill it.
+      nav.navigate('OTPCode', { email, devCode: res?.devCode });
     } catch (e: any) {
       const status = e?.response?.status;
       const detail =

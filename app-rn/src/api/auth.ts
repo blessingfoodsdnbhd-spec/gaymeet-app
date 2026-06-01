@@ -77,8 +77,11 @@ async function postAuth<T>(path: string, body: unknown): Promise<T> {
   }
 }
 
+// `devCode` is returned by the backend ONLY while no real email provider is
+// configured (temporary fallback so login works). It is undefined once a real
+// MAIL_PROVIDER is set. The OTP screen auto-fills it when present.
 export const sendOtp = (email: string) =>
-  postAuth<{ success: true }>('/auth/send-otp', { email });
+  postAuth<{ success: true; devCode?: string }>('/auth/send-otp', { email });
 
 export const verifyOtp = (email: string, code: string) =>
   postAuth<AuthResponse>('/auth/verify-otp', { email, code });

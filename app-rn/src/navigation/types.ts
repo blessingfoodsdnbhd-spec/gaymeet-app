@@ -3,7 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type AuthStackParamList = {
   Welcome: undefined;
   EmailEntry: undefined;
-  OTPCode: { email: string };
+  OTPCode: { email: string; devCode?: string };
   InterestTagsPicker: undefined;
 };
 
