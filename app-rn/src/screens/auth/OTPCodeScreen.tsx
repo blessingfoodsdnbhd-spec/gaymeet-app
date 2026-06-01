@@ -28,7 +28,11 @@ export function OTPCodeScreen() {
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Delay so the native TextInput is mounted/ready before we focus —
+    // focusing synchronously on mount often no-ops on Android and the
+    // keyboard never appears.
+    const id = setTimeout(() => inputRef.current?.focus(), 350);
+    return () => clearTimeout(id);
   }, []);
 
   // Temporary: when no real email provider is configured the backend returns
@@ -103,14 +107,22 @@ export function OTPCodeScreen() {
           {route.params.email}
         </Text>
 
-        <View style={{ marginTop: 32, flexDirection: 'row', gap: 10 }}>
+        {/* Force the keyboard up on tap. Android sometimes leaves the hidden
+            input "focused" but with no keyboard — blur then refocus reliably
+            reopens it. */}
+        <Pressable
+          onPress={() => {
+            inputRef.current?.blur();
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          style={{ marginTop: 32, flexDirection: 'row', gap: 10 }}
+        >
           {Array.from({ length: 6 }).map((_, i) => {
             const filled = i < code.length;
             const active = i === code.length;
             return (
-              <Pressable
+              <View
                 key={i}
-                onPress={() => inputRef.current?.focus()}
                 style={{
                   width: 44,
                   height: 56,
@@ -129,10 +141,10 @@ export function OTPCodeScreen() {
                 <Text style={{ fontSize: 24, fontWeight: '600', color: theme.colors.text }}>
                   {filled ? code[i] : ''}
                 </Text>
-              </Pressable>
+              </View>
             );
           })}
-        </View>
+        </Pressable>
 
         <TextInput
           ref={inputRef}
@@ -145,7 +157,20 @@ export function OTPCodeScreen() {
           keyboardType="number-pad"
           maxLength={6}
           autoComplete="one-time-code"
-          style={{ position: 'absolute', opacity: 0 }}
+          autoFocus
+          caretHidden
+          // Must stay (nearly) on-screen and NOT opacity:0 — an absolutely
+          // positioned / fully transparent TextInput often refuses focus on
+          // Android, so the keyboard never opens. A 1x1 nearly-invisible box
+          // behind the digit cells keeps focus working on both platforms.
+          style={{
+            position: 'absolute',
+            top: 106,
+            width: 1,
+            height: 1,
+            opacity: 0.01,
+            color: 'transparent',
+          }}
         />
 
         <Pressable
