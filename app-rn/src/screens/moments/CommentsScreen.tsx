@@ -56,6 +56,20 @@ export function CommentsScreen() {
         ...(prev ?? []),
         real,
       ]);
+      // Bump the comment counter on this moment everywhere it's cached so the
+      // feed shows the new count immediately, without waiting for a refetch.
+      // Feed lists are keyed ['moments', <filter>]; the single-moment detail
+      // is keyed ['moments', <momentId>]. Match any cached Moment by _id.
+      queryClient.setQueriesData<any>({ queryKey: ['moments'] }, (data: any) => {
+        if (!data) return data;
+        const bump = (m: any) =>
+          m && m._id === momentId
+            ? { ...m, commentCount: (m.commentCount ?? 0) + 1 }
+            : m;
+        if (Array.isArray(data)) return data.map(bump);
+        if (data._id === momentId) return bump(data);
+        return data;
+      });
     },
     onError: (e: any, content) => {
       // Restore the draft so the user can retry without retyping.
