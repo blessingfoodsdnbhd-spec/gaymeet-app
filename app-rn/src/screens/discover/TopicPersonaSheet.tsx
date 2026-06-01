@@ -10,18 +10,27 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Crown, X } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Crown, Pencil, X } from 'lucide-react-native';
 
 import { Sheet } from '../../components/Sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopicPersona } from '../../api/topics';
 import { TopicUnlockRequestSheet } from './TopicUnlockRequestSheet';
+import type { RootStackParamList } from '../../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 interface Props {
   open: boolean;
   slug: string | null;
   userId: string | null;
+  // Topic name/icon to pass to the edit screen when the viewer edits their own
+  // persona. Optional — falls back to the slug if absent.
+  topicName?: string;
+  topicIcon?: string;
   onClose: () => void;
 }
 
@@ -35,9 +44,17 @@ interface Props {
  * unlock, the sheet shows a "mainProfile" section listing the owner's
  * other topic personas + real nickname + main photos.
  */
-export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
+export function TopicPersonaSheet({
+  open,
+  slug,
+  userId,
+  topicName,
+  topicIcon,
+  onClose,
+}: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<Nav>();
   const [unlockRequestOpen, setUnlockRequestOpen] = useState(false);
   // Full-screen photo viewer state — index of the photo to show. Null
   // = closed. Same pattern as AboutUserSheet so the photo gallery UX
@@ -53,8 +70,19 @@ export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
   });
 
   const persona = q.data;
+  const isSelf = !!persona?.isSelf;
   const hasUnlock = !!persona?.mainProfile;
   const galleryPhotos = persona?.photos ?? [];
+
+  const goEditPhotos = () => {
+    if (!persona) return;
+    onClose();
+    nav.navigate('TopicPersonaEdit', {
+      topicSlug: persona.topicSlug,
+      topicName: topicName ?? persona.topicSlug,
+      topicIcon,
+    });
+  };
 
   // Reset viewer state when the sheet's target persona changes —
   // otherwise opening a second persona keeps the prior PhotoViewer
@@ -213,7 +241,29 @@ export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
             </View>
           )}
 
-          {!hasUnlock && (
+          {/* Bottom CTA. Self → edit own photos (the unlock-request flow makes
+              no sense for yourself). Others → request cross-topic unlock when
+              not yet granted. */}
+          {isSelf ? (
+            <View style={{ marginTop: 24, marginBottom: 8 }}>
+              <Pressable
+                onPress={goEditPhotos}
+                style={({ pressed }) => [
+                  styles.cta,
+                  {
+                    backgroundColor: theme.colors.primary,
+                    borderColor: theme.colors.primary,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Pencil size={16} color="#FFFFFF" strokeWidth={2} />
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                  {t('topics.editYourPhotos')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : !hasUnlock ? (
             <View style={{ marginTop: 24, marginBottom: 8 }}>
               <Pressable
                 onPress={() => setUnlockRequestOpen(true)}
@@ -232,11 +282,11 @@ export function TopicPersonaSheet({ open, slug, userId, onClose }: Props) {
                 </Text>
               </Pressable>
             </View>
-          )}
+          ) : null}
         </ScrollView>
       )}
 
-      {persona && (
+      {persona && !isSelf && (
         <TopicUnlockRequestSheet
           open={unlockRequestOpen}
           ownerId={persona.userId}

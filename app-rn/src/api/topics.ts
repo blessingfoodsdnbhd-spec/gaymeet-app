@@ -33,6 +33,9 @@ export interface TopicPersonaDetail {
   age: number | null;
   bio: string | null;
   lastActiveAt: string | null;
+  // True when the viewer is looking at their OWN persona — show an edit CTA
+  // instead of the cross-topic unlock request. Set by the backend.
+  isSelf?: boolean;
   // Only present when the viewer has an APPROVED TopicUnlock for this owner.
   mainProfile?: {
     nickname: string;

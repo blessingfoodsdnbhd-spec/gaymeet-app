@@ -16,6 +16,7 @@
     "personaNicknameHint": "Used only in this topic",
     "uploadPhotos": "Upload {{count}}/{{max}} photos",
     "requestUnlock": "Request to see other topics",
+    "editYourPhotos": "Edit your photos",
     "requestConfirmTitle": "Ask {{name}} to share other topics?",
     "requestConfirmBody": "They'll be notified. If they approve, you'll see all their topic personas and their main profile.",
     "send": "Send request",

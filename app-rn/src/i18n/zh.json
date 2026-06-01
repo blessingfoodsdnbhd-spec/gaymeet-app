@@ -16,6 +16,7 @@
     "personaNicknameHint": "僅在此主題使用",
     "uploadPhotos": "已上傳 {{count}}/{{max}} 張",
     "requestUnlock": "請求查看其他主題",
+    "editYourPhotos": "編輯照片",
     "requestConfirmTitle": "向 {{name}} 請求查看其他主題?",
     "requestConfirmBody": "對方會收到通知,若同意你將能看到他/她全部的主題身份與真實個人檔案。",
     "send": "送出請求",
