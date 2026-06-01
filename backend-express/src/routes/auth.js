@@ -284,23 +284,18 @@ router.post('/send-otp', async (req, res, next) => {
     // Deliver via the email abstraction (console in dev, real provider in prod
     // once configured — utils/email.js). Never logs the code in prod; never
     // throws, so it can't break the login flow.
-    const mail = await sendEmail(
+    // Delivered via the email abstraction (real provider once configured).
+    // Note: until a provider is wired, normal users can't receive a code — the
+    // review account uses the fixed-code bypass in verify-otp instead. The
+    // earlier devCode-in-response fallback was removed (it exposed every
+    // email's code); the scoped reviewer bypass is the safer stopgap.
+    await sendEmail(
       normalizedEmail,
       'Your Meyou login code',
       `Your Meyou verification code is ${code}. It expires in 10 minutes.`
     );
 
-    // FALLBACK (temporary): when no REAL email provider delivered the code
-    // (provider is 'console' or 'noop', or send failed), return the code in
-    // the response so login still works while a provider is being wired.
-    // ⚠️ SECURITY: anyone who calls send-otp for an email gets that email's
-    // login code. Remove `devCode` the moment a real MAIL_PROVIDER is set —
-    // sendEmail returns { ok:true, provider:'resend'|... } then and we omit it.
-    const realEmailSent = mail && mail.ok && mail.provider !== 'console';
-    const body = { success: true };
-    if (!realEmailSent) body.devCode = code;
-
-    ok(res, body);
+    ok(res, { success: true });
   } catch (e) {
     next(e);
   }
@@ -315,16 +310,31 @@ router.post('/verify-otp', async (req, res, next) => {
     if (!email || !code) return err(res, 'email and code are required');
 
     const normalizedEmail = email.toLowerCase().trim();
-    const stored = otpStore.get(normalizedEmail);
 
-    if (!stored) return err(res, '验证码无效或已过期', 401);
-    if (Date.now() > stored.expiry) {
-      otpStore.delete(normalizedEmail);
-      return err(res, '验证码已过期，请重新获取', 401);
+    // ── Reviewer bypass ──────────────────────────────────────────────────────
+    // App store reviewers (Google Play / Apple) need to log in, but prod has
+    // no email provider wired yet, so the real OTP never reaches an inbox.
+    // A single hard-coded review account accepts a fixed code, so reviewers
+    // (and us) can sign in without an inbox. Scoped to ONE email + ONE code,
+    // both env-overridable. Everyone else still goes through the real OTP.
+    // TODO: remove once a real email provider is configured.
+    const REVIEW_EMAIL = (process.env.REVIEW_LOGIN_EMAIL || 'hafiz@example.com')
+      .toLowerCase()
+      .trim();
+    const REVIEW_CODE = process.env.REVIEW_LOGIN_CODE || '111111';
+    const isReviewBypass =
+      normalizedEmail === REVIEW_EMAIL && code.trim() === REVIEW_CODE;
+
+    if (!isReviewBypass) {
+      const stored = otpStore.get(normalizedEmail);
+      if (!stored) return err(res, '验证码无效或已过期', 401);
+      if (Date.now() > stored.expiry) {
+        otpStore.delete(normalizedEmail);
+        return err(res, '验证码已过期，请重新获取', 401);
+      }
+      if (stored.code !== code.trim()) return err(res, '验证码不正确', 401);
+      otpStore.delete(normalizedEmail); // one-time use
     }
-    if (stored.code !== code.trim()) return err(res, '验证码不正确', 401);
-
-    otpStore.delete(normalizedEmail); // one-time use
 
     let user = await User.findOne({ email: normalizedEmail });
     if (!user) {
