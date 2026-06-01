@@ -95,6 +95,9 @@ app.get('/support', (_req, res) => res.sendFile(path.join(publicDir, 'support.ht
 // Account-deletion instructions page — required by the Google Play Data safety
 // form (Delete account URL) and Apple 5.1.1(v).
 app.get('/delete-account', (_req, res) => res.sendFile(path.join(publicDir, 'delete-account.html')));
+// Child safety standards page — required by the Google Play child safety
+// standards policy for social/dating apps (published CSAE standards URL).
+app.get('/child-safety', (_req, res) => res.sendFile(path.join(publicDir, 'child-safety.html')));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
