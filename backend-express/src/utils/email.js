@@ -56,12 +56,34 @@ async function sendEmail(to, subject, body) {
         );
         return { ok: true, provider };
 
-      // case 'resend':  // TODO(provider) — see header.
-      //   const { Resend } = require('resend');
-      //   await new Resend(process.env.RESEND_API_KEY).emails.send({
-      //     from: process.env.MAIL_FROM, to, subject, text: body,
-      //   });
-      //   return { ok: true, provider };
+      case 'resend': {
+        // API key comes from env ONLY — never hardcoded. Hard-fail loudly if
+        // the operator selected resend but forgot the key, so it's obvious in
+        // logs rather than silently dropping every OTP.
+        if (!process.env.RESEND_API_KEY) {
+          console.error(
+            '[email] MAIL_PROVIDER=resend but RESEND_API_KEY is missing — ' +
+              'emails are NOT being sent. Set RESEND_API_KEY in the environment.'
+          );
+          return { ok: false, provider, error: 'RESEND_API_KEY missing' };
+        }
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const from = process.env.MAIL_FROM || 'Meyou <onboarding@resend.dev>';
+        // Send both html and text so plain-text clients still render the code.
+        const { error } = await resend.emails.send({
+          from,
+          to,
+          subject,
+          html: body,
+          text: body,
+        });
+        if (error) {
+          console.error('[email] resend send failed:', error.message || error);
+          return { ok: false, provider, error: error.message || String(error) };
+        }
+        return { ok: true, provider };
+      }
 
       case 'noop':
       default:
