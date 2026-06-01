@@ -31,6 +31,15 @@ export function OTPCodeScreen() {
     inputRef.current?.focus();
   }, []);
 
+  // Temporary: when no real email provider is configured the backend returns
+  // the code as route.params.devCode — auto-fill it so login works. The
+  // 6-digit auto-submit effect below then signs the user in. Once a real email
+  // provider is wired, devCode is undefined and the user types it normally.
+  useEffect(() => {
+    const dc = route.params.devCode;
+    if (dc && dc.length === 6) setCode(dc);
+  }, [route.params.devCode]);
+
   useEffect(() => {
     const id = setInterval(() => setResendIn((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
@@ -58,7 +67,9 @@ export function OTPCodeScreen() {
   const resend = async () => {
     if (resendIn > 0) return;
     try {
-      await sendOtp(route.params.email);
+      const res = await sendOtp(route.params.email);
+      // Re-fill the fresh devCode if the backend is still in no-email mode.
+      if (res?.devCode && res.devCode.length === 6) setCode(res.devCode);
       setResendIn(59);
     } catch (e: any) {
       const status = e?.response?.status;
