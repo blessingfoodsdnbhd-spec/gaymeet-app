@@ -741,8 +741,12 @@ export function ChatDetailScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        // Android (esp. tablets under the forced edge-to-edge of API 35) drifted
+        // the composer out of place with behavior=undefined + a fixed 24px
+        // offset. Use "height" on Android and drop the offset — the system
+        // adjustResize then positions the input correctly across phone/tablet.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
         {msgsQ.isLoading ? (
@@ -779,15 +783,18 @@ export function ChatDetailScreen() {
               let bubble: React.ReactNode;
               if (msg.type === 'image') {
                 bubble = (
-                  <Pressable
+                  // ImageBubble is itself a Pressable, so DON'T wrap it in
+                  // another Pressable — the inner one swallowed the tap and the
+                  // viewer never opened. Pass the open + long-press handlers
+                  // straight into ImageBubble instead.
+                  <ImageBubble
+                    msg={msg}
+                    from={mine ? 'me' : 'them'}
                     onPress={() =>
                       !msg.expired && msg.mediaUrl ? setViewerImage(msg) : null
                     }
                     onLongPress={onLongPress}
-                    delayLongPress={350}
-                  >
-                    <ImageBubble msg={msg} from={mine ? 'me' : 'them'} onPress={() => null} />
-                  </Pressable>
+                  />
                 );
               } else if (msg.type === 'location') {
                 bubble = (

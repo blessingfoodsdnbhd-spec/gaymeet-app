@@ -12,6 +12,7 @@ interface Props {
   msg: Message;
   from: 'me' | 'them';
   onPress: () => void;
+  onLongPress?: () => void;
   style?: any;
 }
 
@@ -32,7 +33,7 @@ const BUBBLE_HEIGHT = 280;
  *                     server B2 URL. The download runs in the background
  *                     the first time the bubble mounts.
  */
-export function ImageBubble({ msg, from, onPress, style }: Props) {
+export function ImageBubble({ msg, from, onPress, onLongPress, style }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const isMe = from === 'me';
@@ -98,6 +99,8 @@ export function ImageBubble({ msg, from, onPress, style }: Props) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       disabled={isSending}
       style={[
         styles.bubble,
