@@ -21,7 +21,7 @@ import { Card } from '../../components/Card';
 import { brandGradient } from '../../theme/tokens';
 import { useAuth } from '../../store/auth';
 import { getPricing, IAP_SKUS } from '../../api/subscription';
-import { purchaseSubscription, restoreSubscriptions } from '../../utils/iap';
+import { purchaseSubscription, restoreSubscriptions, getLocalizedPrices } from '../../utils/iap';
 import { PRIVACY_URL, TERMS_URL, openLegal } from '../../utils/legalUrls';
 
 const BENEFIT_KEYS = [
@@ -55,6 +55,16 @@ export function PremiumScreen() {
   });
 
   const pricing = pricingQ.data;
+
+  // Localized store prices — the EXACT strings the purchase sheet will charge
+  // (e.g. "RM 39.90"), so the displayed price always matches what Google/Apple
+  // bills. Falls back to the backend RM price if the store is unavailable.
+  const storePricesQ = useQuery({
+    queryKey: ['storePrices'],
+    queryFn: getLocalizedPrices,
+    staleTime: 5 * 60_000,
+  });
+  const storePrices = storePricesQ.data;
   const isActive = !!user && (user as any).isPremium === true;
   const expiresIso = (user as any)?.premiumExpiresAt;
 
@@ -186,7 +196,7 @@ export function PremiumScreen() {
             <View style={{ gap: 12 }}>
               <PlanCard
                 plan="annual"
-                price={pricing?.annual.price ?? 399.9}
+                priceLabel={storePrices?.annual ?? `RM ${pricing?.annual.price ?? 399.9}`}
                 period={t('premium.perYear')}
                 badge={t('premium.saveTwoMonths')}
                 monthlyEquivalent={Math.round(((pricing?.annual.price ?? 399.9) / 12) * 10) / 10}
@@ -195,7 +205,7 @@ export function PremiumScreen() {
               />
               <PlanCard
                 plan="monthly"
-                price={pricing?.monthly.price ?? 39.9}
+                priceLabel={storePrices?.monthly ?? `RM ${pricing?.monthly.price ?? 39.9}`}
                 period={t('premium.perMonth')}
                 selected={selected === 'monthly'}
                 onSelect={() => setSelected('monthly')}
@@ -284,8 +294,12 @@ export function PremiumScreen() {
         <Button
           label={
             selected === 'annual'
-              ? t('premium.ctaAnnual', { price: pricing?.annual.price ?? 399.9 })
-              : t('premium.ctaMonthly', { price: pricing?.monthly.price ?? 39.9 })
+              ? t('premium.ctaAnnualLabel', {
+                  price: storePrices?.annual ?? `RM ${pricing?.annual.price ?? 399.9}`,
+                })
+              : t('premium.ctaMonthlyLabel', {
+                  price: storePrices?.monthly ?? `RM ${pricing?.monthly.price ?? 39.9}`,
+                })
           }
           onPress={onSubscribe}
           loading={busy}
@@ -298,7 +312,7 @@ export function PremiumScreen() {
 
 function PlanCard({
   plan,
-  price,
+  priceLabel,
   period,
   badge,
   monthlyEquivalent,
@@ -306,7 +320,7 @@ function PlanCard({
   onSelect,
 }: {
   plan: Plan;
-  price: number;
+  priceLabel: string;
   period: string;
   badge?: string;
   monthlyEquivalent?: number;
@@ -329,7 +343,7 @@ function PlanCard({
     >
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}>
-          RM {price}
+          {priceLabel}
         </Text>
         <Text style={{ color: theme.colors.muted, fontSize: 14 }}>/ {period}</Text>
         {badge && (
