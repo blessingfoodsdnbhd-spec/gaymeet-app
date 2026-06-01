@@ -147,6 +147,10 @@ export interface PrivatePhotoItem {
 // `photos` is the back-compat string[] every installed client already reads
 // (signed URLs for private-bucket photos, passthrough for legacy). Newer
 // backends also send `photosDetailed` so we can refresh expiring signed URLs.
+// TODO(private-photos): once the private bucket is live, migrate this screen to
+// `photosDetailed` — render `.url`, and pass `.ref` to deletePrivatePhoto so
+// deletes match the stored b2priv:// key instead of an expiring signed URL.
+// The backend DELETE already tolerates all formats, so this is non-urgent.
 export const getPrivatePhotos = (ownerId: string) =>
   unwrap<{
     photos: string[];
