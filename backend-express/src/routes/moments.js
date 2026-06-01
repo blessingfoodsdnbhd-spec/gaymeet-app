@@ -112,6 +112,9 @@ router.get('/', auth, async (req, res, next) => {
     const result = moments.map((m) => ({
       ...m,
       likeCount: m.likes.length,
+      // Client reads `commentCount` (singular); DB field is `commentsCount`.
+      // Map it so the comment counter isn't stuck at 0.
+      commentCount: m.commentsCount || 0,
       isLiked: m.likes.some((id) => id.toString() === req.user._id.toString()),
       likes: undefined, // don't send full array
     }));
