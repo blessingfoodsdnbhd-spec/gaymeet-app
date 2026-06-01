@@ -197,6 +197,9 @@ router.get('/:slug/personas/:userId', auth, async (req, res, next) => {
       lastActiveAt: owner.lastActiveAt
         ? owner.lastActiveAt.toISOString()
         : null,
+      // Lets the client show an "edit your photos" CTA instead of the
+      // cross-topic unlock request when the viewer is looking at themselves.
+      isSelf: targetId === req.user._id.toString(),
     };
 
     // Conditional cross-topic attach. Only on approved unlock.

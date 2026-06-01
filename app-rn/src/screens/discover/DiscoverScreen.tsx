@@ -334,6 +334,11 @@ export function DiscoverScreen() {
         open={openPersona != null}
         slug={openPersona?.slug ?? null}
         userId={openPersona?.userId ?? null}
+        topicName={(() => {
+          const tp = topics.find((t) => t.slug === openPersona?.slug);
+          return tp ? tp.name[locale] ?? tp.name.en ?? tp.slug : undefined;
+        })()}
+        topicIcon={topics.find((t) => t.slug === openPersona?.slug)?.icon}
         onClose={() => setOpenPersona(null)}
       />
     </SafeAreaView>
