@@ -470,6 +470,8 @@
     "privacyPolicy": "隱私政策",
     "ctaAnnual": "年费 RM {{price}}",
     "ctaMonthly": "月费 RM {{price}}",
+    "ctaAnnualLabel": "年费 {{price}}",
+    "ctaMonthlyLabel": "月费 {{price}}",
     "subscribeSuccessTitle": "订阅成功",
     "subscribeSuccessBody": "欢迎成为 Premium 会员!",
     "subscribeFailedTitle": "订阅失败",

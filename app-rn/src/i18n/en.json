@@ -470,6 +470,8 @@
     "privacyPolicy": "Privacy Policy",
     "ctaAnnual": "Annual RM {{price}}",
     "ctaMonthly": "Monthly RM {{price}}",
+    "ctaAnnualLabel": "Annual {{price}}",
+    "ctaMonthlyLabel": "Monthly {{price}}",
     "subscribeSuccessTitle": "Subscribed!",
     "subscribeSuccessBody": "Welcome to Premium!",
     "subscribeFailedTitle": "Subscription failed",

@@ -152,6 +152,72 @@ async function purchaseAndroid(
  * Returns the backend's updated isPremium / premiumExpiresAt on success.
  * Returns null on user cancellation.
  */
+/**
+ * Localized store prices — the EXACT strings Google Play / the App Store will
+ * charge, already formatted with the user's local currency symbol (e.g.
+ * "RM 39.90", "$9.99", "€9.99"). Returned so the Premium screen can display
+ * the same number the purchase sheet will show — never a hardcoded RM value
+ * that mismatches the real charge.
+ *
+ * Returns null for a plan if the store is unavailable (Expo Go / web /
+ * not-logged-into-store) — the caller then falls back to the backend price.
+ */
+export type LocalizedPrices = {
+  monthly: string | null;
+  annual: string | null;
+};
+
+export async function getLocalizedPrices(): Promise<LocalizedPrices> {
+  const empty: LocalizedPrices = { monthly: null, annual: null };
+  let RNIap: any;
+  try {
+    RNIap = await loadRNIap();
+    await RNIap.initConnection();
+  } catch {
+    return empty; // store not available — caller falls back
+  }
+
+  try {
+    if (Platform.OS === 'ios') {
+      // iOS: two separate products, each carries localizedPrice.
+      const products = await RNIap.getSubscriptions({
+        skus: [IAP_SKUS.monthly, IAP_SKUS.annual],
+      });
+      const find = (sku: string) =>
+        (products || []).find((p: any) => p?.productId === sku);
+      const fmt = (p: any) =>
+        p?.localizedPrice || p?.displayPrice || null;
+      return {
+        monthly: fmt(find(IAP_SKUS.monthly)),
+        annual: fmt(find(IAP_SKUS.annual)),
+      };
+    }
+
+    // Android: ONE subscription with two base plans; the formatted price is
+    // in each base plan's first pricing phase.
+    const products = await RNIap.getSubscriptions({
+      skus: [ANDROID_IAP.subscriptionId],
+    });
+    const product = (products || []).find(
+      (p: any) => p?.productId === ANDROID_IAP.subscriptionId,
+    );
+    const offers = product?.subscriptionOfferDetails || [];
+    const priceForBasePlan = (basePlanId: string): string | null => {
+      const offer = offers.find((o: any) => o?.basePlanId === basePlanId);
+      const phases = offer?.pricingPhases?.pricingPhaseList || [];
+      // Last phase = the recurring price (skip any intro/free phase).
+      const phase = phases[phases.length - 1];
+      return phase?.formattedPrice || null;
+    };
+    return {
+      monthly: priceForBasePlan(ANDROID_IAP.basePlans.monthly),
+      annual: priceForBasePlan(ANDROID_IAP.basePlans.annual),
+    };
+  } catch {
+    return empty;
+  }
+}
+
 export async function purchaseSubscription(sku: string): Promise<PremiumResult | null> {
   const RNIap = await loadRNIap();
   await safeInit(RNIap);
