@@ -102,8 +102,9 @@ export function TopicPersonaEditScreen() {
     }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
+      // Preserve original aspect ratio — skip the square-crop screen. The grid
+      // shows a square thumbnail via cover-fit.
+      allowsEditing: false,
       quality: 0.85,
     });
     if (res.canceled) return;

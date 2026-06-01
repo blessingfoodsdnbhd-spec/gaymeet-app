@@ -269,7 +269,13 @@ export function ProfileScreen() {
   };
 
   // Pick + upload helpers — used for avatar tap, public grid, private grid.
-  const pickFromLibrary = async (): Promise<string | null> => {
+  // editable=true → show the crop screen but with NO aspect constraint, so the
+  // user freely chooses the framing (used for the round avatar). editable=false
+  // → skip cropping entirely and keep the ORIGINAL aspect ratio (public /
+  // private / persona photos; grids show a square thumbnail via cover-fit).
+  const pickFromLibrary = async (
+    editable = false,
+  ): Promise<string | null> => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
       Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
@@ -277,8 +283,7 @@ export function ProfileScreen() {
     }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: editable,
       quality: 0.85,
     });
     return res.canceled ? null : res.assets[0].uri;
@@ -286,7 +291,8 @@ export function ProfileScreen() {
 
   const pickAvatar = async () => {
     if (uploadingAvatar) return;
-    const uri = await pickFromLibrary();
+    // Avatar keeps the crop screen (round avatar) but with no aspect lock.
+    const uri = await pickFromLibrary(true);
     if (!uri) return;
     setUploadingAvatar(true);
     try {
