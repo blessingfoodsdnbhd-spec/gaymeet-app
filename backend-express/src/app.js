@@ -92,6 +92,9 @@ app.use('/legal', express.static(publicDir));
 app.get('/privacy', (_req, res) => res.sendFile(path.join(publicDir, 'privacy.html')));
 app.get('/terms',   (_req, res) => res.sendFile(path.join(publicDir, 'terms.html')));
 app.get('/support', (_req, res) => res.sendFile(path.join(publicDir, 'support.html')));
+// Account-deletion instructions page — required by the Google Play Data safety
+// form (Delete account URL) and Apple 5.1.1(v).
+app.get('/delete-account', (_req, res) => res.sendFile(path.join(publicDir, 'delete-account.html')));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
