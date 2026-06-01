@@ -116,13 +116,32 @@ router.post('/private-photos', auth, uploadMem.single('photo'), async (req, res,
 // ── DELETE /api/users/private-photos — remove a private photo ────────────────
 router.delete('/private-photos', auth, async (req, res, next) => {
   try {
-    const { url } = req.body;
-    if (!url) return err(res, 'url required');
+    // Accept polymorphic input for resilience across client versions:
+    //   - legacy URL string            "https://…jpg"        (matches DB)
+    //   - private-bucket key string    "b2priv://…"          (matches DB)
+    //   - detailed object              { url, ref }          (resolve to ref)
+    // and, as a last resort, a SIGNED url (token query string) that no longer
+    // string-equals the stored b2priv:// ref — match by base/containment.
+    let target = req.body.url ?? req.body.ref;
+    if (typeof target === 'object' && target !== null) {
+      target = target.ref ?? target.url;
+    }
+    if (!target) return err(res, 'url required');
 
     const user = await User.findById(req.user._id);
-    if (!user.privatePhotos.includes(url)) {
-      return err(res, 'Photo not found', 404);
+
+    if (!user.privatePhotos.includes(target)) {
+      // Last resort: the client sent a signed/display URL. Try to map it back
+      // to a stored ref by base-URL containment (strip the ?token query).
+      const base = String(target).split('?')[0];
+      const match = user.privatePhotos.find(
+        (p) => String(target).startsWith(p) || p.includes(base)
+      );
+      if (!match) return err(res, 'Photo not found', 404);
+      target = match;
     }
+
+    const url = target; // canonical stored value from here on
 
     user.privatePhotos = user.privatePhotos.filter((p) => p !== url);
     await user.save();
@@ -276,13 +295,14 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
     // Owner can always see their own photos
     if (ownerId === req.user._id.toString()) {
       const me = await User.findById(req.user._id).select('privatePhotos');
-      const photos = await resolvePrivatePhotos(me.privatePhotos);
-      // `photos`: legacy clients read the array of strings via `.url`; new
-      // clients use the {url, ref, signed, expiresIn} objects to refresh
-      // expiring signed URLs. `photoUrls` kept for older client builds.
+      const detailed = await resolvePrivatePhotos(me.privatePhotos);
+      // `photos` is a string[] of loadable URLs — the contract every shipped
+      // client expects (regression from PR #77, which made it an object array
+      // and broke display/delete). `photosDetailed` carries the {url, ref,
+      // signed, expiresIn} objects for future signed-URL refresh logic.
       return ok(res, {
-        photos,
-        photoUrls: photos.map((p) => p.url),
+        photos: detailed.map((p) => p.url),
+        photosDetailed: detailed,
         status: 'owner',
       });
     }
@@ -299,15 +319,15 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
         owner: ownerId,
         status: 'pending',
       });
-      if (pending) return ok(res, { photos: [], photoUrls: [], status: 'pending' });
-      return ok(res, { photos: [], photoUrls: [], status: 'none' });
+      if (pending) return ok(res, { photos: [], photosDetailed: [], status: 'pending' });
+      return ok(res, { photos: [], photosDetailed: [], status: 'none' });
     }
 
     const owner = await User.findById(ownerId).select('privatePhotos');
-    const photos = await resolvePrivatePhotos(owner.privatePhotos);
+    const detailed = await resolvePrivatePhotos(owner.privatePhotos);
     ok(res, {
-      photos,
-      photoUrls: photos.map((p) => p.url),
+      photos: detailed.map((p) => p.url),
+      photosDetailed: detailed,
       status: 'approved',
     });
   } catch (e) {
