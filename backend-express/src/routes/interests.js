@@ -7,16 +7,33 @@ const { auth } = require('../middleware/auth');
 const { isAdminUser } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
 
-// The 16 canonical interest tag ids — must match
-// app-rn/src/data/interestTags.ts.
+// The canonical interest tag ids — must match
+// app-rn/src/data/interestTags.ts (keep both lists in sync).
 const VALID_TAG_IDS = new Set([
+  // Original 16
   'city-walk', 'coffee', 'vinyl', 'film', 'indie-rock', 'bookclub',
   'hiking', 'matcha', 'pottery', 'skate', 'cat', 'cooking',
   'movie', 'yoga', 'boardgame', 'anime',
+  // Sports
+  'fitness', 'swimming', 'running', 'cycling', 'basketball',
+  // Food & drink
+  'hotpot', 'japanese-food', 'dessert', 'wine', 'whisky', 'cocktails',
+  // Culture
+  'exhibitions', 'jazz', 'kpop',
+  // Outdoors
+  'camping', 'diving', 'skiing', 'climbing', 'surfing',
+  // Travel
+  'backpacking', 'islands',
+  // Work & craft
+  'startup', 'investing', 'coding', 'design',
+  // Lifestyle
+  'dogs', 'gardening', 'baking', 'fashion',
+  // Nightlife
+  'clubbing', 'bars', 'ktv',
 ]);
 
 const MIN_TAGS = 3;
-const MAX_TAGS = 16;
+const MAX_TAGS = 20;
 
 // ── PATCH /api/me/interests ───────────────────────────────────────────────────
 // Body: { interests: string[] }
