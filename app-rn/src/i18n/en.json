@@ -299,7 +299,8 @@
       "languageValueZh": "Chinese",
       "languageValueEn": "English",
       "account": "Account & security",
-      "photoRequests": "Photo requests"
+      "photoRequests": "Photo requests",
+      "announcementAdmin": "Announcement manager"
     },
     "edit": {
       "title": "Edit profile",
@@ -518,5 +519,31 @@
     "save": "Save",
     "cancel": "Cancel",
     "ok": "OK"
+  },
+  "admin": {
+    "error": "Error",
+    "ann": {
+      "title": "Announcement Manager",
+      "newTitle": "New announcement",
+      "imageUrl": "Image URL",
+      "imageUrlRequired": "Image URL is required",
+      "ctaUrl": "Link URL (optional)",
+      "ctaTitle": "Title (optional)",
+      "ctaTitlePh": "Internal label",
+      "startsAt": "Starts at (optional)",
+      "endsAt": "Ends at (optional)",
+      "dateHint": "ISO 8601, e.g. 2026-06-10T00:00:00Z. Leave blank for always-on.",
+      "publish": "Publish",
+      "existing": "Existing announcements",
+      "empty": "No announcements yet.",
+      "loadFailed": "Failed to load. Tap to retry.",
+      "active": "Active",
+      "inactive": "Hidden",
+      "untitled": "(untitled)",
+      "noLink": "No link",
+      "deleteTitle": "Delete announcement?",
+      "deleteBody": "This hides it from users. You can re-enable it later.",
+      "delete": "Delete"
+    }
   }
 }
