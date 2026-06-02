@@ -105,6 +105,7 @@
       "distance": "Distance",
       "interests": "Interests",
       "unlimited": "All",
+      "worldwideHint": "Showing up to 300 people worldwide",
       "interestsCount": "{{n}} selected",
       "reset": "Reset",
       "apply": "Apply"

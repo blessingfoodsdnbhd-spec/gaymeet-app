@@ -234,9 +234,18 @@ router.get('/nearby', auth, async (req, res, next) => {
     // the FiltersSheet; the prior `|| 10` pattern silently reverted that
     // to a 10km cap, so users saw FEWER results when picking unlimited.
     const radiusKmRaw = parseFloat(req.query.radiusKm);
-    const maxDistance = Number.isFinite(radiusKmRaw) && radiusKmRaw > 0
+    const hasRadius = Number.isFinite(radiusKmRaw);
+    // The FiltersSheet "不限/unlimited" chip sends radiusKm=0 explicitly →
+    // drop the distance cap entirely (truly worldwide) and load up to 300.
+    // A bounded radius keeps its cap; a missing/NaN radius keeps the 100km
+    // default. Only an explicit 0/negative means "worldwide".
+    const unlimited = hasRadius && radiusKmRaw <= 0;
+    const maxDistance = hasRadius && radiusKmRaw > 0
       ? Math.min(radiusKmRaw * 1000, MAX_DISTANCE_M)
-      : MAX_DISTANCE_M;
+      : (unlimited ? null : MAX_DISTANCE_M);
+    // Worldwide pulls a larger page so the grid isn't starved; bounded radius
+    // keeps the standard 80.
+    const PAGE_SIZE = unlimited ? 300 : 80;
 
     // Mirror /cards: optional comma-separated interest filter. When set,
     // only candidates with at least one matching tag are returned.
@@ -271,16 +280,18 @@ router.get('/nearby', auth, async (req, res, next) => {
       baseQuery.interests = { $in: filterInterests };
     }
 
+    const geoNear = {
+      near: { type: 'Point', coordinates: [lng, lat] },
+      distanceField: 'distanceMeters',
+      spherical: true,
+      query: baseQuery,
+    };
+    // Omit maxDistance entirely when unlimited so $geoNear returns the nearest
+    // matches worldwide (still sorted by distance), capped only by $limit.
+    if (maxDistance != null) geoNear.maxDistance = maxDistance;
+
     const pipeline = [
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [lng, lat] },
-          distanceField: 'distanceMeters',
-          maxDistance,
-          spherical: true,
-          query: baseQuery,
-        },
-      },
+      { $geoNear: geoNear },
       {
         $addFields: {
           sharedTags: {
@@ -288,7 +299,7 @@ router.get('/nearby', auth, async (req, res, next) => {
           },
         },
       },
-      { $limit: 80 },
+      { $limit: PAGE_SIZE },
       {
         $project: {
           password: 0,

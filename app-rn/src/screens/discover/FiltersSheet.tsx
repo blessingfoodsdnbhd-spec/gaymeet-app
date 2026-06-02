@@ -129,6 +129,11 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
               );
             })}
           </View>
+          {radius === 100 && (
+            <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
+              {t('discover.filters.worldwideHint')}
+            </Text>
+          )}
 
           <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
             {t('discover.filters.interests')} ·{' '}
