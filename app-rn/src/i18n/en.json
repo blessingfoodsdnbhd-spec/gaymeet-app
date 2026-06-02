@@ -229,6 +229,7 @@
   "about": {
     "section": "About",
     "interestsCount": "Interests · {{n}} in common",
+    "alsoLikes": "You're into these too ✨",
     "likeCta": "Like {{name}}",
     "follow": "Follow",
     "following": "Following",

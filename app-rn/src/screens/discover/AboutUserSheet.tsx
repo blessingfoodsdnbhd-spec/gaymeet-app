@@ -88,6 +88,16 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const isSelf = !!user && !!meFresh?.id && user.id === meFresh.id;
   const hasPrivate = !isSelf && (user?.privatePhotosCount ?? 0) > 0;
 
+  // Interests the viewer ALSO has — highlighted in the tag row. Computed
+  // client-side (viewer ∩ this user) so it works from every entry point: the
+  // Nearby grid passes backend-computed sharedTags, but Moments/Comments don't.
+  // Skip when viewing yourself (everything would "match").
+  const sharedTags = React.useMemo(() => {
+    if (isSelf) return [] as InterestTagId[];
+    const mine = new Set<string>((meFresh?.interests ?? []) as string[]);
+    return ((user?.interests ?? []) as InterestTagId[]).filter((id) => mine.has(id));
+  }, [isSelf, user?.interests, meFresh?.interests]);
+
   // Reset local liked flag when the target user changes.
   React.useEffect(() => {
     setLiked(false);
@@ -358,8 +368,13 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
-              {t('about.interestsCount', { n: (user.sharedTags ?? []).length })}
+              {t('about.interestsCount', { n: sharedTags.length })}
             </Text>
+            {sharedTags.length > 0 && (
+              <Text style={{ color: theme.colors.primaryDeep, fontSize: 12, fontWeight: '600', marginBottom: 8 }}>
+                {t('about.alsoLikes')}
+              </Text>
+            )}
             <View style={styles.tagsRow}>
               {((user.interests ?? []) as InterestTagId[]).map((id) => {
                 const tag = tagById(id);
@@ -368,7 +383,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                   <TagChip
                     key={id}
                     tag={tag}
-                    shared={(user.sharedTags ?? []).includes(id)}
+                    shared={sharedTags.includes(id)}
                   />
                 );
               })}
