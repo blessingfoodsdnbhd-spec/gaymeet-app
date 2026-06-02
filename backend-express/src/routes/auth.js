@@ -12,6 +12,7 @@ const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
 const { sendEmail } = require('../utils/email');
 const RefreshToken = require('../models/RefreshToken');
+const OtpCode = require('../models/OtpCode');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -23,10 +24,6 @@ const GOOGLE_KNOWN_CLIENT_IDS = [
   '208538145733-r5ib29ovl992losq4hvpu4rt6lniv22a.apps.googleusercontent.com', // Web
   '208538145733-ccuidhniu111ssc70ri9kjrdv6095obs.apps.googleusercontent.com', // iOS
 ];
-
-// In-memory OTP store: normalizedEmail → { code, expiry }
-// Fine for single-instance; replace with Redis for multi-instance.
-const otpStore = new Map();
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res, next) => {
@@ -277,9 +274,15 @@ router.post('/send-otp', async (req, res, next) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiry = Date.now() + 10 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    otpStore.set(normalizedEmail, { code, expiry });
+    // Persist in MongoDB (durable + shared across instances) — upsert so a
+    // re-send overwrites any prior code for this email.
+    await OtpCode.findOneAndUpdate(
+      { email: normalizedEmail },
+      { code, expiresAt },
+      { upsert: true, new: true }
+    );
 
     // Deliver via the email abstraction (console in dev, real provider in prod
     // once configured — utils/email.js). Never logs the code in prod; never
@@ -326,14 +329,14 @@ router.post('/verify-otp', async (req, res, next) => {
       normalizedEmail === REVIEW_EMAIL && code.trim() === REVIEW_CODE;
 
     if (!isReviewBypass) {
-      const stored = otpStore.get(normalizedEmail);
+      const stored = await OtpCode.findOne({ email: normalizedEmail });
       if (!stored) return err(res, '验证码无效或已过期', 401);
-      if (Date.now() > stored.expiry) {
-        otpStore.delete(normalizedEmail);
+      if (Date.now() > stored.expiresAt.getTime()) {
+        await OtpCode.deleteOne({ email: normalizedEmail });
         return err(res, '验证码已过期，请重新获取', 401);
       }
       if (stored.code !== code.trim()) return err(res, '验证码不正确', 401);
-      otpStore.delete(normalizedEmail); // one-time use
+      await OtpCode.deleteOne({ email: normalizedEmail }); // one-time use
     }
 
     let user = await User.findOne({ email: normalizedEmail });
