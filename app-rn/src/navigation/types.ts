@@ -42,4 +42,5 @@ export type RootStackParamList = {
     topicIcon?: string;
   };
   UnlockRequests: undefined;
+  AnnouncementAdmin: undefined;
 };

@@ -15,6 +15,7 @@ import { PrivacySettings } from '../screens/profile/settings/PrivacySettings';
 import { NotificationSettings } from '../screens/profile/settings/NotificationSettings';
 import { LanguageSettings } from '../screens/profile/settings/LanguageSettings';
 import { AccountSettings } from '../screens/profile/settings/AccountSettings';
+import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScreen';
 import { CommentsScreen } from '../screens/moments/CommentsScreen';
 import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
@@ -107,6 +108,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="PhotoRequests"
             component={PhotoRequestsScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="AnnouncementAdmin"
+            component={AnnouncementAdminScreen}
             options={{ animation: 'slide_from_right' }}
           />
         </>

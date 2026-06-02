@@ -21,6 +21,7 @@ import {
   Globe,
   Lock,
   ShieldCheck,
+  Megaphone,
   Settings as SettingsIcon,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +44,7 @@ import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
+import { fetchIsAdmin, getCachedIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
 import {
   uploadPrivatePhoto,
@@ -89,6 +91,18 @@ export function ProfileScreen() {
     staleTime: 60_000,
     enabled: !!user,
   });
+
+  // Admin gate for in-app admin UI (e.g. Announcement Manager). Seeded from
+  // the AsyncStorage cache so the row doesn't flash on every cold start, then
+  // confirmed against the server.
+  const isAdminQ = useQuery({
+    queryKey: ['me', 'isAdmin'],
+    queryFn: fetchIsAdmin,
+    initialData: () => getCachedIsAdmin() as any,
+    staleTime: 60 * 60_000,
+    enabled: !!user,
+  });
+  const isAdmin = isAdminQ.data === true;
 
   // Self's private photo URLs. Backend special-cases self → returns the
   // real URLs with status='owner'. toPublicJSON strips these from /me.
@@ -819,6 +833,16 @@ export function ProfileScreen() {
               label={t('profile.rows.account')}
               onPress={() => nav.navigate('AccountSettings')}
             />
+            {isAdmin && (
+              <>
+                <Divider />
+                <SettingsRow
+                  icon={<Megaphone size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                  label={t('profile.rows.announcementAdmin')}
+                  onPress={() => nav.navigate('AnnouncementAdmin')}
+                />
+              </>
+            )}
           </Card>
 
           <Text
