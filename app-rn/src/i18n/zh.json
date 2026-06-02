@@ -229,6 +229,9 @@
   "about": {
     "section": "关于",
     "interestsCount": "兴趣 · {{n}} 个共同",
+    "stats": {
+      "age": "{{n}} 岁"
+    },
     "alsoLikes": "你也喜欢这些 ✨",
     "likeCta": "想认识 {{name}}",
     "follow": "关注",
@@ -310,6 +313,19 @@
       "bio": "简介",
       "bioPlaceholder": "一两句介绍自己",
       "age": "年龄",
+      "height": "身高 (cm)",
+      "weight": "体重 (kg)",
+      "bodyType": "体型",
+      "bodyTypes": {
+        "average": "普通",
+        "fit": "健身",
+        "chubby": "微胖",
+        "slim": "瘦"
+      },
+      "occupation": "职业",
+      "occupationPlaceholder": "你做什么工作?",
+      "city": "城市",
+      "cityPlaceholder": "你在哪个城市?",
       "saveFailed": "保存失败",
       "photoPermTitle": "需要照片权限",
       "photoPermBody": "在系统设置中允许 Meyou 访问你的照片。",

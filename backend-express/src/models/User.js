@@ -69,6 +69,9 @@ const userSchema = new mongoose.Schema(
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg
     age: { type: Number, default: null },
+    bodyType: { type: String, default: null }, // 'average' | 'fit' | 'chubby' | 'slim'
+    occupation: { type: String, default: null }, // free text
+    city: { type: String, default: null }, // free text
     countryCode: { type: String, default: null }, // 'MY', 'SG', etc.
 
     // Geolocation — 2dsphere index for $geoNear queries
@@ -250,7 +253,7 @@ userSchema.methods.comparePassword = function (plain) {
 const PUBLIC_USER_FIELDS = [
   '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
   'interests', 'interestsOnboardedAt', 'prompts',
-  'height', 'weight', 'age', 'countryCode', 'location',
+  'height', 'weight', 'age', 'bodyType', 'occupation', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
   'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',

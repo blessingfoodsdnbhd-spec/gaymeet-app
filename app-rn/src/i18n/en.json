@@ -229,6 +229,9 @@
   "about": {
     "section": "About",
     "interestsCount": "Interests · {{n}} in common",
+    "stats": {
+      "age": "{{n}} yrs"
+    },
     "alsoLikes": "You're into these too ✨",
     "likeCta": "Like {{name}}",
     "follow": "Follow",
@@ -310,6 +313,19 @@
       "bio": "Bio",
       "bioPlaceholder": "A line or two about you",
       "age": "Age",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "bodyType": "Body Type",
+      "bodyTypes": {
+        "average": "Average",
+        "fit": "Fit",
+        "chubby": "Chubby",
+        "slim": "Slim"
+      },
+      "occupation": "Occupation",
+      "occupationPlaceholder": "What do you do?",
+      "city": "City",
+      "cityPlaceholder": "Which city are you in?",
       "saveFailed": "Save failed",
       "photoPermTitle": "Photo permission required",
       "photoPermBody": "Allow Meyou to access your photos in Settings.",
