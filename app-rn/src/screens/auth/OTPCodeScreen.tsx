@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, Pressable, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,15 +25,6 @@ export function OTPCodeScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(59);
-  const inputRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    // Delay so the native TextInput is mounted/ready before we focus —
-    // focusing synchronously on mount often no-ops on Android and the
-    // keyboard never appears.
-    const id = setTimeout(() => inputRef.current?.focus(), 350);
-    return () => clearTimeout(id);
-  }, []);
 
   // Temporary: when no real email provider is configured the backend returns
   // the code as route.params.devCode — auto-fill it so login works. The
@@ -107,69 +98,35 @@ export function OTPCodeScreen() {
           {route.params.email}
         </Text>
 
-        {/* Force the keyboard up on tap. Android sometimes leaves the hidden
-            input "focused" but with no keyboard — blur then refocus reliably
-            reopens it. */}
-        <Pressable
-          onPress={() => {
-            inputRef.current?.blur();
-            setTimeout(() => inputRef.current?.focus(), 50);
-          }}
-          style={{ marginTop: 32, flexDirection: 'row', gap: 10 }}
-        >
-          {Array.from({ length: 6 }).map((_, i) => {
-            const filled = i < code.length;
-            const active = i === code.length;
-            return (
-              <View
-                key={i}
-                style={{
-                  width: 44,
-                  height: 56,
-                  borderRadius: 12,
-                  borderWidth: 1.5,
-                  borderColor: active
-                    ? theme.colors.primary
-                    : err
-                      ? theme.colors.danger
-                      : theme.colors.line,
-                  backgroundColor: theme.colors.surface,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 24, fontWeight: '600', color: theme.colors.text }}>
-                  {filled ? code[i] : ''}
-                </Text>
-              </View>
-            );
-          })}
-        </Pressable>
-
+        {/* Single visible numeric field. A real, on-screen TextInput captures
+            keystrokes reliably across all Android keyboards/IMEs — the previous
+            hidden/zero-area input pattern silently dropped input on Android. */}
         <TextInput
-          ref={inputRef}
           value={code}
           onChangeText={(v) => {
-            const clean = v.replace(/\D/g, '').slice(0, 6);
-            setCode(clean);
+            setCode(v.replace(/\D/g, '').slice(0, 6));
             if (err) setErr(null);
           }}
           keyboardType="number-pad"
           maxLength={6}
-          autoComplete="one-time-code"
-          autoFocus
-          caretHidden
-          // Must stay (nearly) on-screen and NOT opacity:0 — an absolutely
-          // positioned / fully transparent TextInput often refuses focus on
-          // Android, so the keyboard never opens. A 1x1 nearly-invisible box
-          // behind the digit cells keeps focus working on both platforms.
+          autoFocus={Platform.OS === 'ios'}
+          textContentType={Platform.OS === 'ios' ? 'oneTimeCode' : undefined}
+          placeholder="000000"
+          placeholderTextColor={theme.colors.muted}
           style={{
-            position: 'absolute',
-            top: 106,
-            width: 1,
-            height: 1,
-            opacity: 0.01,
-            color: 'transparent',
+            fontSize: 28,
+            letterSpacing: 12,
+            textAlign: 'center',
+            color: err ? theme.colors.danger : theme.colors.text,
+            borderWidth: 1.5,
+            borderColor: err ? theme.colors.danger : theme.colors.line,
+            borderRadius: 12,
+            backgroundColor: theme.colors.surface,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            width: '80%',
+            alignSelf: 'center',
+            marginTop: 20,
           }}
         />
 
