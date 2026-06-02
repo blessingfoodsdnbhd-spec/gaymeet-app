@@ -229,6 +229,7 @@
   "about": {
     "section": "关于",
     "interestsCount": "兴趣 · {{n}} 个共同",
+    "alsoLikes": "你也喜欢这些 ✨",
     "likeCta": "想认识 {{name}}",
     "follow": "关注",
     "following": "已关注",
