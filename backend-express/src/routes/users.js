@@ -17,7 +17,8 @@ router.get('/me', auth, async (req, res, next) => {
 router.patch('/me', auth, async (req, res, next) => {
   try {
     const allowed = [
-      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'countryCode', 'lookingFor', 'role',
+      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'bodyType', 'occupation', 'city',
+      'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
     ];
     const updates = {};

@@ -13,6 +13,11 @@ export interface User {
   avatarUrl?: string | null;
   photos?: string[];
   age?: number | null;
+  height?: number | null; // cm
+  weight?: number | null; // kg
+  bodyType?: string | null; // 'average' | 'fit' | 'chubby' | 'slim'
+  occupation?: string | null;
+  city?: string | null;
   countryCode?: string | null;
 
   // Meyou v2 fields
@@ -50,7 +55,12 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 export const getMe = () => unwrap<User>(api.get('/users/me'));
 
 export const patchMe = (
-  patch: Partial<Pick<User, 'nickname' | 'bio'>> & { tags?: string[]; age?: number },
+  patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'occupation' | 'city'>> & {
+    tags?: string[];
+    age?: number;
+    height?: number;
+    weight?: number;
+  },
 ) => unwrap<User>(api.patch('/users/me', patch));
 
 /** Setting interests is what flips `interestsOnboardedAt` from null → now. */

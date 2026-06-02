@@ -268,6 +268,37 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </IconButton>
           </View>
 
+          {(() => {
+            // Compact stats pills — age (more prominent than the inline header
+            // suffix), plus any optional body/work/location fields the user has
+            // filled. Hidden entirely when nothing is set.
+            const stats: string[] = [];
+            if (user.age) stats.push(t('about.stats.age', { n: user.age }));
+            if (user.height) stats.push(`${user.height} cm`);
+            if (user.weight) stats.push(`${user.weight} kg`);
+            if (user.bodyType) stats.push(t(`profile.edit.bodyTypes.${user.bodyType}`));
+            if (user.occupation) stats.push(user.occupation);
+            if (user.city) stats.push(user.city);
+            if (stats.length === 0) return null;
+            return (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                {stats.map((s, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: theme.radius.pill,
+                      backgroundColor: theme.colors.surface2,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: theme.colors.text2 }}>{s}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+
           {user.prompts && user.prompts.length > 0 && (
             <Card surface2 flat style={{ padding: 14, marginTop: 8 }}>
               <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>

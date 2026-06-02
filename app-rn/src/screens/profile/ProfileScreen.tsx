@@ -79,6 +79,11 @@ export function ProfileScreen() {
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [age, setAge] = useState(user?.age != null ? String(user.age) : '');
+  const [height, setHeight] = useState(user?.height != null ? String(user.height) : '');
+  const [weight, setWeight] = useState(user?.weight != null ? String(user.weight) : '');
+  const [bodyType, setBodyType] = useState<string | null>(user?.bodyType ?? null);
+  const [occupation, setOccupation] = useState(user?.occupation ?? '');
+  const [city, setCity] = useState(user?.city ?? '');
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [publicBusy, setPublicBusy] = useState(false);
@@ -240,7 +245,16 @@ export function ProfileScreen() {
   };
 
   const saveMut = useMutation({
-    mutationFn: (patch: { nickname?: string; bio?: string; age?: number }) => patchMe(patch),
+    mutationFn: (patch: {
+      nickname?: string;
+      bio?: string;
+      age?: number;
+      height?: number;
+      weight?: number;
+      bodyType?: string;
+      occupation?: string;
+      city?: string;
+    }) => patchMe(patch),
     onSuccess: (updated) => setUser(updated),
     onError: (e: any) => {
       const detail = e?.response?.data?.error || e?.message || '';
@@ -281,6 +295,34 @@ export function ProfileScreen() {
     if (n !== undefined && (isNaN(n) || n < 18 || n > 99)) return;
     saveMut.mutate({ age: n });
   };
+  const saveHeight = () => {
+    const n = height ? parseInt(height, 10) : undefined;
+    if (n === user.height) return;
+    if (n !== undefined && (isNaN(n) || n < 100 || n > 250)) return;
+    saveMut.mutate({ height: n });
+  };
+  const saveWeight = () => {
+    const n = weight ? parseInt(weight, 10) : undefined;
+    if (n === user.weight) return;
+    if (n !== undefined && (isNaN(n) || n < 30 || n > 300)) return;
+    saveMut.mutate({ weight: n });
+  };
+  const saveOccupation = () => {
+    const next = occupation.trim();
+    if (next === (user.occupation ?? '').trim()) return;
+    saveMut.mutate({ occupation: next });
+  };
+  const saveCity = () => {
+    const next = city.trim();
+    if (next === (user.city ?? '').trim()) return;
+    saveMut.mutate({ city: next });
+  };
+  const pickBodyType = (id: string) => {
+    const next = bodyType === id ? null : id; // tap again to clear
+    setBodyType(next);
+    saveMut.mutate({ bodyType: next ?? '' });
+  };
+  const BODY_TYPES = ['average', 'fit', 'chubby', 'slim'];
 
   // Pick + upload helpers — used for avatar tap, public grid, private grid.
   // editable=true → show the crop screen but with NO aspect constraint, so the
@@ -788,6 +830,93 @@ export function ProfileScreen() {
                 backgroundColor: theme.colors.surface,
                 width: 90,
               },
+            ]}
+          />
+
+          {/* Height + Weight (both optional) */}
+          <SectionTitle>{t('profile.edit.height')}</SectionTitle>
+          <TextInput
+            value={height}
+            onChangeText={(v) => setHeight(v.replace(/\D/g, '').slice(0, 3))}
+            onEndEditing={saveHeight}
+            keyboardType="number-pad"
+            maxLength={3}
+            placeholder="cm"
+            placeholderTextColor={theme.colors.muted}
+            style={[
+              styles.inlineField,
+              { color: theme.colors.text, borderColor: theme.colors.line, backgroundColor: theme.colors.surface, width: 120 },
+            ]}
+          />
+
+          <SectionTitle>{t('profile.edit.weight')}</SectionTitle>
+          <TextInput
+            value={weight}
+            onChangeText={(v) => setWeight(v.replace(/\D/g, '').slice(0, 3))}
+            onEndEditing={saveWeight}
+            keyboardType="number-pad"
+            maxLength={3}
+            placeholder="kg"
+            placeholderTextColor={theme.colors.muted}
+            style={[
+              styles.inlineField,
+              { color: theme.colors.text, borderColor: theme.colors.line, backgroundColor: theme.colors.surface, width: 120 },
+            ]}
+          />
+
+          {/* Body type — single-select chips, tap again to clear */}
+          <SectionTitle>{t('profile.edit.bodyType')}</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {BODY_TYPES.map((id) => {
+              const active = bodyType === id;
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => pickBodyType(id)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                    borderRadius: theme.radius.pill,
+                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
+                    borderWidth: active ? 0 : 1,
+                    borderColor: theme.colors.line,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
+                    {t(`profile.edit.bodyTypes.${id}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Occupation + City (both optional, free text) */}
+          <SectionTitle>{t('profile.edit.occupation')}</SectionTitle>
+          <TextInput
+            value={occupation}
+            onChangeText={setOccupation}
+            onEndEditing={saveOccupation}
+            placeholder={t('profile.edit.occupationPlaceholder')}
+            placeholderTextColor={theme.colors.muted}
+            maxLength={40}
+            style={[
+              styles.inlineField,
+              { color: theme.colors.text, borderColor: theme.colors.line, backgroundColor: theme.colors.surface },
+            ]}
+          />
+
+          <SectionTitle>{t('profile.edit.city')}</SectionTitle>
+          <TextInput
+            value={city}
+            onChangeText={setCity}
+            onEndEditing={saveCity}
+            placeholder={t('profile.edit.cityPlaceholder')}
+            placeholderTextColor={theme.colors.muted}
+            maxLength={40}
+            style={[
+              styles.inlineField,
+              { color: theme.colors.text, borderColor: theme.colors.line, backgroundColor: theme.colors.surface },
             ]}
           />
 
