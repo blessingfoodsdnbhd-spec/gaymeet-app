@@ -102,9 +102,11 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
           />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
-            {moment.user.nickname}
-          </Text>
+          <Pressable onPress={() => onTapAuthor?.(moment)} hitSlop={4}>
+            <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
+              {moment.user.nickname}
+            </Text>
+          </Pressable>
           <Text style={{ color: theme.colors.muted, fontSize: 11.5, marginTop: 2 }}>
             {shortTime(moment.createdAt)}
             {moment.user.countryCode ? ` · ${moment.user.countryCode}` : ''}

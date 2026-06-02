@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { useAboutUserSheet } from '../../components/useAboutUserSheet';
 import {
   getComments,
   postComment,
@@ -43,6 +44,7 @@ export function CommentsScreen() {
   const { momentId } = route.params;
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
+  const { openAbout, aboutSheet } = useAboutUserSheet();
 
   const commentsQ = useQuery({
     queryKey: ['moments', 'comments', momentId],
@@ -139,7 +141,9 @@ export function CommentsScreen() {
                 }}
               />
             )}
-            renderItem={({ item }) => <CommentRow comment={item} />}
+            renderItem={({ item }) => (
+              <CommentRow comment={item} onTapAuthor={openAbout} />
+            )}
             ListEmptyComponent={
               <View style={styles.centerFill}>
                 <Text style={{ color: theme.colors.muted, fontSize: 14 }}>{t('moments.comments.empty')}</Text>
@@ -193,11 +197,19 @@ export function CommentsScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {aboutSheet}
     </SafeAreaView>
   );
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
+function CommentRow({
+  comment,
+  onTapAuthor,
+}: {
+  comment: Comment;
+  onTapAuthor?: (userId: string) => void;
+}) {
   const theme = useTheme();
   return (
     <View
@@ -208,16 +220,20 @@ function CommentRow({ comment }: { comment: Comment }) {
         paddingVertical: 12,
       }}
     >
-      <Avatar
-        name={comment.user.nickname}
-        uri={comment.user.avatarUrl}
-        avatarIdx={idxFor(comment.user._id)}
-        size={36}
-      />
+      <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
+        <Avatar
+          name={comment.user.nickname}
+          uri={comment.user.avatarUrl}
+          avatarIdx={idxFor(comment.user._id)}
+          size={36}
+        />
+      </Pressable>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}>
-          {comment.user.nickname}
-        </Text>
+        <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}>
+            {comment.user.nickname}
+          </Text>
+        </Pressable>
         <Text style={{ fontSize: 14, color: theme.colors.text, marginTop: 4, lineHeight: 20 }}>
           {comment.content}
         </Text>

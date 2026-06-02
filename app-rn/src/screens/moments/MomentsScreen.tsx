@@ -21,6 +21,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Button } from '../../components/Button';
 import { MomentItem } from './MomentItem';
+import { useAboutUserSheet } from '../../components/useAboutUserSheet';
 import { uploadFile } from '../../api/upload';
 import { postMoment } from '../../api/moments';
 import type { RootStackParamList } from '../../navigation/types';
@@ -42,6 +43,7 @@ export function MomentsScreen() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<MomentsFilter>('all');
   const filters = FILTER_IDS.map((id) => ({ id, label: t(`moments.filters.${id}`) }));
+  const { openAbout, aboutSheet } = useAboutUserSheet();
 
   const feedQ = useQuery({
     queryKey: ['moments', filter],
@@ -212,6 +214,7 @@ export function MomentsScreen() {
             <MomentItem
               moment={item}
               onToggleLike={(m) => likeMut.mutate(m._id)}
+              onTapAuthor={(m) => openAbout(m.user._id)}
               onOpenComments={(m) => nav.navigate('Comments', { momentId: m._id })}
             />
           )}
@@ -237,6 +240,8 @@ export function MomentsScreen() {
           }
         />
       )}
+
+      {aboutSheet}
     </SafeAreaView>
   );
 }
