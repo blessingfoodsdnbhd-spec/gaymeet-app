@@ -1,9 +1,8 @@
 // Meyou 密友 — admin announcement CRUD.
 //
-// Gated by X-Admin-Token header (same pattern as admin-cleanup.js and the
-// google-status diagnostic). If ADMIN_TOKEN env is unset on the deploy,
-// the entire router responds 503 — so a forgotten env var can never
-// silently expose CRUD on user-facing modals.
+// Gated by requireAdminAuth: accepts EITHER the X-Admin-Token header (curl /
+// machine path) OR a Bearer JWT for a user whose email is in ADMIN_EMAILS
+// (in-app admin path). See middleware/adminAuth.js.
 //
 // Mounted at /api/admin (see app.js), so the full URLs become:
 //   POST   /api/admin/announcements
@@ -13,22 +12,9 @@
 const router = require('express').Router();
 const Announcement = require('../models/Announcement');
 const { ok, created, err } = require('../utils/respond');
+const { requireAdminAuth } = require('../middleware/adminAuth');
 
-function adminAuth(req, res, next) {
-  if (!process.env.ADMIN_TOKEN) {
-    return err(
-      res,
-      'Admin endpoint disabled — ADMIN_TOKEN env var not set',
-      503,
-    );
-  }
-  if (req.headers['x-admin-token'] !== process.env.ADMIN_TOKEN) {
-    return err(res, 'Forbidden', 403);
-  }
-  next();
-}
-
-router.use(adminAuth);
+router.use(requireAdminAuth);
 
 // Coerce an ISO/epoch input to Date or null. Bad input → undefined so
 // callers can detect "you sent a bad value" vs "you sent null on purpose".

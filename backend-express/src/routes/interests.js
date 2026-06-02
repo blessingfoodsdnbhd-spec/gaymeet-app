@@ -4,6 +4,7 @@ const Match = require('../models/Match');
 const Follow = require('../models/Follow');
 const Moment = require('../models/Moment');
 const { auth } = require('../middleware/auth');
+const { isAdminUser } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
 
 // The 16 canonical interest tag ids — must match
@@ -154,6 +155,13 @@ router.get('/pricing', async (_req, res) => {
     monthly: { price: 39.9, currency: 'MYR', period: 'month' },
     annual:  { price: 399.9, currency: 'MYR', period: 'year' },
   });
+});
+
+// ── GET /api/me/is-admin ──────────────────────────────────────────────────────
+// Lets the client show/hide in-app admin UI (e.g. the Announcement Manager).
+// True iff the authenticated user's email is in the ADMIN_EMAILS allowlist.
+router.get('/is-admin', auth, (req, res) => {
+  ok(res, { isAdmin: isAdminUser(req.user) });
 });
 
 module.exports = router;

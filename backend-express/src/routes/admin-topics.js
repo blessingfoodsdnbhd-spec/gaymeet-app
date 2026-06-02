@@ -6,28 +6,15 @@
 //   PATCH  /api/admin/topics/:slug    — update
 //   DELETE /api/admin/topics/:slug    — soft delete (isActive=false)
 //
-// Gated by X-Admin-Token header; same fail-closed 503-when-unset
-// pattern as admin-cleanup + admin-announcements + google-status.
+// Gated by requireAdminAuth: X-Admin-Token header OR an ADMIN_EMAILS JWT.
+// See middleware/adminAuth.js.
 const router = require('express').Router();
 const Topic = require('../models/Topic');
 const TopicPersona = require('../models/TopicPersona');
 const { ok, created, err } = require('../utils/respond');
+const { requireAdminAuth } = require('../middleware/adminAuth');
 
-function adminAuth(req, res, next) {
-  if (!process.env.ADMIN_TOKEN) {
-    return err(
-      res,
-      'Admin endpoint disabled — ADMIN_TOKEN env var not set',
-      503,
-    );
-  }
-  if (req.headers['x-admin-token'] !== process.env.ADMIN_TOKEN) {
-    return err(res, 'Forbidden', 403);
-  }
-  next();
-}
-
-router.use(adminAuth);
+router.use(requireAdminAuth);
 
 // Seed list. Order is the visual order in the topic tab strip.
 // User-supplied spec lists 8 slugs; we add a small emoji for each
