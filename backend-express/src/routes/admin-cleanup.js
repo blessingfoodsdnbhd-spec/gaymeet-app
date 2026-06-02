@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Message = require('../models/Message');
 const { ok, err } = require('../utils/respond');
 const r2 = require('../services/r2Service');
+const { requireAdminAuth } = require('../middleware/adminAuth');
 
 /**
  * Per-call cap on how many rows we'll process in one cleanup pass.
@@ -18,29 +19,16 @@ const CLEANUP_BATCH = 500;
  */
 const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
-/**
- * Header-token auth. We deliberately don't use the normal `auth`
- * middleware here so the endpoint never accepts a regular user JWT.
- * Instead it requires X-Admin-Token header == process.env.ADMIN_TOKEN.
- * If ADMIN_TOKEN is unset (fresh deploy), the endpoint fails CLOSED
- * — 503 with a clear reason, rather than silently being usable.
- */
-function adminAuth(req, res, next) {
-  if (!process.env.ADMIN_TOKEN) {
-    return err(res, 'Admin endpoint disabled — ADMIN_TOKEN env var not set', 503);
-  }
-  if (req.headers['x-admin-token'] !== process.env.ADMIN_TOKEN) {
-    return err(res, 'Forbidden', 403);
-  }
-  next();
-}
+// Auth: requireAdminAuth — X-Admin-Token header OR an ADMIN_EMAILS JWT.
+// Regular user JWTs are still rejected (403) unless the email is allowlisted.
+// See middleware/adminAuth.js.
 
 // ── POST /api/admin/cleanup-expired-photos ────────────────────────────────────
 // Find image messages past TTL + grace, drop the B2 object, nullify
 // mediaUrl, stamp cleanedAt. Capped at CLEANUP_BATCH rows per call so
 // the same endpoint can be re-run safely (or wired to a cron / scheduled
 // task later) without backing up.
-router.post('/cleanup-expired-photos', adminAuth, async (req, res, next) => {
+router.post('/cleanup-expired-photos', requireAdminAuth, async (req, res, next) => {
   try {
     const cutoff = new Date(Date.now() - GRACE_MS);
     const candidates = await Message.find({
