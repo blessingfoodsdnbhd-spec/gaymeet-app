@@ -46,8 +46,9 @@ const userSchema = new mongoose.Schema(
     photos: [{ type: String }],
 
     // ── Meyou 密友 (v2) interest matching ─────────────────────────────────
-    // The 16 fixed interest tag IDs the user has selected. Set during the
-    // mandatory InterestTagsPicker onboarding step; required ≥3 to enter app.
+    // The interest tag IDs the user has selected (validated against
+    // VALID_TAG_IDS in routes/interests.js). Set during the mandatory
+    // InterestTagsPicker onboarding step; required ≥3 to enter app.
     interests: { type: [String], default: [] },
     // When the user first completed (or last re-confirmed) the interests
     // picker. Null → client routes to InterestTagsPicker on next launch.
