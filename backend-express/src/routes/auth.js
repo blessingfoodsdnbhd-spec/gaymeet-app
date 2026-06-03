@@ -315,18 +315,27 @@ router.post('/verify-otp', async (req, res, next) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // ── Reviewer bypass ──────────────────────────────────────────────────────
-    // App store reviewers (Google Play / Apple) need to log in, but prod has
-    // no email provider wired yet, so the real OTP never reaches an inbox.
-    // A single hard-coded review account accepts a fixed code, so reviewers
-    // (and us) can sign in without an inbox. Scoped to ONE email + ONE code,
-    // both env-overridable. Everyone else still goes through the real OTP.
-    // TODO: remove once a real email provider is configured.
-    const REVIEW_EMAIL = (process.env.REVIEW_LOGIN_EMAIL || 'hafiz@example.com')
-      .toLowerCase()
-      .trim();
+    // App store reviewers (Google Play / Apple) — and any account temporarily
+    // stuck behind a client OTP-entry bug — can sign in with a fixed code
+    // without a working inbox. Scoped to an explicit ALLOWLIST of emails + ONE
+    // code, all env-overridable. Everyone else still goes through the real OTP.
+    //
+    // REVIEW_LOGIN_EMAILS (comma-separated) is the allowlist; the older
+    // singular REVIEW_LOGIN_EMAIL is still honored for backward-compat. This
+    // lets us keep the reviewer account AND add a locked-out user at the same
+    // time, e.g. REVIEW_LOGIN_EMAILS="hafiz@example.com,someone@icloud.com".
+    // TODO: remove once the client OTP-entry fix ships in a new build.
     const REVIEW_CODE = process.env.REVIEW_LOGIN_CODE || '111111';
+    const reviewEmails = (
+      process.env.REVIEW_LOGIN_EMAILS ||
+      process.env.REVIEW_LOGIN_EMAIL ||
+      'hafiz@example.com'
+    )
+      .split(',')
+      .map((e) => e.toLowerCase().trim())
+      .filter(Boolean);
     const isReviewBypass =
-      normalizedEmail === REVIEW_EMAIL && code.trim() === REVIEW_CODE;
+      reviewEmails.includes(normalizedEmail) && code.trim() === REVIEW_CODE;
 
     if (!isReviewBypass) {
       const stored = await OtpCode.findOne({ email: normalizedEmail });
