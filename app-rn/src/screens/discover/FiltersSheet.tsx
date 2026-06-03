@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
@@ -23,6 +30,7 @@ const DEFAULT_RADIUS = 10;
 export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const { height: winH } = useWindowDimensions();
   const [radius, setRadius] = useState<number>(initial.radiusKm ?? DEFAULT_RADIUS);
   const [picked, setPicked] = useState<Set<InterestTagId>>(
     new Set(initial.interests ?? []),
@@ -72,94 +80,100 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
     ...INTEREST_TAGS.filter((tag) => !myInterests.includes(tag.id)),
   ];
 
+  // Bound the scroll viewport to a definite pixel height. The Sheet card is
+  // position:absolute + maxHeight only (no definite height), so a flex:1
+  // ScrollView routed through it can't compute a scroll viewport — it balloons
+  // to full content height (48 chips) and the card overflows upward, pushing
+  // the Distance section off the top with no way to scroll back. A concrete
+  // maxHeight makes the ScrollView scroll; the footer is a sticky sibling below.
+  // 80% mirrors <Sheet maxHeight="80%">; 140 reserves grabber(18) + card
+  // padding(14+28) + footer(button 52 + marginTop 14).
+  const scrollMaxH = winH * 0.8 - 140;
+
   return (
     <Sheet open={open} onClose={onClose} maxHeight="80%">
-      {/* Outer column ensures footer stays visible: ScrollView flex:1
-          consumes remaining space, footer stays at natural height at
-          the bottom. Previously both children were sibling auto-height
-          views — on small screens the ScrollView pushed the footer
-          OFF the maxHeight clip line, making Reset/Apply unreachable. */}
-      <View style={styles.outer}>
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
-            {t('discover.filters.title')}
-          </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ maxHeight: scrollMaxH }}
+      >
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          {t('discover.filters.title')}
+        </Text>
 
-          <Text style={[styles.section, { color: theme.colors.muted }]}>
-            {t('discover.filters.distance')} ·{' '}
-            {radius === 100 ? t('discover.filters.unlimited') : `${radius} km`}
-          </Text>
-          {/* Plain Pressable chips — Button component's internal style
-              array + small + fullWidth + style-override combo was
-              touch-unreliable in a 6-column flex row on Android. Direct
-              Pressable removes the indirection. */}
-          <View style={styles.radiusRow}>
-            {RADIUS_OPTIONS.map((r) => {
-              const active = radius === r;
-              const label = r === 100 ? t('discover.filters.unlimited') : String(r);
-              return (
-                <Pressable
-                  key={r}
-                  onPress={() => setRadius(r)}
-                  hitSlop={6}
-                  style={({ pressed }) => [
-                    styles.radiusPill,
-                    {
-                      backgroundColor: active
-                        ? theme.colors.primarySoft
-                        : 'transparent',
-                      borderColor: active
-                        ? theme.colors.primary
-                        : theme.colors.line,
-                      opacity: pressed ? 0.6 : 1,
-                    },
-                  ]}
+        <Text style={[styles.section, { color: theme.colors.muted }]}>
+          {t('discover.filters.distance')} ·{' '}
+          {radius === 100 ? t('discover.filters.unlimited') : `${radius} km`}
+        </Text>
+        {/* Plain Pressable chips — Button component's internal style
+            array + small + fullWidth + style-override combo was
+            touch-unreliable in a 6-column flex row on Android. Direct
+            Pressable removes the indirection. */}
+        <View style={styles.radiusRow}>
+          {RADIUS_OPTIONS.map((r) => {
+            const active = radius === r;
+            const label = r === 100 ? t('discover.filters.unlimited') : String(r);
+            return (
+              <Pressable
+                key={r}
+                onPress={() => setRadius(r)}
+                hitSlop={6}
+                style={({ pressed }) => [
+                  styles.radiusPill,
+                  {
+                    backgroundColor: active
+                      ? theme.colors.primarySoft
+                      : 'transparent',
+                    borderColor: active
+                      ? theme.colors.primary
+                      : theme.colors.line,
+                    opacity: pressed ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: active ? theme.colors.primaryDeep : theme.colors.text,
+                    fontWeight: active ? '600' : '500',
+                    fontSize: 13,
+                  }}
                 >
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      color: active ? theme.colors.primaryDeep : theme.colors.text,
-                      fontWeight: active ? '600' : '500',
-                      fontSize: 13,
-                    }}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-          <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
-            {t('discover.filters.interests')} ·{' '}
-            {picked.size === 0
-              ? t('discover.filters.unlimited')
-              : t('discover.filters.interestsCount', { n: picked.size })}
-          </Text>
-          <View style={styles.tagsRow}>
-            {sortedTags.map((tag) => (
-              <TagChip
-                key={tag.id}
-                tag={tag}
-                selected={picked.has(tag.id)}
-                onPress={() => toggle(tag.id)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <View style={{ flex: 1 }}>
-            <Button
-              label={t('discover.filters.reset')}
-              variant="ghost"
-              onPress={reset}
-              fullWidth
+        <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
+          {t('discover.filters.interests')} ·{' '}
+          {picked.size === 0
+            ? t('discover.filters.unlimited')
+            : t('discover.filters.interestsCount', { n: picked.size })}
+        </Text>
+        <View style={styles.tagsRow}>
+          {sortedTags.map((tag) => (
+            <TagChip
+              key={tag.id}
+              tag={tag}
+              selected={picked.has(tag.id)}
+              onPress={() => toggle(tag.id)}
             />
-          </View>
-          <View style={{ flex: 2 }}>
-            <Button label={t('discover.filters.apply')} onPress={apply} fullWidth />
-          </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <View style={{ flex: 1 }}>
+          <Button
+            label={t('discover.filters.reset')}
+            variant="ghost"
+            onPress={reset}
+            fullWidth
+          />
+        </View>
+        <View style={{ flex: 2 }}>
+          <Button label={t('discover.filters.apply')} onPress={apply} fullWidth />
         </View>
       </View>
     </Sheet>
@@ -167,12 +181,6 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
 }
 
 const styles = StyleSheet.create({
-  outer: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
   title: {
     fontSize: 18,
     fontWeight: '700',
