@@ -44,7 +44,7 @@ import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
-import { fetchIsAdmin, getCachedIsAdmin } from '../../api/admin';
+import { fetchIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
 import {
   uploadPrivatePhoto,
@@ -97,13 +97,18 @@ export function ProfileScreen() {
     enabled: !!user,
   });
 
-  // Admin gate for in-app admin UI (e.g. Announcement Manager). Seeded from
-  // the AsyncStorage cache so the row doesn't flash on every cold start, then
-  // confirmed against the server.
+  // Admin gate for in-app admin UI (e.g. Announcement Manager). Always fetch
+  // the authoritative flag from the server.
+  //
+  // NOTE: do NOT seed this with `initialData: () => getCachedIsAdmin()`.
+  // getCachedIsAdmin is async, so that made `initialData` a *Promise* (always
+  // truthy) — which (a) poisoned `data` so `data === true` was never true, and
+  // (b) marked the query "fresh" under staleTime so fetchIsAdmin never ran.
+  // Net effect: the admin row was hidden for every admin, regardless of the
+  // backend. Letting the query fetch normally fixes it.
   const isAdminQ = useQuery({
     queryKey: ['me', 'isAdmin'],
     queryFn: fetchIsAdmin,
-    initialData: () => getCachedIsAdmin() as any,
     staleTime: 60 * 60_000,
     enabled: !!user,
   });
