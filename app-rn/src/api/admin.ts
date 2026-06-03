@@ -43,6 +43,19 @@ async function setCachedIsAdmin(value: boolean): Promise<void> {
   }
 }
 
+/** Drop the on-disk isAdmin flag. MUST run on sign-out: the key is not
+ *  user-scoped, so without this a previous admin's cached `true` would seed
+ *  the admin UI gate for the next user who signs in — and it survives
+ *  force-quit because it lives on disk, so clearing the in-memory query cache
+ *  is not enough. Called by clearSessionCaches() in store/auth.ts. */
+export async function clearCachedIsAdmin(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(IS_ADMIN_CACHE_KEY);
+  } catch {
+    // best-effort; ignore
+  }
+}
+
 /** Fetch the authoritative isAdmin flag and refresh the on-disk cache. */
 export async function fetchIsAdmin(): Promise<boolean> {
   const r = await api.get('/me/is-admin');
