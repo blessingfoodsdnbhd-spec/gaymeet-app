@@ -6,7 +6,7 @@ import { initSentry } from './lib/sentry';
 
 initSentry();
 import { NavigationContainer } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { View, ActivityIndicator } from 'react-native';
 import Constants from 'expo-constants';
 
@@ -28,8 +28,7 @@ import {
   setupPushTokenRefresh,
 } from './utils/push';
 import { drainColdTap } from './utils/pushRouter';
-
-const queryClient = new QueryClient();
+import { queryClient } from './api/queryClient';
 
 /**
  * Warm the Render free-tier dyno during the splash window so the user's
