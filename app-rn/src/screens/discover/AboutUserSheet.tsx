@@ -32,6 +32,7 @@ import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
+import { presenceFrom } from '../../utils/lastActive';
 
 interface Props {
   open: boolean;
@@ -251,6 +252,20 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 2 }}>
                 {user.distance ?? ''}
               </Text>
+              {(() => {
+                const p = presenceFrom(t, user.lastActiveAt, user.isOnline);
+                if (!p) return null;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    {p.online && (
+                      <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.online }} />
+                    )}
+                    <Text style={{ fontSize: 12, color: p.online ? theme.colors.online : theme.colors.muted }}>
+                      {p.text}
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
             {!isSelf && (
               <IconButton onPress={onMore}>

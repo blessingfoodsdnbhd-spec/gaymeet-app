@@ -23,6 +23,15 @@ async function auth(req, res, next) {
   if (!user) return res.status(401).json({ error: 'User not found' });
 
   req.user = user;
+
+  // Throttled liveness for REST-only sessions (socket connect/disconnect also
+  // maintains this). Bump lastActiveAt at most ~once per 2 min. Fire-and-forget
+  // — must never block or fail the request.
+  const STALE_MS = 2 * 60 * 1000;
+  if (!user.lastActiveAt || Date.now() - new Date(user.lastActiveAt).getTime() > STALE_MS) {
+    User.updateOne({ _id: user._id }, { $set: { lastActiveAt: new Date() } }).catch(() => {});
+  }
+
   next();
 }
 

@@ -43,28 +43,50 @@ export function ToggleRow({
   value,
   onValueChange,
   hint,
+  disabled,
+  badge,
 }: {
   label: string;
   value: boolean;
   onValueChange: (v: boolean) => void;
   hint?: string;
+  /** Greys out + disables the switch (e.g. a Premium-gated row for free users). */
+  disabled?: boolean;
+  /** Small pill shown after the label (e.g. "Premium"). */
+  badge?: string;
 }) {
   const theme = useTheme();
   return (
-    <View>
+    <View style={disabled ? { opacity: 0.55 } : undefined}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 14,
           paddingVertical: 12,
-          gap: 12,
+          gap: 8,
         }}
       >
-        <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>{label}</Text>
+        <Text style={{ fontSize: 15, color: theme.colors.text }}>{label}</Text>
+        {badge && (
+          <View
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 999,
+              backgroundColor: theme.colors.primarySoft,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.primaryDeep }}>
+              {badge}
+            </Text>
+          </View>
+        )}
+        <View style={{ flex: 1 }} />
         <Switch
           value={value}
           onValueChange={onValueChange}
+          disabled={disabled}
           trackColor={{ false: theme.colors.line, true: theme.colors.primary }}
           ios_backgroundColor={theme.colors.line}
         />

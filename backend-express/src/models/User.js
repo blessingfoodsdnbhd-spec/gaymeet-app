@@ -387,6 +387,14 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
     obj.isPremium = false;
   }
 
+  // Hide online presence from OTHER viewers when a Premium user opted in.
+  // (Self always sees their own real status.) Free users can't hide, so the
+  // toggle has no effect if their Premium lapses.
+  if (!self && src.preferences?.hideOnlineStatus && obj.isPremium) {
+    obj.lastActiveAt = null;
+    obj.isOnline = false;
+  }
+
   // Expire timed stealth (only meaningful in the self preferences object).
   if (
     obj.preferences?.stealthUntil &&

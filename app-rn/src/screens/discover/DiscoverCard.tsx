@@ -15,6 +15,7 @@ import { TagChip } from '../../components/TagChip';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useTranslation } from 'react-i18next';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
+import { presenceFrom } from '../../utils/lastActive';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -157,6 +158,20 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
             );
           })()}
         </View>
+        {(() => {
+          const p = presenceFrom(t, user.lastActiveAt, user.isOnline);
+          if (!p) return null;
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -2 }}>
+              {p.online && (
+                <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.online }} />
+              )}
+              <Text style={{ fontSize: 12.5, color: p.online ? theme.colors.online : theme.colors.muted }}>
+                {p.text}
+              </Text>
+            </View>
+          );
+        })()}
         {user.bio && (
           <Text style={[styles.bio, { color: theme.colors.text2 }]} numberOfLines={3}>
             {user.bio}

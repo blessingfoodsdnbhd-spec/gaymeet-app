@@ -40,6 +40,8 @@ export interface User {
   /** Likes ("想认识") received — drives the popularity badge on cards. */
   popularity?: number;
   isOnline?: boolean;
+  /** ISO timestamp of last activity. null when a Premium user hides presence. */
+  lastActiveAt?: string | null;
   isVerified?: boolean;
   isPremium?: boolean;
   premiumExpiresAt?: string | null;
@@ -85,8 +87,12 @@ export const setInterests = (interests: InterestTagId[]) =>
 export const setPrompts = (prompts: { q: string; a: string }[]) =>
   unwrap<User>(api.patch('/me/prompts', { prompts }));
 
-export const setPrivacy = (patch: { nearbyVisible?: boolean; showDistance?: boolean }) =>
-  unwrap<User>(api.patch('/me/privacy', patch));
+export const setPrivacy = (patch: {
+  nearbyVisible?: boolean;
+  showDistance?: boolean;
+  /** Premium-only; backend returns 402 if a non-Premium user sets this true. */
+  hideOnlineStatus?: boolean;
+}) => unwrap<User>(api.patch('/me/privacy', patch));
 
 export const updateLocation = (latitude: number, longitude: number) =>
   unwrap<{ success: true }>(api.put('/users/me/location', { latitude, longitude }));

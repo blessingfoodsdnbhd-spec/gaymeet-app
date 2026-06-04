@@ -374,8 +374,17 @@
     "showInNearbyHint": "When off, you won't appear in other people's Nearby grid",
     "showDistance": "Show my distance",
     "showDistanceHint": "When off, only city shows — no kilometres",
+    "hideOnlineStatus": "Hide my online status",
+    "hideOnlineStatusHint": "Premium only — others won't see when you're online or last active",
+    "premiumBadge": "Premium",
     "blocklist": "Blocked users",
     "updateFailed": "Update failed"
+  },
+  "presence": {
+    "online": "Online",
+    "minsAgo": "Active {{n}} min ago",
+    "hoursAgo": "Active {{n}} h ago",
+    "daysAgo": "Active {{n}} d ago"
   },
   "notificationSettings": {
     "title": "Notifications",

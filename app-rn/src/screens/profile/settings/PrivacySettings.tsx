@@ -30,6 +30,11 @@ export function PrivacySettings() {
   const [showDistance, setShowDistance] = useState(
     user ? !user.preferences?.hideDistance : true,
   );
+  const [hideOnline, setHideOnline] = useState(
+    user ? !!user.preferences?.hideOnlineStatus : false,
+  );
+  // toPublicJSON already folds vipLevel into isPremium.
+  const isPremium = !!user?.isPremium;
 
   const flipNearby = async (v: boolean) => {
     setNearbyVisible(v);
@@ -51,6 +56,16 @@ export function PrivacySettings() {
       reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
+  const flipHideOnline = async (v: boolean) => {
+    setHideOnline(v);
+    try {
+      const updated = await setPrivacy({ hideOnlineStatus: v });
+      setUser(updated);
+    } catch (e) {
+      setHideOnline(!v);
+      reportFailure(e, t('privacySettings.updateFailed'));
+    }
+  };
 
   return (
     <SettingsShell title={t('privacySettings.title')}>
@@ -67,6 +82,16 @@ export function PrivacySettings() {
           value={showDistance}
           onValueChange={flipDistance}
           hint={t('privacySettings.showDistanceHint')}
+        />
+        <Divider />
+        {/* Premium-only. Free users see the row disabled with a Premium badge. */}
+        <ToggleRow
+          label={t('privacySettings.hideOnlineStatus')}
+          value={isPremium ? hideOnline : false}
+          onValueChange={flipHideOnline}
+          hint={t('privacySettings.hideOnlineStatusHint')}
+          disabled={!isPremium}
+          badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
         />
       </SettingsCard>
 

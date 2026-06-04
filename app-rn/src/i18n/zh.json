@@ -374,8 +374,17 @@
     "showInNearbyHint": "关闭后,你不会出现在其他人的「附近」网格中",
     "showDistance": "显示我的距离",
     "showDistanceHint": "关闭后只显示城市,不显示距离公里数",
+    "hideOnlineStatus": "隐藏我的在线状态",
+    "hideOnlineStatusHint": "仅限 Premium — 其他人将看不到你的在线或最后活跃时间",
+    "premiumBadge": "会员",
     "blocklist": "黑名单",
     "updateFailed": "设置失败"
+  },
+  "presence": {
+    "online": "在线",
+    "minsAgo": "{{n}} 分钟前活跃",
+    "hoursAgo": "{{n}} 小时前活跃",
+    "daysAgo": "{{n}} 天前活跃"
   },
   "notificationSettings": {
     "title": "通知",

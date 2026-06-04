@@ -109,6 +109,16 @@ router.patch('/privacy', auth, async (req, res, next) => {
     if (typeof req.body.showDistance === 'boolean') {
       update['preferences.hideDistance'] = !req.body.showDistance;
     }
+    if (typeof req.body.hideOnlineStatus === 'boolean') {
+      // Hiding online status is a Premium perk. Turning it OFF is always allowed.
+      if (req.body.hideOnlineStatus === true) {
+        const { isPremiumActive } = require('../utils/premium');
+        if (!isPremiumActive(req.user)) {
+          return err(res, 'hideOnlineStatus requires Premium', 402);
+        }
+      }
+      update['preferences.hideOnlineStatus'] = req.body.hideOnlineStatus;
+    }
     const user = await User.findByIdAndUpdate(req.user._id, update, { new: true });
     ok(res, user.toPublicJSON());
   } catch (e) {
