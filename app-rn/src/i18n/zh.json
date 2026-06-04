@@ -127,14 +127,14 @@
   "moments": {
     "filters": {
       "all": "全部",
-      "friends": "好友",
+      "friends": "关注",
       "nearby": "附近",
       "interest": "兴趣"
     },
     "empty": "这里还没有动态",
     "emptyByFilter": {
       "all": "还没有动态 — 来发第一条吧",
-      "friends": "你的好友和同频还没发动态 — 去「发现」找好友",
+      "friends": "你的关注和同频还没发动态 — 去「发现」找人",
       "nearby": "附近还没有动态 — 换个范围或晚点再来看",
       "interest": "没有匹配的兴趣动态 — 去「我 → 兴趣」补全标签,我们会按兴趣推荐"
     },
@@ -271,7 +271,7 @@
   "profile": {
     "stats": {
       "matches": "同频",
-      "friends": "好友",
+      "friends": "关注",
       "moments": "动态",
       "likes": "想认识",
       "privatePhotos": "密照"
@@ -383,7 +383,7 @@
       "matchedAt": "{{date}} 同频"
     },
     "friendsList": {
-      "empty": "还没有好友"
+      "empty": "还没有关注"
     }
   },
   "languageSettings": {
