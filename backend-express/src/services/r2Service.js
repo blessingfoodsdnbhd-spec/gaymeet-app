@@ -20,6 +20,40 @@
 
 const axios = require('axios');
 const crypto = require('crypto');
+const sharp = require('sharp');
+
+// Long-lived cache header for served objects. Keys are content-addressed
+// (timestamp + random), so an object never changes once uploaded → immutable.
+const IMAGE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+/**
+ * Downscale + recompress a photo before upload: long edge capped at 1280px,
+ * JPEG quality 80, EXIF stripped (sharp drops metadata on output; .rotate()
+ * first bakes in orientation so the image isn't sideways). Animated GIFs and
+ * non-images pass through untouched. Any failure falls back to the original
+ * so an upload never breaks because of optimization.
+ *
+ * Returns the (possibly new) buffer + key + contentType. The key extension is
+ * normalized to .jpg when we transcode, so name/content/type stay consistent.
+ */
+async function optimizeImage(buffer, key, contentType) {
+  const ct = contentType || '';
+  if (!ct.startsWith('image/') || ct === 'image/gif') {
+    return { buffer, key, contentType };
+  }
+  try {
+    const out = await sharp(buffer)
+      .rotate()
+      .resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 80, progressive: true, mozjpeg: true })
+      .toBuffer();
+    const newKey = key.replace(/\.[^./]+$/, '') + '.jpg';
+    return { buffer: out, key: newKey, contentType: 'image/jpeg' };
+  } catch (e) {
+    console.error('[sharp] optimize failed, uploading original:', e?.message);
+    return { buffer, key, contentType };
+  }
+}
 
 const configured = !!(
   process.env.R2_ACCESS_KEY_ID &&
@@ -144,6 +178,10 @@ async function authorize() {
  */
 async function uploadFile(buffer, key, contentType) {
   if (!configured) return null;
+
+  // Resize + recompress before anything touches the network.
+  ({ buffer, key, contentType } = await optimizeImage(buffer, key, contentType));
+
   const auth = await authorize();
 
   // 1) Get a one-shot upload URL
@@ -185,6 +223,8 @@ async function uploadFile(buffer, key, contentType) {
         'Content-Type': contentType || 'image/jpeg',
         'Content-Length': buffer.length,
         'X-Bz-Content-Sha1': sha1,
+        // B2 returns this (URL-decoded) as the Cache-Control header on download.
+        'X-Bz-Info-b2-cache-control': encodeURIComponent(IMAGE_CACHE_CONTROL),
       },
       transformRequest: [(d) => d],
       maxBodyLength: Infinity,
