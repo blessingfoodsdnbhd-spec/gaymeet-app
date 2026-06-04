@@ -108,7 +108,6 @@ export function ChatDetailScreen() {
   // Image viewer Modal
   const [viewerImage, setViewerImage] = useState<Message | null>(null);
   const isPremium = !!(me as any)?.isPremium;
-  const listRef = useRef<FlatList<ListItem>>(null);
   const setTyping = useChats((s) => s.setTyping);
   // Typing emit debouncer state — tracks the last "I'm typing" we sent so we
   // don't spam the socket on every keystroke.
@@ -625,44 +624,15 @@ export function ChatDetailScreen() {
   // Render a virtual list with time-divider rows interspersed
   const items = useMemo(() => buildItems(msgsQ.data ?? []), [msgsQ.data]);
 
-  // First-render scroll uses animated:false so we *jump* to the bottom
-  // instead of animating from the top — the latter is visible to the
-  // user as a "rolling up from old messages" effect on entry. Subsequent
-  // scrolls (new messages) animate smoothly. The flag lives in a ref so
-  // toggling it doesn't re-render.
-  const hasScrolledInitially = useRef(false);
-
-  // onContentSizeChange fires AFTER the FlatList has measured its
-  // children — strictly more reliable than the previous
-  // `useEffect + requestAnimationFrame` pair, which raced the layout
-  // pass and left the user halfway up the thread on entry. It also
-  // covers the "new message arrives" case since the content height
-  // grows when a row is appended.
-  const onMsgsContentSizeChange = useCallback(() => {
-    if (items.length === 0) return;
-    listRef.current?.scrollToEnd({ animated: hasScrolledInitially.current });
-    // Belt-and-suspenders for FlatList virtualization on first entry:
-    // the initial scrollToEnd lands at the end of the *currently
-    // rendered* window (default initialNumToRender = 10), not the
-    // absolute end of the data array. The virtualized rows below
-    // mount on the next frame; firing a second non-animated scrollToEnd
-    // ~50ms later lands at the true bottom. Subsequent calls (after
-    // hasScrolledInitially flips) animate normally, so this only
-    // affects the chat-entry moment.
-    if (!hasScrolledInitially.current) {
-      setTimeout(() => {
-        listRef.current?.scrollToEnd({ animated: false });
-      }, 50);
-    }
-    hasScrolledInitially.current = true;
-  }, [items.length]);
-
-  // Reset the initial-scroll flag whenever the thread itself changes,
-  // so navigating from one chat to another also performs a jump-to-end
-  // on the new thread's first content-size measurement.
-  useEffect(() => {
-    hasScrolledInitially.current = false;
-  }, [matchId]);
+  // The message list is an INVERTED FlatList: newest-first data, so the newest
+  // message sits at the natural bottom anchor (scroll offset 0) with no scroll
+  // math at all. This replaces the old scrollToEnd-after-onContentSizeChange +
+  // 50ms setTimeout dance, which under-scrolled on entry whenever virtualized
+  // rows or async-loading image bubbles grew the content AFTER the scroll had
+  // already fired. Inverting also keeps the view pinned to the bottom as new
+  // messages arrive, while (correctly) not yanking the user down mid-scroll
+  // when they're reading older history.
+  const invItems = useMemo(() => items.slice().reverse(), [items]);
 
   return (
     <SafeAreaView
@@ -755,11 +725,10 @@ export function ChatDetailScreen() {
           </View>
         ) : (
           <FlatList
-            ref={listRef}
-            data={items}
+            data={invItems}
+            inverted
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
-            onContentSizeChange={onMsgsContentSizeChange}
             renderItem={({ item }) => {
               if (item.kind === 'time') {
                 return (
@@ -836,7 +805,9 @@ export function ChatDetailScreen() {
                 </View>
               );
             }}
-            ListFooterComponent={
+            // Inverted list: ListHeaderComponent renders at the VISUAL BOTTOM,
+            // which is where the typing indicator belongs (below newest msg).
+            ListHeaderComponent={
               otherTyping ? <TypingDots /> : null
             }
           />
