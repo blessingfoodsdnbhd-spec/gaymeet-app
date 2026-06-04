@@ -18,6 +18,8 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { shortTime } from '../../utils/time';
+import { computeAge } from '../../utils/zodiac';
+import { presenceFrom } from '../../utils/lastActive';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -134,7 +136,25 @@ function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void
         <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
           {thread.user.nickname}
         </Text>
-        <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+        {(() => {
+          // Subline like discover cards: age · distance · presence.
+          const age = computeAge(thread.user.dob);
+          const p = presenceFrom(t, thread.user.lastActiveAt, thread.user.isOnline);
+          const parts: string[] = [];
+          if (age != null) parts.push(String(age));
+          if (thread.user.distance) parts.push(thread.user.distance);
+          if (p) parts.push(p.text);
+          if (parts.length === 0) return null;
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              {p?.online && (
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.online }} />
+              )}
+              <Text style={{ fontSize: 12, color: theme.colors.muted }}>{parts.join(' · ')}</Text>
+            </View>
+          );
+        })()}
+        <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
           {t('profile.matchesList.matchedAt', { date: shortTime(thread.matchedAt) })}
         </Text>
       </View>

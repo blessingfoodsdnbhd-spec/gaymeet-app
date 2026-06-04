@@ -40,6 +40,11 @@ export interface ChatUser {
   isPremium?: boolean;
   isVerified?: boolean;
   countryCode?: string | null;
+  /** ISO; null when a Premium user hides presence. */
+  lastActiveAt?: string | null;
+  dob?: string | null;
+  /** Server-formatted distance string, e.g. "3.9 km". */
+  distance?: string | null;
 }
 
 export interface ChatThread {

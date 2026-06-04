@@ -7,6 +7,25 @@ const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { sendPushToUser } = require('../utils/push');
 
+function formatDist(meters) {
+  if (meters == null) return null;
+  if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+function haversineMeters(a, b) {
+  if (!a || !b || a.length < 2 || b.length < 2) return null;
+  const [lng1, lat1] = a;
+  const [lng2, lat2] = b;
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 // Meyou 密友 v2 — only monetisation is the Premium subscription:
 //   monthly: RM 39.90
 //   annual : RM 399.00 (~2 months free)
@@ -28,9 +47,12 @@ router.get('/', auth, async (req, res, next) => {
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .populate(
         'users',
-        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode isVerified'
+        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode isVerified ' +
+          'dob location preferences premiumExpiresAt vipLevel vipExpiresAt'
       )
       .lean();
+
+    const myCoords = req.user.location?.coordinates;
 
     const result = matches
       .map((m) => {
@@ -45,6 +67,11 @@ router.get('/', auth, async (req, res, next) => {
 
         const unread = m.unreadCounts?.[req.user._id.toString()] || 0;
 
+        // Respect the Premium "hide online status" opt-in (same gating as
+        // toPublicJSON / the discover cards): null out presence for hiders.
+        const hidden = !!other.preferences?.hideOnlineStatus && isPremiumActive(other);
+        const distM = haversineMeters(myCoords, other.location?.coordinates);
+
         return {
           matchId: m._id.toString(),
           matchedAt: m.createdAt.toISOString(),
@@ -52,11 +79,18 @@ router.get('/', auth, async (req, res, next) => {
             id: other._id.toString(),
             nickname: other.nickname,
             avatarUrl: other.avatarUrl ?? null,
-            isOnline: other.isOnline ?? false,
+            isOnline: hidden ? false : (other.isOnline ?? false),
             isPremium: other.isPremium ?? false,
             isBoosted: other.isBoosted ?? false,
             isVerified: other.isVerified ?? false,
             countryCode: other.countryCode ?? null,
+            dob: other.dob ? other.dob.toISOString() : null,
+            lastActiveAt: hidden
+              ? null
+              : other.lastActiveAt
+                ? other.lastActiveAt.toISOString()
+                : null,
+            distance: formatDist(distM),
           },
           lastMessage: m.lastMessage ?? null,
           lastMessageAt: m.lastMessageAt ? m.lastMessageAt.toISOString() : null,
