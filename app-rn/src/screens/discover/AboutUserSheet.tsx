@@ -401,26 +401,6 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             );
           })()}
 
-          {user.prompts && user.prompts.length > 0 && (
-            <Card surface2 flat style={{ padding: 14, marginTop: 8 }}>
-              <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>
-                {user.prompts[0].q}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: 'Fraunces',
-                  fontStyle: 'italic',
-                  fontSize: 15,
-                  lineHeight: 23,
-                  color: theme.colors.text,
-                  fontWeight: '500',
-                }}
-              >
-                &ldquo;{user.prompts[0].a}&rdquo;
-              </Text>
-            </Card>
-          )}
-
           {user.bio && (
             <View style={{ marginTop: 18 }}>
               <Text style={[styles.section, { color: theme.colors.muted }]}>{t('about.section')}</Text>
@@ -429,6 +409,42 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               </Text>
             </View>
           )}
+
+          {/* Q&A prompts — render ALL of them (was previously only prompts[0]),
+              each as a card with the question label above the answer, matching
+              the prompts editor. */}
+          {(() => {
+            const prompts = (user.prompts ?? []).filter((p) => p.q && p.a);
+            if (prompts.length === 0) return null;
+            return (
+              <View style={{ marginTop: 18 }}>
+                <Text style={[styles.section, { color: theme.colors.muted }]}>
+                  {t('about.promptsSection')}
+                </Text>
+                <View style={{ gap: 8 }}>
+                  {prompts.map((p, i) => (
+                    <Card key={i} surface2 flat style={{ padding: 14 }}>
+                      <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>
+                        {p.q}
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: 'Fraunces',
+                          fontStyle: 'italic',
+                          fontSize: 15,
+                          lineHeight: 23,
+                          color: theme.colors.text,
+                          fontWeight: '500',
+                        }}
+                      >
+                        &ldquo;{p.a}&rdquo;
+                      </Text>
+                    </Card>
+                  ))}
+                </View>
+              </View>
+            );
+          })()}
 
           {/* Private-photo locked block — only rendered when the target
               actually has private photos AND we're not viewing ourselves.

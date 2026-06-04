@@ -234,6 +234,7 @@
   },
   "about": {
     "section": "About",
+    "promptsSection": "Q&A",
     "interestsCount": "Interests · {{n}} in common",
     "stats": {
       "age": "{{n}} yrs"
