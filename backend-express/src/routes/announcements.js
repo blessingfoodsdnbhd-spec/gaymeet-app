@@ -11,13 +11,16 @@ const { auth } = require('../middleware/auth');
 const { ok } = require('../utils/respond');
 
 // ── GET /api/announcements/current ──────────────────────────────────────────
-// Returns the most recent isActive announcement whose start/end window
-// contains "now". `null` data when nothing applies — client interprets
-// that as "skip the modal".
+// Returns ALL isActive announcements whose start/end window contains "now",
+// newest first — the client renders them as a swipeable carousel. An empty
+// array means "skip the modal".
+//
+// Back-compat: `?single=true` returns the single newest one (or null), the
+// pre-carousel shape, so an older client keeps working.
 router.get('/current', auth, async (req, res, next) => {
   try {
     const now = new Date();
-    const ann = await Announcement.findOne({
+    const list = await Announcement.find({
       isActive: true,
       $and: [
         { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
@@ -25,13 +28,17 @@ router.get('/current', auth, async (req, res, next) => {
       ],
     }).sort({ createdAt: -1 });
 
-    if (!ann) return ok(res, null);
-    ok(res, {
+    const mapped = list.map((ann) => ({
       id: ann._id.toString(),
       imageUrl: ann.imageUrl,
       ctaUrl: ann.ctaUrl,
       title: ann.title,
-    });
+    }));
+
+    if (req.query.single === 'true') {
+      return ok(res, mapped[0] ?? null);
+    }
+    ok(res, mapped);
   } catch (e) {
     next(e);
   }

@@ -14,16 +14,27 @@ export interface CurrentAnnouncement {
   title?: string | null;
 }
 
-export const getCurrentAnnouncement = async (): Promise<CurrentAnnouncement | null> => {
+function normalize(x: any): CurrentAnnouncement | null {
+  if (!x || typeof x !== 'object' || !x.id || !x.imageUrl) return null;
+  return {
+    id: String(x.id),
+    imageUrl: String(x.imageUrl),
+    ctaUrl: x.ctaUrl ?? null,
+    title: x.title ?? null,
+  };
+}
+
+/**
+ * All currently-active announcements (newest first). The backend now returns
+ * an array; we still tolerate the old single-object/null shape for safety.
+ */
+export const getCurrentAnnouncements = async (): Promise<CurrentAnnouncement[]> => {
   const r = await api.get('/announcements/current');
   const body = r.data as any;
   const inner = body?.data !== undefined ? body.data : body;
-  if (!inner || typeof inner !== 'object') return null;
-  if (!inner.id || !inner.imageUrl) return null;
-  return {
-    id: String(inner.id),
-    imageUrl: String(inner.imageUrl),
-    ctaUrl: inner.ctaUrl ?? null,
-    title: inner.title ?? null,
-  };
+  if (Array.isArray(inner)) {
+    return inner.map(normalize).filter((a): a is CurrentAnnouncement => a != null);
+  }
+  const one = normalize(inner);
+  return one ? [one] : [];
 };

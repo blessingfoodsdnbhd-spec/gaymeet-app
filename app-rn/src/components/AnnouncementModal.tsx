@@ -5,18 +5,20 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface Props {
+export interface AnnouncementItem {
   id: string;
   imageUrl: string;
   ctaUrl?: string | null;
-  onClose: () => void;
+  title?: string | null;
 }
 
 const COUNTDOWN_SECS = 3;
@@ -26,55 +28,79 @@ export function announcementDismissKey(id: string) {
 }
 
 /**
- * Full-screen admin-managed announcement modal. Shows once per app session
- * (the bootstrap component decides) and offers two close paths:
- *
- *   • Top-left "今後不顯示" — permanent dismiss for this id; AsyncStorage
- *     key meyou:announcement:dismissed:<id> = '1'
- *   • Top-right "關閉(N)" — countdown from 3 → 0, enabled at 0, no persist
- *     (will show again on next cold start)
- *
- * Background tap is also a close path, but only after countdown ends.
- *
- * Image tap (if ctaUrl set) → Linking.openURL. The URL is admin-controlled
- * so we trust it; openURL itself will refuse unknown schemes safely.
+ * The visual card for a single announcement — a full-bleed image that opens
+ * `ctaUrl` on tap (when set). Reused by the modal carousel AND the admin
+ * live-preview, so the admin sees exactly what users will see.
  */
-export function AnnouncementModal({ id, imageUrl, ctaUrl, onClose }: Props) {
-  const { t } = useTranslation();
-  const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECS);
-
-  useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const tick = setTimeout(() => {
-      setSecondsLeft((s) => Math.max(0, s - 1));
-    }, 1000);
-    return () => clearTimeout(tick);
-  }, [secondsLeft]);
-
-  const closeEnabled = secondsLeft <= 0;
-
-  const onDontShow = async () => {
-    try {
-      await AsyncStorage.setItem(announcementDismissKey(id), '1');
-    } catch {
-      // Storage write failure is non-fatal — worst case the modal
-      // re-appears next launch.
-    }
-    onClose();
-  };
-
+export function AnnouncementCard({
+  imageUrl,
+  ctaUrl,
+  width,
+}: {
+  imageUrl: string;
+  ctaUrl?: string | null;
+  /** Optional explicit card width (e.g. for the admin preview box). */
+  width?: number;
+}) {
   const onCtaTap = async () => {
     if (!ctaUrl) return;
     try {
       await Linking.openURL(ctaUrl);
     } catch {
-      // Bad URL or no handler — silently ignore. Admin-controlled, so
-      // we don't surface an error to the end user.
+      // Bad URL or no handler — admin-controlled, so swallow silently.
     }
   };
+  return (
+    <Pressable
+      onPress={ctaUrl ? onCtaTap : undefined}
+      style={[styles.imageWrap, width ? { width } : null]}
+    >
+      <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
+    </Pressable>
+  );
+}
 
-  const onBackdropTap = () => {
-    if (closeEnabled) onClose();
+/**
+ * Full-screen announcement modal. Renders one or more active announcements as
+ * a horizontally swipeable carousel (paged, with dots). Close paths:
+ *
+ *   • Top-left "今後不顯示" — permanently dismiss ALL shown ids (AsyncStorage).
+ *   • Top-right "關閉(N)" — countdown 3 → 0, enabled at 0, no persist.
+ *   • Backdrop tap — also closes once the countdown ends.
+ *
+ * Each card opens its own ctaUrl on tap.
+ */
+export function AnnouncementModal({
+  announcements,
+  onClose,
+}: {
+  announcements: AnnouncementItem[];
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { width: winW } = useWindowDimensions();
+  const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECS);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const tick = setTimeout(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(tick);
+  }, [secondsLeft]);
+
+  if (!announcements.length) return null;
+  const closeEnabled = secondsLeft <= 0;
+  const multi = announcements.length > 1;
+
+  const onDontShow = async () => {
+    try {
+      await AsyncStorage.multiSet(
+        announcements.map((a) => [announcementDismissKey(a.id), '1']),
+      );
+    } catch {
+      // Storage failure is non-fatal — modal simply reappears next launch.
+    }
+    onClose();
   };
 
   const closeLabel = closeEnabled
@@ -83,31 +109,45 @@ export function AnnouncementModal({ id, imageUrl, ctaUrl, onClose }: Props) {
 
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose}>
-      {/* Backdrop — taps close iff countdown finished. We use a Pressable
-          so the entire dim area is hit-testable, but the image inside
-          stops propagation by being its own Pressable. */}
-      <Pressable style={styles.backdrop} onPress={onBackdropTap}>
-        <View style={styles.imageWrap} pointerEvents="box-none">
-          <Pressable onPress={ctaUrl ? onCtaTap : undefined} style={styles.imagePressable}>
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-          </Pressable>
-        </View>
+      <Pressable style={styles.backdrop} onPress={closeEnabled ? onClose : undefined}>
+        {/* Stop backdrop taps from closing while interacting with the carousel. */}
+        <Pressable style={styles.carouselWrap} onPress={() => {}}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) =>
+              setPage(Math.round(e.nativeEvent.contentOffset.x / winW))
+            }
+          >
+            {announcements.map((a) => (
+              <View key={a.id} style={[styles.page, { width: winW }]}>
+                <AnnouncementCard imageUrl={a.imageUrl} ctaUrl={a.ctaUrl} />
+              </View>
+            ))}
+          </ScrollView>
+
+          {multi && (
+            <View style={styles.dots} pointerEvents="none">
+              {announcements.map((a, i) => (
+                <View
+                  key={a.id}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.4)' },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </Pressable>
       </Pressable>
 
-      {/* Top-row buttons sit ABOVE the backdrop so taps on them never
-          fall through to the dismiss-after-countdown handler. */}
       <View style={styles.topRow} pointerEvents="box-none">
         <Pressable
           onPress={onDontShow}
           hitSlop={12}
-          style={({ pressed }) => [
-            styles.btn,
-            { opacity: pressed ? 0.7 : 1 },
-          ]}
+          style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Text style={styles.btnText}>{t('announcement.dontShowAgain')}</Text>
         </Pressable>
@@ -135,22 +175,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  carouselWrap: { width: '100%', alignItems: 'center', justifyContent: 'center' },
+  page: { alignItems: 'center', justifyContent: 'center' },
   imageWrap: {
     width: '88%',
     aspectRatio: 1,
     maxWidth: 420,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'center',
   },
-  imagePressable: {
-    width: '100%',
-    height: '100%',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 16,
-  },
+  image: { width: '100%', height: '100%', borderRadius: 16 },
+  dots: { flexDirection: 'row', gap: 7, marginTop: 18, alignSelf: 'center' },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
   topRow: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 56 : 28,
@@ -167,9 +202,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.18)',
   },
-  btnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  btnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
 });

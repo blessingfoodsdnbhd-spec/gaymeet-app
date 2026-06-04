@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '../store/auth';
-import { getCurrentAnnouncement } from '../api/announcements';
+import { getCurrentAnnouncements, type CurrentAnnouncement } from '../api/announcements';
 import {
   AnnouncementModal,
   announcementDismissKey,
@@ -29,12 +29,12 @@ import {
 export function AnnouncementBootstrap() {
   const user = useAuth((s) => s.user);
   const isAuthed = !!user;
-  const [shouldShow, setShouldShow] = useState(false);
+  const [toShow, setToShow] = useState<CurrentAnnouncement[]>([]);
   const [decided, setDecided] = useState(false);
 
   const q = useQuery({
     queryKey: ['announcement', 'current'],
-    queryFn: getCurrentAnnouncement,
+    queryFn: getCurrentAnnouncements,
     enabled: isAuthed,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
@@ -44,32 +44,33 @@ export function AnnouncementBootstrap() {
   useEffect(() => {
     if (decided) return;
     if (!q.isSuccess) return;
-    const ann = q.data;
-    if (!ann) {
+    const all = q.data ?? [];
+    if (!all.length) {
       setDecided(true);
       return;
     }
     (async () => {
       try {
-        const flag = await AsyncStorage.getItem(announcementDismissKey(ann.id));
-        if (!flag) setShouldShow(true);
+        // Drop the ones this user has permanently dismissed.
+        const flags = await AsyncStorage.multiGet(
+          all.map((a) => announcementDismissKey(a.id)),
+        );
+        const dismissed = new Set(
+          flags.filter(([, v]) => v === '1').map(([k]) => k),
+        );
+        setToShow(all.filter((a) => !dismissed.has(announcementDismissKey(a.id))));
       } catch {
-        // If storage read fails, default to showing — admin-managed
+        // If storage read fails, default to showing all — admin-managed
         // content is supposed to surface.
-        setShouldShow(true);
+        setToShow(all);
       } finally {
         setDecided(true);
       }
     })();
   }, [decided, q.isSuccess, q.data]);
 
-  if (!shouldShow || !q.data) return null;
+  if (!toShow.length) return null;
   return (
-    <AnnouncementModal
-      id={q.data.id}
-      imageUrl={q.data.imageUrl}
-      ctaUrl={q.data.ctaUrl}
-      onClose={() => setShouldShow(false)}
-    />
+    <AnnouncementModal announcements={toShow} onClose={() => setToShow([])} />
   );
 }
