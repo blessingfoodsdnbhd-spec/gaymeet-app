@@ -18,6 +18,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { getLikedMe, type LikerUser } from '../../api/me';
+import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { useAuth } from '../../store/auth';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -206,11 +207,16 @@ function LikerRow({ user, onPress }: { user: LikerUser; onPress: () => void }) {
         <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
           {user.isBlurred ? '••••' : user.nickname}
         </Text>
-        {!user.isBlurred && typeof user.age === 'number' && (
-          <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-            {user.age}
-          </Text>
-        )}
+        {!user.isBlurred && (() => {
+          const a = computeAge(user.dob) ?? user.age;
+          if (a == null) return null;
+          const z = computeZodiac(user.dob);
+          return (
+            <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+              {a}{z ? ` ${z.emoji}` : ''}
+            </Text>
+          );
+        })()}
       </View>
     </Pressable>
   );

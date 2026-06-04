@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { TopicPersonaListItem } from '../../api/topics';
+import { computeAge, computeZodiac } from '../../utils/zodiac';
 
 interface Props {
   item: TopicPersonaListItem;
@@ -79,9 +80,12 @@ export function TopicPersonaCard({ item, width, height, onPress }: Props) {
           <Text style={styles.tileName} numberOfLines={1}>
             {item.nickname}
           </Text>
-          {item.age != null && (
-            <Text style={styles.tileSub}>· {item.age}</Text>
-          )}
+          {(() => {
+            const a = computeAge(item.dob) ?? item.age;
+            if (a == null) return null;
+            const z = computeZodiac(item.dob);
+            return <Text style={styles.tileSub}>· {a}{z ? ` ${z.emoji}` : ''}</Text>;
+          })()}
         </LinearGradient>
       </View>
     </Pressable>

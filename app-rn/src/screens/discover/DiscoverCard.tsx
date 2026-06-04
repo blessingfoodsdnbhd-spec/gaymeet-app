@@ -14,6 +14,7 @@ import { avatarGradients } from '../../theme/tokens';
 import { TagChip } from '../../components/TagChip';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useTranslation } from 'react-i18next';
+import { computeAge, computeZodiac } from '../../utils/zodiac';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -145,11 +146,16 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
       <View style={styles.info}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
           <Text style={[styles.name, { color: theme.colors.text }]}>{user.nickname}</Text>
-          {user.age && (
-            <Text style={{ color: theme.colors.muted, fontSize: 15 }}>
-              {user.age}
-            </Text>
-          )}
+          {(() => {
+            const age = computeAge(user.dob) ?? user.age;
+            if (age == null) return null;
+            const z = computeZodiac(user.dob);
+            return (
+              <Text style={{ color: theme.colors.muted, fontSize: 15 }}>
+                {age}{z ? ` ${z.emoji}` : ''}
+              </Text>
+            );
+          })()}
         </View>
         {user.bio && (
           <Text style={[styles.bio, { color: theme.colors.text2 }]} numberOfLines={3}>

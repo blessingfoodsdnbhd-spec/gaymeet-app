@@ -13,6 +13,7 @@ export interface TopicPersonaListItem {
   photo0: string | null;
   photoCount: number;
   age: number | null;
+  dob: string | null;
   lastActiveAt: string | null;
   // Backend pins the requester's own persona at the top of the first
   // page with this flag set — client renders a "ME / 你" badge and may
@@ -31,6 +32,7 @@ export interface TopicPersonaDetail {
   nickname: string;
   photos: string[];
   age: number | null;
+  dob: string | null;
   bio: string | null;
   lastActiveAt: string | null;
   // True when the viewer is looking at their OWN persona — show an edit CTA

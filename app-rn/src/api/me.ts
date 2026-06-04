@@ -137,6 +137,7 @@ export interface LikerUser {
   nickname: string;
   avatarUrl?: string | null;
   age?: number | null;
+  dob?: string | null;
   isOnline?: boolean;
   isBlurred?: boolean;
   isPremium?: boolean;

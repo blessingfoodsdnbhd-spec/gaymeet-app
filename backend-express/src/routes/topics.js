@@ -114,7 +114,7 @@ router.get('/:slug/personas', auth, async (req, res, next) => {
     const userIds = slice.map((p) => p.userId);
     const users = await User.find(
       { _id: { $in: userIds } },
-      { age: 1, lastActiveAt: 1 },
+      { age: 1, dob: 1, lastActiveAt: 1 },
     ).lean();
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
@@ -127,6 +127,7 @@ router.get('/:slug/personas', auth, async (req, res, next) => {
         photo0: p.photos[0] || null,
         photoCount: p.photos.length,
         age: u.age ?? null,
+        dob: u.dob ? new Date(u.dob).toISOString() : null,
         lastActiveAt: u.lastActiveAt
           ? new Date(u.lastActiveAt).toISOString()
           : null,
@@ -179,6 +180,7 @@ router.get('/:slug/personas/:userId', auth, async (req, res, next) => {
 
     const owner = await User.findById(targetId, {
       age: 1,
+      dob: 1,
       bio: 1,
       lastActiveAt: 1,
       nickname: 1,
@@ -193,6 +195,7 @@ router.get('/:slug/personas/:userId', auth, async (req, res, next) => {
       nickname: persona.nickname,
       photos: persona.photos,
       age: owner.age ?? null,
+      dob: owner.dob ? owner.dob.toISOString() : null,
       bio: owner.bio || null,
       lastActiveAt: owner.lastActiveAt
         ? owner.lastActiveAt.toISOString()

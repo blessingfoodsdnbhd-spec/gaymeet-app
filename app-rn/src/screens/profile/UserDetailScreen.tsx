@@ -25,6 +25,7 @@ import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { getUserById } from '../../api/me';
+import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { openConversation } from '../../api/chats';
 import {
   getPrivatePhotos,
@@ -188,7 +189,12 @@ export function UserDetailScreen() {
             />
             <Text style={[styles.name, { color: theme.colors.text }]}>
               {user.nickname}
-              {user.age ? ` · ${user.age}` : ''}
+              {(() => {
+                const a = computeAge(user.dob) ?? user.age;
+                if (a == null) return '';
+                const z = computeZodiac(user.dob);
+                return ` · ${a}${z ? ` ${z.emoji}` : ''}`;
+              })()}
             </Text>
             {user.countryCode && (
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>
