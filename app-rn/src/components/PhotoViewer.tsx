@@ -12,6 +12,13 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { X } from 'lucide-react-native';
 
 interface Props {
@@ -21,40 +28,171 @@ interface Props {
   onClose: () => void;
 }
 
+const MAX_SCALE = 8;
+const DISMISS_THRESHOLD = 120;
+
 /**
- * Full-screen, swipeable photo viewer. Renders as an absolute-fill View
- * (NOT a Modal) so it can be placed inside a parent Modal — e.g. the
- * AboutUserSheet's Sheet — without hitting Android's nested-Modal
- * stacking bug (a second Modal opened while the first is up renders
- * behind it, invisibly).
+ * One zoomable page. Pinch to zoom (up to 8×), pan when zoomed, double-tap to
+ * toggle 1×/2×, single-tap to close, and swipe-down to dismiss when not zoomed.
+ * Reports its zoom state up so the pager can disable horizontal paging while
+ * a photo is zoomed (otherwise panning a zoomed image would change pages).
+ */
+function ZoomablePage({
+  uri,
+  width,
+  height,
+  onClose,
+  onZoomChange,
+}: {
+  uri: string;
+  width: number;
+  height: number;
+  onClose: () => void;
+  onZoomChange: (zoomed: boolean) => void;
+}) {
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const savedTx = useSharedValue(0);
+  const savedTy = useSharedValue(0);
+  const [zoomed, setZoomed] = React.useState(false);
+
+  const reportZoom = (z: boolean) => {
+    setZoomed(z);
+    onZoomChange(z);
+  };
+  const resetZoom = () => {
+    'worklet';
+    scale.value = withTiming(1);
+    savedScale.value = 1;
+    tx.value = withTiming(0);
+    ty.value = withTiming(0);
+    savedTx.value = 0;
+    savedTy.value = 0;
+    runOnJS(reportZoom)(false);
+  };
+
+  const pinch = Gesture.Pinch()
+    .onUpdate((e) => {
+      scale.value = Math.min(Math.max(savedScale.value * e.scale, 1), MAX_SCALE);
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+      if (scale.value <= 1) resetZoom();
+      else runOnJS(reportZoom)(true);
+    });
+
+  // Free pan while zoomed.
+  const movePan = React.useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(zoomed)
+        .onChange((e) => {
+          tx.value += e.changeX;
+          ty.value += e.changeY;
+        })
+        .onEnd(() => {
+          savedTx.value = tx.value;
+          savedTy.value = ty.value;
+        }),
+    [zoomed],
+  );
+
+  // Swipe-down to dismiss while NOT zoomed. activeOffsetY + failOffsetX so the
+  // horizontal pager still owns left/right swipes between photos.
+  const dismissPan = React.useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!zoomed)
+        .activeOffsetY([-14, 14])
+        .failOffsetX([-18, 18])
+        .onChange((e) => {
+          ty.value = e.translationY;
+        })
+        .onEnd((e) => {
+          if (e.translationY > DISMISS_THRESHOLD) runOnJS(onClose)();
+          else ty.value = withTiming(0);
+        }),
+    [zoomed],
+  );
+
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      if (scale.value > 1) {
+        resetZoom();
+      } else {
+        scale.value = withTiming(2);
+        savedScale.value = 2;
+        runOnJS(reportZoom)(true);
+      }
+    });
+
+  const singleTap = Gesture.Tap()
+    .numberOfTaps(1)
+    .onEnd(() => {
+      runOnJS(onClose)();
+    });
+
+  const gesture = Gesture.Race(
+    Gesture.Simultaneous(pinch, movePan, dismissPan),
+    Gesture.Exclusive(doubleTap, singleTap),
+  );
+
+  const aStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: tx.value },
+      { translateY: ty.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View style={[{ width, height }, aStyle]}>
+          <ExpoImage
+            source={{ uri }}
+            style={{ width, height }}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+        </Animated.View>
+      </View>
+    </GestureDetector>
+  );
+}
+
+/**
+ * Full-screen, swipeable photo viewer with pinch-zoom. Renders as an
+ * absolute-fill View (NOT a Modal) so it can sit inside a parent Modal — e.g.
+ * the AboutUserSheet's Sheet — without Android's nested-Modal stacking bug.
  *
- * The parent should mount this via the Sheet's `overlay` prop so it
- * lands as a Modal-root sibling, above the backdrop and the sheet card.
- * Hardware back is intercepted via BackHandler when open so back closes
- * the viewer first instead of dismissing the parent Modal.
+ * It wraps its own GestureHandlerRootView because RN Modals create a separate
+ * native view tree that the app-root GestureHandlerRootView doesn't reach — so
+ * without this, gestures would be dead when the viewer is shown inside a Modal.
  */
 export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) {
   const { width, height } = Dimensions.get('window');
   const flatRef = React.useRef<FlatList<string>>(null);
   const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
+  const [zoomed, setZoomed] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
     setCurrentIndex(initialIndex);
+    setZoomed(false);
     const id = setTimeout(() => {
       try {
         flatRef.current?.scrollToIndex({ index: initialIndex, animated: false });
       } catch {
-        // scrollToIndex can throw if data hasn't rendered — initialScrollIndex
-        // on FlatList handles the cold case anyway.
+        // scrollToIndex can throw before render — initialScrollIndex covers cold.
       }
     }, 30);
     return () => clearTimeout(id);
   }, [open, initialIndex]);
 
-  // Intercept Android hardware back so it closes the viewer first
-  // instead of falling through to the parent Modal's onRequestClose
-  // (which would dismiss the whole sheet).
   React.useEffect(() => {
     if (!open) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -72,31 +210,27 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
   if (!open) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.root]}>
+    <GestureHandlerRootView style={[StyleSheet.absoluteFill, styles.root]}>
       <StatusBar hidden />
       <FlatList
         ref={flatRef}
         data={photos}
         horizontal
         pagingEnabled
+        scrollEnabled={!zoomed}
         showsHorizontalScrollIndicator={false}
         initialScrollIndex={initialIndex}
         onMomentumScrollEnd={onMomentumEnd}
         keyExtractor={(item, idx) => `${idx}-${item}`}
-        getItemLayout={(_, index) => ({
-          length: width,
-          offset: width * index,
-          index,
-        })}
+        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
         renderItem={({ item }) => (
-          <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-            <ExpoImage
-              source={{ uri: item }}
-              style={{ width, height }}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-          </View>
+          <ZoomablePage
+            uri={item}
+            width={width}
+            height={height}
+            onClose={onClose}
+            onZoomChange={setZoomed}
+          />
         )}
       />
 
@@ -104,14 +238,14 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
         <X size={24} color="#FFFFFF" strokeWidth={2} />
       </Pressable>
 
-      {photos.length > 1 && (
+      {photos.length > 1 && !zoomed && (
         <View style={styles.indicator}>
           <Text style={styles.indicatorText}>
             {currentIndex + 1} / {photos.length}
           </Text>
         </View>
       )}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

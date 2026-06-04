@@ -36,6 +36,7 @@ import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
+import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
@@ -126,6 +127,7 @@ export function ProfileScreen() {
     staleTime: 60_000,
   });
   const privatePhotos = myPrivatePhotosQ.data?.photos ?? [];
+  const photoViewer = usePhotoViewer();
 
   // Approved viewer count — drives the 5th stat tile ("Private") and the
   // "Revoke all" CTA. Not Premium-gated server-side; works for everyone.
@@ -576,6 +578,7 @@ export function ProfileScreen() {
             busy={publicBusy}
             onAdd={addPublicPhoto}
             onRemove={removePublicPhoto}
+            onView={(i) => photoViewer.open(user.photos ?? [], i)}
           />
 
           {/* Private photos */}
@@ -588,6 +591,7 @@ export function ProfileScreen() {
             busy={privateBusy || myPrivatePhotosQ.isLoading}
             onAdd={addPrivatePhoto}
             onRemove={removePrivatePhoto}
+            onView={(i) => photoViewer.open(privatePhotos, i)}
             badgeIcon={<Lock size={12} color="#FFFFFF" strokeWidth={2.2} />}
           />
           <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
@@ -1038,6 +1042,7 @@ export function ProfileScreen() {
           });
         }}
       />
+      {photoViewer.node}
     </SafeAreaView>
   );
 }

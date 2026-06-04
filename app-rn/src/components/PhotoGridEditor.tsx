@@ -21,6 +21,7 @@ export function PhotoGridEditor({
   busy,
   onAdd,
   onRemove,
+  onView,
   badgeIcon,
 }: {
   photos: string[];
@@ -28,6 +29,8 @@ export function PhotoGridEditor({
   busy: boolean;
   onAdd: () => void;
   onRemove: (url: string) => void;
+  /** Tap the photo (not the X) to open it fullscreen. */
+  onView?: (index: number) => void;
   badgeIcon?: React.ReactNode;
 }) {
   const theme = useTheme();
@@ -50,12 +53,18 @@ export function PhotoGridEditor({
         if (s.kind === 'photo' && s.url) {
           return (
             <View key={`p-${s.url}`} style={common}>
-              <ExpoImage
-                source={{ uri: s.url }}
+              <Pressable
+                onPress={() => onView?.(i)}
+                disabled={!onView}
                 style={StyleSheet.absoluteFill}
-                cachePolicy="memory-disk"
-                contentFit="cover"
-              />
+              >
+                <ExpoImage
+                  source={{ uri: s.url }}
+                  style={StyleSheet.absoluteFill}
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
+                />
+              </Pressable>
               <Pressable
                 onPress={() => onRemove(s.url!)}
                 hitSlop={6}

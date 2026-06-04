@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { Chip } from '../../components/Chip';
 import { tagById } from '../../data/interestTags';
 import { shortTime } from '../../utils/time';
@@ -35,6 +36,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
   const { width } = useWindowDimensions();
   const me = useAuth((s) => s.user);
   const queryClient = useQueryClient();
+  const photoViewer = usePhotoViewer();
   const photos = moment.images ?? [];
   const tag = moment.tag ? tagById(moment.tag) : null;
   const tagLabel = tag ? (i18n.language?.startsWith('zh') ? tag.zh : tag.en) : '';
@@ -135,7 +137,11 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
 
       {photos.length > 0 && (
         <View style={styles.photoArea}>
-          <PhotoGrid photos={photos} maxWidth={width - 40} />
+          <PhotoGrid
+            photos={photos}
+            maxWidth={width - 40}
+            onPhotoPress={(i) => photoViewer.open(photos, i)}
+          />
         </View>
       )}
 
@@ -165,6 +171,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
           onPress={() => onOpenComments?.(moment)}
         />
       </View>
+      {photoViewer.node}
     </View>
   );
 }
@@ -209,7 +216,15 @@ function Action({
   );
 }
 
-function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number }) {
+function PhotoGrid({
+  photos,
+  maxWidth,
+  onPhotoPress,
+}: {
+  photos: string[];
+  maxWidth: number;
+  onPhotoPress: (index: number) => void;
+}) {
   // Use explicit pixel width AND pixel height — no aspectRatio. With
   // aspectRatio, expo-image (and RN Image) report height = 0 before the
   // source loads, then expand to (width * 3/4) once the intrinsic size
@@ -219,16 +234,18 @@ function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number })
   // from the very first paint — no reflow, no caption clipping.
   if (photos.length === 1) {
     return (
-      <Image
-        source={{ uri: photos[0] }}
-        style={{
-          width: maxWidth,
-          height: 240,
-          borderRadius: 14,
-        }}
-        contentFit="cover"
-        transition={150}
-      />
+      <Pressable onPress={() => onPhotoPress(0)}>
+        <Image
+          source={{ uri: photos[0] }}
+          style={{
+            width: maxWidth,
+            height: 240,
+            borderRadius: 14,
+          }}
+          contentFit="cover"
+          transition={150}
+        />
+      </Pressable>
     );
   }
   const cols = photos.length === 2 ? 2 : 3;
@@ -243,13 +260,14 @@ function PhotoGrid({ photos, maxWidth }: { photos: string[]; maxWidth: number })
       }}
     >
       {photos.slice(0, 9).map((p, i) => (
-        <Image
-          key={i}
-          source={{ uri: p }}
-          style={{ width: tileW, height: tileW, borderRadius: 8 }}
-          contentFit="cover"
-          transition={150}
-        />
+        <Pressable key={i} onPress={() => onPhotoPress(i)}>
+          <Image
+            source={{ uri: p }}
+            style={{ width: tileW, height: tileW, borderRadius: 8 }}
+            contentFit="cover"
+            transition={150}
+          />
+        </Pressable>
       ))}
     </View>
   );

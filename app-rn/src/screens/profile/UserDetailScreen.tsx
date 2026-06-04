@@ -20,6 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
@@ -58,6 +59,7 @@ export function UserDetailScreen() {
   const me = useAuth((s) => s.user);
   const isPremium = !!(me as any)?.isPremium;
   const { userId } = route.params;
+  const photoViewer = usePhotoViewer();
 
   const userQ = useQuery({
     queryKey: ['user', userId],
@@ -179,14 +181,19 @@ export function UserDetailScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.profileHeader}>
-            <Avatar
-              name={user.nickname}
-              uri={user.avatarUrl}
-              avatarIdx={idxFor(userId)}
-              size={92}
-              shape="circle"
-              showOnline={user.isOnline}
-            />
+            <Pressable
+              onPress={() => user.photos?.length && photoViewer.open(user.photos, 0)}
+              disabled={!user.photos?.length}
+            >
+              <Avatar
+                name={user.nickname}
+                uri={user.avatarUrl}
+                avatarIdx={idxFor(userId)}
+                size={92}
+                shape="circle"
+                showOnline={user.isOnline}
+              />
+            </Pressable>
             <Text style={[styles.name, { color: theme.colors.text }]}>
               {user.nickname}
               {(() => {
@@ -212,14 +219,15 @@ export function UserDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingTop: 18, gap: 8 }}
             >
-              {user.photos.slice(1).map((url) => (
-                <ExpoImage
-                  key={url}
-                  source={{ uri: url }}
-                  style={{ width: 140, height: 180, borderRadius: 14 }}
-                  cachePolicy="memory-disk"
-                  contentFit="cover"
-                />
+              {user.photos.slice(1).map((url, i) => (
+                <Pressable key={url} onPress={() => photoViewer.open(user.photos!, i + 1)}>
+                  <ExpoImage
+                    source={{ uri: url }}
+                    style={{ width: 140, height: 180, borderRadius: 14 }}
+                    cachePolicy="memory-disk"
+                    contentFit="cover"
+                  />
+                </Pressable>
               ))}
             </ScrollView>
           )}
@@ -242,14 +250,18 @@ export function UserDetailScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ gap: 8 }}
                   >
-                    {(privatePhotosQ.data?.photos ?? []).map((url) => (
-                      <ExpoImage
+                    {(privatePhotosQ.data?.photos ?? []).map((url, i) => (
+                      <Pressable
                         key={url}
-                        source={{ uri: url }}
-                        style={{ width: 140, height: 180, borderRadius: 14 }}
-                        cachePolicy="memory-disk"
-                        contentFit="cover"
-                      />
+                        onPress={() => photoViewer.open(privatePhotosQ.data?.photos ?? [], i)}
+                      >
+                        <ExpoImage
+                          source={{ uri: url }}
+                          style={{ width: 140, height: 180, borderRadius: 14 }}
+                          cachePolicy="memory-disk"
+                          contentFit="cover"
+                        />
+                      </Pressable>
                     ))}
                   </ScrollView>
                 )
@@ -336,6 +348,7 @@ export function UserDetailScreen() {
           </Pressable>
         </ScrollView>
       )}
+      {photoViewer.node}
     </SafeAreaView>
   );
 }
