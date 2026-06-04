@@ -133,7 +133,9 @@ export function NotesInboxScreen() {
           keyExtractor={(n) => n._id}
           contentContainerStyle={{ paddingVertical: 4 }}
           ItemSeparatorComponent={Sep}
-          renderItem={({ item }) => <SentRow note={item} />}
+          renderItem={({ item }) => (
+            <SentRow note={item} onPress={() => nav.navigate('NoteDetail', { sent: item })} />
+          )}
           ListEmptyComponent={<Empty text={t('notes.emptySent')} />}
         />
       )}
@@ -212,18 +214,20 @@ function InboxRow({ note, onPress }: { note: InboxNote; onPress: () => void }) {
   );
 }
 
-function SentRow({ note }: { note: SentNote }) {
+function SentRow({ note, onPress }: { note: SentNote; onPress: () => void }) {
   const theme = useTheme();
   const { t } = useTranslation();
   return (
-    <View
-      style={{
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
         paddingHorizontal: 20,
         paddingVertical: 14,
-      }}
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
       <Avatar name={note.recipient.nickname || '?'} uri={note.recipient.avatarUrl} size={40} />
       <View style={{ flex: 1 }}>
@@ -242,7 +246,8 @@ function SentRow({ note }: { note: SentNote }) {
           </Text>
         ) : null}
       </View>
-    </View>
+      <ChevronRight size={18} color={theme.colors.muted} />
+    </Pressable>
   );
 }
 

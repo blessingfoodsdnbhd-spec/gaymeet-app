@@ -10,7 +10,8 @@ export interface InboxNote {
   read: boolean;
 }
 
-/** A note I SENT — the recipient I chose is identified. */
+/** A note I SENT — the recipient I chose is identified. When they reply, the
+ *  replier (= that recipient) is surfaced explicitly as consent to be named. */
 export interface SentNote {
   _id: string;
   body: string;
@@ -18,6 +19,7 @@ export interface SentNote {
   replyBody?: string | null;
   repliedAt?: string | null;
   recipient: { _id: string; nickname: string; avatarUrl?: string | null };
+  replier?: { _id: string; displayName: string; avatarUrl?: string | null } | null;
 }
 
 export interface NoteQuota {

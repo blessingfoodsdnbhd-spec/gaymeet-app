@@ -11,24 +11,31 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Trash2, Ban, StickyNote } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Ban, StickyNote, Share2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
+import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { replyNote, deleteNote, blockNoteSender } from '../../api/notes';
 import { shortTime } from '../../utils/time';
+import { shareNoteCard } from '../../utils/shareNoteCard';
+import { NoteShareCard, CARD_SIZE } from './NoteShareCard';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 const BODY_MAX = 200;
 
 /**
- * 小纸条 detail — the recipient reads an anonymous note and may reply once,
- * delete it, or block the (hidden) sender. Sender identity is never shown.
+ * 小纸条 detail.
+ * - Inbox mode (`note`): the recipient reads an ANONYMOUS note and may reply
+ *   once (revealing their name — see the disclaimer), delete it, block the
+ *   hidden sender, or share it as a branded image card.
+ * - Outbox mode (`sent`): the sender re-reads their own note; if the recipient
+ *   replied, the replier's name + avatar are shown (consent-to-identify).
  */
 export function NoteDetailScreen() {
   const theme = useTheme();
@@ -36,11 +43,18 @@ export function NoteDetailScreen() {
   const nav = useNavigation<Nav>();
   const route = useRoute<RouteProp<RootStackParamList, 'NoteDetail'>>();
   const qc = useQueryClient();
-  const note = route.params.note;
 
-  const [replyBody, setReplyBody] = React.useState(note.replyBody ?? null);
+  const { note, sent } = route.params;
+  const outbox = !!sent;
+  const body = outbox ? sent!.body : note!.body;
+  const createdAt = outbox ? sent!.createdAt : note!.createdAt;
+
+  const [replyBody, setReplyBody] = React.useState(
+    (outbox ? sent!.replyBody : note!.replyBody) ?? null,
+  );
   const [draft, setDraft] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const cardRef = React.useRef<View>(null);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['notes', 'inbox'] });
@@ -48,11 +62,11 @@ export function NoteDetailScreen() {
   };
 
   const onReply = async () => {
-    const body = draft.trim();
-    if (!body || busy) return;
+    const text = draft.trim();
+    if (!text || busy || !note) return;
     setBusy(true);
     try {
-      const res = await replyNote(note._id, body);
+      const res = await replyNote(note._id, text);
       setReplyBody(res.replyBody);
       setDraft('');
       invalidate();
@@ -64,6 +78,7 @@ export function NoteDetailScreen() {
   };
 
   const onDelete = () => {
+    if (!note) return;
     Alert.alert(t('notes.deleteConfirmTitle'), t('notes.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -83,6 +98,7 @@ export function NoteDetailScreen() {
   };
 
   const onBlock = () => {
+    if (!note) return;
     Alert.alert(t('notes.blockConfirmTitle'), t('notes.blockConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -110,12 +126,20 @@ export function NoteDetailScreen() {
         <Text style={{ marginLeft: 8, flex: 1, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {t('notes.detailTitle')}
         </Text>
-        <Pressable onPress={onBlock} hitSlop={8} style={{ marginRight: 16 }}>
-          <Ban size={20} color={theme.colors.muted} />
-        </Pressable>
-        <Pressable onPress={onDelete} hitSlop={8}>
-          <Trash2 size={20} color={theme.colors.muted} />
-        </Pressable>
+        {/* Share + moderation actions are recipient-only (inbox mode). */}
+        {!outbox && (
+          <>
+            <Pressable onPress={() => shareNoteCard(cardRef, t)} hitSlop={8} style={{ marginRight: 16 }}>
+              <Share2 size={20} color={theme.colors.muted} />
+            </Pressable>
+            <Pressable onPress={onBlock} hitSlop={8} style={{ marginRight: 16 }}>
+              <Ban size={20} color={theme.colors.muted} />
+            </Pressable>
+            <Pressable onPress={onDelete} hitSlop={8}>
+              <Trash2 size={20} color={theme.colors.muted} />
+            </Pressable>
+          </>
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -124,57 +148,83 @@ export function NoteDetailScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
         <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-          {/* The anonymous note */}
+          {/* The note */}
           <View style={[styles.bubble, { backgroundColor: theme.colors.primarySoft }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <StickyNote size={16} color={theme.colors.primary} strokeWidth={2} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.primary }}>
-                {t('notes.anonymousSender')}
+                {outbox ? t('notes.sentLabel') : t('notes.anonymousSender')}
               </Text>
             </View>
-            <Text style={{ fontSize: 16, lineHeight: 23, color: theme.colors.text }}>{note.body}</Text>
+            <Text style={{ fontSize: 16, lineHeight: 23, color: theme.colors.text }}>{body}</Text>
             <Text style={{ fontSize: 11, color: theme.colors.muted, marginTop: 10 }}>
-              {shortTime(note.createdAt)}
+              {shortTime(createdAt)}
             </Text>
           </View>
 
-          {/* My reply, if sent */}
+          {/* Reply. In outbox mode the replier (= recipient) is identified. */}
           {replyBody ? (
             <View style={[styles.bubble, styles.replyBubble, { backgroundColor: theme.colors.surface2 }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.muted, marginBottom: 6 }}>
-                {t('notes.yourReply')}
-              </Text>
+              {outbox && sent!.replier ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Avatar
+                    name={sent!.replier.displayName || '?'}
+                    uri={sent!.replier.avatarUrl}
+                    size={24}
+                  />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.text }}>
+                    {sent!.replier.displayName}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.muted }}>
+                    {t('notes.repliedLabel')}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.muted, marginBottom: 6 }}>
+                  {t('notes.yourReply')}
+                </Text>
+              )}
               <Text style={{ fontSize: 16, lineHeight: 23, color: theme.colors.text }}>{replyBody}</Text>
             </View>
           ) : null}
         </ScrollView>
 
-        {/* Reply composer — only when not yet replied (one reply max). */}
-        {replyBody ? (
-          <View style={[styles.repliedBar, { borderTopColor: theme.colors.line }]}>
-            <Text style={{ fontSize: 13, color: theme.colors.muted, textAlign: 'center' }}>
-              {t('notes.alreadyReplied')}
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.composer, { borderTopColor: theme.colors.line }]}>
-            <TextInput
-              value={draft}
-              onChangeText={(v) => setDraft(v.slice(0, BODY_MAX))}
-              placeholder={t('notes.replyPlaceholder')}
-              placeholderTextColor={theme.colors.muted}
-              multiline
-              maxLength={BODY_MAX}
-              style={[styles.input, { color: theme.colors.text, backgroundColor: theme.colors.surface2 }]}
-            />
-            <Button
-              label={t('notes.sendReply')}
-              onPress={onReply}
-              disabled={!draft.trim() || busy}
-            />
-          </View>
+        {/* Reply composer — inbox-only, and only until the one reply is sent. */}
+        {!outbox && (
+          replyBody ? (
+            <View style={[styles.repliedBar, { borderTopColor: theme.colors.line }]}>
+              <Text style={{ fontSize: 13, color: theme.colors.muted, textAlign: 'center' }}>
+                {t('notes.alreadyReplied')}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.composer, { borderTopColor: theme.colors.line }]}>
+              <Text style={{ fontSize: 11.5, color: theme.colors.muted }}>
+                ⚠️ {t('notes.replyDisclaimer')}
+              </Text>
+              <TextInput
+                value={draft}
+                onChangeText={(v) => setDraft(v.slice(0, BODY_MAX))}
+                placeholder={t('notes.replyPlaceholder')}
+                placeholderTextColor={theme.colors.muted}
+                multiline
+                maxLength={BODY_MAX}
+                style={[styles.input, { color: theme.colors.text, backgroundColor: theme.colors.surface2 }]}
+              />
+              <Button label={t('notes.sendReply')} onPress={onReply} disabled={!draft.trim() || busy} />
+            </View>
+          )
         )}
       </KeyboardAvoidingView>
+
+      {/* Off-screen branded card captured for image share (inbox only). */}
+      {!outbox && (
+        <View style={styles.offscreen} pointerEvents="none">
+          <View ref={cardRef} collapsable={false} style={{ width: CARD_SIZE, height: CARD_SIZE }}>
+            <NoteShareCard body={body} />
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -199,4 +249,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlignVertical: 'top',
   },
+  // Rendered but kept off visible screen (not opacity:0 — view-shot needs the
+  // target fully drawn) so it can be captured on demand.
+  offscreen: { position: 'absolute', left: -9999, top: 0 },
 });

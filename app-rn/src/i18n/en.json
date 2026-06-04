@@ -512,6 +512,15 @@
     "detailTitle": "Note",
     "yourReply": "Your reply",
     "alreadyReplied": "You've replied to this note.",
+    "replyDisclaimer": "Replying will reveal your name to the sender.",
+    "sentLabel": "You sent",
+    "repliedLabel": "replied",
+    "share": {
+      "label": "Share",
+      "cardTag": "Anonymous Note on Meyou",
+      "cardFooter": "@meyou.uk",
+      "cardReceived": "Received on Meyou"
+    },
     "delete": "Delete",
     "deleteConfirmTitle": "Delete note?",
     "deleteConfirmBody": "This note will be removed from your inbox.",

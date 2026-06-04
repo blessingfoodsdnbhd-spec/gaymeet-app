@@ -132,18 +132,28 @@ router.get('/sent', auth, async (req, res, next) => {
     ok(res, {
       notes: notes
         .filter((n) => n.recipientId) // populate → null if recipient deleted
-        .map((n) => ({
-          _id: n._id,
-          body: n.body,
-          createdAt: n.createdAt.toISOString(),
-          replyBody: n.replyBody ?? null,
-          repliedAt: n.repliedAt ? n.repliedAt.toISOString() : null,
-          recipient: {
+        .map((n) => {
+          const recipient = {
             _id: n.recipientId._id,
             nickname: n.recipientId.nickname,
             avatarUrl: n.recipientId.avatarUrl ?? null,
-          },
-        })),
+          };
+          return {
+            _id: n._id,
+            body: n.body,
+            createdAt: n.createdAt.toISOString(),
+            replyBody: n.replyBody ?? null,
+            repliedAt: n.repliedAt ? n.repliedAt.toISOString() : null,
+            recipient,
+            // Replying = consent to be identified to the sender. The replier is
+            // simply the original recipient; surface it explicitly when a reply
+            // exists so the sender's outbox can show who answered. The forward
+            // inbox direction stays anonymous (see GET /notes/inbox).
+            replier: n.replyBody
+              ? { _id: recipient._id, displayName: recipient.nickname, avatarUrl: recipient.avatarUrl }
+              : null,
+          };
+        }),
     });
   } catch (e) {
     next(e);

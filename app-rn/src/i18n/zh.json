@@ -512,6 +512,15 @@
     "detailTitle": "小纸条",
     "yourReply": "你的回复",
     "alreadyReplied": "你已回复这张纸条。",
+    "replyDisclaimer": "回复将向发送者显示你的名字。",
+    "sentLabel": "你发送的",
+    "repliedLabel": "回复了",
+    "share": {
+      "label": "分享",
+      "cardTag": "Meyou 小纸条",
+      "cardFooter": "@meyou.uk",
+      "cardReceived": "在 Meyou 收到"
+    },
     "delete": "删除",
     "deleteConfirmTitle": "删除纸条？",
     "deleteConfirmBody": "这张纸条将从你的收件箱移除。",

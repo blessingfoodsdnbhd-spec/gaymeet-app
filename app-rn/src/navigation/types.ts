@@ -1,5 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import type { InboxNote } from '../api/notes';
+import type { InboxNote, SentNote } from '../api/notes';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -38,7 +38,8 @@ export type RootStackParamList = {
   LikedMe: undefined;
   Viewers: undefined;
   NotesInbox: undefined;
-  NoteDetail: { note: InboxNote };
+  /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
+  NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;
   TopicPersonaEdit: {
     topicSlug: string;
