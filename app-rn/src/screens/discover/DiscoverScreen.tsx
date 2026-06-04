@@ -165,11 +165,21 @@ export function DiscoverScreen() {
   const hasActiveFilters =
     filters.radiusKm !== undefined || (filters.interests?.length ?? 0) > 0;
 
+  // Ids swiped this session. A background deck refetch (triggered when the deck
+  // runs low, or by the post-match cache invalidation) can race the swipe POST
+  // and return the just-swiped user again before the server has recorded the
+  // swipe — which made cards "come back" (a matched card reappearing after the
+  // overlay, or a swipe appearing to need a second try). Filtering the deck
+  // through this set guarantees a swiped user never reappears regardless of
+  // refetch timing.
+  const swipedIds = useRef<Set<string>>(new Set());
+
   // Cards query — key includes filters so changing them refetches cleanly.
   const cardsQ = useQuery({
     queryKey: ['discover', 'cards', filters.radiusKm ?? null, filters.interests ?? null],
     queryFn: () => getDiscoverCards(10, filters),
     staleTime: 30_000,
+    select: (data: DiscoverCardUser[]) => data.filter((u) => !swipedIds.current.has(u.id)),
   });
 
   // Nearby query — keyed on the same filter dimensions as cardsQ so that
@@ -197,6 +207,9 @@ export function DiscoverScreen() {
       filters.interests ?? null,
     ];
 
+    // Mark swiped so a racy refetch can't bring this user back (see swipedIds).
+    swipedIds.current.add(user.id);
+
     // Optimistically remove the top card from the cache
     queryClient.setQueryData<DiscoverCardUser[]>(cardsKey, (prev) =>
       (prev ?? []).filter((u) => u.id !== user.id),
@@ -222,7 +235,10 @@ export function DiscoverScreen() {
           }
         },
         onError: (e: any) => {
-          // Roll back the optimistic removal so the user can retry.
+          // Roll back the optimistic removal so the user can retry. Drop from
+          // swipedIds too, otherwise the select() filter would hide the
+          // rolled-back card.
+          swipedIds.current.delete(user.id);
           queryClient.setQueryData<DiscoverCardUser[]>(cardsKey, (prev) =>
             prev?.some((u) => u.id === user.id) ? prev : [user, ...(prev ?? [])],
           );
