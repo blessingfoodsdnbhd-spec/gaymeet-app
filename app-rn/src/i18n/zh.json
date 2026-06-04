@@ -275,6 +275,7 @@
       "friends": "关注",
       "moments": "动态",
       "likes": "想认识",
+      "viewers": "谁在看你",
       "privatePhotos": "密照"
     },
     "editProfile": "编辑资料",
@@ -472,6 +473,12 @@
     "title": "想认识你的人",
     "empty": "还没有人想认识你",
     "upgradeCta": "升级看清楚是谁",
+    "loadFailed": "无法加载"
+  },
+  "viewers": {
+    "title": "谁在看你",
+    "empty": "还没有人看过你",
+    "upgradeCta": "升级看清楚是谁看了你",
     "loadFailed": "无法加载"
   },
   "boost": {

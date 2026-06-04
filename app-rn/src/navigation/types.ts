@@ -35,6 +35,7 @@ export type RootStackParamList = {
   UserDetail: { userId: string };
   Premium: undefined;
   LikedMe: undefined;
+  Viewers: undefined;
   PhotoRequests: undefined;
   TopicPersonaEdit: {
     topicSlug: string;

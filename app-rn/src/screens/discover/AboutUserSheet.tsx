@@ -29,7 +29,7 @@ import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
 import { openConversation } from '../../api/chats';
-import { getMe } from '../../api/me';
+import { getMe, logProfileView } from '../../api/me';
 import {
   getPrivatePhotos,
   getSent,
@@ -119,6 +119,12 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     setViewerIndex(null);
     setPage(0);
   }, [user?.id]);
+
+  // "谁在看你": log a profile view when the sheet opens for someone else.
+  // Fire-and-forget — the backend skips self and de-dups per viewer→viewed.
+  React.useEffect(() => {
+    if (open && user?.id && !isSelf) logProfileView(user.id);
+  }, [open, user?.id, isSelf]);
 
   // Private-photo request status — lifted from UserDetailScreen. We use
   // getSent() rather than getPrivatePhotos() for the gating because the

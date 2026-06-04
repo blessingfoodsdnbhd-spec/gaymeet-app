@@ -275,6 +275,7 @@
       "friends": "Following",
       "moments": "Moments",
       "likes": "Likes",
+      "viewers": "Viewers",
       "privatePhotos": "Private"
     },
     "editProfile": "Edit profile",
@@ -472,6 +473,12 @@
     "title": "Who Liked You",
     "empty": "No one yet",
     "upgradeCta": "Upgrade to see who they are",
+    "loadFailed": "Couldn't load"
+  },
+  "viewers": {
+    "title": "Who Viewed You",
+    "empty": "No one yet",
+    "upgradeCta": "Upgrade to see who viewed you",
     "loadFailed": "Couldn't load"
   },
   "boost": {

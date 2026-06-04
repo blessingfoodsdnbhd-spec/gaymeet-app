@@ -170,3 +170,27 @@ export interface LikedMeResponse {
 }
 export const getLikedMe = () =>
   unwrap<LikedMeResponse>(api.get('/users/likes'));
+
+/** Log that I opened someone's profile ("谁在看你"). Fire-and-forget from
+ *  AboutUserSheet on mount; backend skips self and de-dups per viewer→viewed. */
+export const logProfileView = (userId: string) =>
+  api.post(`/users/${userId}/view`).catch(() => {});
+
+/** A profile viewer. Premium sees real identity (nickname/avatar/online/dob);
+ *  free gets blurred rows (nickname '??', real avatar for the blur teaser). */
+export interface ViewerUser {
+  _id: string;
+  nickname: string;
+  avatarUrl?: string | null;
+  isOnline?: boolean;
+  dob?: string | null;
+  /** ISO timestamp of the most recent view. */
+  viewedAt: string;
+  isBlurred?: boolean;
+}
+export interface ViewersResponse {
+  count: number;
+  viewers: ViewerUser[];
+}
+export const getViewers = () =>
+  unwrap<ViewersResponse>(api.get('/users/me/viewers'));

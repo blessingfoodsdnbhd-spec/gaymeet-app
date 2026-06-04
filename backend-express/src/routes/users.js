@@ -4,12 +4,69 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { computeAge } = require('../utils/zodiac');
+const ProfileView = require('../models/ProfileView');
 
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
 router.get('/me', auth, async (req, res, next) => {
   try {
     ok(res, req.user.toPublicJSON());
   } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/users/me/viewers ─────────────────────────────────────────────────
+// "谁在看你" — unique viewers, newest-first. Premium sees real identities; free
+// sees the count + blurred rows (real avatar, hidden name) → Premium upsell.
+// Defined before /:id so the path isn't swallowed by the id route.
+router.get('/me/viewers', auth, async (req, res, next) => {
+  try {
+    const views = await ProfileView.find({ viewedId: req.user._id })
+      .sort({ viewedAt: -1 })
+      .limit(100)
+      .populate('viewerId', 'nickname avatarUrl isOnline lastActiveAt isPremium isVerified dob')
+      .lean();
+    const valid = views.filter((v) => v.viewerId); // populate → null if deleted
+    const { isPremiumActive } = require('../utils/premium');
+    const premium = isPremiumActive(req.user);
+    const viewers = valid.map((v) => {
+      const u = v.viewerId;
+      const base = { viewedAt: v.viewedAt.toISOString(), _id: u._id };
+      if (premium) {
+        return {
+          ...base,
+          nickname: u.nickname,
+          avatarUrl: u.avatarUrl ?? null,
+          isOnline: u.isOnline ?? false,
+          dob: u.dob ? u.dob.toISOString() : null,
+          isBlurred: false,
+        };
+      }
+      return { ...base, nickname: '??', avatarUrl: u.avatarUrl ?? null, isBlurred: true };
+    });
+    ok(res, { count: valid.length, viewers });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/:id/view ──────────────────────────────────────────────────
+// Log a profile view (fire-and-forget from the client when AboutUserSheet opens).
+// Upsert keeps one row per viewer→viewed pair and bumps viewedAt. Self is a no-op.
+router.post('/:id/view', auth, async (req, res, next) => {
+  try {
+    const viewedId = req.params.id;
+    if (!mongoose.isValidObjectId(viewedId)) return err(res, 'Invalid id');
+    if (viewedId === req.user._id.toString()) return ok(res, { skipped: true });
+    await ProfileView.findOneAndUpdate(
+      { viewerId: req.user._id, viewedId },
+      { $set: { viewedAt: new Date() } },
+      { upsert: true },
+    );
+    ok(res, { ok: true });
+  } catch (e) {
+    // A racing upsert can throw a duplicate-key once; not worth failing the call.
+    if (e && e.code === 11000) return ok(res, { ok: true });
     next(e);
   }
 });

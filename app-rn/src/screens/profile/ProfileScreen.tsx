@@ -46,7 +46,7 @@ import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
-import { getMyStats, patchMe } from '../../api/me';
+import { getMyStats, getViewers, patchMe } from '../../api/me';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { fetchIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
@@ -104,6 +104,15 @@ export function ProfileScreen() {
   const statsQ = useQuery({
     queryKey: ['me', 'stats'],
     queryFn: getMyStats,
+    staleTime: 60_000,
+    enabled: !!user,
+  });
+
+  // "谁在看你" count for the 6th stat tile — count is returned for free users
+  // too (only the viewer identities are gated), so this is safe to always show.
+  const viewersQ = useQuery({
+    queryKey: ['users', 'viewers'],
+    queryFn: getViewers,
     staleTime: 60_000,
     enabled: !!user,
   });
@@ -581,7 +590,7 @@ export function ProfileScreen() {
             />
           </View>
 
-          {/* Stats — 5 tiles. Tap any to drill into the corresponding list. */}
+          {/* Stats — 6 tiles in two rows of 3. Tap any to drill into the list. */}
           <View style={styles.statsRow}>
             <Stat
               label={t('profile.stats.matches')}
@@ -593,6 +602,13 @@ export function ProfileScreen() {
               value={fmt(stats?.likes)}
               onPress={() => nav.navigate('LikedMe')}
             />
+            <Stat
+              label={t('profile.stats.viewers')}
+              value={fmt(viewersQ.data?.count)}
+              onPress={() => nav.navigate('Viewers')}
+            />
+          </View>
+          <View style={[styles.statsRow, { marginTop: 6 }]}>
             <Stat
               label={t('profile.stats.friends')}
               value={fmt(stats?.following)}
