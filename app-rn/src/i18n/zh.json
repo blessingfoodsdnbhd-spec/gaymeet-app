@@ -115,6 +115,12 @@
     "openFailedTitle": "打开失败",
     "openFailedFallback": "稍后再试",
     "swipeFailed": "操作失败",
+    "searching": {
+      "title": "正在为你搜寻",
+      "subtitle": "正在寻找附近的新朋友…",
+      "found": "找到 {{n}} 位新朋友",
+      "failed": "搜寻失败"
+    },
     "networkError": "网络出错,稍后重试",
     "loadNearbyFailed": "无法加载附近"
   },

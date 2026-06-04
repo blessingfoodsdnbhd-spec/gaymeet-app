@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Heart, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
+import { Crown, Heart, Search, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -26,9 +26,11 @@ import {
   getDiscoverCards,
   getNearby,
   swipe,
+  searchNewFriends,
   type DiscoverCardUser,
   type DiscoverFilters,
 } from '../../api/discover';
+import { SearchingOverlay } from './SearchingOverlay';
 import { openConversation } from '../../api/chats';
 import { useAuth } from '../../store/auth';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -89,6 +91,8 @@ export function DiscoverScreen() {
   >(null);
   const [filters, setFilters] = useState<DiscoverFilters>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [foundToast, setFoundToast] = useState<string | null>(null);
   // Gate persistence-back-to-storage until the initial load resolves —
   // without it, the empty useState({}) would clobber stored values on
   // every cold start before AsyncStorage.getItem returns.
@@ -251,13 +255,62 @@ export function DiscoverScreen() {
     );
   };
 
+  // Radar search — run the backend search, keep the animation up for at least
+  // ~2.4s for the effect, then inject the fresh (not-already-present, not-swiped)
+  // candidates into the deck and toast the count.
+  const runSearch = async () => {
+    if (searching) return;
+    setSearching(true);
+    const startedAt = Date.now();
+    try {
+      const found = await searchNewFriends(filters);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 2400) await new Promise((r) => setTimeout(r, 2400 - elapsed));
+
+      const cardsKey = [
+        'discover',
+        'cards',
+        filters.radiusKm ?? null,
+        filters.interests ?? null,
+      ];
+      let added = 0;
+      queryClient.setQueryData<DiscoverCardUser[]>(cardsKey, (prev) => {
+        const existing = new Set((prev ?? []).map((u) => u.id));
+        const fresh = found.filter(
+          (u) => !existing.has(u.id) && !swipedIds.current.has(u.id),
+        );
+        added = fresh.length;
+        return [...(prev ?? []), ...fresh];
+      });
+
+      setSearching(false);
+      // Make sure the user lands on the 推荐 deck where the new cards now sit.
+      setMode({ kind: 'cards' });
+      setFoundToast(t('discover.searching.found', { n: added }));
+      setTimeout(() => setFoundToast(null), 2400);
+    } catch (e: any) {
+      setSearching(false);
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('discover.searching.failed'), detail);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
+      <SearchingOverlay open={searching} />
+      {foundToast && (
+        <View style={styles.foundToast} pointerEvents="none">
+          <Text style={styles.foundToastText}>{foundToast}</Text>
+        </View>
+      )}
       <TopBar
         center={null}
         left={null}
         right={
           <>
+            <IconButton onPress={runSearch}>
+              <Search size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </IconButton>
             <BoostButton />
             <IconButton onPress={() => setFiltersOpen(true)}>
               <View>
@@ -569,6 +622,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 28,
   },
+  foundToast: {
+    position: 'absolute',
+    top: 96,
+    alignSelf: 'center',
+    zIndex: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+  },
+  foundToastText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   actionBar: {
     flexDirection: 'row',
     justifyContent: 'center',

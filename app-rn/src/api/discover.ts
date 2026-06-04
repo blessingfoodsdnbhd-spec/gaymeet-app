@@ -48,6 +48,20 @@ export const getDiscoverCards = (count = 10, filters?: DiscoverFilters) =>
 export const swipe = (userId: string, action: SwipeAction) =>
   unwrap<SwipeResult>(api.post('/discover/swipe', { userId, action }));
 
+/** Radar "search for new nearby friends" — recently-active candidates within
+ *  radius, sorted by shared interests then distance. Returns the same card
+ *  shape as getDiscoverCards so results drop straight into the deck. */
+export const searchNewFriends = (filters?: DiscoverFilters) =>
+  unwrap<DiscoverCardUser[]>(
+    api.post('/discover/search-new', {
+      count: 15,
+      ...(filters?.radiusKm != null ? { radiusKm: filters.radiusKm } : {}),
+      ...(filters?.interests && filters.interests.length > 0
+        ? { interests: filters.interests.join(',') }
+        : {}),
+    }),
+  );
+
 export const getNearby = (radiusKm = 10, filters?: DiscoverFilters) =>
   unwrap<DiscoverCardUser[]>(
     api.get('/discover/nearby', {

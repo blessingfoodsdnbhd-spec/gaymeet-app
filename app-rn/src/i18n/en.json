@@ -115,6 +115,12 @@
     "openFailedTitle": "Couldn't open",
     "openFailedFallback": "Please try later",
     "swipeFailed": "Action failed",
+    "searching": {
+      "title": "Searching for you",
+      "subtitle": "Finding new friends nearby…",
+      "found": "Found {{n}} new friends",
+      "failed": "Search failed"
+    },
     "networkError": "Network error, try later",
     "loadNearbyFailed": "Couldn't load Nearby"
   },

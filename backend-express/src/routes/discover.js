@@ -160,6 +160,119 @@ router.get('/cards', auth, async (req, res, next) => {
   }
 });
 
+// ── POST /api/discover/search-new ────────────────────────────────────────────
+// Powers the "search for new nearby friends" radar. Same candidate pool as
+// /cards (not-swiped, not-blocked, within radius, optional interest filter) but
+// scoped to RECENTLY ACTIVE users (lastActiveAt within 7 days) and sorted by
+// shared-interest overlap then distance — i.e. fresh, relevant people. Returns
+// the same card shape so the client can drop them straight into the deck.
+router.post('/search-new', auth, async (req, res, next) => {
+  try {
+    const me = req.user;
+    const count = Math.min(parseInt(req.body?.count, 10) || 15, 20);
+
+    const radiusKmRaw = parseFloat(req.body?.radiusKm);
+    const maxDistance = Number.isFinite(radiusKmRaw) && radiusKmRaw > 0
+      ? Math.min(radiusKmRaw * 1000, MAX_DISTANCE_M)
+      : MAX_DISTANCE_M;
+
+    let filterInterests = null;
+    if (req.body?.interests) {
+      const arr = Array.isArray(req.body.interests)
+        ? req.body.interests
+        : String(req.body.interests).split(',');
+      filterInterests = arr.map((s) => String(s).trim()).filter(Boolean);
+      if (filterInterests.length === 0) filterInterests = null;
+    }
+
+    const alreadySwiped = await Swipe.find({ fromUser: me._id }, { toUser: 1 }).lean();
+    const swipedIds = alreadySwiped.map((s) => s.toUser);
+    const usersWhoBlockedMe = await User.find({ blockedUsers: me._id }, { _id: 1 }).lean();
+    const excludeIds = [
+      me._id,
+      ...swipedIds,
+      ...(me.blockedUsers || []),
+      ...usersWhoBlockedMe.map((u) => u._id),
+    ];
+
+    const lat = me.location?.coordinates?.[1] ?? 3.1390;
+    const lng = me.location?.coordinates?.[0] ?? 101.6869;
+    const myInterests = me.interests || [];
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const baseQuery = {
+      _id: { $nin: excludeIds },
+      'preferences.hideFromNearby': { $ne: true },
+      'preferences.stealthMode': { $ne: true },
+      isDeleted: { $ne: true },
+      lastActiveAt: { $gte: since }, // recently active only
+    };
+    if (filterInterests) baseQuery.interests = { $in: filterInterests };
+
+    const pipeline = [
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [lng, lat] },
+          distanceField: 'distanceMeters',
+          maxDistance,
+          spherical: true,
+          query: baseQuery,
+        },
+      },
+      {
+        $addFields: {
+          sharedTags: {
+            $cond: {
+              if: { $gt: [{ $size: { $ifNull: ['$interests', []] } }, 0] },
+              then: { $setIntersection: ['$interests', myInterests] },
+              else: [],
+            },
+          },
+        },
+      },
+      { $addFields: { sharedCount: { $size: '$sharedTags' } } },
+      { $sort: { sharedCount: -1, distanceMeters: 1 } },
+      { $limit: count },
+      {
+        $project: {
+          password: 0,
+          email: 0,
+          devices: 0,
+          deviceFingerprint: 0,
+          appleOriginalTransactionId: 0,
+          googleOriginalPurchaseToken: 0,
+          loginAttempts: 0,
+          lockoutUntil: 0,
+          fcmToken: 0,
+          dailySwipes: 0,
+          dailySwipesDate: 0,
+          blockedUsers: 0,
+          __v: 0,
+          resetCode: 0,
+          resetCodeExpiry: 0,
+          otpCode: 0,
+          otpExpiry: 0,
+        },
+      },
+    ];
+
+    const docs = await User.aggregate(pipeline);
+    const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
+    const cards = docs.map((u) => ({
+      ...u,
+      id: u._id.toString(),
+      distance: formatDistance(u.distanceMeters),
+      distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
+      avatarIdx: hashToIdx(u._id.toString()),
+      followStatus: fsMap.get(u._id.toString()) || 'none',
+      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+    }));
+    ok(res, cards);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/discover/swipe ─────────────────────────────────────────────────
 // Body: { userId, action: 'like' | 'pass' | 'super' }
 // Returns: { match?: User } — match is set if a mutual like was created.
