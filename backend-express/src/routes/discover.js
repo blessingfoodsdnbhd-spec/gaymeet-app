@@ -152,6 +152,7 @@ router.get('/cards', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
+      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
     }));
     ok(res, cards);
   } catch (e) {
@@ -329,6 +330,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
+      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
     }));
 
     // Prepend the current user as a "0.0 km" tile so they see themselves in

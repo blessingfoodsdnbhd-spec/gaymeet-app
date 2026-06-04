@@ -331,9 +331,9 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
 
   obj.id = src._id.toString(); // Flutter reads 'id', not '_id'
 
-  // Popularity = likes ("想认识") received. Surfaced as a single number so the
-  // client can render a badge without knowing the underlying signal.
-  obj.popularity = src.totalLikesReceived || 0;
+  // Popularity = likes ("想认识") received + followers received. Surfaced as a
+  // single number so the client renders a badge without knowing the signal mix.
+  obj.popularity = (src.totalLikesReceived || 0) + (src.followersCount || 0);
 
   // Date of birth is the source of truth for age + zodiac when present. Age is
   // recomputed live so it never goes stale on a birthday; zodiacSign is a rich

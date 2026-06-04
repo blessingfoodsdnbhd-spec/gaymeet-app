@@ -146,6 +146,7 @@ app.use('/api/topics', topicsRoutes); // GET /, GET /:slug/personas, GET /:slug/
 app.use('/api/me/topic-personas', meTopicPersonasRoutes); // GET/POST/PATCH/DELETE
 app.use('/api/topic-unlocks', topicUnlocksRoutes); // request/approve/reject/revoke/incoming/outgoing/approved
 app.use('/api/admin', adminTopicsRoutes); // POST /seed-topics + CRUD /topics (X-Admin-Token)
+app.use('/api/admin', require('./routes/admin-users')); // POST /users/:id/popularity (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
