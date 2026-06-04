@@ -1,49 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Modal, View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withDelay,
-  Easing,
-  cancelAnimation,
-} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../../components/Avatar';
+import { RadarPulse } from '../../components/RadarPulse';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 
 const RING_SIZE = 220;
-const PULSE_MS = 2400;
-const STAGGER_MS = 800;
-
-/** One expanding ripple ring: scales 1→2.4 while fading 0.5→0, on a loop. */
-function Ring({ delay, color }: { delay: number; color: string }) {
-  const p = useSharedValue(0);
-  useEffect(() => {
-    p.value = withDelay(
-      delay,
-      withRepeat(withTiming(1, { duration: PULSE_MS, easing: Easing.out(Easing.ease) }), -1, false),
-    );
-    return () => cancelAnimation(p);
-  }, [delay, p]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + p.value * 1.4 }],
-    opacity: 0.5 * (1 - p.value),
-  }));
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.ring,
-        { borderColor: color },
-        style,
-      ]}
-    />
-  );
-}
 
 /**
  * Full-screen "searching for new friends" radar overlay. Shows the user's own
@@ -66,13 +29,7 @@ export function SearchingOverlay({ open }: { open: boolean }) {
         </Text>
 
         <View style={styles.radar}>
-          {open && (
-            <>
-              <Ring delay={0} color={theme.colors.primary} />
-              <Ring delay={STAGGER_MS} color={theme.colors.primary} />
-              <Ring delay={STAGGER_MS * 2} color={theme.colors.primary} />
-            </>
-          )}
+          {open && <RadarPulse size={RING_SIZE} color={theme.colors.primary} />}
           <View style={styles.avatarWrap}>
             <Avatar
               name={me?.nickname ?? '?'}
@@ -97,13 +54,6 @@ const styles = StyleSheet.create({
     height: RING_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ring: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    borderWidth: 2,
   },
   avatarWrap: {
     width: 96,

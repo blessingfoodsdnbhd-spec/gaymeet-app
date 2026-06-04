@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
+import { RadarPulse } from '../../components/RadarPulse';
 import { activateBoost } from '../../api/boost';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -105,17 +106,30 @@ export function BoostButton() {
     const ss = Math.floor((remainingMs % 60_000) / 1000);
     const time = `${mm}:${String(ss).padStart(2, '0')}`;
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.activePill,
-          { backgroundColor: '#FFEDB3', borderColor: '#F4B400' },
-          pressed && { opacity: 0.85 },
-        ]}
-      >
-        <Zap size={14} color="#7A5400" strokeWidth={2.4} fill="#F4B400" />
-        <Text style={[styles.activeText, { color: '#7A5400' }]}>{time}</Text>
-      </Pressable>
+      // Subtle radar pulse around the pill = "you're being amplified" cue while
+      // Boost is live (Option A). Rings sit behind the pill, pointer-events none.
+      <View style={styles.activeWrap}>
+        <RadarPulse
+          size={44}
+          color="#F4B400"
+          rings={2}
+          stagger={900}
+          duration={2200}
+          maxScale={2.2}
+          baseOpacity={0.4}
+        />
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.activePill,
+            { backgroundColor: '#FFEDB3', borderColor: '#F4B400' },
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <Zap size={14} color="#7A5400" strokeWidth={2.4} fill="#F4B400" />
+          <Text style={[styles.activeText, { color: '#7A5400' }]}>{time}</Text>
+        </Pressable>
+      </View>
     );
   }
 
@@ -135,6 +149,10 @@ export function BoostButton() {
 }
 
 const styles = StyleSheet.create({
+  activeWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   idleBtn: {
     width: 34,
     height: 34,
