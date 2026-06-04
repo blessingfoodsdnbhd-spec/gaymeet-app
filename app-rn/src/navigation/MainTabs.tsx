@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Compass, MessageCircle, Newspaper, User } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MainTabParamList } from './types';
 import { useTheme } from '../theme/ThemeProvider';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
@@ -12,6 +12,8 @@ import { ChatsListScreen } from '../screens/chats/ChatsListScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { requestLocation, getCurrentLocation } from '../utils/permissions';
 import { updateLocation } from '../api/me';
+import { getConversations } from '../api/chats';
+import { on as wsOn } from '../api/ws';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -19,6 +21,41 @@ export function MainTabs() {
   const theme = useTheme();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  // Total unread for the Messages tab badge. Reuses the SAME ['chats','list']
+  // query as ChatsListScreen (React Query dedupes by key) — ChatDetailScreen
+  // already zeroes a thread's unreadCount in that cache on open, and new
+  // messages invalidate it, so the sum stays correct. We add our own
+  // chat:receive listener here too so the badge updates in real time even when
+  // the Messages tab has never been opened (its listener wouldn't be mounted).
+  const chatsQ = useQuery({
+    queryKey: ['chats', 'list'],
+    queryFn: getConversations,
+    staleTime: 30_000,
+  });
+  const unreadTotal = (chatsQ.data ?? []).reduce(
+    (sum, c) => sum + (c.unreadCount || 0),
+    0,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    (async () => {
+      const u = await wsOn('chat:receive', () => {
+        if (!cancelled) queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+      });
+      if (cancelled) {
+        u();
+        return;
+      }
+      unsub = u;
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, [queryClient]);
 
   // Get the user's real GPS once per app session and push it to the
   // backend. Without this, the server falls back to whatever location is
@@ -96,7 +133,18 @@ export function MainTabs() {
       <Tab.Screen
         name="Chats"
         component={ChatsListScreen}
-        options={{ tabBarLabel: t('tabs.chats') }}
+        options={{
+          tabBarLabel: t('tabs.chats'),
+          // Badge appears with the count when there are unread messages, and
+          // disappears (undefined) when the total drops to 0. Capped at 99+.
+          tabBarBadge:
+            unreadTotal > 0 ? (unreadTotal > 99 ? '99+' : unreadTotal) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: theme.colors.primary,
+            color: '#FFFFFF',
+            fontSize: 11,
+          },
+        }}
       />
       <Tab.Screen
         name="Profile"
