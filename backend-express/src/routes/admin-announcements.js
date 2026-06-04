@@ -118,18 +118,16 @@ router.patch('/announcements/:id', async (req, res, next) => {
 });
 
 // ── DELETE /api/admin/announcements/:id ────────────────────────────────────
-// Soft-delete: flip isActive=false. We keep the row so the admin can
-// audit what was previously shipped and so we can resurrect via PATCH
-// if needed.
+// Hard-delete: actually remove the row so it disappears from the admin list.
+// (Previously this soft-deleted by flipping isActive=false, but the list
+// returns ALL rows incl. inactive — so a "deleted" announcement stayed
+// visible and the trash button looked broken. The isActive Switch already
+// covers hide/show; the trash means permanent removal.)
 router.delete('/announcements/:id', async (req, res, next) => {
   try {
-    const doc = await Announcement.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true },
-    );
+    const doc = await Announcement.findByIdAndDelete(req.params.id);
     if (!doc) return err(res, 'Announcement not found', 404);
-    ok(res, { id: doc._id.toString(), isActive: doc.isActive });
+    ok(res, { id: doc._id.toString(), deleted: true });
   } catch (e) {
     next(e);
   }
