@@ -295,7 +295,9 @@
       "label": "Relationship status",
       "single": "Single",
       "inRelationship": "In a relationship",
-      "married": "Married"
+      "married": "Married",
+      "openRelationship": "Open relationship",
+      "polyamorous": "Polyamorous (throuple)"
     },
     "mbti": { "label": "MBTI" },
     "intents": {

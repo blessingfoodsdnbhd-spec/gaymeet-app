@@ -181,7 +181,7 @@ const userSchema = new mongoose.Schema(
     // Relationship status (感情状态)
     relationshipStatus: {
       type: String,
-      enum: ['single', 'in_relationship', 'married', null],
+      enum: ['single', 'in_relationship', 'married', 'open_relationship', 'polyamorous', null],
       default: null,
     },
     // Purpose / what they're here for (目的) — multi-select.

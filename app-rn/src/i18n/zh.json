@@ -295,7 +295,9 @@
       "label": "感情状态",
       "single": "单身",
       "inRelationship": "恋爱中",
-      "married": "结婚"
+      "married": "结婚",
+      "openRelationship": "开放关系",
+      "polyamorous": "3人(稳定关系)"
     },
     "mbti": { "label": "MBTI" },
     "intents": {

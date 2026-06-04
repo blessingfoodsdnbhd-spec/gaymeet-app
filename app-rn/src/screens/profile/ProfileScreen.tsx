@@ -359,7 +359,9 @@ export function ProfileScreen() {
   };
   const BODY_TYPES = ['average', 'fit', 'chubby', 'slim'];
 
-  const RELATIONSHIP_OPTIONS = ['single', 'in_relationship', 'married'];
+  const RELATIONSHIP_OPTIONS = [
+    'single', 'in_relationship', 'married', 'open_relationship', 'polyamorous',
+  ];
   const MBTI_TYPES = [
     'INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP',
     'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP',
@@ -383,7 +385,8 @@ export function ProfileScreen() {
     setIntents(next);
     saveMut.mutate({ intents: next });
   };
-  const rsKey = (id: string) => (id === 'in_relationship' ? 'inRelationship' : id);
+  const rsKey = (id: string) =>
+    ({ in_relationship: 'inRelationship', open_relationship: 'openRelationship' } as Record<string, string>)[id] ?? id;
 
   // Pick + upload helpers — used for avatar tap, public grid, private grid.
   // editable=true → show the crop screen but with NO aspect constraint, so the
