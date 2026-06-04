@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+  useWindowDimensions,
+} from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Heart, MessageCircle, MoreHorizontal, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +21,6 @@ import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { TagChip } from '../../components/TagChip';
-import { IconButton } from '../../components/TopBar';
 import { Card } from '../../components/Card';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
@@ -79,11 +86,23 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   // — one for the public gallery, one for the unlocked private photos.
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [privateViewerIndex, setPrivateViewerIndex] = useState<number | null>(null);
+  // Active page of the top photo carousel (for the dot indicators).
+  const [page, setPage] = useState(0);
+
+  const { width: screenW, height: screenH } = useWindowDimensions();
 
   // Backend nearby/discover endpoints already include user.photos via
   // toPublicJSON — no extra fetch needed. Cap at 5 so the gallery stays
   // within the same product limit enforced on upload (Phase 1 backend).
   const galleryPhotos = (user?.photos ?? []).slice(0, 5);
+  // Photos for the top carousel: public gallery, falling back to the avatar so
+  // there's always something full-bleed at the top.
+  const carouselPhotos =
+    galleryPhotos.length > 0
+      ? galleryPhotos
+      : user?.avatarUrl
+        ? [user.avatarUrl]
+        : [];
 
   // Self-guard: hide the entire locked-photos block when the target is
   // the current user. The Nearby grid prepends self, and we'd otherwise
@@ -96,6 +115,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     setLiked(false);
     setPrivateViewerIndex(null);
     setViewerIndex(null);
+    setPage(0);
   }, [user?.id]);
 
   // Private-photo request status — lifted from UserDetailScreen. We use
@@ -210,11 +230,18 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     }, 250);
   };
 
+  // Carousel ~half the screen; the scroll region is bounded to a definite
+  // pixel height (the Sheet card is position:absolute + maxHeight only, so a
+  // flex:1 ScrollView wouldn't get a scroll viewport — same constraint the
+  // FiltersSheet fix handles). Reserve room for the sticky action footer.
+  const carouselH = Math.round(screenH * 0.5);
+  const scrollMaxH = screenH * 0.95 - (isSelf ? 84 : 150);
+
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      maxHeight="85%"
+      maxHeight="95%"
       overlay={
         <>
           <PhotoViewer
@@ -233,53 +260,105 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
       }
     >
       {user && (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Avatar
-              name={user.nickname}
-              uri={user.avatarUrl}
-              avatarIdx={user.avatarIdx}
-              size={56}
-              shape="circle"
-            />
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={1}>
-                  {user.nickname}
-                  {(() => {
-                    const a = computeAge(user.dob) ?? user.age;
-                    return a != null ? ` · ${a}` : '';
-                  })()}
-                </Text>
-                <FollowBadge status={user.followStatus} size={16} />
+        <View style={{ flex: 1 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={{ maxHeight: scrollMaxH, marginHorizontal: -20, marginTop: -6 }}
+        >
+          {/* Full-bleed photo carousel — paged, tap any photo to zoom. */}
+          <View style={{ width: screenW, height: carouselH, backgroundColor: theme.colors.surface2 }}>
+            {carouselPhotos.length > 0 ? (
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e) =>
+                  setPage(Math.round(e.nativeEvent.contentOffset.x / screenW))
+                }
+              >
+                {carouselPhotos.map((url, idx) => (
+                  <Pressable
+                    key={`c-${idx}-${url}`}
+                    onPress={() => setViewerIndex(idx)}
+                    style={{ width: screenW, height: carouselH }}
+                  >
+                    <ExpoImage
+                      source={{ uri: url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                <Avatar
+                  name={user.nickname}
+                  uri={user.avatarUrl}
+                  avatarIdx={user.avatarIdx}
+                  size={120}
+                  shape="circle"
+                />
               </View>
-              <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 2 }}>
-                {user.distance ?? ''}
+            )}
+
+            {carouselPhotos.length > 1 && (
+              <View style={styles.dots} pointerEvents="none">
+                {carouselPhotos.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.5)' },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+
+            <Pressable onPress={onClose} hitSlop={8} style={[styles.overlayBtn, { right: 14 }]}>
+              <X size={20} color="#FFFFFF" strokeWidth={2} />
+            </Pressable>
+            {!isSelf && (
+              <Pressable onPress={onMore} hitSlop={8} style={[styles.overlayBtn, { left: 14 }]}>
+                <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* Details */}
+          <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={[styles.nameBig, { color: theme.colors.text }]}>
+                {user.nickname}
+                {(() => {
+                  const a = computeAge(user.dob) ?? user.age;
+                  return a != null ? ` · ${a}` : '';
+                })()}
               </Text>
+              <FollowBadge status={user.followStatus} size={18} />
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 6 }}>
               {(() => {
                 const p = presenceFrom(t, user.lastActiveAt, user.isOnline);
                 if (!p) return null;
                 return (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     {p.online && (
                       <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.online }} />
                     )}
-                    <Text style={{ fontSize: 12, color: p.online ? theme.colors.online : theme.colors.muted }}>
+                    <Text style={{ fontSize: 13, color: p.online ? theme.colors.online : theme.colors.muted }}>
                       {p.text}
                     </Text>
                   </View>
                 );
               })()}
+              {!!user.distance && (
+                <Text style={{ fontSize: 13, color: theme.colors.muted }}>{user.distance}</Text>
+              )}
             </View>
-            {!isSelf && (
-              <IconButton onPress={onMore}>
-                <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
-              </IconButton>
-            )}
-            <IconButton onPress={onClose}>
-              <X size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
-          </View>
 
           {(() => {
             // Compact stats pills — age (more prominent than the inline header
@@ -397,28 +476,6 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </View>
           )}
 
-          {/* Public photos — horizontal scroll. Tap any to open the
-              full-screen PhotoViewer at that index. Section is omitted
-              entirely when the target has no photos. */}
-          {galleryPhotos.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingTop: 18 }}
-            >
-              {galleryPhotos.map((url, idx) => (
-                <Pressable key={`${idx}-${url}`} onPress={() => setViewerIndex(idx)}>
-                  <ExpoImage
-                    source={{ uri: url }}
-                    style={{ width: 96, height: 96, borderRadius: 12 }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-
           <View style={{ marginTop: 18 }}>
             <Text style={[styles.section, { color: theme.colors.muted }]}>
               {t('about.interestsCount', { n: (user.sharedTags ?? []).length })}
@@ -438,44 +495,41 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </View>
           </View>
 
-          {/* Action row — Follow / Like / Message (Premium only).
-              Like is the primary action and gets the gradient treatment.
-              Follow and Message are equal-weight secondary actions.
-              Hidden entirely when viewing self — there's nothing to follow,
-              like, or message about yourself, and tapping Message used to
-              fall through to a "cannot open conversation with yourself"
-              alert. The Nearby grid prepends self at the top, so this
-              self-view path is reachable in production. */}
-          {!isSelf && (
-            <View style={[styles.actionRow, { marginTop: 22, marginBottom: 8 }]}>
-              <SecondaryAction
-                icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
-                label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
-                done={isAlreadyFollowing}
-                busy={followMut.isPending || followQ.isLoading}
-                onPress={onFollow}
-              />
-              <PrimaryLikeAction
-                label={liked ? t('about.liked') : t('about.like')}
-                done={liked}
-                onPress={() => {
-                  if (liked) return;
-                  setLiked(true);
-                  onLike();
-                }}
-              />
-              {isPremium && (
-                <SecondaryAction
-                  icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
-                  label={t('about.message')}
-                  done={false}
-                  busy={false}
-                  onPress={onMessage}
-                />
-              )}
-            </View>
-          )}
+            <View style={{ height: 16 }} />
+          </View>
         </ScrollView>
+
+        {/* Sticky action footer — Follow / Like / Message (Premium only). */}
+        {!isSelf && (
+          <View style={styles.footer}>
+            <SecondaryAction
+              icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+              label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
+              done={isAlreadyFollowing}
+              busy={followMut.isPending || followQ.isLoading}
+              onPress={onFollow}
+            />
+            <PrimaryLikeAction
+              label={liked ? t('about.liked') : t('about.like')}
+              done={liked}
+              onPress={() => {
+                if (liked) return;
+                setLiked(true);
+                onLike();
+              }}
+            />
+            {isPremium && (
+              <SecondaryAction
+                icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+                label={t('about.message')}
+                done={false}
+                busy={false}
+                onPress={onMessage}
+              />
+            )}
+          </View>
+        )}
+        </View>
       )}
 
     </Sheet>
@@ -602,6 +656,33 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   name: { fontSize: 18, fontWeight: '700' },
+  nameBig: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
+  dots: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
+  overlayBtn: {
+    position: 'absolute',
+    top: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
   section: {
     fontSize: 12,
     letterSpacing: 0.72,
