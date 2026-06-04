@@ -154,6 +154,12 @@ function ZoomablePage({
         <Animated.View style={[{ width, height }, aStyle]}>
           <ExpoImage
             source={{ uri }}
+            // recyclingKey ties the decoded bitmap to THIS url. Without it,
+            // when the horizontal FlatList recycles a page cell for a new
+            // photo set (e.g. opening a different user's viewer), expo-image
+            // keeps showing the previous occupant's image — the "same photos
+            // for different users" bug.
+            recyclingKey={uri}
             style={{ width, height }}
             contentFit="contain"
             cachePolicy="memory-disk"
@@ -213,6 +219,9 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
     <GestureHandlerRootView style={[StyleSheet.absoluteFill, styles.root]}>
       <StatusBar hidden />
       <FlatList
+        // Remount the list when the photo SET changes (different user/persona)
+        // so virtualized pages never carry over from the previous viewer.
+        key={photos[0] ?? 'pv-empty'}
         ref={flatRef}
         data={photos}
         horizontal
