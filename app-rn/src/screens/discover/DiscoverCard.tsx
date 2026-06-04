@@ -110,6 +110,13 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           </View>
         )}
 
+        {/* Popularity badge — bottom-right of hero, only when they have likes */}
+        {!!user.popularity && user.popularity > 0 && (
+          <View style={styles.popPill}>
+            <Text style={styles.popText}>🔥 {user.popularity}</Text>
+          </View>
+        )}
+
         {/* LIKE / NOPE stamps */}
         <Animated.View
           style={[
@@ -225,6 +232,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.92)',
   },
   distanceText: { fontSize: 12, fontWeight: '500' },
+  popPill: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+  },
+  popText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   stamp: {
     position: 'absolute',
     paddingHorizontal: 16,

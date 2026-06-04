@@ -37,6 +37,8 @@ export interface User {
   prompts: { q: string; a: string }[];
 
   // Optional / legacy fields read by some screens
+  /** Likes ("想认识") received — drives the popularity badge on cards. */
+  popularity?: number;
   isOnline?: boolean;
   isVerified?: boolean;
   isPremium?: boolean;

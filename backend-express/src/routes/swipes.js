@@ -45,11 +45,24 @@ router.post('/', auth, async (req, res, next) => {
     }
 
     // ── Upsert swipe ──────────────────────────────────────────────────────────
+    // Capture the prior direction first so we can keep the target's
+    // totalLikesReceived (→ popularity) counter accurate across re-swipes.
+    const prior = await Swipe.findOne({ fromUser: me._id, toUser: targetUserId })
+      .select('direction').lean();
     await Swipe.findOneAndUpdate(
       { fromUser: me._id, toUser: targetUserId },
       { direction },
       { upsert: true, new: true }
     );
+
+    // Maintain popularity (likes received) only on a like↔non-like transition.
+    const wasLike = !!prior && ['like', 'super_like'].includes(prior.direction);
+    const isLike = direction === 'like' || direction === 'super_like';
+    if (isLike && !wasLike) {
+      await User.findByIdAndUpdate(targetUserId, { $inc: { totalLikesReceived: 1 } });
+    } else if (!isLike && wasLike) {
+      await User.findByIdAndUpdate(targetUserId, { $inc: { totalLikesReceived: -1 } });
+    }
 
     // ── Check for mutual like → create match ──────────────────────────────────
     if (direction === 'like' || direction === 'super_like') {

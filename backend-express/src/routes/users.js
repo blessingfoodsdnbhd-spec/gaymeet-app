@@ -249,7 +249,7 @@ router.get('/nearby', auth, async (req, res, next) => {
           googleId: 0, appleId: 0,
         },
       },
-      { $addFields: { id: { $toString: '$_id' } } },
+      { $addFields: { id: { $toString: '$_id' }, popularity: { $ifNull: ['$totalLikesReceived', 0] } } },
     ];
 
     const users = await User.aggregate(pipeline);
@@ -347,7 +347,7 @@ router.get('/discover', auth, async (req, res, next) => {
           googleId: 0, appleId: 0,
         },
       },
-      { $addFields: { id: { $toString: '$_id' } } },
+      { $addFields: { id: { $toString: '$_id' }, popularity: { $ifNull: ['$totalLikesReceived', 0] } } },
     ];
 
     const users = await User.aggregate(pipeline);
