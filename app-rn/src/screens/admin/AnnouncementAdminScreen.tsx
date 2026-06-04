@@ -269,7 +269,12 @@ export function AnnouncementAdminScreen() {
                   {t('admin.ann.preview')}
                 </Text>
                 <View style={styles.previewStage}>
-                  <AnnouncementCard imageUrl={imageUrl} ctaUrl={ctaUrl.trim() || null} width={200} />
+                  <AnnouncementCard
+                    imageUrl={imageUrl}
+                    title={title.trim() || null}
+                    ctaUrl={ctaUrl.trim() || null}
+                    width={200}
+                  />
                 </View>
               </View>
             )}
