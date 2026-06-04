@@ -364,7 +364,7 @@ export function ProfileScreen() {
     'INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP',
     'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP',
   ];
-  const INTENT_OPTIONS = ['friends', 'chat', 'date', 'serious', 'activity', 'language'];
+  const INTENT_OPTIONS = ['friends', 'chat', 'serious', 'activity', 'language'];
   // Enum fields clear with null (NOT '' — that fails the schema enum).
   const pickRelationship = (id: string) => {
     const next = relationshipStatus === id ? null : id;

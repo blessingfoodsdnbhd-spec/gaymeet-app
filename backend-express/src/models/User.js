@@ -185,8 +185,11 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     // Purpose / what they're here for (目的) — multi-select.
-    // 'friends' | 'chat' | 'date' | 'serious' | 'activity' | 'language'
-    intents: { type: [String], default: [] },
+    // ('date' was intentionally dropped — App Store 4.3(b) caution.)
+    intents: {
+      type: [{ type: String, enum: ['friends', 'chat', 'serious', 'activity', 'language'] }],
+      default: [],
+    },
 
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
