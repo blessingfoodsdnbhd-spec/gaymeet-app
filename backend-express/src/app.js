@@ -60,6 +60,7 @@ const topicsRoutes = require('./routes/topics');
 const meTopicPersonasRoutes = require('./routes/me-topic-personas');
 const topicUnlocksRoutes = require('./routes/topic-unlocks');
 const adminTopicsRoutes = require('./routes/admin-topics');
+const notesRoutes = require('./routes/notes');
 
 const app = express();
 
@@ -146,6 +147,7 @@ app.use('/api/topics', topicsRoutes); // GET /, GET /:slug/personas, GET /:slug/
 app.use('/api/me/topic-personas', meTopicPersonasRoutes); // GET/POST/PATCH/DELETE
 app.use('/api/topic-unlocks', topicUnlocksRoutes); // request/approve/reject/revoke/incoming/outgoing/approved
 app.use('/api/admin', adminTopicsRoutes); // POST /seed-topics + CRUD /topics (X-Admin-Token)
+app.use('/api/notes', notesRoutes); // 小纸条 — send/inbox/sent/reply/delete/block/quota/unread
 app.use('/api/admin', require('./routes/admin-users')); // POST /users/:id/popularity (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);

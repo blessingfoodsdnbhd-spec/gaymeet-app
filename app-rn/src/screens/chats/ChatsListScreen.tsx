@@ -11,7 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Flame } from 'lucide-react-native';
+import { Search, Flame, StickyNote, ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -21,6 +21,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { getConversations, type ChatThread } from '../../api/chats';
+import { getNotesUnread } from '../../api/notes';
 import { useChats } from '../../store/chats';
 import { on as wsOn } from '../../api/ws';
 import type { RootStackParamList } from '../../navigation/types';
@@ -56,6 +57,13 @@ export function ChatsListScreen() {
   });
   const refetchThreads = threadsQ.refetch;
 
+  // 小纸条 unread count for the inbox-entry badge at the top of the list.
+  const notesUnreadQ = useQuery({
+    queryKey: ['notes', 'unread'],
+    queryFn: getNotesUnread,
+    staleTime: 15_000,
+  });
+
   // Re-sync the list every time the Chats tab regains focus (open tab, return
   // from a chat, resume the app). The WS chat:receive listener below keeps the
   // list live WHILE it's on screen, but that depends on the socket being
@@ -66,7 +74,8 @@ export function ChatsListScreen() {
   useFocusEffect(
     useCallback(() => {
       refetchThreads();
-    }, [refetchThreads]),
+      notesUnreadQ.refetch();
+    }, [refetchThreads, notesUnreadQ.refetch]),
   );
 
   // Keep the Zustand store in sync with the query result — ChatDetailScreen
@@ -188,12 +197,15 @@ export function ChatsListScreen() {
             />
           }
           ListHeaderComponent={
-            newMatches.length > 0 ? (
-              <NewMatchesStrip
-                threads={newMatches}
-                onTap={(th) => openThread(th)}
+            <>
+              <NotesEntry
+                unread={notesUnreadQ.data?.count ?? 0}
+                onPress={() => nav.navigate('NotesInbox')}
               />
-            ) : null
+              {newMatches.length > 0 ? (
+                <NewMatchesStrip threads={newMatches} onTap={(th) => openThread(th)} />
+              ) : null}
+            </>
           }
           renderItem={({ item }) => (
             <ThreadRow thread={item} onPress={() => openThread(item)} />
@@ -217,6 +229,64 @@ export function ChatsListScreen() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function NotesEntry({ unread, onPress }: { unread: number; onPress: () => void }) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        backgroundColor: pressed ? theme.colors.surface2 : 'transparent',
+      })}
+    >
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          backgroundColor: theme.colors.primarySoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <StickyNote size={24} color={theme.colors.primary} strokeWidth={1.9} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
+          {t('notes.title')}
+        </Text>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: theme.colors.text2, marginTop: 4 }}>
+          {unread > 0 ? t('notes.unreadSubtitle', { n: unread }) : t('notes.entrySubtitle')}
+        </Text>
+      </View>
+      {unread > 0 ? (
+        <View
+          style={{
+            minWidth: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: theme.colors.accentRose,
+            paddingHorizontal: 7,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+            {unread > 99 ? '99+' : unread}
+          </Text>
+        </View>
+      ) : (
+        <ChevronRight size={18} color={theme.colors.muted} />
+      )}
+    </Pressable>
   );
 }
 

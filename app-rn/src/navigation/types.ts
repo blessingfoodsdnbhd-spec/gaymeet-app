@@ -1,4 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { InboxNote } from '../api/notes';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -36,6 +37,8 @@ export type RootStackParamList = {
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;
+  NotesInbox: undefined;
+  NoteDetail: { note: InboxNote };
   PhotoRequests: undefined;
   TopicPersonaEdit: {
     topicSlug: string;

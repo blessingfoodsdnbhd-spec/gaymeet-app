@@ -23,6 +23,8 @@ import { PremiumScreen } from '../screens/premium/PremiumScreen';
 import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { ViewersScreen } from '../screens/profile/ViewersScreen';
+import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
+import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
@@ -99,6 +101,16 @@ export function RootNavigator() {
           <Stack.Screen
             name="Viewers"
             component={ViewersScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="NotesInbox"
+            component={NotesInboxScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="NoteDetail"
+            component={NoteDetailScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

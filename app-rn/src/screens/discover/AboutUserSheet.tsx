@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { Heart, MessageCircle, MoreHorizontal, Share2, UserPlus, X } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreHorizontal, Share2, StickyNote, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -40,6 +40,7 @@ import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import { shareProfile } from '../../utils/shareProfile';
+import { SendNoteSheet } from './SendNoteSheet';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
@@ -90,6 +91,8 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const [privateViewerIndex, setPrivateViewerIndex] = useState<number | null>(null);
   // Active page of the top photo carousel (for the dot indicators).
   const [page, setPage] = useState(0);
+  // 小纸条 composer open state (anonymous note to this user).
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const { width: screenW, height: screenH } = useWindowDimensions();
 
@@ -264,6 +267,11 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             initialIndex={privateViewerIndex ?? 0}
             onClose={() => setPrivateViewerIndex(null)}
           />
+          <SendNoteSheet
+            open={noteOpen}
+            recipient={user ? { id: user.id, nickname: user.nickname, avatarUrl: user.avatarUrl } : null}
+            onClose={() => setNoteOpen(false)}
+          />
         </>
       }
     >
@@ -335,6 +343,15 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             >
               <Share2 size={18} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
+            {!isSelf && (
+              <Pressable
+                onPress={() => setNoteOpen(true)}
+                hitSlop={8}
+                style={[styles.overlayBtn, { right: 102 }]}
+              >
+                <StickyNote size={18} color="#FFFFFF" strokeWidth={2} />
+              </Pressable>
+            )}
             {!isSelf && (
               <Pressable onPress={onMore} hitSlop={8} style={[styles.overlayBtn, { left: 14 }]}>
                 <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
