@@ -178,6 +178,15 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     kinks: { type: [String], default: [] },
+    // Relationship status (感情状态)
+    relationshipStatus: {
+      type: String,
+      enum: ['single', 'in_relationship', 'married', null],
+      default: null,
+    },
+    // Purpose / what they're here for (目的) — multi-select.
+    // 'friends' | 'chat' | 'date' | 'serious' | 'activity' | 'language'
+    intents: { type: [String], default: [] },
 
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -261,6 +270,7 @@ const PUBLIC_USER_FIELDS = [
   'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',
   'level', 'currentExp', 'popularityScore',
   'lookingFor', 'role', 'zodiac', 'mbti', 'bloodType', 'kinks',
+  'relationshipStatus', 'intents',
   'followersCount', 'followingCount', 'totalLikesReceived', 'profileViews',
   'createdAt', 'updatedAt',
   // computed below: id, privatePhotosCount, distanceLabel

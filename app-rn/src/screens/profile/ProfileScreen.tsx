@@ -86,6 +86,11 @@ export function ProfileScreen() {
   const [height, setHeight] = useState(user?.height != null ? String(user.height) : '');
   const [weight, setWeight] = useState(user?.weight != null ? String(user.weight) : '');
   const [bodyType, setBodyType] = useState<string | null>(user?.bodyType ?? null);
+  const [relationshipStatus, setRelationshipStatus] = useState<string | null>(
+    user?.relationshipStatus ?? null,
+  );
+  const [mbti, setMbti] = useState<string | null>(user?.mbti ?? null);
+  const [intents, setIntents] = useState<string[]>(user?.intents ?? []);
   const [occupation, setOccupation] = useState(user?.occupation ?? '');
   const [city, setCity] = useState(user?.city ?? '');
 
@@ -264,6 +269,9 @@ export function ProfileScreen() {
       bodyType?: string;
       occupation?: string;
       city?: string;
+      relationshipStatus?: string | null;
+      mbti?: string | null;
+      intents?: string[];
     }) => patchMe(patch),
     onSuccess: (updated) => setUser(updated),
     onError: (e: any) => {
@@ -348,6 +356,32 @@ export function ProfileScreen() {
     saveMut.mutate({ bodyType: next ?? '' });
   };
   const BODY_TYPES = ['average', 'fit', 'chubby', 'slim'];
+
+  const RELATIONSHIP_OPTIONS = ['single', 'in_relationship', 'married'];
+  const MBTI_TYPES = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  ];
+  const INTENT_OPTIONS = ['friends', 'chat', 'date', 'serious', 'activity', 'language'];
+  // Enum fields clear with null (NOT '' — that fails the schema enum).
+  const pickRelationship = (id: string) => {
+    const next = relationshipStatus === id ? null : id;
+    setRelationshipStatus(next);
+    saveMut.mutate({ relationshipStatus: next });
+  };
+  const pickMbti = (code: string) => {
+    const next = mbti === code ? null : code;
+    setMbti(next);
+    saveMut.mutate({ mbti: next });
+  };
+  const toggleIntent = (id: string) => {
+    const next = intents.includes(id)
+      ? intents.filter((x) => x !== id)
+      : [...intents, id];
+    setIntents(next);
+    saveMut.mutate({ intents: next });
+  };
+  const rsKey = (id: string) => (id === 'in_relationship' ? 'inRelationship' : id);
 
   // Pick + upload helpers — used for avatar tap, public grid, private grid.
   // editable=true → show the crop screen but with NO aspect constraint, so the
@@ -928,6 +962,87 @@ export function ProfileScreen() {
                 >
                   <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
                     {t(`profile.edit.bodyTypes.${id}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Relationship status — single select (tap again to clear) */}
+          <SectionTitle>{t('profile.relationshipStatus.label')}</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {RELATIONSHIP_OPTIONS.map((id) => {
+              const active = relationshipStatus === id;
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => pickRelationship(id)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                    borderRadius: theme.radius.pill,
+                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
+                    borderWidth: active ? 0 : 1,
+                    borderColor: theme.colors.line,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
+                    {t(`profile.relationshipStatus.${rsKey(id)}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* MBTI — single select 16 codes (tap again to clear) */}
+          <SectionTitle>{t('profile.mbti.label')}</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {MBTI_TYPES.map((code) => {
+              const active = mbti === code;
+              return (
+                <Pressable
+                  key={code}
+                  onPress={() => pickMbti(code)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    borderRadius: theme.radius.pill,
+                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
+                    borderWidth: active ? 0 : 1,
+                    borderColor: theme.colors.line,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', letterSpacing: 0.5, color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
+                    {code}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Intents — multi select */}
+          <SectionTitle>{t('profile.intents.label')}</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {INTENT_OPTIONS.map((id) => {
+              const active = intents.includes(id);
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => toggleIntent(id)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                    borderRadius: theme.radius.pill,
+                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
+                    borderWidth: active ? 0 : 1,
+                    borderColor: theme.colors.line,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
+                    {t(`profile.intents.${id}`)}
                   </Text>
                 </Pressable>
               );

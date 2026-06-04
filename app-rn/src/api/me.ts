@@ -27,6 +27,12 @@ export interface User {
   height?: number | null; // cm
   weight?: number | null; // kg
   bodyType?: string | null; // 'average' | 'fit' | 'chubby' | 'slim'
+  /** 'single' | 'in_relationship' | 'married' */
+  relationshipStatus?: string | null;
+  /** One of the 16 MBTI codes. */
+  mbti?: string | null;
+  /** Multi-select: 'friends' | 'chat' | 'date' | 'serious' | 'activity' | 'language' */
+  intents?: string[];
   occupation?: string | null;
   city?: string | null;
   countryCode?: string | null;
@@ -79,6 +85,10 @@ export const patchMe = (
     dob?: string | null;
     height?: number;
     weight?: number;
+    /** Enum fields — pass null to clear (NOT '' — that fails the server enum). */
+    relationshipStatus?: string | null;
+    mbti?: string | null;
+    intents?: string[];
   },
 ) => unwrap<User>(api.patch('/users/me', patch));
 

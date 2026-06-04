@@ -21,6 +21,7 @@ router.patch('/me', auth, async (req, res, next) => {
       'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city',
       'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
+      'relationshipStatus', 'intents',
     ];
     const updates = {};
     for (const key of allowed) {

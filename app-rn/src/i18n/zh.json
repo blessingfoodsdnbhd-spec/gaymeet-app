@@ -290,6 +290,22 @@
     "photoDeleteFailed": "删除照片失败",
     "deletePhotoTitle": "删除这张照片?",
     "deletePhotoAction": "删除",
+    "relationshipStatus": {
+      "label": "感情状态",
+      "single": "单身",
+      "inRelationship": "恋爱中",
+      "married": "结婚"
+    },
+    "mbti": { "label": "MBTI" },
+    "intents": {
+      "label": "目的",
+      "friends": "找朋友",
+      "chat": "聊天",
+      "date": "约会",
+      "serious": "认真关系",
+      "activity": "一起出去玩",
+      "language": "语言交换"
+    },
     "interestsTitle": "我的兴趣",
     "interestsEmpty": "还没有兴趣",
     "interestsManage": "+ 管理",

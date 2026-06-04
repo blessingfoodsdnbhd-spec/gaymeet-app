@@ -379,6 +379,12 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             if (user.height) stats.push(`${user.height} cm`);
             if (user.weight) stats.push(`${user.weight} kg`);
             if (user.bodyType) stats.push(t(`profile.edit.bodyTypes.${user.bodyType}`));
+            if (user.relationshipStatus) {
+              const k = user.relationshipStatus === 'in_relationship' ? 'inRelationship' : user.relationshipStatus;
+              stats.push(`💕 ${t(`profile.relationshipStatus.${k}`)}`);
+            }
+            if (user.mbti) stats.push(`🧠 ${user.mbti}`);
+            (user.intents ?? []).forEach((i) => stats.push(`🎯 ${t(`profile.intents.${i}`)}`));
             if (user.occupation) stats.push(user.occupation);
             if (user.city) stats.push(user.city);
             if (stats.length === 0) return null;

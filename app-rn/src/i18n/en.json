@@ -290,6 +290,22 @@
     "photoDeleteFailed": "Couldn't delete photo",
     "deletePhotoTitle": "Delete this photo?",
     "deletePhotoAction": "Delete",
+    "relationshipStatus": {
+      "label": "Relationship status",
+      "single": "Single",
+      "inRelationship": "In a relationship",
+      "married": "Married"
+    },
+    "mbti": { "label": "MBTI" },
+    "intents": {
+      "label": "Looking for",
+      "friends": "Friends",
+      "chat": "Chat",
+      "date": "Dating",
+      "serious": "Serious relationship",
+      "activity": "Hang out",
+      "language": "Language exchange"
+    },
     "interestsTitle": "My interests",
     "interestsEmpty": "No interests yet",
     "interestsManage": "+ Manage",
