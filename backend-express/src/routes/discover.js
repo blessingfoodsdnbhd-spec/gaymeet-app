@@ -6,6 +6,7 @@ const Match = require('../models/Match');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { followStatusMap } = require('../utils/followStatus');
+const { isPremiumActive } = require('../utils/premium');
 
 const MAX_DISTANCE_M = 100_000; // 100 km — Meyou is Malaysia-only at launch
 
@@ -13,6 +14,18 @@ function formatDistance(meters) {
   if (meters == null) return null;
   if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
   return `${(meters / 1000).toFixed(1)} km`;
+}
+
+// Hide a Premium user's presence (online dot AND last-active time) from other
+// viewers when they've opted in. The aggregation paths bypass toPublicJSON, so
+// we re-apply the same gating here — otherwise the AboutUserSheet (fed from
+// these cards) would still leak "X 分钟前活跃".
+function presenceFields(u) {
+  const hidden = !!u.preferences?.hideOnlineStatus && isPremiumActive(u);
+  return {
+    lastActiveAt: hidden ? null : u.lastActiveAt,
+    isOnline: hidden ? false : u.isOnline,
+  };
 }
 
 function computeShared(myTags, otherTags) {
@@ -153,6 +166,7 @@ router.get('/cards', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      ...presenceFields(u),
     }));
     ok(res, cards);
   } catch (e) {
@@ -266,6 +280,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      ...presenceFields(u),
     }));
     ok(res, cards);
   } catch (e) {
@@ -444,6 +459,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      ...presenceFields(u),
     }));
 
     // Prepend the current user as a "0.0 km" tile so they see themselves in
