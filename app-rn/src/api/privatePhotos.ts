@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import { api } from './client';
+import { resizeForUpload } from './upload';
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
   return p.then((r) => {
@@ -15,6 +16,8 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
  * expo-file-system gives a predictable readable file path for multipart.
  */
 async function fileFromUri(uri: string, fieldName: string): Promise<FormData> {
+  // Shrink before upload (prevents "File too large") — same as api/upload.ts.
+  uri = await resizeForUpload(uri);
   const rawExt = (uri.split('?')[0].split('.').pop() || '').toLowerCase();
   const safeExt = ['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(rawExt)
     ? rawExt

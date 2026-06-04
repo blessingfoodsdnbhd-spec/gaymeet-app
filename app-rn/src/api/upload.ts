@@ -1,4 +1,6 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { Image } from 'react-native';
 import { api } from './client';
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -6,6 +8,35 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
     const body = r.data as any;
     return (body?.data ?? body) as T;
   });
+}
+
+function getWidth(uri: string): Promise<number> {
+  return new Promise((resolve) => {
+    Image.getSize(uri, (w) => resolve(w), () => resolve(0));
+  });
+}
+
+/**
+ * Downscale + recompress an image before upload: cap the long edge at 1920px
+ * (only when larger — never upscale), re-encode JPEG at 0.8. Keeps full-res
+ * phone photos (often 4–8 MB) well under the server's multipart size limit and
+ * saves the user's bandwidth + server CPU. Falls back to the original uri on
+ * any failure so an upload is never blocked by optimization.
+ *
+ * Shared by both upload choke points (this file + api/privatePhotos.ts).
+ */
+export async function resizeForUpload(uri: string): Promise<string> {
+  try {
+    const w = await getWidth(uri);
+    const actions = w > 1920 ? [{ resize: { width: 1920 } }] : [];
+    const out = await ImageManipulator.manipulateAsync(uri, actions, {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
+    return out.uri;
+  } catch {
+    return uri;
+  }
 }
 
 /**
@@ -22,6 +53,8 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
  * the side-effect (predictable extension) helps the multipart filename.
  */
 async function fileFromUri(uri: string, fieldName: string): Promise<FormData> {
+  // Shrink before anything touches the network (prevents "File too large").
+  uri = await resizeForUpload(uri);
   const rawExt = (uri.split('?')[0].split('.').pop() || '').toLowerCase();
   const safeExt = ['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(rawExt)
     ? rawExt

@@ -55,7 +55,7 @@ module.exports = {
   JWT_EXPIRES_IN:       900,
   JWT_REFRESH_EXPIRES_IN: 2592000,
   UPLOAD_DIR:           process.env.UPLOAD_DIR || './uploads',
-  MAX_FILE_SIZE_MB:     parseInt(process.env.MAX_FILE_SIZE_MB || '5', 10),
+  MAX_FILE_SIZE_MB:     parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10),
   CLIENT_URL:           process.env.CLIENT_URL || '*',
   // ── Maintenance mode ─────────────────────────────────────────────────────────
   MAINTENANCE_MODE:     process.env.MAINTENANCE_MODE === 'true',
