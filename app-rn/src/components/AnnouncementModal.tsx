@@ -13,7 +13,6 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../theme/ThemeProvider';
 
 export interface AnnouncementItem {
   id: string;
@@ -29,24 +28,20 @@ export function announcementDismissKey(id: string) {
 }
 
 /**
- * The visual card for a single announcement — a framed, rounded card with a
- * cover image (fills the frame, no letterboxing) and the title beneath it.
- * Reused by the modal carousel AND the admin live-preview, so the admin sees
- * exactly what users will see. Tapping the image opens `ctaUrl` when set.
+ * The visual card for a single announcement — a full-bleed 2:3 poster image
+ * (cover, rounded). No title/chrome: the image IS the announcement. Reused by
+ * the modal carousel AND the admin live-preview. Tapping opens `ctaUrl` if set.
  */
 export function AnnouncementCard({
   imageUrl,
-  title,
   ctaUrl,
   width,
 }: {
   imageUrl: string;
-  title?: string | null;
   ctaUrl?: string | null;
   /** Optional explicit card width (e.g. for the admin preview box). */
   width?: number;
 }) {
-  const theme = useTheme();
   const onCtaTap = async () => {
     if (!ctaUrl) return;
     try {
@@ -56,34 +51,18 @@ export function AnnouncementCard({
     }
   };
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: theme.colors.surface },
-        theme.shadows.card,
-        width ? { width } : null,
-      ]}
+    <Pressable
+      onPress={ctaUrl ? onCtaTap : undefined}
+      style={[styles.card, width ? { width } : null]}
     >
-      <View style={styles.clip}>
-        <Pressable onPress={ctaUrl ? onCtaTap : undefined} style={styles.imageBox}>
-          <ExpoImage
-            source={{ uri: imageUrl }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={120}
-          />
-        </Pressable>
-        {!!title && (
-          <Text
-            style={[styles.cardTitle, { color: theme.colors.text }]}
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-        )}
-      </View>
-    </View>
+      <ExpoImage
+        source={{ uri: imageUrl }}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={120}
+      />
+    </Pressable>
   );
 }
 
@@ -149,7 +128,7 @@ export function AnnouncementModal({
           >
             {announcements.map((a) => (
               <View key={a.id} style={[styles.page, { width: winW }]}>
-                <AnnouncementCard imageUrl={a.imageUrl} title={a.title} ctaUrl={a.ctaUrl} />
+                <AnnouncementCard imageUrl={a.imageUrl} ctaUrl={a.ctaUrl} />
               </View>
             ))}
           </ScrollView>
@@ -205,21 +184,24 @@ const styles = StyleSheet.create({
   carouselWrap: { width: '100%', alignItems: 'center', justifyContent: 'center' },
   page: { alignItems: 'center', justifyContent: 'center' },
   card: {
-    width: '88%',
-    maxWidth: 420,
+    width: '92%',
+    maxWidth: 460,
+    aspectRatio: 2 / 3,
     alignSelf: 'center',
-    borderRadius: 16,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
-  clip: { borderRadius: 16, overflow: 'hidden' },
-  imageBox: { width: '100%', aspectRatio: 4 / 5 },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+  dots: { flexDirection: 'row', gap: 6, marginTop: 14, alignSelf: 'center' },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  dots: { flexDirection: 'row', gap: 7, marginTop: 18, alignSelf: 'center' },
-  dot: { width: 7, height: 7, borderRadius: 3.5 },
   topRow: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 56 : 28,

@@ -271,7 +271,6 @@ export function AnnouncementAdminScreen() {
                 <View style={styles.previewStage}>
                   <AnnouncementCard
                     imageUrl={imageUrl}
-                    title={title.trim() || null}
                     ctaUrl={ctaUrl.trim() || null}
                     width={200}
                   />
