@@ -314,6 +314,10 @@ export function ChatDetailScreen() {
           m.pendingId === ctx?.pendingId ? { ...real, status: 'sent' } : m,
         );
       });
+      // Mark the chats list stale so its lastMessage preview reflects what we
+      // just sent. The list screen also refetches on focus, so this keeps the
+      // outside preview in sync even if the WS self-echo never arrives.
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
     },
     onError: (_err, _vars, ctx) => {
       queryClient.setQueryData<Message[]>(['chats', 'messages', matchId], (prev) =>

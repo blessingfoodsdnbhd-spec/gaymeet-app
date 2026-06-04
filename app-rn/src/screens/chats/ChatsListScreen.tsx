@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Flame } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -54,6 +54,20 @@ export function ChatsListScreen() {
     queryFn: getConversations,
     staleTime: 30_000,
   });
+  const refetchThreads = threadsQ.refetch;
+
+  // Re-sync the list every time the Chats tab regains focus (open tab, return
+  // from a chat, resume the app). The WS chat:receive listener below keeps the
+  // list live WHILE it's on screen, but that depends on the socket being
+  // connected — if it dropped (backgrounded, flaky network) the list would
+  // show a stale preview that disagrees with the actual newest message inside
+  // the chat. A focus refetch pulls the backend's denormalized lastMessage and
+  // guarantees the outside preview matches the inside.
+  useFocusEffect(
+    useCallback(() => {
+      refetchThreads();
+    }, [refetchThreads]),
+  );
 
   // Keep the Zustand store in sync with the query result — ChatDetailScreen
   // reads threads from the store to render the header (avatar/name/online)
