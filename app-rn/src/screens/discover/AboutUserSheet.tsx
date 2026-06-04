@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
@@ -213,21 +214,21 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
   const onMore = () => {
     if (!user) return;
-    // On Android, opening the SafetyMenuSheet's <Modal> while our parent
-    // <Sheet> is already a <Modal> stacks the new Modal BEHIND the existing
-    // one (a long-standing RN nested-Modal limitation), so the user
-    // sees nothing happen when they tap the "..." button. Other call sites
-    // (UserDetailScreen, ChatDetailScreen, MomentItem) don't hit this
-    // because they're plain screens, not Modals. Fix: dismiss the Sheet
-    // first, then open the safety menu after its slide-out (~220ms).
-    // The iOS path uses ActionSheetIOS which renders above any Modal, so
-    // the delay is harmless there too.
     const userId = user.id;
     const userName = user.nickname;
-    onClose();
-    setTimeout(() => {
+    if (Platform.OS === 'android') {
+      // Android: the SafetyMenuSheet is a <Modal>, and opening a second Modal
+      // while this Sheet's Modal is up stacks it BEHIND (RN nested-Modal
+      // limitation) — the user would see nothing. So dismiss the sheet first,
+      // then open the menu after its slide-out (~220ms).
+      onClose();
+      setTimeout(() => showSafetyMenu({ userId, userName, nav }), 250);
+    } else {
+      // iOS: ActionSheetIOS renders natively ABOVE any Modal, so keep the
+      // sheet open — the menu appears over it (the previous code closed the
+      // sheet here unnecessarily, kicking the user back to the grid).
       showSafetyMenu({ userId, userName, nav });
-    }, 250);
+    }
   };
 
   // Carousel ~half the screen; the scroll region is bounded to a definite
