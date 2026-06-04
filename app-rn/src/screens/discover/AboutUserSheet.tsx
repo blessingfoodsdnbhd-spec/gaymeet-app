@@ -33,6 +33,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
+import { FollowBadge } from '../../components/FollowBadge';
 
 interface Props {
   open: boolean;
@@ -242,13 +243,16 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               shape="circle"
             />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.name, { color: theme.colors.text }]}>
-                {user.nickname}
-                {(() => {
-                  const a = computeAge(user.dob) ?? user.age;
-                  return a != null ? ` · ${a}` : '';
-                })()}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={1}>
+                  {user.nickname}
+                  {(() => {
+                    const a = computeAge(user.dob) ?? user.age;
+                    return a != null ? ` · ${a}` : '';
+                  })()}
+                </Text>
+                <FollowBadge status={user.followStatus} size={16} />
+              </View>
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 2 }}>
                 {user.distance ?? ''}
               </Text>

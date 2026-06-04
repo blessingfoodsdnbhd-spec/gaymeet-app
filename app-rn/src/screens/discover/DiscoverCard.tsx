@@ -16,6 +16,7 @@ import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useTranslation } from 'react-i18next';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
+import { FollowBadge } from '../../components/FollowBadge';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -147,6 +148,7 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
       <View style={styles.info}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
           <Text style={[styles.name, { color: theme.colors.text }]}>{user.nickname}</Text>
+          <FollowBadge status={user.followStatus} size={16} />
           {(() => {
             const age = computeAge(user.dob) ?? user.age;
             if (age == null) return null;

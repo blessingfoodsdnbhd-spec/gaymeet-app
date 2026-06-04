@@ -501,7 +501,14 @@ router.get('/:id', auth, async (req, res, next) => {
     );
     if (!user) return err(res, 'User not found', 404);
     // self=false → strip the viewed user's email (PII) from the response.
-    ok(res, user.toPublicJSON(undefined, { self: false }));
+    const json = user.toPublicJSON(undefined, { self: false });
+    // Follow relationship for the requester (mutual / following / followed-by).
+    if (user._id.toString() !== req.user._id.toString()) {
+      const { followStatusMap } = require('../utils/followStatus');
+      const fsMap = await followStatusMap(req.user._id, [user._id]);
+      json.followStatus = fsMap.get(user._id.toString()) || 'none';
+    }
+    ok(res, json);
   } catch (e) {
     next(e);
   }

@@ -39,6 +39,8 @@ export interface User {
   // Optional / legacy fields read by some screens
   /** Likes ("想认识") received — drives the popularity badge on cards. */
   popularity?: number;
+  /** Follow relationship from the requester's POV (set on cards + GET /users/:id). */
+  followStatus?: 'mutual' | 'following' | 'followed-by' | 'none';
   isOnline?: boolean;
   /** ISO timestamp of last activity. null when a Premium user hides presence. */
   lastActiveAt?: string | null;
