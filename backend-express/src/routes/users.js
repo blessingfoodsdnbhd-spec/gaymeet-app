@@ -508,6 +508,11 @@ router.get('/:id', auth, async (req, res, next) => {
       const { followStatusMap } = require('../utils/followStatus');
       const fsMap = await followStatusMap(req.user._id, [user._id]);
       json.followStatus = fsMap.get(user._id.toString()) || 'none';
+      // Did this user already like ("想认识") the viewer? Flips the like button
+      // to "成为同频" since tapping it would create the mutual match.
+      const { incomingLikerSet } = require('../utils/incomingLikes');
+      const likers = await incomingLikerSet(req.user._id, [user._id]);
+      json.likedByThem = likers.has(user._id.toString());
     }
     ok(res, json);
   } catch (e) {

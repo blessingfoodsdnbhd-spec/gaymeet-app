@@ -47,6 +47,9 @@ export interface User {
   popularity?: number;
   /** Follow relationship from the requester's POV (set on cards + GET /users/:id). */
   followStatus?: 'mutual' | 'following' | 'followed-by' | 'none';
+  /** True when this user already liked ("想认识") the viewer — tapping like
+   *  would create a match, so the button shows "成为同频". */
+  likedByThem?: boolean;
   isOnline?: boolean;
   /** ISO timestamp of last activity. null when a Premium user hides presence. */
   lastActiveAt?: string | null;

@@ -544,7 +544,13 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               onPress={onFollow}
             />
             <PrimaryLikeAction
-              label={liked ? t('about.liked') : t('about.like')}
+              label={
+                liked
+                  ? t('about.liked')
+                  : user.likedByThem
+                    ? t('about.becomeMatch')
+                    : t('about.like')
+              }
               done={liked}
               onPress={() => {
                 if (liked) return;

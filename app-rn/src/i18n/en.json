@@ -246,6 +246,7 @@
     "followFailed": "Couldn't follow",
     "like": "Like",
     "liked": "Liked",
+    "becomeMatch": "Become a match",
     "message": "Message",
     "messageFailed": "Couldn't open chat"
   },

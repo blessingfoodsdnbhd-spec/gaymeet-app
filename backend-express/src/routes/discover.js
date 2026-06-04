@@ -6,6 +6,7 @@ const Match = require('../models/Match');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { followStatusMap } = require('../utils/followStatus');
+const { incomingLikerSet } = require('../utils/incomingLikes');
 const { isPremiumActive } = require('../utils/premium');
 
 const MAX_DISTANCE_M = 100_000; // 100 km — Meyou is Malaysia-only at launch
@@ -158,6 +159,7 @@ router.get('/cards', auth, async (req, res, next) => {
 
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
+    const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
     const cards = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -165,6 +167,7 @@ router.get('/cards', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
+      likedByThem: likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));
@@ -272,6 +275,7 @@ router.post('/search-new', auth, async (req, res, next) => {
 
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
+    const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
     const cards = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -279,6 +283,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
+      likedByThem: likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));
@@ -451,6 +456,7 @@ router.get('/nearby', auth, async (req, res, next) => {
 
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
+    const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
     const others = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -458,6 +464,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
+      likedByThem: likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));
