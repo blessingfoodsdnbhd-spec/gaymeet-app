@@ -31,6 +31,7 @@ import {
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 
 interface Props {
   open: boolean;
@@ -41,7 +42,7 @@ interface Props {
 
 export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
@@ -242,7 +243,10 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, { color: theme.colors.text }]}>
                 {user.nickname}
-                {user.age ? ` · ${user.age}` : ''}
+                {(() => {
+                  const a = computeAge(user.dob) ?? user.age;
+                  return a != null ? ` · ${a}` : '';
+                })()}
               </Text>
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 2 }}>
                 {user.distance ?? ''}
@@ -263,7 +267,16 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             // suffix), plus any optional body/work/location fields the user has
             // filled. Hidden entirely when nothing is set.
             const stats: string[] = [];
-            if (user.age) stats.push(t('about.stats.age', { n: user.age }));
+            // Age + zodiac. Prefer a live age from dob (always fresh); fall back
+            // to the stored age for legacy users. Zodiac only when dob is set.
+            const age = computeAge(user.dob) ?? user.age;
+            if (age != null) {
+              const z = computeZodiac(user.dob);
+              stats.push(
+                t('about.stats.age', { n: age }) +
+                  (z ? ` · ${zodiacLabel(z, i18n.language)}` : ''),
+              );
+            }
             if (user.height) stats.push(`${user.height} cm`);
             if (user.weight) stats.push(`${user.weight} kg`);
             if (user.bodyType) stats.push(t(`profile.edit.bodyTypes.${user.bodyType}`));

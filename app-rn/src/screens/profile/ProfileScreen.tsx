@@ -44,6 +44,7 @@ import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, patchMe } from '../../api/me';
+import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { fetchIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
 import {
@@ -78,7 +79,9 @@ export function ProfileScreen() {
   // Inline editable fields — local state, auto-saved onEndEditing.
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
-  const [age, setAge] = useState(user?.age != null ? String(user.age) : '');
+  // Date of birth drives age + zodiac. Edited as a YYYY-MM-DD string; the
+  // backend stores it and denormalizes the computed age.
+  const [dob, setDob] = useState(user?.dob ? user.dob.slice(0, 10) : '');
   const [height, setHeight] = useState(user?.height != null ? String(user.height) : '');
   const [weight, setWeight] = useState(user?.weight != null ? String(user.weight) : '');
   const [bodyType, setBodyType] = useState<string | null>(user?.bodyType ?? null);
@@ -253,7 +256,7 @@ export function ProfileScreen() {
     mutationFn: (patch: {
       nickname?: string;
       bio?: string;
-      age?: number;
+      dob?: string | null;
       height?: number;
       weight?: number;
       bodyType?: string;
@@ -294,11 +297,26 @@ export function ProfileScreen() {
     if (next === (user.bio ?? '').trim()) return;
     saveMut.mutate({ bio: next });
   };
-  const saveAge = () => {
-    const n = age ? parseInt(age, 10) : undefined;
-    if (n === user.age) return;
-    if (n !== undefined && (isNaN(n) || n < 18 || n > 99)) return;
-    saveMut.mutate({ age: n });
+  // Auto-insert dashes as the user types digits → YYYY-MM-DD.
+  const onDobChange = (v: string) => {
+    const digits = v.replace(/\D/g, '').slice(0, 8); // YYYYMMDD
+    let out = digits;
+    if (digits.length > 6) out = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+    else if (digits.length > 4) out = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    setDob(out);
+  };
+  const saveDob = () => {
+    const v = dob.trim();
+    const existing = user.dob ? user.dob.slice(0, 10) : '';
+    if (v === existing) return;
+    if (v === '') {
+      saveMut.mutate({ dob: null });
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; // wait for a complete date
+    const a = computeAge(v);
+    if (a == null || a < 18 || a > 99) return; // same 18–99 guard as before
+    saveMut.mutate({ dob: v });
   };
   const saveHeight = () => {
     const n = height ? parseInt(height, 10) : undefined;
@@ -820,23 +838,39 @@ export function ProfileScreen() {
             {bio.length} / 140
           </Text>
 
-          <SectionTitle>{t('profile.edit.age')}</SectionTitle>
+          <SectionTitle>{t('profile.edit.dob')}</SectionTitle>
           <TextInput
-            value={age}
-            onChangeText={(v) => setAge(v.replace(/\D/g, '').slice(0, 2))}
-            onEndEditing={saveAge}
+            value={dob}
+            onChangeText={onDobChange}
+            onEndEditing={saveDob}
             keyboardType="number-pad"
-            maxLength={2}
+            placeholder={t('profile.edit.dobHint')}
+            placeholderTextColor={theme.colors.muted}
+            maxLength={10}
             style={[
               styles.inlineField,
               {
                 color: theme.colors.text,
                 borderColor: theme.colors.line,
                 backgroundColor: theme.colors.surface,
-                width: 90,
+                width: 150,
               },
             ]}
           />
+          {/* Live "29 岁 · ♏ 天蝎" preview computed from the entered DOB. */}
+          {(() => {
+            const a = computeAge(dob);
+            if (a == null) return null;
+            const z = computeZodiac(dob);
+            const label =
+              t('about.stats.age', { n: a }) +
+              (z ? ` · ${zodiacLabel(z, i18n.language)}` : '');
+            return (
+              <Text style={{ marginTop: 6, color: theme.colors.muted, fontSize: 13 }}>
+                {label}
+              </Text>
+            );
+          })()}
 
           {/* Height + Weight (both optional) */}
           <SectionTitle>{t('profile.edit.height')}</SectionTitle>

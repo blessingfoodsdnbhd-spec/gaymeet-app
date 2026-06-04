@@ -312,6 +312,8 @@
       "bio": "简介",
       "bioPlaceholder": "一两句介绍自己",
       "age": "年龄",
+      "dob": "出生日期",
+      "dobHint": "YYYY-MM-DD",
       "height": "身高 (cm)",
       "weight": "体重 (kg)",
       "bodyType": "体型",

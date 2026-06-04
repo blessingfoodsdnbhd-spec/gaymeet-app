@@ -312,6 +312,8 @@
       "bio": "Bio",
       "bioPlaceholder": "A line or two about you",
       "age": "Age",
+      "dob": "Date of birth",
+      "dobHint": "YYYY-MM-DD",
       "height": "Height (cm)",
       "weight": "Weight (kg)",
       "bodyType": "Body Type",

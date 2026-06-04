@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { computeAge, computeZodiac } = require('../utils/zodiac');
 
 const preferencesSchema = new mongoose.Schema(
   {
@@ -68,7 +69,8 @@ const userSchema = new mongoose.Schema(
     // Body stats
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg
-    age: { type: Number, default: null },
+    age: { type: Number, default: null }, // denormalized from dob on write (kept for legacy users + the nearby age filter)
+    dob: { type: Date, default: null }, // date of birth — source of truth for age + zodiac when set
     bodyType: { type: String, default: null }, // 'average' | 'fit' | 'chubby' | 'slim'
     occupation: { type: String, default: null }, // free text
     city: { type: String, default: null }, // free text
@@ -253,7 +255,7 @@ userSchema.methods.comparePassword = function (plain) {
 const PUBLIC_USER_FIELDS = [
   '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
   'interests', 'interestsOnboardedAt', 'prompts',
-  'height', 'weight', 'age', 'bodyType', 'occupation', 'city', 'countryCode', 'location',
+  'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
   'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',
@@ -328,6 +330,16 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
   }
 
   obj.id = src._id.toString(); // Flutter reads 'id', not '_id'
+
+  // Date of birth is the source of truth for age + zodiac when present. Age is
+  // recomputed live so it never goes stale on a birthday; zodiacSign is a rich
+  // {key,en,zh,emoji,range} object the client renders directly. Legacy users
+  // (stored age, no dob) keep their age and simply get no zodiacSign.
+  if (src.dob) {
+    const computedAge = computeAge(src.dob);
+    if (computedAge != null) obj.age = computedAge;
+    obj.zodiacSign = computeZodiac(src.dob);
+  }
 
   // Preferences: full object for self; a safe display subset for others.
   if (src.preferences) {

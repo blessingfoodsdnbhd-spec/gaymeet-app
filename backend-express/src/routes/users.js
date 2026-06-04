@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { computeAge } = require('../utils/zodiac');
 
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
 router.get('/me', auth, async (req, res, next) => {
@@ -17,13 +18,27 @@ router.get('/me', auth, async (req, res, next) => {
 router.patch('/me', auth, async (req, res, next) => {
   try {
     const allowed = [
-      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'bodyType', 'occupation', 'city',
+      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city',
       'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
     ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // DOB is the source of truth: normalize it and denormalize the computed age
+    // into `age` so the existing nearby age-range filter (matchStage.age) keeps
+    // working with no query change. Sending dob:null clears both.
+    if (updates.dob !== undefined) {
+      const d = updates.dob ? new Date(updates.dob) : null;
+      if (d && !isNaN(d.getTime())) {
+        updates.dob = d;
+        const a = computeAge(d);
+        if (a != null) updates.age = a;
+      } else {
+        updates.dob = null;
+      }
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {

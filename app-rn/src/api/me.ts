@@ -13,6 +13,17 @@ export interface User {
   avatarUrl?: string | null;
   photos?: string[];
   age?: number | null;
+  /** Date of birth (ISO). Source of truth for age + zodiac when set; `age` is
+   *  denormalized server-side. Legacy users have `age` but no `dob`. */
+  dob?: string | null;
+  /** Computed server-side from `dob`. Absent for legacy (age-only) users. */
+  zodiacSign?: {
+    key: string;
+    en: string;
+    zh: string;
+    emoji: string;
+    range: string;
+  } | null;
   height?: number | null; // cm
   weight?: number | null; // kg
   bodyType?: string | null; // 'average' | 'fit' | 'chubby' | 'slim'
@@ -58,6 +69,8 @@ export const patchMe = (
   patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'occupation' | 'city'>> & {
     tags?: string[];
     age?: number;
+    /** ISO 'YYYY-MM-DD'; null clears DOB (and the denormalized age). */
+    dob?: string | null;
     height?: number;
     weight?: number;
   },
