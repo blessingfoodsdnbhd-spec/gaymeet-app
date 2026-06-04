@@ -167,7 +167,7 @@ router.get('/cards', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
-      likedByThem: likers.has(u._id.toString()),
+      likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));
@@ -283,7 +283,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
-      likedByThem: likers.has(u._id.toString()),
+      likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));
@@ -464,7 +464,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
-      likedByThem: likers.has(u._id.toString()),
+      likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
       ...presenceFields(u),
     }));

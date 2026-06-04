@@ -16,6 +16,8 @@ interface Props {
   size?: number;
   shape?: Shape;
   showOnline?: boolean;
+  /** Heavily blur the photo (Premium-gated teasers, e.g. "who liked you"). */
+  blur?: boolean;
 }
 
 export function Avatar({
@@ -26,6 +28,7 @@ export function Avatar({
   size = 48,
   shape = 'circle',
   showOnline,
+  blur,
 }: Props) {
   const theme = useTheme();
   const [a, b] = avatarGradients[avatarIdx % avatarGradients.length];
@@ -41,6 +44,7 @@ export function Avatar({
           style={{ width: size, height: size, borderRadius: radius }}
           contentFit="cover"
           transition={120}
+          blurRadius={blur ? 18 : 0}
         />
       ) : (
         <LinearGradient

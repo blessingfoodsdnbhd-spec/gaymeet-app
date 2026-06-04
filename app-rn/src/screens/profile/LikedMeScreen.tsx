@@ -175,17 +175,16 @@ function LikerRow({ user, onPress }: { user: LikerUser; onPress: () => void }) {
     >
       <View>
         <Avatar
-          name={user.isBlurred ? '?' : user.nickname}
-          uri={user.isBlurred ? null : user.avatarUrl}
+          name={user.nickname || '?'}
+          uri={user.avatarUrl}
           avatarIdx={idxFor(user._id)}
           size={48}
+          blur={user.isBlurred}
           showOnline={!user.isBlurred && user.isOnline}
         />
         {user.isBlurred && (
-          // expo-blur is not installed; a translucent veil + lock icon
-          // communicates the same "locked behind Premium" intent without a
-          // GPU blur shader. Tint follows surface2 so it reads consistently
-          // across light/dark themes.
+          // The photo is blurred via expo-image blurRadius; a small lock under a
+          // light veil reinforces the "locked behind Premium" intent.
           <View
             pointerEvents="none"
             style={[
@@ -195,11 +194,11 @@ function LikerRow({ user, onPress }: { user: LikerUser; onPress: () => void }) {
                 overflow: 'hidden',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: 'rgba(232,227,245,0.78)',
+                backgroundColor: 'rgba(60,42,78,0.28)',
               },
             ]}
           >
-            <Lock size={16} color="rgba(60,42,78,0.78)" strokeWidth={1.8} />
+            <Lock size={16} color="#FFFFFF" strokeWidth={2} />
           </View>
         )}
       </View>

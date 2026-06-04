@@ -414,13 +414,15 @@ router.get('/likes', auth, async (req, res, next) => {
     if (isPremiumActive(me)) {
       ok(res, { count: likers.length, users: likers });
     } else {
-      // Free: return count + blurred (just IDs + placeholder)
+      // Free: count + blurred rows. We DO send the real avatarUrl so the client
+      // can render a heavily-blurred teaser (blurRadius), but the name stays
+      // hidden — identity is the gated value. Tapping a row → Premium upsell.
       ok(res, {
         count: likers.length,
         users: likers.map((u) => ({
           _id: u._id,
           nickname: '??',
-          avatarUrl: null,
+          avatarUrl: u.avatarUrl ?? null,
           isBlurred: true,
         })),
       });
@@ -510,9 +512,11 @@ router.get('/:id', auth, async (req, res, next) => {
       json.followStatus = fsMap.get(user._id.toString()) || 'none';
       // Did this user already like ("想认识") the viewer? Flips the like button
       // to "成为同频" since tapping it would create the mutual match.
+      // Gated: only Premium viewers get the "成为同频" shortcut (PR H).
       const { incomingLikerSet } = require('../utils/incomingLikes');
+      const { isPremiumActive } = require('../utils/premium');
       const likers = await incomingLikerSet(req.user._id, [user._id]);
-      json.likedByThem = likers.has(user._id.toString());
+      json.likedByThem = isPremiumActive(req.user) && likers.has(user._id.toString());
     }
     ok(res, json);
   } catch (e) {
