@@ -66,6 +66,10 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
 
+    // When false, the public web profile (meyou.uk/u/:id) shows a generic
+    // "private profile" page instead of the user's details. Default true.
+    isPublicProfile: { type: Boolean, default: true },
+
     // Body stats
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg
