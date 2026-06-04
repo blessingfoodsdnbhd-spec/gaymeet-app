@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { Heart, MessageCircle, MoreHorizontal, UserPlus, X } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreHorizontal, Share2, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -39,6 +39,7 @@ import {
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { shareProfile } from '../../utils/shareProfile';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
@@ -320,6 +321,13 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
             <Pressable onPress={onClose} hitSlop={8} style={[styles.overlayBtn, { right: 14 }]}>
               <X size={20} color="#FFFFFF" strokeWidth={2} />
+            </Pressable>
+            <Pressable
+              onPress={() => user && shareProfile(user.id, user.nickname, t)}
+              hitSlop={8}
+              style={[styles.overlayBtn, { right: 58 }]}
+            >
+              <Share2 size={18} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
             {!isSelf && (
               <Pressable onPress={onMore} hitSlop={8} style={[styles.overlayBtn, { left: 14 }]}>

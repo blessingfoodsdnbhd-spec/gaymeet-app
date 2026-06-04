@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Megaphone,
   Settings as SettingsIcon,
+  Share2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,6 +38,7 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
+import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
@@ -526,6 +528,9 @@ export function ProfileScreen() {
       <TopBar
         right={
           <>
+            <IconButton onPress={() => user && shareProfile(user.id, user.nickname, t)}>
+              <Share2 size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </IconButton>
             <IconButton onPress={() => nav.navigate('AccountSettings')}>
               <SettingsIcon size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>

@@ -235,6 +235,7 @@
   "about": {
     "section": "关于",
     "promptsSection": "个人答题",
+    "shareMessage": "来看看 {{name}} 的 Meyou 资料 → {{url}}",
     "interestsCount": "兴趣 · {{n}} 个共同",
     "stats": {
       "age": "{{n}} 岁"

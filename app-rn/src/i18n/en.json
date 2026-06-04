@@ -235,6 +235,7 @@
   "about": {
     "section": "About",
     "promptsSection": "Q&A",
+    "shareMessage": "Check out {{name}} on Meyou → {{url}}",
     "interestsCount": "Interests · {{n}} in common",
     "stats": {
       "age": "{{n}} yrs"
