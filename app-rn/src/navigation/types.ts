@@ -38,6 +38,10 @@ export type RootStackParamList = {
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;
+  VotesList: undefined;
+  VoteDetail: { eventId: string };
+  CreateVote: undefined;
+  SubmitEntry: { eventId: string };
   NotesInbox: undefined;
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };

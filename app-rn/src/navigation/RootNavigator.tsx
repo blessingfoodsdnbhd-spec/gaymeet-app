@@ -25,6 +25,10 @@ import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
+import { VotesListScreen } from '../screens/votes/VotesListScreen';
+import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
+import { CreateVoteScreen } from '../screens/votes/CreateVoteScreen';
+import { SubmitEntryScreen } from '../screens/votes/SubmitEntryScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
@@ -113,6 +117,10 @@ export function RootNavigator() {
             component={NoteDetailScreen}
             options={{ animation: 'slide_from_right' }}
           />
+          <Stack.Screen name="VotesList" component={VotesListScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="VoteDetail" component={VoteDetailScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="CreateVote" component={CreateVoteScreen} options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="SubmitEntry" component={SubmitEntryScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen
             name="TopicPersonaEdit"
             component={TopicPersonaEditScreen}

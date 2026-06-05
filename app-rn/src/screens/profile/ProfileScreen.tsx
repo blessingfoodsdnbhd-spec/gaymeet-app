@@ -44,6 +44,7 @@ import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
+import { HighlightsSection } from '../votes/HighlightsSection';
 import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
@@ -840,6 +841,9 @@ export function ProfileScreen() {
               🎮 {t('profile.mobileGames.label')}: {mobileGames.join('、')}
             </Text>
           )}
+
+          {/* 高光时刻 — top-3 contest placements (renders nothing if none). */}
+          <HighlightsSection userId={user.id} />
 
           {/* Prompts */}
           <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>

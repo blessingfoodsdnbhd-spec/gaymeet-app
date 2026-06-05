@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Heart, Search, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
+import { Crown, Heart, Plus, Search, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +19,7 @@ import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
 import { BoostButton } from './BoostButton';
 import { TopicTabs, type ActiveTab } from './TopicTabs';
+import { VoteCarousel } from '../votes/VoteCarousel';
 import { TopicPersonaList } from './TopicPersonaList';
 import { TopicPersonaSheet } from './TopicPersonaSheet';
 import { getTopics } from '../../api/topics';
@@ -347,6 +348,10 @@ export function DiscoverScreen() {
         locale={locale}
       />
 
+      {/* 投票活动 — prominent community entry point (Apple 4.3(b)). Hidden when
+          there are no active events. */}
+      {mode.kind === 'cards' && <VoteCarousel />}
+
       {mode.kind === 'cards' ? (
         <CardsBody
           cardsQ={cardsQ}
@@ -414,6 +419,27 @@ export function DiscoverScreen() {
         topicIcon={topics.find((t) => t.slug === openPersona?.slug)?.icon}
         onClose={() => setOpenPersona(null)}
       />
+
+      {/* Create-contest FAB → CreateVoteScreen. */}
+      <Pressable
+        onPress={() => nav.navigate('CreateVote')}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          right: 18,
+          bottom: 20,
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          backgroundColor: theme.colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.85 : 1,
+          ...theme.shadows.pop,
+        })}
+        accessibilityLabel={t('votes.createTitle')}
+      >
+        <Plus size={26} color="#FFFFFF" strokeWidth={2.4} />
+      </Pressable>
     </SafeAreaView>
   );
 }

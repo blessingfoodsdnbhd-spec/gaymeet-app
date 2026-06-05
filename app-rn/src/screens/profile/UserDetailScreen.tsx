@@ -22,6 +22,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
+import { HighlightsSection } from '../votes/HighlightsSection';
 import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
@@ -274,6 +275,11 @@ export function UserDetailScreen() {
               )}
             </View>
           )}
+
+          {/* 高光时刻 — contest placements (renders nothing if none). */}
+          <View style={{ marginTop: 18 }}>
+            <HighlightsSection userId={userId} />
+          </View>
 
           {user.prompts && user.prompts.length > 0 && (
             <Card surface2 flat style={{ padding: 14, marginTop: 18 }}>
