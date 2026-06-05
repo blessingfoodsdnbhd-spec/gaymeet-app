@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sheet } from '../../components/Sheet';
 import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
+import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { TagChip } from '../../components/TagChip';
 import { Card } from '../../components/Card';
@@ -113,7 +114,10 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   // the current user. The Nearby grid prepends self, and we'd otherwise
   // render a "Request to view" CTA pointing at the user's own photos.
   const isSelf = !!user && !!meFresh?.id && user.id === meFresh.id;
-  const hasPrivate = !isSelf && (user?.privatePhotosCount ?? 0) > 0;
+  // PRIVATE_PHOTOS_ENABLED off (Apple 4.3(b) strip) → the entire locked-photos
+  // block + request flow + its queries are skipped. Public photos are unaffected.
+  const hasPrivate =
+    PRIVATE_PHOTOS_ENABLED && !isSelf && (user?.privatePhotosCount ?? 0) > 0;
 
   // Reset local liked flag when the target user changes.
   React.useEffect(() => {

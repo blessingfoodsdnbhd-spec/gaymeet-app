@@ -43,6 +43,7 @@ import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
+import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
@@ -608,11 +609,13 @@ export function ProfileScreen() {
               value={fmt(stats?.moments)}
               onPress={() => nav.navigate('MyMoments')}
             />
-            <Stat
-              label={t('profile.stats.privatePhotos')}
-              value={fmt(approvedQ.data?.count)}
-              onPress={() => nav.navigate('PhotoRequests')}
-            />
+            {PRIVATE_PHOTOS_ENABLED && (
+              <Stat
+                label={t('profile.stats.privatePhotos')}
+                value={fmt(approvedQ.data?.count)}
+                onPress={() => nav.navigate('PhotoRequests')}
+              />
+            )}
           </View>
 
           {/* Public photos */}
@@ -628,36 +631,41 @@ export function ProfileScreen() {
             onView={(i) => photoViewer.open(user.photos ?? [], i)}
           />
 
-          {/* Private photos */}
-          <SectionTitle>
-            {t('profile.privatePhotosLimit', { count: privatePhotos.length })}
-          </SectionTitle>
-          <PhotoGridEditor
-            photos={privatePhotos}
-            max={PHOTO_MAX}
-            busy={privateBusy || myPrivatePhotosQ.isLoading}
-            onAdd={addPrivatePhoto}
-            onRemove={removePrivatePhoto}
-            onView={(i) => photoViewer.open(privatePhotos, i)}
-            badgeIcon={<Lock size={12} color="#FFFFFF" strokeWidth={2.2} />}
-          />
-          <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
-            {t('profile.privatePhotosHint')}
-          </Text>
-          {approvedCount > 0 && (
-            <Pressable
-              onPress={onRevokeAll}
-              disabled={relockMut.isPending}
-              style={({ pressed }) => ({
-                marginTop: 10,
-                paddingVertical: 8,
-                opacity: pressed || relockMut.isPending ? 0.55 : 1,
-              })}
-            >
-              <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '500' }}>
-                {t('profile.revokeAllAccess', { n: approvedCount })}
+          {/* Private photos — hidden behind PRIVATE_PHOTOS_ENABLED for the
+              Apple 4.3(b) content strip. Public photos above are unaffected. */}
+          {PRIVATE_PHOTOS_ENABLED && (
+            <>
+              <SectionTitle>
+                {t('profile.privatePhotosLimit', { count: privatePhotos.length })}
+              </SectionTitle>
+              <PhotoGridEditor
+                photos={privatePhotos}
+                max={PHOTO_MAX}
+                busy={privateBusy || myPrivatePhotosQ.isLoading}
+                onAdd={addPrivatePhoto}
+                onRemove={removePrivatePhoto}
+                onView={(i) => photoViewer.open(privatePhotos, i)}
+                badgeIcon={<Lock size={12} color="#FFFFFF" strokeWidth={2.2} />}
+              />
+              <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
+                {t('profile.privatePhotosHint')}
               </Text>
-            </Pressable>
+              {approvedCount > 0 && (
+                <Pressable
+                  onPress={onRevokeAll}
+                  disabled={relockMut.isPending}
+                  style={({ pressed }) => ({
+                    marginTop: 10,
+                    paddingVertical: 8,
+                    opacity: pressed || relockMut.isPending ? 0.55 : 1,
+                  })}
+                >
+                  <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '500' }}>
+                    {t('profile.revokeAllAccess', { n: approvedCount })}
+                  </Text>
+                </Pressable>
+              )}
+            </>
           )}
 
           {/* Topic Personas — each row jumps into the edit screen for
@@ -669,6 +677,8 @@ export function ProfileScreen() {
               Order: sits directly under the Private Photos block per
               user feedback — topics are now more central than the
               interests tags, so they get prime real estate. */}
+          {TOPICS_ENABLED && (
+          <>
           <SectionTitle>{t('profile.personasTitle')}</SectionTitle>
           {(myPersonasQ.data ?? []).filter((p) => p.isActive).length === 0 ? (
             <Text style={{ color: theme.colors.muted, fontSize: 13 }}>
@@ -790,6 +800,8 @@ export function ProfileScreen() {
               )}
             </Pressable>
           </View>
+          </>
+          )}
 
           {/* Interests — moved below Topic Personas per user feedback
               (Topic Personas section is now adjacent to Photos which

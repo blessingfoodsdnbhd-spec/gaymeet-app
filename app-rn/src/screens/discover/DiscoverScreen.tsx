@@ -22,6 +22,7 @@ import { TopicTabs, type ActiveTab } from './TopicTabs';
 import { TopicPersonaList } from './TopicPersonaList';
 import { TopicPersonaSheet } from './TopicPersonaSheet';
 import { getTopics } from '../../api/topics';
+import { TOPICS_ENABLED } from '../../config/featureFlags';
 import {
   getDiscoverCards,
   getNearby,
@@ -79,8 +80,11 @@ export function DiscoverScreen() {
     queryKey: ['topics', 'list'],
     queryFn: getTopics,
     staleTime: 5 * 60_000,
+    enabled: TOPICS_ENABLED,
   });
-  const topics = topicsQ.data ?? [];
+  // When topics are flag-disabled, the strip falls back to just 推荐 / 附近 and
+  // `mode` can never become a topic mode, so TopicPersonaList/Sheet never render.
+  const topics = TOPICS_ENABLED ? topicsQ.data ?? [] : [];
   const [aboutUser, setAboutUser] = useState<DiscoverCardUser | null>(null);
   // matchId is the freshly-created Match document id from the mutual-like
   // backend response. We need it to navigate the user from the celebration
