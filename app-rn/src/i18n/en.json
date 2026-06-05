@@ -127,7 +127,10 @@
     "highlightsTitle": "Highlights",
     "mine": "Mine",
     "createFirst": "Create the first one",
-    "format": { "single": "Single round", "multiRound": "Elimination" },
+    "format": {
+      "single": "Single round",
+      "multiRound": "Elimination"
+    },
     "roundCountLabel": "Number of rounds",
     "multiRoundHint": "The time window is split into equal rounds. After each round the bottom 50% are eliminated; the final round decides 🥇🥈🥉.",
     "roundProgress": "Round {{current}} of {{total}}",
@@ -185,9 +188,21 @@
     "startsAt": "Starts {{date}}",
     "entriesCount": "{{n}} entries",
     "voteCount": "{{n}} votes",
-    "countdown": { "days": "{{d}}d {{h}}h left", "hm": "{{h}}h {{m}}m left" },
-    "status": { "active": "Active", "pending": "Upcoming", "ended": "Ended", "all": "All" },
-    "scope": { "all": "All", "nearby": "Nearby", "following": "Following" },
+    "countdown": {
+      "days": "{{d}}d {{h}}h left",
+      "hm": "{{h}}h {{m}}m left"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Upcoming",
+      "ended": "Ended",
+      "all": "All"
+    },
+    "scope": {
+      "all": "All",
+      "nearby": "Nearby",
+      "following": "Following"
+    },
     "category": {
       "all": "All",
       "photography": "Photography",
@@ -426,7 +441,9 @@
       "openRelationship": "Open relationship",
       "polyamorous": "Polyamorous (throuple)"
     },
-    "mbti": { "label": "MBTI" },
+    "mbti": {
+      "label": "MBTI"
+    },
     "intents": {
       "label": "Looking for",
       "friends": "Friends",
@@ -690,16 +707,17 @@
     }
   },
   "premium": {
-    "heroTagline": "Unlock everything to find your real wavelength",
+    "heroTagline": "Unlock Meyou Premium for community engagement",
     "active": "You're a Premium member",
     "expiresAt": "Expires: {{date}}",
     "benefitsSection": "Benefits",
     "benefits": {
-      "directIntro": "Message anyone before matching",
-      "seeLikes": "See who liked you",
-      "unlimitedSwipes": "Unlimited swipes",
-      "readReceipts": "Read receipts",
-      "biggerBoost": "Bigger Boost reach"
+      "hideOnline": "Hide your online status",
+      "incognito": "Browse incognito",
+      "profileViewers": "See your profile viewers",
+      "readReceipts": "Read receipts in chat",
+      "discoveryFilters": "Filter discovery by preferences",
+      "priorityListing": "Priority listing in community feeds"
     },
     "plansSection": "Choose a plan",
     "perYear": "year",

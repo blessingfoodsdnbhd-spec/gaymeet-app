@@ -25,11 +25,12 @@ import { purchaseSubscription, restoreSubscriptions, getLocalizedPrices } from '
 import { PRIVACY_URL, TERMS_URL, openLegal } from '../../utils/legalUrls';
 
 const BENEFIT_KEYS = [
-  'directIntro',
-  'seeLikes',
-  'unlimitedSwipes',
+  'hideOnline',
+  'incognito',
+  'profileViewers',
   'readReceipts',
-  'biggerBoost',
+  'discoveryFilters',
+  'priorityListing',
 ] as const;
 
 type Plan = 'monthly' | 'annual';

@@ -127,7 +127,10 @@
     "highlightsTitle": "高光时刻",
     "mine": "我的",
     "createFirst": "创建第一个",
-    "format": { "single": "单轮", "multiRound": "淘汰赛" },
+    "format": {
+      "single": "单轮",
+      "multiRound": "淘汰赛"
+    },
     "roundCountLabel": "轮数",
     "multiRoundHint": "时间将平均分为若干轮。每轮结束淘汰垫底 50%,最后一轮决出 🥇🥈🥉。",
     "roundProgress": "第 {{current}} 轮 / 共 {{total}} 轮",
@@ -185,9 +188,21 @@
     "startsAt": "{{date}} 开始",
     "entriesCount": "{{n}} 个作品",
     "voteCount": "{{n}} 票",
-    "countdown": { "days": "剩 {{d}} 天 {{h}} 小时", "hm": "剩 {{h}} 小时 {{m}} 分" },
-    "status": { "active": "进行中", "pending": "即将开始", "ended": "已结束", "all": "全部" },
-    "scope": { "all": "全部", "nearby": "附近", "following": "关注" },
+    "countdown": {
+      "days": "剩 {{d}} 天 {{h}} 小时",
+      "hm": "剩 {{h}} 小时 {{m}} 分"
+    },
+    "status": {
+      "active": "进行中",
+      "pending": "即将开始",
+      "ended": "已结束",
+      "all": "全部"
+    },
+    "scope": {
+      "all": "全部",
+      "nearby": "附近",
+      "following": "关注"
+    },
     "category": {
       "all": "全部",
       "photography": "摄影",
@@ -426,7 +441,9 @@
       "openRelationship": "开放关系",
       "polyamorous": "3人(稳定关系)"
     },
-    "mbti": { "label": "MBTI" },
+    "mbti": {
+      "label": "MBTI"
+    },
     "intents": {
       "label": "目的",
       "friends": "找朋友",
@@ -690,16 +707,17 @@
     }
   },
   "premium": {
-    "heroTagline": "解锁全部功能,找到真同好",
+    "heroTagline": "解锁 Meyou 会员,畅享社区功能",
     "active": "你已是 Premium 会员",
     "expiresAt": "到期: {{date}}",
     "benefitsSection": "专属权益",
     "benefits": {
-      "directIntro": "给还没同频的人直接发消息",
-      "seeLikes": "看谁想认识你",
-      "unlimitedSwipes": "无限滑卡片",
-      "readReceipts": "「已读」回执",
-      "biggerBoost": "加大 Boost 曝光"
+      "hideOnline": "隐藏在线状态",
+      "incognito": "隐身浏览",
+      "profileViewers": "查看谁看过你",
+      "readReceipts": "聊天已读回执",
+      "discoveryFilters": "按偏好筛选发现",
+      "priorityListing": "社区动态优先展示"
     },
     "plansSection": "选择套餐",
     "perYear": "年",
