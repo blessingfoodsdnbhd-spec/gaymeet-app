@@ -122,6 +122,8 @@ export type WsWorldChatReceive = {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  countryCode?: string | null;
+  city?: string | null;
   body: string;
   createdAt: string;
 };

@@ -32,10 +32,12 @@ import { blockUser } from '../../api/safety';
 import { openConversation } from '../../api/chats';
 import { on as wsOn } from '../../api/ws';
 import { shortTime } from '../../utils/time';
+import { countryCodeToFlag } from '../../utils/countryFlag';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 const BODY_MAX = 500;
+const PAGE_SIZE = 50; // matches getRecentWorldChat's default limit
 
 function idxFor(id: string) {
   let h = 0;
@@ -64,6 +66,10 @@ export function WorldChatScreen() {
   const [sending, setSending] = React.useState(false);
   const [online, setOnline] = React.useState<number | null>(null);
   const [loadingOlder, setLoadingOlder] = React.useState(false);
+  // Whether older history might still exist. Without this, onEndReached on a
+  // short list fires repeatedly and loadOlder loops → the footer spinner never
+  // stops. Set false once a page comes back smaller than the page size.
+  const [hasMore, setHasMore] = React.useState(true);
   const [selected, setSelected] = React.useState<WorldChatMessage | null>(null);
 
   const msgsQ = useQuery({
@@ -73,6 +79,12 @@ export function WorldChatScreen() {
     select: (d) => d.messages,
   });
   const messages = msgsQ.data ?? []; // newest-first
+
+  // If the initial page came back smaller than the page size, there's no older
+  // history to fetch — don't let onEndReached spin.
+  React.useEffect(() => {
+    if (msgsQ.data && msgsQ.data.length < PAGE_SIZE) setHasMore(false);
+  }, [msgsQ.data]);
 
   // WS: live receive / delete / online-count. wsOn is async (awaits connect),
   // so guard teardown with `cancelled` exactly like ChatDetailScreen.
@@ -107,11 +119,12 @@ export function WorldChatScreen() {
   }, [qc]);
 
   const loadOlder = async () => {
-    if (loadingOlder || messages.length === 0) return;
+    if (loadingOlder || !hasMore || messages.length === 0) return;
     setLoadingOlder(true);
     try {
       const oldest = messages[messages.length - 1];
-      const { messages: older } = await getRecentWorldChat(oldest.messageId);
+      const { messages: older } = await getRecentWorldChat(oldest.messageId, PAGE_SIZE);
+      if (older.length < PAGE_SIZE) setHasMore(false); // reached the start
       if (older.length) {
         qc.setQueryData<Cache>(KEY, (prev) => {
           const arr = prev?.messages ?? [];
@@ -223,10 +236,10 @@ export function WorldChatScreen() {
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 10 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
-            onEndReached={loadOlder}
+            onEndReached={hasMore ? loadOlder : undefined}
             onEndReachedThreshold={0.3}
             ListFooterComponent={
-              loadingOlder ? (
+              loadingOlder && hasMore ? (
                 <ActivityIndicator color={theme.colors.muted} style={{ marginVertical: 12 }} />
               ) : null
             }
@@ -321,6 +334,9 @@ function Row({
   onOpenUser: () => void;
 }) {
   const theme = useTheme();
+  // "🇲🇾 吉隆坡 · jacky teh" — location prefix when known, else just the name.
+  const loc = [countryCodeToFlag(msg.countryCode), msg.city || ''].filter(Boolean).join(' ');
+  const senderLabel = loc ? `${loc} · ${msg.displayName}` : msg.displayName;
   return (
     <Pressable
       onLongPress={onLongPress}
@@ -334,8 +350,8 @@ function Row({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
           {!mine && (
             <Pressable onPress={onOpenUser}>
-              <Text style={{ fontSize: 12.5, fontWeight: '700', color: theme.colors.text }}>
-                {msg.displayName}
+              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: theme.colors.text }}>
+                {senderLabel}
               </Text>
             </Pressable>
           )}
