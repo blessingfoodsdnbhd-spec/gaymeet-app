@@ -1,5 +1,16 @@
 import React from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, Plus, X } from 'lucide-react-native';
@@ -175,7 +186,15 @@ export function CreateVoteScreen() {
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>{t('votes.createTitle')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Label>{t('votes.field.title')}</Label>
         <TextInput value={title} onChangeText={(v) => setTitle(v.slice(0, 80))} placeholder={t('votes.field.titlePlaceholder')} placeholderTextColor={theme.colors.muted} style={input} />
 
@@ -298,6 +317,7 @@ export function CreateVoteScreen() {
           <Button label={t('votes.createCta')} onPress={onSubmit} disabled={!valid} loading={saving} fullWidth />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

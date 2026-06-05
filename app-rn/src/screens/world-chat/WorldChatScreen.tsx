@@ -221,6 +221,8 @@ export function WorldChatScreen() {
             inverted
             keyExtractor={(m) => m.messageId}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 10 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             onEndReached={loadOlder}
             onEndReachedThreshold={0.3}
             ListFooterComponent={

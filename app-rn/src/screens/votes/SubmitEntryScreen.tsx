@@ -1,5 +1,17 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, ImagePlus } from 'lucide-react-native';
@@ -69,58 +81,68 @@ export function SubmitEntryScreen() {
         <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>{t('votes.submitTitle')}</Text>
       </View>
 
-      <View style={{ padding: 20 }}>
-        <Pressable
-          onPress={pick}
-          disabled={uploading}
-          style={{
-            aspectRatio: 1,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderStyle: photoUrl ? 'solid' : 'dashed',
-            borderColor: theme.colors.line,
-            backgroundColor: theme.colors.surface,
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          {photoUrl ? (
-            <ExpoImage source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          ) : uploading ? (
-            <ActivityIndicator color={theme.colors.primary} />
-          ) : (
-            <>
-              <ImagePlus size={34} color={theme.colors.muted} />
-              <Text style={{ color: theme.colors.muted, marginTop: 10 }}>{t('votes.pickPhoto')}</Text>
-            </>
-          )}
-        </Pressable>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={{ flex: 1, padding: 20 }}>
+            <Pressable
+              onPress={pick}
+              disabled={uploading}
+              style={{
+                aspectRatio: 1,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderStyle: photoUrl ? 'solid' : 'dashed',
+                borderColor: theme.colors.line,
+                backgroundColor: theme.colors.surface,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              {photoUrl ? (
+                <ExpoImage source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              ) : uploading ? (
+                <ActivityIndicator color={theme.colors.primary} />
+              ) : (
+                <>
+                  <ImagePlus size={34} color={theme.colors.muted} />
+                  <Text style={{ color: theme.colors.muted, marginTop: 10 }}>{t('votes.pickPhoto')}</Text>
+                </>
+              )}
+            </Pressable>
 
-        <TextInput
-          value={caption}
-          onChangeText={(v) => setCaption(v.slice(0, 200))}
-          placeholder={t('votes.captionPlaceholder')}
-          placeholderTextColor={theme.colors.muted}
-          multiline
-          style={{
-            marginTop: 16,
-            backgroundColor: theme.colors.surface,
-            borderWidth: 1,
-            borderColor: theme.colors.line,
-            borderRadius: 12,
-            padding: 14,
-            fontSize: 15,
-            color: theme.colors.text,
-            minHeight: 72,
-            textAlignVertical: 'top',
-          }}
-        />
+            <TextInput
+              value={caption}
+              onChangeText={(v) => setCaption(v.slice(0, 200))}
+              placeholder={t('votes.captionPlaceholder')}
+              placeholderTextColor={theme.colors.muted}
+              multiline
+              blurOnSubmit
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              style={{
+                marginTop: 16,
+                backgroundColor: theme.colors.surface,
+                borderWidth: 1,
+                borderColor: theme.colors.line,
+                borderRadius: 12,
+                padding: 14,
+                fontSize: 15,
+                color: theme.colors.text,
+                minHeight: 72,
+                textAlignVertical: 'top',
+              }}
+            />
 
-        <View style={{ marginTop: 24 }}>
-          <Button label={t('votes.submitCta')} onPress={onSubmit} disabled={!photoUrl} loading={saving} fullWidth />
-        </View>
-      </View>
+            <View style={{ marginTop: 24 }}>
+              <Button label={t('votes.submitCta')} onPress={onSubmit} disabled={!photoUrl} loading={saving} fullWidth />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
