@@ -62,6 +62,7 @@ const topicUnlocksRoutes = require('./routes/topic-unlocks');
 const adminTopicsRoutes = require('./routes/admin-topics');
 const notesRoutes = require('./routes/notes');
 const publicRoutes = require('./routes/public');
+const worldChatRoutes = require('./routes/worldChat');
 
 const app = express();
 
@@ -150,6 +151,7 @@ app.use('/api/topic-unlocks', topicUnlocksRoutes); // request/approve/reject/rev
 app.use('/api/admin', adminTopicsRoutes); // POST /seed-topics + CRUD /topics (X-Admin-Token)
 app.use('/api/notes', notesRoutes); // 小纸条 — send/inbox/sent/reply/delete/block/quota/unread
 app.use('/api/public', publicRoutes); // unauthenticated share-landing profile (meyou.uk/u/:id)
+app.use('/api/world-chat', worldChatRoutes); // 世界聊天室 — send/recent/report + admin delete/ban
 app.use('/api/admin', require('./routes/admin-users')); // POST /users/:id/popularity (X-Admin-Token)
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);

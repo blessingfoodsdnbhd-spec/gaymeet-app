@@ -89,9 +89,27 @@
   },
   "tabs": {
     "discover": "发现",
+    "worldChat": "广场",
     "moments": "动态",
     "chats": "消息",
     "profile": "我"
+  },
+  "worldChat": {
+    "title": "广场",
+    "online": "{{n}} 人在线",
+    "empty": "来打个招呼吧 👋",
+    "placeholder": "和世界聊聊…",
+    "send": "发送",
+    "report": "举报",
+    "block": "屏蔽用户",
+    "dm": "私聊",
+    "rateLimited": "发得太快了,稍等一下",
+    "banned": "你已被禁止在广场发言。",
+    "reportSent": "已收到举报,谢谢。",
+    "sendFailed": "发送失败",
+    "actionFailed": "操作失败",
+    "blockConfirmTitle": "屏蔽用户?",
+    "blockConfirmBody": "你将不再看到 {{name}} 的消息。"
   },
   "discover": {
     "modeCards": "推荐",

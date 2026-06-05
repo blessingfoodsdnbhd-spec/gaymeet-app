@@ -89,9 +89,27 @@
   },
   "tabs": {
     "discover": "Discover",
+    "worldChat": "Plaza",
     "moments": "Moments",
     "chats": "Chats",
     "profile": "Me"
+  },
+  "worldChat": {
+    "title": "Plaza",
+    "online": "{{n}} online",
+    "empty": "Be the first to say hi 👋",
+    "placeholder": "Chat with the world…",
+    "send": "Send",
+    "report": "Report",
+    "block": "Block user",
+    "dm": "Message privately",
+    "rateLimited": "Slow down a bit 🙏",
+    "banned": "You're banned from Plaza.",
+    "reportSent": "Thanks — report received.",
+    "sendFailed": "Couldn't send",
+    "actionFailed": "Something went wrong",
+    "blockConfirmTitle": "Block user?",
+    "blockConfirmBody": "You won't see messages from {{name}} anymore."
   },
   "discover": {
     "modeCards": "For You",

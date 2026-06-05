@@ -10,6 +10,7 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Discover: undefined;
+  WorldChat: undefined;
   Moments: undefined;
   Chats: undefined;
   Profile: undefined;

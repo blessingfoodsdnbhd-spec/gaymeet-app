@@ -405,6 +405,10 @@ function initSocket(server) {
       socket.data = { ...(socket.data || {}), inCall: false, callId: null };
     });
 
+    // World Chat: push the live online count to the newly-connected client
+    // immediately (the 10s interval below keeps everyone in sync after).
+    socket.emit('world-chat:online-count', { count: io.engine.clientsCount });
+
     // ── Disconnect ────────────────────────────────────────────────────────────
     socket.on('disconnect', async () => {
       console.log(`🔌 Socket disconnected: ${userId}`);
@@ -419,6 +423,15 @@ function initSocket(server) {
       }
     });
   });
+
+  // World Chat: broadcast the live online count to everyone every 10s.
+  setInterval(() => {
+    try {
+      io.emit('world-chat:online-count', { count: io.engine.clientsCount });
+    } catch (_) {
+      // best effort
+    }
+  }, 10_000).unref?.();
 
   return io;
 }

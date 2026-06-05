@@ -117,9 +117,23 @@ export type WsTopicUnlock = {
   revokedAt: string | null;
 };
 
+export type WsWorldChatReceive = {
+  messageId: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  body: string;
+  createdAt: string;
+};
+export type WsWorldChatOnlineCount = { count: number };
+export type WsWorldChatDeleted = { messageId: string };
+
 export interface WsEventMap {
   'match:new': WsMatchNew;
   'chat:receive': WsChatReceive;
+  'world-chat:receive': WsWorldChatReceive;
+  'world-chat:online-count': WsWorldChatOnlineCount;
+  'world-chat:message-deleted': WsWorldChatDeleted;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
   'chat:edited': WsChatEdited;

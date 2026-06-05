@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Compass, MessageCircle, Newspaper, User } from 'lucide-react-native';
+import { Compass, Globe, MessageCircle, Newspaper, User } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MainTabParamList } from './types';
 import { useTheme } from '../theme/ThemeProvider';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
+import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { MomentsScreen } from '../screens/moments/MomentsScreen';
 import { ChatsListScreen } from '../screens/chats/ChatsListScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -109,6 +110,8 @@ export function MainTabs() {
           switch (route.name) {
             case 'Discover':
               return <Compass color={color} size={size} strokeWidth={strokeWidth} />;
+            case 'WorldChat':
+              return <Globe color={color} size={size} strokeWidth={strokeWidth} />;
             case 'Moments':
               return <Newspaper color={color} size={size} strokeWidth={strokeWidth} />;
             case 'Chats':
@@ -124,6 +127,11 @@ export function MainTabs() {
         name="Discover"
         component={DiscoverScreen}
         options={{ tabBarLabel: t('tabs.discover') }}
+      />
+      <Tab.Screen
+        name="WorldChat"
+        component={WorldChatScreen}
+        options={{ tabBarLabel: t('tabs.worldChat') }}
       />
       <Tab.Screen
         name="Moments"
