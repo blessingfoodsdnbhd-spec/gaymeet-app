@@ -454,14 +454,11 @@ router.patch('/:matchId/messages/:msgId', auth, async (req, res, next) => {
 });
 
 // ── DELETE /api/conversations/:matchId/messages/:msgId ────────────────────────
-// Premium-only. Owner only. Any type. Hard-deletes the row; image
-// messages also B2-delete their mediaUrl (best effort).
+// Owner only. Any message type (text / image / location). Standard messenger
+// UX — NOT Premium-gated. Hard-deletes the row; image messages also B2-delete
+// their mediaUrl (best effort).
 router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
   try {
-    if (!isPremiumActive(req.user)) {
-      return err(res, 'Premium required', 402);
-    }
-
     const match = await Match.findOne({
       _id: req.params.matchId,
       users: req.user._id,

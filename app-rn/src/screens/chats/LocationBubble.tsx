@@ -20,6 +20,9 @@ interface Props {
   msg: Message;
   from: 'me' | 'them';
   style?: any;
+  /** Forwarded to the internal Pressable so the chat's long-press action sheet
+   *  fires — without this the inner Pressable swallows the gesture. */
+  onLongPress?: () => void;
 }
 
 const BUBBLE_WIDTH = 220;
@@ -32,7 +35,7 @@ const BUBBLE_WIDTH = 220;
  * Tap → system maps via Linking: maps:// on iOS, geo: on Android, with
  * a https google maps fallback if neither scheme is registered.
  */
-export function LocationBubble({ msg, from, style }: Props) {
+export function LocationBubble({ msg, from, style, onLongPress }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const isMe = from === 'me';
@@ -68,6 +71,8 @@ export function LocationBubble({ msg, from, style }: Props) {
   return (
     <Pressable
       onPress={open}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       disabled={isSending}
       style={[
         styles.bubble,

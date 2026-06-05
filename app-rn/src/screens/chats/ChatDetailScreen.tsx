@@ -619,7 +619,9 @@ export function ChatDetailScreen() {
     return {
       canEdit:
         mine && isPremium && actionsFor.type === 'text' && within24h,
-      canDelete: mine && isPremium,
+      // Standard messenger UX: anyone can delete their OWN message of any type
+      // (text / image / location). No Premium gate.
+      canDelete: mine,
     };
   }, [actionsFor, me, isPremium]);
 
@@ -797,9 +799,10 @@ export function ChatDetailScreen() {
                 );
               } else if (msg.type === 'location') {
                 bubble = (
-                  <Pressable onLongPress={onLongPress} delayLongPress={350}>
-                    <LocationBubble msg={msg} from={mine ? 'me' : 'them'} />
-                  </Pressable>
+                  // LocationBubble is itself a Pressable (tap → maps), so we
+                  // forward onLongPress into it rather than wrapping — an outer
+                  // Pressable would have its long-press swallowed by the inner one.
+                  <LocationBubble msg={msg} from={mine ? 'me' : 'them'} onLongPress={onLongPress} />
                 );
               } else {
                 bubble = (
