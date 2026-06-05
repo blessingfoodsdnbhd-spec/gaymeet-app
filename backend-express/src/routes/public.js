@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Announcement = require('../models/Announcement');
 
 const BIO_MAX = 140;
 
@@ -46,6 +47,28 @@ router.get('/profile/:userId', async (req, res) => {
         promptsCount: Array.isArray(user.prompts) ? user.prompts.length : 0,
       },
     });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── GET /api/public/announcement-hero ─────────────────────────────────────────
+// The latest active announcement's image — used as the hero banner on the
+// meyou.uk/u/:id landing page. Returns { imageUrl: string | null }.
+router.get('/announcement-hero', async (req, res) => {
+  try {
+    const now = new Date();
+    const ann = await Announcement.findOne({
+      isActive: true,
+      $and: [
+        { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
+        { $or: [{ endsAt: null }, { endsAt: { $gte: now } }] },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .select('imageUrl')
+      .lean();
+    res.json({ data: { imageUrl: ann ? ann.imageUrl : null } });
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
   }
