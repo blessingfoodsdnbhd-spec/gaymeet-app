@@ -68,6 +68,15 @@ export function PremiumScreen() {
   const isActive = !!user && (user as any).isPremium === true;
   const expiresIso = (user as any)?.premiumExpiresAt;
 
+  // Selected-plan length + price for the Apple-required disclosure block.
+  const selectedDurationLabel = t(
+    selected === 'annual' ? 'premium.subscription.annual' : 'premium.subscription.monthly',
+  );
+  const selectedPriceLabel =
+    selected === 'annual'
+      ? storePrices?.annual ?? `RM ${pricing?.annual.price ?? 399.9}`
+      : storePrices?.monthly ?? `RM ${pricing?.monthly.price ?? 39.9}`;
+
   // Restore previously-purchased subscription. Apple guideline 3.1.1
   // requires this button on every IAP-using screen — review rejects
   // builds without it; Play has the same expectation in policy. Calls
@@ -227,47 +236,6 @@ export function PremiumScreen() {
           {t('premium.disclaimer')}
         </Text>
 
-        {/* Legal links — Apple guideline 3.1.2(c) requires the
-            subscription screen to expose functional Terms of Use and
-            Privacy Policy links. Both URLs are served from the
-            backend's /privacy and /terms routes (see backend-express
-            public/{privacy,terms}.html). */}
-        <View style={styles.legalRow}>
-          <Pressable
-            onPress={() => openLegal(TERMS_URL)}
-            hitSlop={10}
-            style={{ padding: 6 }}
-          >
-            <Text
-              style={{
-                color: theme.colors.primaryDeep,
-                fontSize: 12,
-                fontWeight: '500',
-                textDecorationLine: 'underline',
-              }}
-            >
-              {t('premium.termsOfUse')}
-            </Text>
-          </Pressable>
-          <Text style={{ color: theme.colors.muted, fontSize: 12 }}>·</Text>
-          <Pressable
-            onPress={() => openLegal(PRIVACY_URL)}
-            hitSlop={10}
-            style={{ padding: 6 }}
-          >
-            <Text
-              style={{
-                color: theme.colors.primaryDeep,
-                fontSize: 12,
-                fontWeight: '500',
-                textDecorationLine: 'underline',
-              }}
-            >
-              {t('premium.privacyPolicy')}
-            </Text>
-          </Pressable>
-        </View>
-
         {/* Restore Purchases — Apple guideline 3.1.1. Subtle link
             under the disclaimer; primary CTA stays the subscribe
             button below. */}
@@ -290,7 +258,31 @@ export function PremiumScreen() {
         </Pressable>
       </ScrollView>
 
-      <View style={{ padding: 20 }}>
+      {/* Subscription disclosure — pinned with the CTA so the Apple 3.1.2(c)
+          required elements (title, length, price, auto-renew terms, and
+          functional Terms/Privacy links) are ALWAYS visible before the user
+          taps Subscribe, not buried at the bottom of the scroll. */}
+      <View style={[styles.footerDisclosure, { borderTopColor: theme.colors.line }]}>
+        <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
+          {t('premium.subscription.title')} · {selectedDurationLabel} · {selectedPriceLabel}
+        </Text>
+        <Text style={{ color: theme.colors.muted, fontSize: 11, lineHeight: 15, textAlign: 'center', marginTop: 4 }}>
+          {t('premium.subscription.autoRenewTerms')}
+        </Text>
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => openLegal(TERMS_URL)} hitSlop={10} style={{ padding: 4 }}>
+            <Text style={[styles.legalLink, { color: theme.colors.primaryDeep }]}>
+              {t('premium.termsOfUse')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: theme.colors.muted, fontSize: 12 }}>·</Text>
+          <Pressable onPress={() => openLegal(PRIVACY_URL)} hitSlop={10} style={{ padding: 4 }}>
+            <Text style={[styles.legalLink, { color: theme.colors.primaryDeep }]}>
+              {t('premium.privacyPolicy')}
+            </Text>
+          </Pressable>
+        </View>
+
         <Button
           label={
             selected === 'annual'
@@ -377,7 +369,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    marginTop: 10,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  legalLink: {
+    fontSize: 12,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  footerDisclosure: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   header: {
     paddingHorizontal: 16,

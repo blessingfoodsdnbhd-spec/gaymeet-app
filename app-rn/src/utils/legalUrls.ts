@@ -12,9 +12,9 @@
  * the auth Welcome screen so the pre-login disclaimer line is
  * actionable.
  */
-export const PRIVACY_URL = 'https://gaymeet-api.onrender.com/privacy';
-export const TERMS_URL = 'https://gaymeet-api.onrender.com/terms';
-export const SUPPORT_URL = 'https://gaymeet-api.onrender.com/support';
+export const PRIVACY_URL = 'https://meyou.uk/privacy';
+export const TERMS_URL = 'https://meyou.uk/terms';
+export const SUPPORT_URL = 'https://meyou.uk/support';
 
 import { Linking } from 'react-native';
 
