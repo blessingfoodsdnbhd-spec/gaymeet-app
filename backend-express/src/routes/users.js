@@ -81,7 +81,7 @@ router.post('/:id/view', auth, async (req, res, next) => {
 router.patch('/me', auth, async (req, res, next) => {
   try {
     const allowed = [
-      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city',
+      'nickname', 'bio', 'tags', 'height', 'weight', 'age', 'dob', 'bodyType', 'city',
       'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
       'relationshipStatus', 'intents',

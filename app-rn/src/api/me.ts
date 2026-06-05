@@ -33,7 +33,6 @@ export interface User {
   mbti?: string | null;
   /** Multi-select: 'friends' | 'chat' | 'date' | 'serious' | 'activity' | 'language' */
   intents?: string[];
-  occupation?: string | null;
   city?: string | null;
   countryCode?: string | null;
 
@@ -87,7 +86,7 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 export const getMe = () => unwrap<User>(api.get('/users/me'));
 
 export const patchMe = (
-  patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'occupation' | 'city'>> & {
+  patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'city'>> & {
     tags?: string[];
     age?: number;
     /** ISO 'YYYY-MM-DD'; null clears DOB (and the denormalized age). */

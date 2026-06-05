@@ -356,8 +356,6 @@
         "chubby": "微胖",
         "slim": "瘦"
       },
-      "occupation": "职业",
-      "occupationPlaceholder": "你做什么工作?",
       "city": "城市",
       "cityPlaceholder": "你在哪个城市?",
       "saveFailed": "保存失败",

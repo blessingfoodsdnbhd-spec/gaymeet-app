@@ -356,8 +356,6 @@
         "chubby": "Chubby",
         "slim": "Slim"
       },
-      "occupation": "Occupation",
-      "occupationPlaceholder": "What do you do?",
       "city": "City",
       "cityPlaceholder": "Which city are you in?",
       "saveFailed": "Save failed",

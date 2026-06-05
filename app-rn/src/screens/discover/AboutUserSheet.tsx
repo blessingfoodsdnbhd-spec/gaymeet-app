@@ -419,7 +419,6 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             }
             if (user.mbti) stats.push(`🧠 ${user.mbti}`);
             (user.intents ?? []).forEach((i) => stats.push(`🎯 ${t(`profile.intents.${i}`)}`));
-            if (user.occupation) stats.push(user.occupation);
             if (user.city) stats.push(user.city);
             if (stats.length === 0) return null;
             return (

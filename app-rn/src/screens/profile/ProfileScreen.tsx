@@ -36,6 +36,7 @@ import { TopBar, IconButton } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
+import { DateField, formatYMD, parseYMD } from '../../components/DateField';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { shareProfile } from '../../utils/shareProfile';
@@ -93,7 +94,6 @@ export function ProfileScreen() {
   );
   const [mbti, setMbti] = useState<string | null>(user?.mbti ?? null);
   const [intents, setIntents] = useState<string[]>(user?.intents ?? []);
-  const [occupation, setOccupation] = useState(user?.occupation ?? '');
   const [city, setCity] = useState(user?.city ?? '');
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -278,7 +278,6 @@ export function ProfileScreen() {
       height?: number;
       weight?: number;
       bodyType?: string;
-      occupation?: string;
       city?: string;
       relationshipStatus?: string | null;
       mbti?: string | null;
@@ -304,6 +303,8 @@ export function ProfileScreen() {
   const interests = (user.interests ?? []) as InterestTagId[];
   const prompts = user.prompts ?? [];
   const mobileGames = user.mobileGames ?? [];
+  // Reference "now" for DOB picker bounds (18–99 years old).
+  const dobNow = new Date();
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
 
@@ -319,25 +320,17 @@ export function ProfileScreen() {
     if (next === (user.bio ?? '').trim()) return;
     saveMut.mutate({ bio: next });
   };
-  // Auto-insert dashes as the user types digits → YYYY-MM-DD.
-  const onDobChange = (v: string) => {
-    const digits = v.replace(/\D/g, '').slice(0, 8); // YYYYMMDD
-    let out = digits;
-    if (digits.length > 6) out = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
-    else if (digits.length > 4) out = `${digits.slice(0, 4)}-${digits.slice(4)}`;
-    setDob(out);
-  };
-  const saveDob = () => {
-    const v = dob.trim();
+  // DOB picked from the native date wheel → store the YYYY-MM-DD string and
+  // persist immediately (a discrete action, not text editing). Same 18–99 guard
+  // as before; the picker's min/max bounds make out-of-range hard to hit anyway.
+  const onPickDob = (d: Date) => {
+    const v = formatYMD(d);
+    if (!v) return;
+    setDob(v);
     const existing = user.dob ? user.dob.slice(0, 10) : '';
     if (v === existing) return;
-    if (v === '') {
-      saveMut.mutate({ dob: null });
-      return;
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; // wait for a complete date
     const a = computeAge(v);
-    if (a == null || a < 18 || a > 99) return; // same 18–99 guard as before
+    if (a == null || a < 18 || a > 99) return;
     saveMut.mutate({ dob: v });
   };
   const saveHeight = () => {
@@ -351,11 +344,6 @@ export function ProfileScreen() {
     if (n === user.weight) return;
     if (n !== undefined && (isNaN(n) || n < 30 || n > 300)) return;
     saveMut.mutate({ weight: n });
-  };
-  const saveOccupation = () => {
-    const next = occupation.trim();
-    if (next === (user.occupation ?? '').trim()) return;
-    saveMut.mutate({ occupation: next });
   };
   const saveCity = () => {
     const next = city.trim();
@@ -907,24 +895,17 @@ export function ProfileScreen() {
           </Text>
 
           <SectionTitle>{t('profile.edit.dob')}</SectionTitle>
-          <TextInput
-            value={dob}
-            onChangeText={onDobChange}
-            onEndEditing={saveDob}
-            keyboardType="number-pad"
-            placeholder={t('profile.edit.dobHint')}
-            placeholderTextColor={theme.colors.muted}
-            maxLength={10}
-            style={[
-              styles.inlineField,
-              {
-                color: theme.colors.text,
-                borderColor: theme.colors.line,
-                backgroundColor: theme.colors.surface,
-                width: 150,
-              },
-            ]}
-          />
+          <View style={{ width: 200 }}>
+            <DateField
+              label={t('profile.edit.dob')}
+              placeholder={t('profile.edit.dobHint')}
+              value={parseYMD(dob)}
+              onChange={onPickDob}
+              minDate={new Date(dobNow.getFullYear() - 99, dobNow.getMonth(), dobNow.getDate())}
+              maxDate={new Date(dobNow.getFullYear() - 18, dobNow.getMonth(), dobNow.getDate())}
+              defaultDate={new Date(dobNow.getFullYear() - 25, dobNow.getMonth(), dobNow.getDate())}
+            />
+          </View>
           {/* Live "29 岁 · ♏ 天蝎" preview computed from the entered DOB. */}
           {(() => {
             const a = computeAge(dob);
@@ -1079,21 +1060,7 @@ export function ProfileScreen() {
             })}
           </View>
 
-          {/* Occupation + City (both optional, free text) */}
-          <SectionTitle>{t('profile.edit.occupation')}</SectionTitle>
-          <TextInput
-            value={occupation}
-            onChangeText={setOccupation}
-            onEndEditing={saveOccupation}
-            placeholder={t('profile.edit.occupationPlaceholder')}
-            placeholderTextColor={theme.colors.muted}
-            maxLength={40}
-            style={[
-              styles.inlineField,
-              { color: theme.colors.text, borderColor: theme.colors.line, backgroundColor: theme.colors.surface },
-            ]}
-          />
-
+          {/* City (optional, free text) */}
           <SectionTitle>{t('profile.edit.city')}</SectionTitle>
           <TextInput
             value={city}

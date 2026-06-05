@@ -279,7 +279,7 @@ userSchema.methods.comparePassword = function (plain) {
 const PUBLIC_USER_FIELDS = [
   '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
   'interests', 'interestsOnboardedAt', 'prompts', 'mobileGames',
-  'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city', 'countryCode', 'location',
+  'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
   'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',
