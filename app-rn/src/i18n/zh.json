@@ -89,6 +89,7 @@
   },
   "tabs": {
     "discover": "发现",
+    "vote": "投票",
     "worldChat": "广场",
     "moments": "动态",
     "chats": "消息",
@@ -118,6 +119,8 @@
     "carouselTitle": "投票活动",
     "seeAll": "查看全部",
     "highlightsTitle": "高光时刻",
+    "mine": "我的",
+    "createFirst": "创建第一个",
     "format": { "single": "单轮", "multiRound": "淘汰赛" },
     "roundCountLabel": "轮数",
     "multiRoundHint": "时间将平均分为若干轮。每轮结束淘汰垫底 50%,最后一轮决出 🥇🥈🥉。",

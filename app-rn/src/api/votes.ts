@@ -74,7 +74,7 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 export interface ListVotesParams {
   status?: VoteStatus | 'all';
   category?: VoteCategory;
-  scope?: 'all' | 'nearby' | 'following';
+  scope?: 'all' | 'nearby' | 'following' | 'mine';
   limit?: number;
   before?: string;
 }

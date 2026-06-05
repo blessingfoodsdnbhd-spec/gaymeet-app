@@ -322,7 +322,9 @@ router.get('/', auth, async (req, res, next) => {
     if (category && CATEGORIES.includes(category)) q.category = category;
     if (before && mongoose.isValidObjectId(before)) q._id = { $lt: new mongoose.Types.ObjectId(before) };
 
-    if (scope === 'following') {
+    if (scope === 'mine') {
+      q.creatorId = req.user._id;
+    } else if (scope === 'following') {
       const ids = await Follow.find({ follower: req.user._id }).distinct('following');
       q.creatorId = { $in: ids };
     } else if (scope === 'nearby') {

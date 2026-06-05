@@ -89,6 +89,7 @@
   },
   "tabs": {
     "discover": "Discover",
+    "vote": "Vote",
     "worldChat": "Plaza",
     "moments": "Moments",
     "chats": "Chats",
@@ -118,6 +119,8 @@
     "carouselTitle": "Contests",
     "seeAll": "See all",
     "highlightsTitle": "Highlights",
+    "mine": "Mine",
+    "createFirst": "Create the first one",
     "format": { "single": "Single round", "multiRound": "Elimination" },
     "roundCountLabel": "Number of rounds",
     "multiRoundHint": "The time window is split into equal rounds. After each round the bottom 50% are eliminated; the final round decides 🥇🥈🥉.",

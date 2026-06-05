@@ -86,7 +86,7 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 export const getMe = () => unwrap<User>(api.get('/users/me'));
 
 export const patchMe = (
-  patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'city'>> & {
+  patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'city' | 'countryCode'>> & {
     tags?: string[];
     age?: number;
     /** ISO 'YYYY-MM-DD'; null clears DOB (and the denormalized age). */
