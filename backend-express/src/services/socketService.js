@@ -8,8 +8,28 @@ const CallLog = require('../models/CallLog');
 const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
+const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 
 let io;
+
+/** Live online count per World Chat room (from the socket.io adapter). */
+function getRoomCounts() {
+  const counts = {};
+  for (const r of ROOMS) {
+    counts[r.id] = io ? io.sockets.adapter.rooms.get(socketRoom(r.id))?.size ?? 0 : 0;
+  }
+  return counts;
+}
+
+/** Push a full rooms snapshot to everyone + a per-room count to each room. */
+function emitRoomsState() {
+  if (!io) return;
+  const counts = getRoomCounts();
+  io.emit('world-chat:rooms-state', { counts });
+  for (const r of ROOMS) {
+    io.to(socketRoom(r.id)).emit('world-chat:online-count', { roomId: r.id, count: counts[r.id] });
+  }
+}
 
 /**
  * Initialise Socket.io on the given HTTP server.
@@ -54,6 +74,10 @@ function initSocket(server) {
 
     // Join a personal room so server can push to this user directly
     socket.join(`user:${userId}`);
+
+    // World Chat: join the default 'world' room until the client switches.
+    socket.data = { ...(socket.data || {}), wcRoom: 'world' };
+    socket.join(socketRoom('world'));
 
     // Notify matches that this user came online
     _notifyOnlineStatus(userId, true);
@@ -405,9 +429,20 @@ function initSocket(server) {
       socket.data = { ...(socket.data || {}), inCall: false, callId: null };
     });
 
-    // World Chat: push the live online count to the newly-connected client
-    // immediately (the 10s interval below keeps everyone in sync after).
-    socket.emit('world-chat:online-count', { count: io.engine.clientsCount });
+    // World Chat: switch rooms. Client emits when entering a country room.
+    socket.on('world-chat:join-room', ({ roomId } = {}) => {
+      const next = VALID_ROOM_IDS.has(roomId) ? roomId : 'world';
+      const prev = socket.data?.wcRoom || 'world';
+      if (next !== prev) {
+        socket.leave(socketRoom(prev));
+        socket.join(socketRoom(next));
+        socket.data = { ...(socket.data || {}), wcRoom: next };
+      }
+      emitRoomsState();
+    });
+
+    // Give the freshly-connected client (and everyone) the current snapshot.
+    emitRoomsState();
 
     // ── Disconnect ────────────────────────────────────────────────────────────
     socket.on('disconnect', async () => {
@@ -421,13 +456,15 @@ function initSocket(server) {
         });
         _notifyOnlineStatus(userId, false);
       }
+      // Socket has already left its rooms by 'disconnect' → counts are fresh.
+      emitRoomsState();
     });
   });
 
-  // World Chat: broadcast the live online count to everyone every 10s.
+  // World Chat: broadcast per-room online counts every 10s.
   setInterval(() => {
     try {
-      io.emit('world-chat:online-count', { count: io.engine.clientsCount });
+      emitRoomsState();
     } catch (_) {
       // best effort
     }
@@ -466,4 +503,4 @@ function getIO() {
   return io;
 }
 
-module.exports = { initSocket, getIO };
+module.exports = { initSocket, getIO, getRoomCounts };

@@ -24,6 +24,7 @@ import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
+import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
 import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
@@ -111,6 +112,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="NotesInbox"
             component={NotesInboxScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="WorldChatRoom"
+            component={WorldChatScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

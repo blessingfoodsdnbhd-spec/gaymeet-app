@@ -45,6 +45,8 @@ export type RootStackParamList = {
   SubmitEntry: { eventId: string };
   EventUpdates: { eventId: string; isCreator?: boolean };
   NotesInbox: undefined;
+  /** A World Chat room (广场). roomId 'world' = global; else a country code. */
+  WorldChatRoom: { roomId?: string; title?: string };
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;

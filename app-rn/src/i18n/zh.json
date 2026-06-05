@@ -98,6 +98,12 @@
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",
+    "rooms": {
+      "title": "广场",
+      "sectionGlobal": "全球房间",
+      "search": "搜索国家",
+      "noResults": "没有找到"
+    },
     "empty": "来打个招呼吧 👋",
     "placeholder": "和世界聊聊…",
     "send": "发送",

@@ -98,6 +98,12 @@
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",
+    "rooms": {
+      "title": "Plaza",
+      "sectionGlobal": "Global rooms",
+      "search": "Search a country",
+      "noResults": "No matches"
+    },
     "empty": "Be the first to say hi 👋",
     "placeholder": "Chat with the world…",
     "send": "Send",

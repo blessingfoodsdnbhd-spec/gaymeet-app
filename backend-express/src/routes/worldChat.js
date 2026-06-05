@@ -6,6 +6,7 @@ const WorldChatReport = require('../models/WorldChatReport');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
+const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -22,9 +23,12 @@ setInterval(() => {
 // filtering, so this is deliberately small. Case-insensitive, word-boundary.
 const BLOCKLIST = /\b(n[i1]gg(?:er|a)|f[a4]gg?ot|ch?ink|k[i1]ke|sp[i1]c|retard|cunt)\b/i;
 
-function broadcast(event, payload) {
+// Broadcast scoped to one chat room (or global when roomId omitted).
+function broadcast(event, payload, roomId) {
   try {
-    require('../services/socketService').getIO().emit(event, payload);
+    const io = require('../services/socketService').getIO();
+    if (roomId) io.to(socketRoom(roomId)).emit(event, payload);
+    else io.emit(event, payload);
   } catch (_) {
     // Socket layer not ready / no clients — non-fatal.
   }
@@ -36,6 +40,8 @@ router.post('/send', auth, async (req, res, next) => {
     const body = String(req.body?.body ?? '').trim();
     if (!body) return err(res, 'Message is empty');
     if (body.length > BODY_MAX) return err(res, `Message too long (max ${BODY_MAX})`);
+
+    const roomId = VALID_ROOM_IDS.has(req.body?.roomId) ? req.body.roomId : 'world';
 
     const banned = await WorldChatBan.exists({ userId: req.user._id });
     if (banned) return err(res, 'You are banned from World Chat', 403);
@@ -50,10 +56,11 @@ router.post('/send', auth, async (req, res, next) => {
     }
     lastSent.set(uid, now);
 
-    const msg = await WorldChatMessage.create({ userId: req.user._id, body });
+    const msg = await WorldChatMessage.create({ userId: req.user._id, roomId, body });
 
     const payload = {
       messageId: msg._id.toString(),
+      roomId,
       userId: uid,
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
@@ -62,25 +69,53 @@ router.post('/send', auth, async (req, res, next) => {
       body: msg.body,
       createdAt: msg.createdAt.toISOString(),
     };
-    broadcast('world-chat:receive', payload);
+    broadcast('world-chat:receive', payload, roomId);
     created(res, payload);
   } catch (e) {
     next(e);
   }
 });
 
-// ── GET /api/world-chat/recent?before=<msgId>&limit=50 ────────────────────────
+// ── GET /api/world-chat/rooms ─────────────────────────────────────────────────
+// Available rooms + live online counts (from the socket adapter).
+router.get('/rooms', auth, async (req, res, next) => {
+  try {
+    let counts = {};
+    try {
+      counts = require('../services/socketService').getRoomCounts();
+    } catch (_) {
+      // socket layer not ready
+    }
+    ok(res, {
+      rooms: ROOMS.map((r) => ({
+        id: r.id,
+        flag: r.flag,
+        label: { en: r.en, zh: r.zh, native: r.native },
+        onlineCount: counts[r.id] ?? 0,
+      })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/world-chat/recent?roomId=&before=<msgId>&limit=50 ────────────────
 router.get('/recent', auth, async (req, res, next) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
     const before = req.query.before;
+    const roomId = VALID_ROOM_IDS.has(req.query.roomId) ? req.query.roomId : 'world';
 
     const bannedIds = await WorldChatBan.find().distinct('userId');
     const blocked = (req.user.blockedUsers || []).map((id) => id.toString());
     const excludeSet = new Set([...bannedIds.map((id) => id.toString()), ...blocked]);
     const excludeIds = [...excludeSet].map((id) => new mongoose.Types.ObjectId(id));
 
-    const q = { userId: { $nin: excludeIds } };
+    // roomId:'world' must also match legacy docs that predate the field (null).
+    const q = {
+      userId: { $nin: excludeIds },
+      ...(roomId === 'world' ? { $or: [{ roomId: 'world' }, { roomId: { $exists: false } }, { roomId: null }] } : { roomId }),
+    };
     if (before && mongoose.isValidObjectId(before)) {
       q._id = { $lt: new mongoose.Types.ObjectId(before) };
     }

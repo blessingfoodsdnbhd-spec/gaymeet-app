@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MainTabParamList } from './types';
 import { useTheme } from '../theme/ThemeProvider';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
-import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
+import { WorldChatRoomsScreen } from '../screens/world-chat/WorldChatRoomsScreen';
 import { VotesTabScreen } from '../screens/votes/VotesTabScreen';
 import { MomentsScreen } from '../screens/moments/MomentsScreen';
 import { ChatsListScreen } from '../screens/chats/ChatsListScreen';
@@ -165,7 +165,7 @@ export function MainTabs() {
       />
       <Tab.Screen
         name="WorldChat"
-        component={WorldChatScreen}
+        component={WorldChatRoomsScreen}
         options={{ tabBarLabel: t('tabs.worldChat') }}
       />
       <Tab.Screen

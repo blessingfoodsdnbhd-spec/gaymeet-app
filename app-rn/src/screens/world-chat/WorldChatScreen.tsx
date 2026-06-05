@@ -12,9 +12,9 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send } from 'lucide-react-native';
+import { Send, ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -30,9 +30,10 @@ import {
 } from '../../api/worldChat';
 import { blockUser } from '../../api/safety';
 import { openConversation } from '../../api/chats';
-import { on as wsOn } from '../../api/ws';
+import { on as wsOn, emit as wsEmit } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
+import { nativePlaceholder } from '../../utils/worldChatRooms';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -46,7 +47,7 @@ function idxFor(id: string) {
 }
 
 type Cache = { messages: WorldChatMessage[] };
-const KEY = ['worldChat', 'recent'];
+type Rt = RouteProp<RootStackParamList, 'WorldChatRoom'>;
 
 /**
  * 世界聊天室 / World Chat — a real-time public room. Reframes Meyou as a
@@ -56,11 +57,16 @@ const KEY = ['worldChat', 'recent'];
  */
 export function WorldChatScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nav = useNavigation<Nav>();
+  const route = useRoute<Rt>();
   const qc = useQueryClient();
   const me = useAuth((s) => s.user);
   const myId = me?.id;
+
+  const roomId = route.params?.roomId ?? 'world';
+  const roomTitle = route.params?.title ?? t('worldChat.title');
+  const KEY = React.useMemo(() => ['worldChat', 'recent', roomId], [roomId]);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -74,11 +80,20 @@ export function WorldChatScreen() {
 
   const msgsQ = useQuery({
     queryKey: KEY,
-    queryFn: () => getRecentWorldChat(),
+    queryFn: () => getRecentWorldChat(roomId),
     staleTime: 15_000,
     select: (d) => d.messages,
   });
   const messages = msgsQ.data ?? []; // newest-first
+
+  // Tell the server which room we're in (broadcasts scope to it). Rejoin the
+  // default world room on leave so counts/visibility stay correct.
+  React.useEffect(() => {
+    wsEmit('world-chat:join-room', { roomId });
+    return () => {
+      wsEmit('world-chat:join-room', { roomId: 'world' });
+    };
+  }, [roomId]);
 
   // If the initial page came back smaller than the page size, there's no older
   // history to fetch — don't let onEndReached spin.
@@ -93,7 +108,7 @@ export function WorldChatScreen() {
     let unsubs: Array<() => void> = [];
     (async () => {
       const uRecv = await wsOn('world-chat:receive', (m) => {
-        if (cancelled) return;
+        if (cancelled || (m.roomId && m.roomId !== roomId)) return; // other room
         qc.setQueryData<Cache>(KEY, (prev) => {
           const arr = prev?.messages ?? [];
           if (arr.some((x) => x.messageId === m.messageId)) return prev ?? { messages: arr };
@@ -106,8 +121,10 @@ export function WorldChatScreen() {
           prev ? { messages: prev.messages.filter((x) => x.messageId !== messageId) } : prev,
         );
       });
-      const uCount = await wsOn('world-chat:online-count', ({ count }) => {
-        if (!cancelled) setOnline(count);
+      const uCount = await wsOn('world-chat:online-count', (evt) => {
+        // New server sends { roomId, count }; accept the matching room (or a
+        // legacy payload with no roomId).
+        if (!cancelled && (!evt.roomId || evt.roomId === roomId)) setOnline(evt.count);
       });
       if (cancelled) { uRecv(); uDel(); uCount(); return; }
       unsubs = [uRecv, uDel, uCount];
@@ -116,14 +133,14 @@ export function WorldChatScreen() {
       cancelled = true;
       unsubs.forEach((u) => u());
     };
-  }, [qc]);
+  }, [qc, roomId, KEY]);
 
   const loadOlder = async () => {
     if (loadingOlder || !hasMore || messages.length === 0) return;
     setLoadingOlder(true);
     try {
       const oldest = messages[messages.length - 1];
-      const { messages: older } = await getRecentWorldChat(oldest.messageId, PAGE_SIZE);
+      const { messages: older } = await getRecentWorldChat(roomId, oldest.messageId, PAGE_SIZE);
       if (older.length < PAGE_SIZE) setHasMore(false); // reached the start
       if (older.length) {
         qc.setQueryData<Cache>(KEY, (prev) => {
@@ -145,7 +162,7 @@ export function WorldChatScreen() {
     setSending(true);
     setDraft('');
     try {
-      const msg = await sendWorldChat(body);
+      const msg = await sendWorldChat(body, roomId);
       // Add optimistically; the WS echo dedupes by messageId.
       qc.setQueryData<Cache>(KEY, (prev) => {
         const arr = prev?.messages ?? [];
@@ -210,13 +227,18 @@ export function WorldChatScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
-          {t('worldChat.title')}
-        </Text>
-        <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-          🟢 {t('worldChat.online', { n: online ?? '—' })}
-        </Text>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center' }]}>
+        <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 10 }}>
+          <ChevronLeft size={26} color={theme.colors.text} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text numberOfLines={1} style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
+            {roomTitle}
+          </Text>
+          <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+            🟢 {t('worldChat.online', { n: online ?? '—' })}
+          </Text>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -278,7 +300,7 @@ export function WorldChatScreen() {
             <TextInput
               value={draft}
               onChangeText={(v) => setDraft(v.slice(0, BODY_MAX))}
-              placeholder={t('worldChat.placeholder')}
+              placeholder={nativePlaceholder(roomId, i18n.language)}
               placeholderTextColor={theme.colors.muted}
               multiline
               style={{ fontSize: 15, color: theme.colors.text, paddingVertical: 8, maxHeight: 110 }}

@@ -119,6 +119,7 @@ export type WsTopicUnlock = {
 
 export type WsWorldChatReceive = {
   messageId: string;
+  roomId?: string;
   userId: string;
   displayName: string;
   avatarUrl: string | null;
@@ -127,7 +128,8 @@ export type WsWorldChatReceive = {
   body: string;
   createdAt: string;
 };
-export type WsWorldChatOnlineCount = { count: number };
+export type WsWorldChatOnlineCount = { roomId?: string; count: number };
+export type WsWorldChatRoomsState = { counts: Record<string, number> };
 export type WsWorldChatDeleted = { messageId: string };
 
 export interface WsEventMap {
@@ -135,6 +137,7 @@ export interface WsEventMap {
   'chat:receive': WsChatReceive;
   'world-chat:receive': WsWorldChatReceive;
   'world-chat:online-count': WsWorldChatOnlineCount;
+  'world-chat:rooms-state': WsWorldChatRoomsState;
   'world-chat:message-deleted': WsWorldChatDeleted;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
