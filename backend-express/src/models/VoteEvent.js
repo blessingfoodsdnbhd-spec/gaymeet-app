@@ -25,6 +25,25 @@ const voteEventSchema = new mongoose.Schema(
     rules: {
       mode: { type: String, enum: ['one', 'fivePerDay', 'unlimited'], default: 'one' },
     },
+    // Single-round (default) or staged elimination (淘汰赛). For multiRound the
+    // `rounds` array defines each stage upfront; `currentRoundIndex` advances as
+    // closeEndedEvents() processes round deadlines. `startAt`/`endAt` mirror the
+    // first round's start and the last round's end so existing queries still work.
+    type: { type: String, enum: ['single', 'multiRound'], default: 'single' },
+    rounds: [
+      {
+        index: { type: Number },
+        startAt: { type: Date },
+        endAt: { type: Date },
+        // How many entries are ELIMINATED at this round's end:
+        //   'percent' → bottom advanceValue% of still-active entries
+        //   'fixed'   → bottom advanceValue entries
+        advanceMode: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
+        advanceValue: { type: Number, default: 50 },
+        _id: false,
+      },
+    ],
+    currentRoundIndex: { type: Number, default: 0 },
     status: { type: String, enum: ['pending', 'active', 'ended'], default: 'pending', index: true },
     entryCount: { type: Number, default: 0 },
     voteCount: { type: Number, default: 0 },

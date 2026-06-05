@@ -118,6 +118,14 @@
     "carouselTitle": "Contests",
     "seeAll": "See all",
     "highlightsTitle": "Highlights",
+    "format": { "single": "Single round", "multiRound": "Elimination" },
+    "roundCountLabel": "Number of rounds",
+    "multiRoundHint": "The time window is split into equal rounds. After each round the bottom 50% are eliminated; the final round decides 🥇🥈🥉.",
+    "roundProgress": "Round {{current}} of {{total}}",
+    "roundEnding": "Round ending…",
+    "tournamentRounds": "{{n}}-round elimination",
+    "eliminated": "Eliminated",
+    "eliminatedAt": "Out (R{{n}})",
     "empty": "No contests yet",
     "loadFailed": "Couldn't load",
     "ended": "Ended",
@@ -176,7 +184,8 @@
       "externalLink": "External link (optional)",
       "startAt": "Starts",
       "endAt": "Ends",
-      "rule": "Voting rule"
+      "rule": "Voting rule",
+      "format": "Format"
     }
   },
   "discover": {

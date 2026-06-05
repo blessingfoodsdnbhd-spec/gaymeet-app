@@ -28,6 +28,23 @@ function startOfToday() {
   return d;
 }
 
+/** Evenly split [startAt, endAt] into `count` sequential elimination rounds. */
+function buildRounds(startAt, endAt, count, advanceMode, advanceValue) {
+  const span = (endAt.getTime() - startAt.getTime()) / count;
+  const rounds = [];
+  for (let i = 0; i < count; i++) {
+    rounds.push({
+      index: i,
+      startAt: new Date(startAt.getTime() + span * i),
+      endAt: new Date(startAt.getTime() + span * (i + 1)),
+      advanceMode,
+      advanceValue,
+    });
+  }
+  rounds[count - 1].endAt = new Date(endAt); // exact end
+  return rounds;
+}
+
 /** Effective status between 60s close sweeps (denormalized status can lag). */
 function effectiveStatus(ev, now = new Date()) {
   if (ev.status === 'ended' || now >= new Date(ev.endAt)) return 'ended';
@@ -51,6 +68,15 @@ function serializeEvent(ev, creator) {
     startAt: new Date(ev.startAt).toISOString(),
     endAt: new Date(ev.endAt).toISOString(),
     rules: ev.rules ?? { mode: 'one' },
+    type: ev.type ?? 'single',
+    rounds: (ev.rounds ?? []).map((r) => ({
+      index: r.index,
+      startAt: new Date(r.startAt).toISOString(),
+      endAt: new Date(r.endAt).toISOString(),
+      advanceMode: r.advanceMode,
+      advanceValue: r.advanceValue,
+    })),
+    currentRoundIndex: ev.currentRoundIndex ?? 0,
     status: effectiveStatus(ev),
     entryCount: ev.entryCount ?? 0,
     voteCount: ev.voteCount ?? 0,
@@ -60,8 +86,64 @@ function serializeEvent(ev, creator) {
 }
 
 // ── Background close sweep ────────────────────────────────────────────────────
-// pending→active, then close events past endAt: compute top-3, write topEntries,
-// upsert UserHighlight for top-3 (with votes), push-notify winners + creator.
+// Finalize a contest: top-3 among still-active entries → winner status +
+// topEntries + UserHighlight + push, mark ended. Works for single-round (all
+// entries are 'active') and the last round of a multiRound event.
+async function finalizeEvent(ev, now) {
+  const top = await VoteEntry.find({ eventId: ev._id, status: { $ne: 'eliminated' } })
+    .sort({ voteCount: -1, createdAt: 1 })
+    .limit(3)
+    .lean();
+  ev.topEntries = top.map((e, i) => ({ entryId: e._id, rank: i + 1 }));
+  ev.status = 'ended';
+  await ev.save();
+
+  for (let i = 0; i < top.length; i++) {
+    const e = top[i];
+    await VoteEntry.updateOne({ _id: e._id }, { $set: { status: `winner${i + 1}` } });
+    if ((e.voteCount || 0) <= 0) continue; // no highlight for zero-vote placements
+    await UserHighlight.updateOne(
+      { userId: e.submitterId, eventId: ev._id },
+      { $set: { eventTitle: ev.title, entryPhotoUrl: e.photoUrl, rank: i + 1, endedAt: now } },
+      { upsert: true },
+    );
+    const medal = ['🥇', '🥈', '🥉'][i];
+    sendPushToUser(e.submitterId, {
+      title: `${medal} You placed #${i + 1}!`,
+      body: ev.title,
+      data: { type: 'vote_result', eventId: ev._id.toString() },
+    }).catch(() => {});
+  }
+  sendPushToUser(ev.creatorId, {
+    title: 'Your contest ended 🎉',
+    body: ev.title,
+    data: { type: 'vote_ended', eventId: ev._id.toString() },
+  }).catch(() => {});
+}
+
+// Eliminate the bottom N still-active entries at the current round's end and
+// advance currentRoundIndex. Always keeps ≥3 active so a later round can yield
+// a podium, and never eliminates everyone.
+async function advanceRound(ev) {
+  const round = ev.rounds[ev.currentRoundIndex] || {};
+  const active = await VoteEntry.find({ eventId: ev._id, status: 'active' })
+    .sort({ voteCount: 1, createdAt: 1 }) // worst-first
+    .lean();
+  let n = round.advanceMode === 'fixed'
+    ? round.advanceValue
+    : Math.floor(active.length * ((round.advanceValue || 0) / 100));
+  n = Math.min(Math.max(0, n), Math.max(0, active.length - 3));
+  const toEliminate = active.slice(0, n);
+  if (toEliminate.length) {
+    await VoteEntry.updateMany(
+      { _id: { $in: toEliminate.map((e) => e._id) } },
+      { $set: { status: 'eliminated', eliminatedAtRoundIndex: ev.currentRoundIndex } },
+    );
+  }
+  ev.currentRoundIndex += 1;
+  await ev.save();
+}
+
 async function closeEndedEvents() {
   const now = new Date();
   try {
@@ -69,36 +151,33 @@ async function closeEndedEvents() {
       { status: 'pending', startAt: { $lte: now }, endAt: { $gt: now } },
       { $set: { status: 'active' } },
     );
-    const toClose = await VoteEvent.find({ status: { $ne: 'ended' }, endAt: { $lte: now } });
-    for (const ev of toClose) {
-      const top = await VoteEntry.find({ eventId: ev._id })
-        .sort({ voteCount: -1, createdAt: 1 })
-        .limit(3)
-        .lean();
-      ev.topEntries = top.map((e, i) => ({ entryId: e._id, rank: i + 1 }));
-      ev.status = 'ended';
-      await ev.save();
 
-      for (let i = 0; i < top.length; i++) {
-        const e = top[i];
-        if ((e.voteCount || 0) <= 0) continue; // no highlight for zero-vote placements
-        await UserHighlight.updateOne(
-          { userId: e.submitterId, eventId: ev._id },
-          { $set: { eventTitle: ev.title, entryPhotoUrl: e.photoUrl, rank: i + 1, endedAt: now } },
-          { upsert: true },
-        );
-        const medal = ['🥇', '🥈', '🥉'][i];
-        sendPushToUser(e.submitterId, {
-          title: `${medal} You placed #${i + 1}!`,
-          body: ev.title,
-          data: { type: 'vote_result', eventId: ev._id.toString() },
-        }).catch(() => {});
+    // Single-round events past their end → finalize.
+    const singles = await VoteEvent.find({
+      type: { $ne: 'multiRound' },
+      status: { $ne: 'ended' },
+      endAt: { $lte: now },
+    });
+    for (const ev of singles) await finalizeEvent(ev, now);
+
+    // Multi-round events: process each elapsed round deadline (may advance
+    // several rounds if a sweep was missed), finalizing on the last round.
+    const multis = await VoteEvent.find({ type: 'multiRound', status: { $ne: 'ended' } });
+    for (const ev of multis) {
+      if (ev.status === 'pending' && now >= new Date(ev.startAt)) {
+        ev.status = 'active';
+        await ev.save();
       }
-      sendPushToUser(ev.creatorId, {
-        title: 'Your contest ended 🎉',
-        body: ev.title,
-        data: { type: 'vote_ended', eventId: ev._id.toString() },
-      }).catch(() => {});
+      let guard = 0;
+      while (
+        ev.status !== 'ended' &&
+        ev.rounds[ev.currentRoundIndex] &&
+        now >= new Date(ev.rounds[ev.currentRoundIndex].endAt) &&
+        guard++ < 10
+      ) {
+        if (ev.currentRoundIndex >= ev.rounds.length - 1) await finalizeEvent(ev, now);
+        else await advanceRound(ev);
+      }
     }
   } catch (_) {
     // best effort — next sweep retries
@@ -134,6 +213,19 @@ router.post('/', auth, async (req, res, next) => {
     const now = new Date();
     const status = now >= startAt ? (now >= endAt ? 'ended' : 'active') : 'pending';
 
+    // Multi-round (淘汰赛): build N evenly-split elimination rounds. We derive
+    // rounds from a count + advance rule (simpler client) rather than a per-round
+    // date form; the schema still stores full per-round dates for flexibility.
+    const type = b.type === 'multiRound' ? 'multiRound' : 'single';
+    let rounds = [];
+    if (type === 'multiRound') {
+      const count = Math.min(Math.max(parseInt(b.roundCount, 10) || 0, 2), 5);
+      if (count < 2) return err(res, 'Multi-round needs 2–5 rounds');
+      const advanceMode = ['percent', 'fixed'].includes(b.advanceMode) ? b.advanceMode : 'percent';
+      const advanceValue = Number(b.advanceValue) > 0 ? Number(b.advanceValue) : 50;
+      rounds = buildRounds(startAt, endAt, count, advanceMode, advanceValue);
+    }
+
     const ev = await VoteEvent.create({
       creatorId: req.user._id,
       title,
@@ -145,6 +237,9 @@ router.post('/', auth, async (req, res, next) => {
       startAt,
       endAt,
       rules: { mode },
+      type,
+      rounds,
+      currentRoundIndex: 0,
       status,
       location: req.user.location ?? undefined,
     });
@@ -258,10 +353,15 @@ router.get('/:id', auth, async (req, res, next) => {
     const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl').lean();
     if (!ev) return err(res, 'Not found', 404);
 
-    const entries = await VoteEntry.find({ eventId: ev._id })
+    const entriesRaw = await VoteEntry.find({ eventId: ev._id })
       .sort({ voteCount: -1, createdAt: 1 })
       .populate('submitterId', 'nickname avatarUrl')
       .lean();
+    // Multi-round: surviving/winner entries first, eliminated last (each already
+    // ordered by voteCount desc from the query above).
+    const entries = entriesRaw
+      .slice()
+      .sort((a, b) => (a.status === 'eliminated' ? 1 : 0) - (b.status === 'eliminated' ? 1 : 0));
 
     // Which entries the viewer has voted for (so the client can show voted state).
     const myVotes = await Vote.find({ voterId: req.user._id, eventId: ev._id }).distinct('entryId');
@@ -286,6 +386,8 @@ router.get('/:id', auth, async (req, res, next) => {
           caption: e.caption ?? '',
           voteCount: e.voteCount ?? 0,
           votedByMe: votedSet.has(e._id.toString()),
+          status: e.status ?? 'active',
+          eliminatedAtRoundIndex: e.eliminatedAtRoundIndex ?? null,
         })),
     });
   } catch (e) {
@@ -300,6 +402,10 @@ router.post('/:id/entries', auth, async (req, res, next) => {
     const ev = await VoteEvent.findById(req.params.id);
     if (!ev) return err(res, 'Not found', 404);
     if (effectiveStatus(ev) !== 'active') return err(res, 'Event is not accepting entries', 409);
+    // Multi-round: entries are only accepted during the first round.
+    if (ev.type === 'multiRound' && (ev.currentRoundIndex ?? 0) > 0) {
+      return err(res, 'Submissions are closed for this round', 409);
+    }
     if (ev.creatorId.toString() === req.user._id.toString()) {
       return err(res, "The creator can't enter their own contest", 403);
     }
@@ -353,6 +459,7 @@ router.post('/:id/entries/:entryId/vote', auth, async (req, res, next) => {
 
     const entry = await VoteEntry.findOne({ _id: entryId, eventId: id });
     if (!entry) return err(res, 'Entry not found', 404);
+    if (entry.status === 'eliminated') return err(res, 'This entry was eliminated', 409);
     if (entry.submitterId.toString() === req.user._id.toString()) {
       return err(res, "You can't vote for your own entry", 403);
     }

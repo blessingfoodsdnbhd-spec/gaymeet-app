@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable } from 'react-native';
+import { View, Text, FlatList, Pressable, useWindowDimensions } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -14,17 +14,19 @@ import type { RootStackParamList } from '../../navigation/types';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /**
- * "🔥 投票活动" horizontal strip of active contests for the Discover tab — the
- * prominent, default-visible entry point that reframes Meyou as a community
- * app (Apple 4.3(b)). Renders nothing when there are no active events.
+ * Prominent "🔥 投票活动" feed for the top of Discover — full-width LARGE event
+ * cards in a bounded, internally-scrolling list so contests read as the primary
+ * content (Apple 4.3(b): community feed, not a swipe stack). The people deck
+ * sits below in the remaining space. Renders nothing when no active events.
  */
-export function VoteCarousel() {
+export function VoteFeed() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+  const { height } = useWindowDimensions();
 
   const q = useQuery({
-    queryKey: ['votes', 'carousel'],
+    queryKey: ['votes', 'feed'],
     queryFn: () => listVoteEvents({ status: 'active', limit: 10 }),
     staleTime: 30_000,
   });
@@ -32,9 +34,9 @@ export function VoteCarousel() {
   if (events.length === 0) return null;
 
   return (
-    <View style={{ paddingTop: 8, paddingBottom: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 }}>
-        <Text style={{ flex: 1, fontSize: 15, fontWeight: '800', color: theme.colors.text }}>
+    <View style={{ maxHeight: height * 0.58, paddingTop: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 10 }}>
+        <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: theme.colors.text }}>
           🔥 {t('votes.carouselTitle')}
         </Text>
         <Pressable onPress={() => nav.navigate('VotesList')} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -44,12 +46,11 @@ export function VoteCarousel() {
       </View>
       <FlatList
         data={events}
-        horizontal
-        showsHorizontalScrollIndicator={false}
         keyExtractor={(e) => e.id}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 14 }}
         renderItem={({ item }) => (
-          <VoteEventCard event={item} width={210} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
+          <VoteEventCard event={item} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
         )}
       />
     </View>

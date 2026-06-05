@@ -3,6 +3,16 @@ import { api } from './client';
 export type VoteCategory = 'photography' | 'outfit' | 'food' | 'travel' | 'talent' | 'pets';
 export type VoteMode = 'one' | 'fivePerDay' | 'unlimited';
 export type VoteStatus = 'pending' | 'active' | 'ended';
+export type VoteType = 'single' | 'multiRound';
+export type VoteEntryStatus = 'active' | 'eliminated' | 'winner1' | 'winner2' | 'winner3';
+
+export interface VoteRound {
+  index: number;
+  startAt: string;
+  endAt: string;
+  advanceMode: 'percent' | 'fixed';
+  advanceValue: number;
+}
 
 export interface VoteEventSummary {
   id: string;
@@ -17,6 +27,9 @@ export interface VoteEventSummary {
   startAt: string;
   endAt: string;
   rules: { mode: VoteMode };
+  type: VoteType;
+  rounds: VoteRound[];
+  currentRoundIndex: number;
   status: VoteStatus;
   entryCount: number;
   voteCount: number;
@@ -31,6 +44,8 @@ export interface VoteEntry {
   caption: string;
   voteCount: number;
   votedByMe: boolean;
+  status: VoteEntryStatus;
+  eliminatedAtRoundIndex: number | null;
 }
 
 export interface VoteEventDetail {
@@ -79,6 +94,11 @@ export interface CreateVotePayload {
   startAt: string;
   endAt: string;
   rules: { mode: VoteMode };
+  /** 'multiRound' splits [startAt,endAt] into roundCount elimination rounds. */
+  type?: VoteType;
+  roundCount?: number;
+  advanceMode?: 'percent' | 'fixed';
+  advanceValue?: number;
 }
 export const createVoteEvent = (payload: CreateVotePayload) =>
   unwrap<VoteEventSummary>(api.post('/votes', payload));

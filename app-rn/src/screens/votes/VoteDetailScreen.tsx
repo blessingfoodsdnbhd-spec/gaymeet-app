@@ -197,6 +197,32 @@ export function VoteDetailScreen() {
             </Text>
           </View>
 
+          {/* Multi-round progress */}
+          {ev.type === 'multiRound' && ev.status === 'active' && ev.rounds[ev.currentRoundIndex] && (
+            <View style={{ marginTop: 10, padding: 11, borderRadius: 12, backgroundColor: theme.colors.surface2 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.text }}>
+                {t('votes.roundProgress', { current: ev.currentRoundIndex + 1, total: ev.rounds.length })}
+              </Text>
+              {(() => {
+                const rtr = timeRemaining(ev.rounds[ev.currentRoundIndex].endAt);
+                return (
+                  <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+                    {rtr.ended
+                      ? t('votes.roundEnding')
+                      : rtr.d > 0
+                        ? t('votes.countdown.days', { d: rtr.d, h: rtr.h })
+                        : t('votes.countdown.hm', { h: rtr.h, m: rtr.m })}
+                  </Text>
+                );
+              })()}
+            </View>
+          )}
+          {ev.type === 'multiRound' && ev.status === 'ended' && (
+            <Text style={{ fontSize: 12.5, color: theme.colors.muted, marginTop: 8 }}>
+              {t('votes.tournamentRounds', { n: ev.rounds.length })}
+            </Text>
+          )}
+
           <Text style={{ fontSize: 22, fontWeight: '800', color: theme.colors.text, marginTop: 12 }}>{ev.title}</Text>
 
           {/* Creator */}
@@ -277,10 +303,20 @@ export function VoteDetailScreen() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
               {entries.map((entry) => {
                 const mine = detail?.myEntryId === entry.id;
+                const eliminated = entry.status === 'eliminated';
                 return (
-                  <View key={entry.id} style={{ width: '47%' }}>
+                  <View key={entry.id} style={{ width: '47%', opacity: eliminated ? 0.55 : 1 }}>
                     <Pressable onLongPress={() => !mine && onReportEntry(entry)} delayLongPress={350}>
                       <ExpoImage source={{ uri: entry.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="cover" />
+                      {eliminated && (
+                        <View style={{ position: 'absolute', top: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
+                          <Text style={{ color: '#FFF', fontSize: 10.5, fontWeight: '700' }}>
+                            {entry.eliminatedAtRoundIndex != null
+                              ? t('votes.eliminatedAt', { n: entry.eliminatedAtRoundIndex + 1 })
+                              : t('votes.eliminated')}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                       <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={20} />
@@ -291,7 +327,7 @@ export function VoteDetailScreen() {
                     )}
                     <Pressable
                       onPress={() => onVote(entry)}
-                      disabled={ev.status !== 'active' || mine || busyVote === entry.id}
+                      disabled={ev.status !== 'active' || mine || eliminated || busyVote === entry.id}
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -303,7 +339,7 @@ export function VoteDetailScreen() {
                         backgroundColor: entry.votedByMe ? theme.colors.primary : theme.colors.surface,
                         borderWidth: 1,
                         borderColor: entry.votedByMe ? theme.colors.primary : theme.colors.line,
-                        opacity: ev.status !== 'active' || mine ? 0.5 : 1,
+                        opacity: ev.status !== 'active' || mine || eliminated ? 0.5 : 1,
                       }}
                     >
                       <Heart

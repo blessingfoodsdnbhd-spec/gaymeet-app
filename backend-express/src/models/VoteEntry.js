@@ -8,6 +8,14 @@ const voteEntrySchema = new mongoose.Schema(
     photoUrl: { type: String, required: true },
     caption: { type: String, default: '', maxlength: 200 },
     voteCount: { type: Number, default: 0 },
+    // Multi-round elimination state. 'active' for single-round events throughout;
+    // winnerN is set on the final close for the top 3.
+    status: {
+      type: String,
+      enum: ['active', 'eliminated', 'winner1', 'winner2', 'winner3'],
+      default: 'active',
+    },
+    eliminatedAtRoundIndex: { type: Number, default: null },
   },
   { timestamps: true },
 );

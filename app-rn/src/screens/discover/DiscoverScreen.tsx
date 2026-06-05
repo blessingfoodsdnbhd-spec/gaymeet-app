@@ -19,7 +19,7 @@ import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
 import { BoostButton } from './BoostButton';
 import { TopicTabs, type ActiveTab } from './TopicTabs';
-import { VoteCarousel } from '../votes/VoteCarousel';
+import { VoteFeed } from '../votes/VoteFeed';
 import { TopicPersonaList } from './TopicPersonaList';
 import { TopicPersonaSheet } from './TopicPersonaSheet';
 import { getTopics } from '../../api/topics';
@@ -348,9 +348,9 @@ export function DiscoverScreen() {
         locale={locale}
       />
 
-      {/* 投票活动 — prominent community entry point (Apple 4.3(b)). Hidden when
-          there are no active events. */}
-      {mode.kind === 'cards' && <VoteCarousel />}
+      {/* 投票活动 — prominent, primary community feed (Apple 4.3(b)). Large
+          full-width cards above the people deck. Hidden when no active events. */}
+      {mode.kind === 'cards' && <VoteFeed />}
 
       {mode.kind === 'cards' ? (
         <CardsBody

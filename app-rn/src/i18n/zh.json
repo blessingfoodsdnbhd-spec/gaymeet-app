@@ -118,6 +118,14 @@
     "carouselTitle": "投票活动",
     "seeAll": "查看全部",
     "highlightsTitle": "高光时刻",
+    "format": { "single": "单轮", "multiRound": "淘汰赛" },
+    "roundCountLabel": "轮数",
+    "multiRoundHint": "时间将平均分为若干轮。每轮结束淘汰垫底 50%,最后一轮决出 🥇🥈🥉。",
+    "roundProgress": "第 {{current}} 轮 / 共 {{total}} 轮",
+    "roundEnding": "本轮即将结束…",
+    "tournamentRounds": "{{n}} 轮淘汰赛",
+    "eliminated": "已淘汰",
+    "eliminatedAt": "第 {{n}} 轮淘汰",
     "empty": "还没有活动",
     "loadFailed": "无法加载",
     "ended": "已结束",
@@ -176,7 +184,8 @@
       "externalLink": "外部链接(可选)",
       "startAt": "开始时间",
       "endAt": "结束时间",
-      "rule": "投票规则"
+      "rule": "投票规则",
+      "format": "比赛形式"
     }
   },
   "discover": {

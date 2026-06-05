@@ -81,6 +81,8 @@ export function CreateVoteScreen() {
   const [refs, setRefs] = React.useState<string[]>([]);
   const [externalLink, setExternalLink] = React.useState('');
   const [mode, setMode] = React.useState<VoteMode>('one');
+  const [type, setType] = React.useState<'single' | 'multiRound'>('single');
+  const [roundCount, setRoundCount] = React.useState(3);
   const now = new Date();
   const [startAt, setStartAt] = React.useState<Date | null>(now);
   const [endAt, setEndAt] = React.useState<Date | null>(new Date(now.getTime() + 7 * 24 * 3600 * 1000));
@@ -134,6 +136,10 @@ export function CreateVoteScreen() {
         startAt: startAt!.toISOString(),
         endAt: endAt!.toISOString(),
         rules: { mode },
+        type,
+        roundCount: type === 'multiRound' ? roundCount : undefined,
+        advanceMode: 'percent',
+        advanceValue: 50,
       });
       qc.invalidateQueries({ queryKey: ['votes'] });
       nav.replace('VoteDetail', { eventId: ev.id });
@@ -236,6 +242,57 @@ export function CreateVoteScreen() {
             </Pressable>
           ))}
         </View>
+
+        <Label>{t('votes.field.format')}</Label>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['single', 'multiRound'] as const).map((ty) => (
+            <Pressable
+              key={ty}
+              onPress={() => setType(ty)}
+              style={{
+                flex: 1,
+                padding: 13,
+                borderRadius: 12,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: type === ty ? theme.colors.primary : theme.colors.line,
+                backgroundColor: type === ty ? theme.colors.primarySoft : theme.colors.surface,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: type === ty ? theme.colors.primaryDeep : theme.colors.text }}>
+                {t(`votes.format.${ty}`)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {type === 'multiRound' && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={{ fontSize: 13, color: theme.colors.text2, marginBottom: 8 }}>{t('votes.roundCountLabel')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {[2, 3, 4, 5].map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => setRoundCount(n)}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: roundCount === n ? theme.colors.primary : theme.colors.line,
+                    backgroundColor: roundCount === n ? theme.colors.primary : theme.colors.surface,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: roundCount === n ? '#FFF' : theme.colors.text }}>{n}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 8, lineHeight: 16 }}>
+              {t('votes.multiRoundHint')}
+            </Text>
+          </View>
+        )}
 
         <View style={{ marginTop: 28 }}>
           <Button label={t('votes.createCta')} onPress={onSubmit} disabled={!valid} loading={saving} fullWidth />
