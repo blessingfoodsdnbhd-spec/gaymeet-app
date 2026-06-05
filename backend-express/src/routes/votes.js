@@ -333,17 +333,27 @@ router.patch('/:id', auth, async (req, res, next) => {
   }
 });
 
-// ── DELETE /api/votes/:id  (creator, pending + no entries) ────────────────────
+// ── DELETE /api/votes/:id  (creator, any status — full cascade) ───────────────
+// The creator can delete their own event at any time. Cascades to all child
+// docs (entries, votes, updates, reports) and the winner Highlights that
+// reference it (denormalized, so they'd otherwise dangle). B2 blobs are left
+// as harmless orphans. Returns 204.
 router.delete('/:id', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const ev = await VoteEvent.findById(req.params.id);
+    const ev = await VoteEvent.findById(req.params.id).lean();
     if (!ev) return err(res, 'Not found', 404);
     if (ev.creatorId.toString() !== req.user._id.toString()) return err(res, 'Not your event', 403);
-    if (effectiveStatus(ev) !== 'pending') return err(res, 'Can only delete before it starts', 409);
-    if ((ev.entryCount ?? 0) > 0) return err(res, 'Has entries already', 409);
-    await VoteEvent.deleteOne({ _id: ev._id });
-    ok(res, { ok: true });
+
+    await Promise.all([
+      VoteEvent.deleteOne({ _id: ev._id }),
+      VoteEntry.deleteMany({ eventId: ev._id }),
+      Vote.deleteMany({ eventId: ev._id }),
+      VoteEventUpdate.deleteMany({ eventId: ev._id }),
+      VoteReport.deleteMany({ eventId: ev._id }),
+      UserHighlight.deleteMany({ eventId: ev._id }),
+    ]);
+    res.status(204).end();
   } catch (e) {
     next(e);
   }

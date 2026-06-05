@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
-import { ChevronLeft, Heart, ExternalLink, Flag, Users, Pencil, Megaphone, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, Heart, ExternalLink, Flag, Users, Pencil, Megaphone, ChevronRight, Trash2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import {
   castVote,
   retractVote,
   withdrawVoteEntry,
+  deleteVoteEvent,
   reportVoteEvent,
   reportVoteEntry,
   type VoteEntry,
@@ -140,6 +141,24 @@ export function VoteDetailScreen() {
       },
     ]);
 
+  const onDeleteEvent = () =>
+    Alert.alert(t('votes.deleteConfirmTitle'), t('votes.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('votes.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteVoteEvent(eventId);
+            qc.invalidateQueries({ queryKey: ['votes'] });
+            nav.goBack();
+          } catch (e: any) {
+            Alert.alert(t('votes.actionFailed'), e?.response?.data?.error ?? '');
+          }
+        },
+      },
+    ]);
+
   const onWithdraw = () =>
     Alert.alert(t('votes.withdrawConfirmTitle'), t('votes.withdrawConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -188,9 +207,15 @@ export function VoteDetailScreen() {
             <Pencil size={19} color={theme.colors.muted} />
           </Pressable>
         )}
-        <Pressable onPress={onReportEvent} hitSlop={8}>
-          <Flag size={19} color={theme.colors.muted} />
-        </Pressable>
+        {detail?.isCreator ? (
+          <Pressable onPress={onDeleteEvent} hitSlop={8}>
+            <Trash2 size={19} color={theme.colors.muted} />
+          </Pressable>
+        ) : (
+          <Pressable onPress={onReportEvent} hitSlop={8}>
+            <Flag size={19} color={theme.colors.muted} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
