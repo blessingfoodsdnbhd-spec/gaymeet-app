@@ -31,6 +31,8 @@ import {
   type VoteEntry,
 } from '../../api/votes';
 import { categoryEmoji, medalFor, timeRemaining } from './voteHelpers';
+import { EntryDetailModal } from './EntryDetailModal';
+import { blockUser } from '../../api/safety';
 import { shortTime } from '../../utils/time';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -47,6 +49,7 @@ export function VoteDetailScreen() {
   const eventId = route.params.eventId;
   const [page, setPage] = React.useState(0);
   const [busyVote, setBusyVote] = React.useState<string | null>(null);
+  const [entryViewerIndex, setEntryViewerIndex] = React.useState<number | null>(null);
 
   const q = useQuery({
     queryKey: ['votes', 'detail', eventId],
@@ -101,6 +104,24 @@ export function VoteDetailScreen() {
           try {
             await reportVoteEntry(eventId, entry.id);
             Alert.alert(t('votes.reportSent'));
+          } catch {
+            Alert.alert(t('votes.actionFailed'));
+          }
+        },
+      },
+    ]);
+
+  const onBlockSubmitter = (entry: VoteEntry) =>
+    Alert.alert(t('votes.blockConfirmTitle'), t('votes.blockConfirmBody', { name: entry.submitter.displayName }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('votes.blockUser'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await blockUser(entry.submitter.id);
+            setEntryViewerIndex(null);
+            refresh();
           } catch {
             Alert.alert(t('votes.actionFailed'));
           }
@@ -297,62 +318,46 @@ export function VoteDetailScreen() {
             </Text>
           </View>
 
+          {/* Avatar-first: tap a participant to reveal their entry full-screen. */}
           {entries.length === 0 ? (
             <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 10 }}>{t('votes.noEntries')}</Text>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
-              {entries.map((entry) => {
-                const mine = detail?.myEntryId === entry.id;
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 14 }}>
+              {entries.map((entry, idx) => {
                 const eliminated = entry.status === 'eliminated';
+                const winnerRank = entry.status?.startsWith('winner')
+                  ? Number(entry.status.replace('winner', ''))
+                  : null;
                 return (
-                  <View key={entry.id} style={{ width: '47%', opacity: eliminated ? 0.55 : 1 }}>
-                    <Pressable onLongPress={() => !mine && onReportEntry(entry)} delayLongPress={350}>
-                      <ExpoImage source={{ uri: entry.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" />
+                  <Pressable
+                    key={entry.id}
+                    onPress={() => setEntryViewerIndex(idx)}
+                    style={{ width: 72, alignItems: 'center' }}
+                  >
+                    <View style={{ opacity: eliminated ? 0.5 : 1 }}>
+                      <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={64} />
+                      {winnerRank ? (
+                        <Text style={{ position: 'absolute', top: -8, right: -4, fontSize: 22 }}>{medalFor(winnerRank)}</Text>
+                      ) : null}
                       {eliminated && (
-                        <View style={{ position: 'absolute', top: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-                          <Text style={{ color: '#FFF', fontSize: 10.5, fontWeight: '700' }}>
-                            {entry.eliminatedAtRoundIndex != null
-                              ? t('votes.eliminatedAt', { n: entry.eliminatedAtRoundIndex + 1 })
-                              : t('votes.eliminated')}
-                          </Text>
+                        <View style={{ position: 'absolute', bottom: -2, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999 }}>
+                          <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '700' }}>{t('votes.eliminated')}</Text>
                         </View>
                       )}
-                    </Pressable>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                      <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={20} />
-                      <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, color: theme.colors.text }}>{entry.submitter.displayName}</Text>
                     </View>
-                    {!!entry.caption && (
-                      <Text numberOfLines={2} style={{ fontSize: 12, color: theme.colors.muted, marginTop: 3 }}>{entry.caption}</Text>
-                    )}
-                    <Pressable
-                      onPress={() => onVote(entry)}
-                      disabled={ev.status !== 'active' || mine || eliminated || busyVote === entry.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        marginTop: 8,
-                        paddingVertical: 8,
-                        borderRadius: 10,
-                        backgroundColor: entry.votedByMe ? theme.colors.primary : theme.colors.surface,
-                        borderWidth: 1,
-                        borderColor: entry.votedByMe ? theme.colors.primary : theme.colors.line,
-                        opacity: ev.status !== 'active' || mine || eliminated ? 0.5 : 1,
-                      }}
-                    >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 7 }}>
                       <Heart
-                        size={15}
-                        color={entry.votedByMe ? '#FFFFFF' : theme.colors.primary}
-                        fill={entry.votedByMe ? '#FFFFFF' : 'transparent'}
+                        size={11}
+                        color={entry.votedByMe ? theme.colors.primary : theme.colors.muted}
+                        fill={entry.votedByMe ? theme.colors.primary : 'transparent'}
                         strokeWidth={2}
                       />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: entry.votedByMe ? '#FFFFFF' : theme.colors.text }}>
-                        {entry.voteCount}
-                      </Text>
-                    </Pressable>
-                  </View>
+                      <Text style={{ fontSize: 12, color: theme.colors.muted, fontWeight: '600' }}>{entry.voteCount}</Text>
+                    </View>
+                    <Text numberOfLines={1} style={{ fontSize: 11, color: theme.colors.text2, marginTop: 1, maxWidth: 72 }}>
+                      {entry.submitter.displayName}
+                    </Text>
+                  </Pressable>
                 );
               })}
             </View>
@@ -372,6 +377,24 @@ export function VoteDetailScreen() {
           ) : null}
         </View>
       )}
+
+      {/* Full-screen entry reveal — tap an avatar above to open here. */}
+      <EntryDetailModal
+        open={entryViewerIndex !== null}
+        entries={entries}
+        initialIndex={entryViewerIndex ?? 0}
+        canVote={ev.status === 'active'}
+        myEntryId={detail?.myEntryId ?? null}
+        busyVoteId={busyVote}
+        onClose={() => setEntryViewerIndex(null)}
+        onVote={onVote}
+        onReport={onReportEntry}
+        onBlock={onBlockSubmitter}
+        onOpenUser={(userId) => {
+          setEntryViewerIndex(null);
+          nav.navigate('UserDetail', { userId });
+        }}
+      />
     </SafeAreaView>
   );
 }

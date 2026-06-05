@@ -26,6 +26,12 @@ interface Props {
   photos: string[];
   initialIndex?: number;
   onClose: () => void;
+  /** Fires when the visible page changes (and on open). Lets a parent overlay
+   *  a footer/header that tracks the current photo (e.g. EntryDetail). */
+  onIndexChange?: (index: number) => void;
+  /** When false, hides the built-in close button + "1 / N" indicator so a
+   *  parent can supply its own chrome. Defaults true. */
+  chrome?: boolean;
 }
 
 const MAX_SCALE = 8;
@@ -179,7 +185,7 @@ function ZoomablePage({
  * native view tree that the app-root GestureHandlerRootView doesn't reach — so
  * without this, gestures would be dead when the viewer is shown inside a Modal.
  */
-export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) {
+export function PhotoViewer({ open, photos, initialIndex = 0, onClose, onIndexChange, chrome = true }: Props) {
   const { width, height } = Dimensions.get('window');
   const flatRef = React.useRef<FlatList<string>>(null);
   const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
@@ -209,8 +215,9 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
   }, [open, onClose]);
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-    setCurrentIndex(Math.min(Math.max(idx, 0), photos.length - 1));
+    const idx = Math.min(Math.max(Math.round(e.nativeEvent.contentOffset.x / width), 0), photos.length - 1);
+    setCurrentIndex(idx);
+    onIndexChange?.(idx);
   };
 
   if (!open) return null;
@@ -243,11 +250,13 @@ export function PhotoViewer({ open, photos, initialIndex = 0, onClose }: Props) 
         )}
       />
 
-      <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-        <X size={24} color="#FFFFFF" strokeWidth={2} />
-      </Pressable>
+      {chrome && (
+        <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+          <X size={24} color="#FFFFFF" strokeWidth={2} />
+        </Pressable>
+      )}
 
-      {photos.length > 1 && !zoomed && (
+      {chrome && photos.length > 1 && !zoomed && (
         <View style={styles.indicator}>
           <Text style={styles.indicatorText}>
             {currentIndex + 1} / {photos.length}
