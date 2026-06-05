@@ -29,6 +29,7 @@ import { VotesListScreen } from '../screens/votes/VotesListScreen';
 import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
 import { CreateVoteScreen } from '../screens/votes/CreateVoteScreen';
 import { SubmitEntryScreen } from '../screens/votes/SubmitEntryScreen';
+import { EventUpdatesScreen } from '../screens/votes/EventUpdatesScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
@@ -121,6 +122,7 @@ export function RootNavigator() {
           <Stack.Screen name="VoteDetail" component={VoteDetailScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="CreateVote" component={CreateVoteScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="SubmitEntry" component={SubmitEntryScreen} options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="EventUpdates" component={EventUpdatesScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen
             name="TopicPersonaEdit"
             component={TopicPersonaEditScreen}

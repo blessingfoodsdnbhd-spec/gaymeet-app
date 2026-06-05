@@ -15,8 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, Plus, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
-import { useQueryClient } from '@tanstack/react-query';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -24,7 +24,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { DateTimeField } from '../../components/DateTimeField';
 import { uploadFile } from '../../api/upload';
-import { createVoteEvent, type VoteCategory, type VoteMode } from '../../api/votes';
+import { createVoteEvent, updateVoteEvent, getVoteEvent, type VoteCategory, type VoteMode } from '../../api/votes';
 import { VOTE_CATEGORIES } from './voteHelpers';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -37,24 +37,29 @@ function PhotoRow({
   onAdd,
   onRemove,
   busy,
+  lockedCount = 0,
 }: {
   photos: string[];
   onAdd: () => void;
   onRemove: (url: string) => void;
   busy: boolean;
+  /** First N photos can't be removed (append-only edit of an active contest). */
+  lockedCount?: number;
 }) {
   const theme = useTheme();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {photos.map((url) => (
+      {photos.map((url, idx) => (
         <View key={url}>
           <ExpoImage source={{ uri: url }} style={{ width: 72, height: 72, borderRadius: 10 }} contentFit="cover" />
-          <Pressable
-            onPress={() => onRemove(url)}
-            style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#000', borderRadius: 10, padding: 2 }}
-          >
-            <X size={13} color="#FFF" strokeWidth={2.5} />
-          </Pressable>
+          {idx >= lockedCount && (
+            <Pressable
+              onPress={() => onRemove(url)}
+              style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#000', borderRadius: 10, padding: 2 }}
+            >
+              <X size={13} color="#FFF" strokeWidth={2.5} />
+            </Pressable>
+          )}
         </View>
       ))}
       {photos.length < MAX_PHOTOS && (
@@ -83,7 +88,22 @@ export function CreateVoteScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+  const route = useRoute<RouteProp<RootStackParamList, 'CreateVote'>>();
   const qc = useQueryClient();
+  const editEventId = route.params?.editEventId;
+  const isEdit = !!editEventId;
+
+  // Load the event being edited; prefill once. While it's active, immutable
+  // fields lock (title/category/dates/format/rules) and photos are append-only.
+  const editQ = useQuery({
+    queryKey: ['votes', 'detail', editEventId],
+    queryFn: () => getVoteEvent(editEventId!),
+    enabled: isEdit,
+  });
+  const editStatus = editQ.data?.event.status;
+  const locked = isEdit && editStatus === 'active'; // can only supplement
+  const [origCoverLen, setOrigCoverLen] = React.useState(0);
+  const [origRefLen, setOrigRefLen] = React.useState(0);
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -99,6 +119,27 @@ export function CreateVoteScreen() {
   const [endAt, setEndAt] = React.useState<Date | null>(new Date(now.getTime() + 7 * 24 * 3600 * 1000));
   const [uploading, setUploading] = React.useState<'cover' | 'ref' | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [prefilled, setPrefilled] = React.useState(false);
+
+  // Prefill from the loaded event exactly once.
+  React.useEffect(() => {
+    const ev = editQ.data?.event;
+    if (!ev || prefilled) return;
+    setTitle(ev.title);
+    setDescription(ev.description ?? '');
+    setCategory(ev.category);
+    setCover(ev.coverPhotos ?? []);
+    setRefs(ev.referencePhotos ?? []);
+    setExternalLink(ev.externalLink ?? '');
+    setMode(ev.rules.mode);
+    setType(ev.type);
+    if (ev.type === 'multiRound' && ev.rounds.length) setRoundCount(ev.rounds.length);
+    setStartAt(new Date(ev.startAt));
+    setEndAt(new Date(ev.endAt));
+    setOrigCoverLen(ev.coverPhotos?.length ?? 0);
+    setOrigRefLen(ev.referencePhotos?.length ?? 0);
+    setPrefilled(true);
+  }, [editQ.data, prefilled]);
 
   const pick = async (which: 'cover' | 'ref') => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -137,6 +178,32 @@ export function CreateVoteScreen() {
     }
     setSaving(true);
     try {
+      if (isEdit) {
+        // While active, send only the supplementable fields. While pending,
+        // send the full editable set.
+        const patch = locked
+          ? {
+              description: description.trim(),
+              coverPhotos: cover,
+              referencePhotos: refs,
+              externalLink: externalLink.trim() || null,
+            }
+          : {
+              title: title.trim(),
+              description: description.trim(),
+              category: category!,
+              coverPhotos: cover,
+              referencePhotos: refs,
+              externalLink: externalLink.trim() || null,
+              startAt: startAt!.toISOString(),
+              endAt: endAt!.toISOString(),
+              rules: { mode },
+            };
+        await updateVoteEvent(editEventId!, patch);
+        qc.invalidateQueries({ queryKey: ['votes'] });
+        nav.goBack();
+        return;
+      }
       const ev = await createVoteEvent({
         title: title.trim(),
         description: description.trim(),
@@ -155,7 +222,7 @@ export function CreateVoteScreen() {
       qc.invalidateQueries({ queryKey: ['votes'] });
       nav.replace('VoteDetail', { eventId: ev.id });
     } catch (e: any) {
-      Alert.alert(t('votes.createFailed'), e?.response?.data?.error ?? '');
+      Alert.alert(t(isEdit ? 'votes.updateFailed' : 'votes.createFailed'), e?.response?.data?.error ?? '');
     } finally {
       setSaving(false);
     }
@@ -183,9 +250,16 @@ export function CreateVoteScreen() {
         <Pressable onPress={() => nav.goBack()} hitSlop={8}>
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
-        <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>{t('votes.createTitle')}</Text>
+        <Text style={{ marginLeft: 8, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
+          {isEdit ? t('votes.editTitle') : t('votes.createTitle')}
+        </Text>
       </View>
 
+      {isEdit && !prefilled ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={theme.colors.primary} />
+        </View>
+      ) : (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -195,43 +269,64 @@ export function CreateVoteScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        {locked && (
+          <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: theme.colors.primarySoft }}>
+            <Text style={{ fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>
+              {t('votes.editActiveNote')}
+            </Text>
+          </View>
+        )}
+
         <Label>{t('votes.field.title')}</Label>
-        <TextInput value={title} onChangeText={(v) => setTitle(v.slice(0, 80))} placeholder={t('votes.field.titlePlaceholder')} placeholderTextColor={theme.colors.muted} style={input} />
+        <TextInput
+          value={title}
+          onChangeText={(v) => setTitle(v.slice(0, 80))}
+          editable={!locked}
+          placeholder={t('votes.field.titlePlaceholder')}
+          placeholderTextColor={theme.colors.muted}
+          style={[input, locked && { color: theme.colors.muted, backgroundColor: theme.colors.surface2 }]}
+        />
 
         <Label>{t('votes.field.description')}</Label>
         <TextInput value={description} onChangeText={(v) => setDescription(v.slice(0, 500))} placeholder={t('votes.field.descPlaceholder')} placeholderTextColor={theme.colors.muted} multiline style={[input, { minHeight: 80, textAlignVertical: 'top' }]} />
 
-        <Label>{t('votes.field.category')}</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {VOTE_CATEGORIES.map((c) => (
-            <Pressable
-              key={c.key}
-              onPress={() => setCategory(c.key)}
-              style={{
-                paddingHorizontal: 13,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: category === c.key ? theme.colors.primary : theme.colors.surface,
-                borderWidth: 1,
-                borderColor: category === c.key ? theme.colors.primary : theme.colors.line,
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: category === c.key ? '#FFF' : theme.colors.text2 }}>
-                {c.emoji} {t(`votes.category.${c.key}`)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {!locked && (
+          <>
+            <Label>{t('votes.field.category')}</Label>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {VOTE_CATEGORIES.map((c) => (
+                <Pressable
+                  key={c.key}
+                  onPress={() => setCategory(c.key)}
+                  style={{
+                    paddingHorizontal: 13,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                    backgroundColor: category === c.key ? theme.colors.primary : theme.colors.surface,
+                    borderWidth: 1,
+                    borderColor: category === c.key ? theme.colors.primary : theme.colors.line,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: category === c.key ? '#FFF' : theme.colors.text2 }}>
+                    {c.emoji} {t(`votes.category.${c.key}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
 
         <Label>{t('votes.field.coverPhotos')}</Label>
-        <PhotoRow photos={cover} onAdd={() => pick('cover')} onRemove={(u) => setCover((p) => p.filter((x) => x !== u))} busy={uploading === 'cover'} />
+        <PhotoRow photos={cover} onAdd={() => pick('cover')} onRemove={(u) => setCover((p) => p.filter((x) => x !== u))} busy={uploading === 'cover'} lockedCount={locked ? origCoverLen : 0} />
 
         <Label>{t('votes.field.referencePhotos')}</Label>
-        <PhotoRow photos={refs} onAdd={() => pick('ref')} onRemove={(u) => setRefs((p) => p.filter((x) => x !== u))} busy={uploading === 'ref'} />
+        <PhotoRow photos={refs} onAdd={() => pick('ref')} onRemove={(u) => setRefs((p) => p.filter((x) => x !== u))} busy={uploading === 'ref'} lockedCount={locked ? origRefLen : 0} />
 
         <Label>{t('votes.field.externalLink')}</Label>
         <TextInput value={externalLink} onChangeText={setExternalLink} placeholder="https://…" autoCapitalize="none" keyboardType="url" placeholderTextColor={theme.colors.muted} style={input} />
 
+        {!locked && (
+          <>
         <Label>{t('votes.field.startAt')}</Label>
         <DateTimeField label="" value={startAt} onChange={setStartAt} />
         <Label>{t('votes.field.endAt')}</Label>
@@ -312,12 +407,21 @@ export function CreateVoteScreen() {
             </Text>
           </View>
         )}
+          </>
+        )}
 
         <View style={{ marginTop: 28 }}>
-          <Button label={t('votes.createCta')} onPress={onSubmit} disabled={!valid} loading={saving} fullWidth />
+          <Button
+            label={isEdit ? t('votes.updateCta') : t('votes.createCta')}
+            onPress={onSubmit}
+            disabled={!valid}
+            loading={saving}
+            fullWidth
+          />
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }

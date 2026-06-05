@@ -5,6 +5,7 @@ const VoteEntry = require('../models/VoteEntry');
 const Vote = require('../models/Vote');
 const UserHighlight = require('../models/UserHighlight');
 const VoteReport = require('../models/VoteReport');
+const VoteEventUpdate = require('../models/VoteEventUpdate');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
@@ -256,9 +257,46 @@ router.patch('/:id', auth, async (req, res, next) => {
     const ev = await VoteEvent.findById(req.params.id);
     if (!ev) return err(res, 'Not found', 404);
     if (ev.creatorId.toString() !== req.user._id.toString()) return err(res, 'Not your event', 403);
-    if (effectiveStatus(ev) !== 'pending') return err(res, 'Can only edit before it starts', 409);
+    const st = effectiveStatus(ev);
+    if (st === 'ended') return err(res, "Can't edit an ended contest", 409);
 
     const b = req.body || {};
+
+    // While ACTIVE the creator may only SUPPLEMENT — add description detail,
+    // append cover/reference photos, update the link. Anything that would
+    // affect entry/vote integrity (title, category, dates, rules, rounds) is
+    // locked. Photos are append-only (no removals/shortening).
+    if (st === 'active') {
+      const lockedTouched = ['title', 'category', 'startAt', 'endAt', 'rules', 'type', 'rounds'].filter(
+        (k) => b[k] !== undefined,
+      );
+      if (lockedTouched.length) {
+        return err(res, `Can't change ${lockedTouched.join(', ')} while the contest is active`, 400);
+      }
+      if (b.description !== undefined) ev.description = String(b.description).slice(0, DESC_MAX);
+      if (Array.isArray(b.coverPhotos)) {
+        const next = b.coverPhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
+        if (next.length < ev.coverPhotos.length || !ev.coverPhotos.every((u) => next.includes(u))) {
+          return err(res, "Cover photos are append-only while active", 400);
+        }
+        ev.coverPhotos = next;
+      }
+      if (Array.isArray(b.referencePhotos)) {
+        const next = b.referencePhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
+        if (next.length < ev.referencePhotos.length || !ev.referencePhotos.every((u) => next.includes(u))) {
+          return err(res, "Reference photos are append-only while active", 400);
+        }
+        ev.referencePhotos = next;
+      }
+      if (b.externalLink !== undefined) {
+        if (b.externalLink && !isHttpUrl(b.externalLink)) return err(res, 'Invalid external link');
+        ev.externalLink = b.externalLink || null;
+      }
+      await ev.save();
+      return ok(res, serializeEvent(ev, req.user));
+    }
+
+    // PENDING → full edit.
     if (b.title !== undefined) {
       const t = String(b.title).trim();
       if (!t || t.length > TITLE_MAX) return err(res, 'Invalid title');
@@ -534,6 +572,72 @@ router.get('/users/:userId/highlights', auth, async (req, res, next) => {
         endedAt: new Date(h.endedAt).toISOString(),
       })),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── Event updates (活动动态) ───────────────────────────────────────────────────
+// POST /api/votes/:id/updates — creator posts a status update (body + ≤3 photos).
+router.post('/:id/updates', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const ev = await VoteEvent.findById(req.params.id).lean();
+    if (!ev) return err(res, 'Not found', 404);
+    if (ev.creatorId.toString() !== req.user._id.toString()) return err(res, 'Not your event', 403);
+    const body = String(req.body?.body ?? '').trim();
+    if (!body) return err(res, 'Update is empty');
+    if (body.length > DESC_MAX) return err(res, `Update too long (max ${DESC_MAX})`);
+    const photos = Array.isArray(req.body?.photos) ? req.body.photos.filter(isHttpUrl).slice(0, 3) : [];
+    const upd = await VoteEventUpdate.create({ eventId: ev._id, body, photos });
+    created(res, {
+      id: upd._id.toString(),
+      body: upd.body,
+      photos: upd.photos,
+      createdAt: upd.createdAt.toISOString(),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/votes/:id/updates?before=&limit= — newest first; any auth user.
+router.get('/:id/updates', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+    const q = { eventId: req.params.id };
+    if (req.query.before && mongoose.isValidObjectId(req.query.before)) {
+      q._id = { $lt: new mongoose.Types.ObjectId(req.query.before) };
+    }
+    const [rows, total] = await Promise.all([
+      VoteEventUpdate.find(q).sort({ _id: -1 }).limit(limit).lean(),
+      VoteEventUpdate.countDocuments({ eventId: req.params.id }),
+    ]);
+    ok(res, {
+      total,
+      updates: rows.map((u) => ({
+        id: u._id.toString(),
+        body: u.body,
+        photos: u.photos ?? [],
+        createdAt: u.createdAt.toISOString(),
+      })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE /api/votes/:id/updates/:updateId — creator-only.
+router.delete('/:id/updates/:updateId', auth, async (req, res, next) => {
+  try {
+    const { id, updateId } = req.params;
+    if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(updateId)) return err(res, 'Invalid id');
+    const ev = await VoteEvent.findById(id).lean();
+    if (!ev) return err(res, 'Not found', 404);
+    if (ev.creatorId.toString() !== req.user._id.toString()) return err(res, 'Not your event', 403);
+    await VoteEventUpdate.deleteOne({ _id: updateId, eventId: id });
+    ok(res, { ok: true });
   } catch (e) {
     next(e);
   }

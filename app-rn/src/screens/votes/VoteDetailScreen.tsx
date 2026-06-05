@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
-import { ChevronLeft, Heart, ExternalLink, Flag, Users } from 'lucide-react-native';
+import { ChevronLeft, Heart, ExternalLink, Flag, Users, Pencil, Megaphone, ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import {
   getVoteEvent,
+  getEventUpdates,
   castVote,
   retractVote,
   withdrawVoteEntry,
@@ -58,6 +59,16 @@ export function VoteDetailScreen() {
   });
   const detail = q.data;
   const ev = detail?.event;
+
+  // 活动动态 preview — latest 3 (separate key from the full list, both under the
+  // ['votes','updates',eventId] prefix so a post invalidates both).
+  const updatesQ = useQuery({
+    queryKey: ['votes', 'updates', eventId, 'preview'],
+    queryFn: () => getEventUpdates(eventId, undefined, 3),
+    staleTime: 15_000,
+  });
+  const updates = updatesQ.data?.updates ?? [];
+  const updatesTotal = updatesQ.data?.total ?? 0;
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['votes', 'detail', eventId] });
 
@@ -172,6 +183,11 @@ export function VoteDetailScreen() {
         <Text numberOfLines={1} style={{ flex: 1, marginHorizontal: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {ev.title}
         </Text>
+        {detail?.isCreator && ev.status !== 'ended' && (
+          <Pressable onPress={() => nav.navigate('CreateVote', { editEventId: eventId })} hitSlop={8} style={{ marginRight: 16 }}>
+            <Pencil size={19} color={theme.colors.muted} />
+          </Pressable>
+        )}
         <Pressable onPress={onReportEvent} hitSlop={8}>
           <Flag size={19} color={theme.colors.muted} />
         </Pressable>
@@ -286,6 +302,56 @@ export function VoteDetailScreen() {
                   <ExpoImage key={i} source={{ uri: url }} style={{ width: 88, height: 88, borderRadius: 10 }} contentFit="cover" />
                 ))}
               </ScrollView>
+            </View>
+          )}
+
+          {/* 活动动态 — creator status updates during the contest. */}
+          {(updatesTotal > 0 || detail?.isCreator) && (
+            <View style={{ marginTop: 22 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <Megaphone size={15} color={theme.colors.muted} />
+                <Text style={[styles.section, { color: theme.colors.muted, marginBottom: 0, marginLeft: 6, flex: 1 }]}>
+                  {t('votes.updates.section')}
+                </Text>
+                {detail?.isCreator && (
+                  <Pressable onPress={() => nav.navigate('EventUpdates', { eventId, isCreator: true })} hitSlop={6}>
+                    <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '700' }}>
+                      + {t('votes.updates.post')}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+              {updates.length === 0 ? (
+                <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('votes.updates.empty')}</Text>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  {updates.map((u) => (
+                    <View key={u.id} style={{ backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.line, borderRadius: 12, padding: 12 }}>
+                      <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(u.createdAt)}</Text>
+                      <Text numberOfLines={4} style={{ fontSize: 14, lineHeight: 20, color: theme.colors.text, marginTop: 4 }}>{u.body}</Text>
+                      {u.photos.length > 0 && (
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+                          {u.photos.slice(0, 3).map((url, i) => (
+                            <ExpoImage key={i} source={{ uri: url }} style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: theme.colors.surface2 }} contentFit="cover" />
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+              {updatesTotal > updates.length && (
+                <Pressable
+                  onPress={() => nav.navigate('EventUpdates', { eventId, isCreator: !!detail?.isCreator })}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}
+                  hitSlop={6}
+                >
+                  <Text style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '600' }}>
+                    {t('votes.updates.seeAll', { n: updatesTotal })}
+                  </Text>
+                  <ChevronRight size={16} color={theme.colors.primary} />
+                </Pressable>
+              )}
             </View>
           )}
 

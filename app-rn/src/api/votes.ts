@@ -129,3 +129,18 @@ export const reportVoteEntry = (id: string, entryId: string, reason?: string) =>
 
 export const getUserHighlights = (userId: string) =>
   unwrap<{ highlights: UserHighlight[] }>(api.get(`/votes/users/${userId}/highlights`));
+
+export interface VoteEventUpdate {
+  id: string;
+  body: string;
+  photos: string[];
+  createdAt: string;
+}
+export const getEventUpdates = (eventId: string, before?: string, limit = 20) =>
+  unwrap<{ total: number; updates: VoteEventUpdate[] }>(
+    api.get(`/votes/${eventId}/updates`, { params: { before, limit } }),
+  );
+export const postEventUpdate = (eventId: string, body: { body: string; photos?: string[] }) =>
+  unwrap<VoteEventUpdate>(api.post(`/votes/${eventId}/updates`, body));
+export const deleteEventUpdate = (eventId: string, updateId: string) =>
+  unwrap<{ ok: true }>(api.delete(`/votes/${eventId}/updates/${updateId}`));

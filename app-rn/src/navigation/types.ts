@@ -41,8 +41,9 @@ export type RootStackParamList = {
   Viewers: undefined;
   VotesList: undefined;
   VoteDetail: { eventId: string };
-  CreateVote: undefined;
+  CreateVote: { editEventId?: string } | undefined;
   SubmitEntry: { eventId: string };
+  EventUpdates: { eventId: string; isCreator?: boolean };
   NotesInbox: undefined;
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };
