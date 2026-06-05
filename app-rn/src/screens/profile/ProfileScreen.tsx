@@ -303,6 +303,7 @@ export function ProfileScreen() {
 
   const interests = (user.interests ?? []) as InterestTagId[];
   const prompts = user.prompts ?? [];
+  const mobileGames = user.mobileGames ?? [];
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
 
@@ -834,6 +835,11 @@ export function ProfileScreen() {
               </Text>
             </Pressable>
           </View>
+          {mobileGames.length > 0 && (
+            <Text style={{ fontSize: 13, color: theme.colors.text2, marginTop: 8 }}>
+              🎮 {t('profile.mobileGames.label')}: {mobileGames.join('、')}
+            </Text>
+          )}
 
           {/* Prompts */}
           <SectionTitle>{t('profile.promptsTitle')}</SectionTitle>

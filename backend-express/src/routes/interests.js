@@ -30,6 +30,8 @@ const VALID_TAG_IDS = new Set([
   'dogs', 'gardening', 'baking', 'fashion',
   // Nightlife
   'clubbing', 'bars', 'ktv',
+  // Gaming & social
+  'mobile-games', 'home-party',
 ]);
 
 const MIN_TAGS = 3;

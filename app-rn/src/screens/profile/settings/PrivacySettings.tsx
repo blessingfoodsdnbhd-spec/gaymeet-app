@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
-import { setPrivacy } from '../../../api/me';
+import { setPrivacy, patchMe } from '../../../api/me';
 import {
   SettingsShell,
   SettingsCard,
@@ -33,6 +33,7 @@ export function PrivacySettings() {
   const [hideOnline, setHideOnline] = useState(
     user ? !!user.preferences?.hideOnlineStatus : false,
   );
+  const [incognito, setIncognito] = useState(!!user?.incognitoBrowsing);
   // toPublicJSON already folds vipLevel into isPremium.
   const isPremium = !!user?.isPremium;
 
@@ -66,6 +67,16 @@ export function PrivacySettings() {
       reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
+  const flipIncognito = async (v: boolean) => {
+    setIncognito(v);
+    try {
+      const updated = await patchMe({ incognitoBrowsing: v });
+      setUser(updated);
+    } catch (e) {
+      setIncognito(!v);
+      reportFailure(e, t('privacySettings.updateFailed'));
+    }
+  };
 
   return (
     <SettingsShell title={t('privacySettings.title')}>
@@ -90,6 +101,16 @@ export function PrivacySettings() {
           value={isPremium ? hideOnline : false}
           onValueChange={flipHideOnline}
           hint={t('privacySettings.hideOnlineStatusHint')}
+          disabled={!isPremium}
+          badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
+        />
+        <Divider />
+        {/* Premium-only — incognito browsing keeps you out of others' 谁在看你. */}
+        <ToggleRow
+          label={t('privacySettings.incognitoBrowsing')}
+          value={isPremium ? incognito : false}
+          onValueChange={flipIncognito}
+          hint={t('privacySettings.incognitoBrowsingHint')}
           disabled={!isPremium}
           badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
         />

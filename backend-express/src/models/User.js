@@ -70,6 +70,14 @@ const userSchema = new mongoose.Schema(
     // "private profile" page instead of the user's details. Default true.
     isPublicProfile: { type: Boolean, default: true },
 
+    // Specific mobile games the user plays — only meaningful when the
+    // 'mobile-games' interest tag is selected. Free-form titles (王者荣耀 etc.).
+    mobileGames: { type: [String], default: [] },
+
+    // Premium "incognito browsing": when true (and Premium active), viewing
+    // another profile does NOT log a ProfileView (谁在看你). Private to self.
+    incognitoBrowsing: { type: Boolean, default: false },
+
     // Body stats
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg
@@ -270,7 +278,7 @@ userSchema.methods.comparePassword = function (plain) {
 // Fields safe to show to ANY viewer (public profile surface).
 const PUBLIC_USER_FIELDS = [
   '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
-  'interests', 'interestsOnboardedAt', 'prompts',
+  'interests', 'interestsOnboardedAt', 'prompts', 'mobileGames',
   'height', 'weight', 'age', 'dob', 'bodyType', 'occupation', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',

@@ -237,6 +237,7 @@
     "promptsSection": "Q&A",
     "shareMessage": "Check out {{name}} on Meyou → {{url}}",
     "interestsCount": "Interests · {{n}} in common",
+    "gamesPlays": "Plays",
     "stats": {
       "age": "{{n}} yrs"
     },
@@ -313,6 +314,11 @@
     "interestsTitle": "My interests",
     "interestsEmpty": "No interests yet",
     "interestsManage": "+ Manage",
+    "mobileGames": {
+      "label": "Games You Play",
+      "placeholder": "Type a game name…",
+      "add": "Add"
+    },
     "personasTitle": "Topic personas",
     "personasEmpty": "You haven't joined any topics yet",
     "promptsTitle": "Prompts",
@@ -403,6 +409,8 @@
     "showDistanceHint": "When off, only city shows — no kilometres",
     "hideOnlineStatus": "Hide my online status",
     "hideOnlineStatusHint": "Premium only — others won't see when you're online or last active",
+    "incognitoBrowsing": "Browse incognito",
+    "incognitoBrowsingHint": "Premium only — profiles you view won't see you in their \"Who viewed you\"",
     "premiumBadge": "Premium",
     "blocklist": "Blocked users",
     "updateFailed": "Update failed"

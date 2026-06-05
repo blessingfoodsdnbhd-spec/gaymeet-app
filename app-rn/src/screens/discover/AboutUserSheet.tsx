@@ -550,6 +550,14 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                 );
               })}
             </View>
+            {(user.mobileGames ?? []).length > 0 && (
+              <Text style={{ fontSize: 13, color: theme.colors.text2, marginTop: 10 }}>
+                🎮 {t('about.gamesPlays')}: {(user.mobileGames ?? []).slice(0, 5).join('、')}
+                {(user.mobileGames ?? []).length > 5
+                  ? ` +${(user.mobileGames ?? []).length - 5}`
+                  : ''}
+              </Text>
+            )}
           </View>
 
             <View style={{ height: 16 }} />

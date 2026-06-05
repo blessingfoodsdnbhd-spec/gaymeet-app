@@ -69,7 +69,10 @@ export type InterestTagId =
   // Nightlife
   | 'clubbing'
   | 'bars'
-  | 'ktv';
+  | 'ktv'
+  // Gaming & social
+  | 'mobile-games'
+  | 'home-party';
 
 export interface InterestTag {
   id: InterestTagId;
@@ -135,7 +138,13 @@ export const INTEREST_TAGS: InterestTag[] = [
   { id: 'clubbing', zh: 'Clubbing', en: 'Clubbing', emoji: '🪩' },
   { id: 'bars', zh: '酒吧', en: 'Bars', emoji: '🍺' },
   { id: 'ktv', zh: 'KTV', en: 'KTV', emoji: '🎶' },
+  // Gaming & social
+  { id: 'mobile-games', zh: '手机游戏', en: 'Mobile Games', emoji: '🎮' },
+  { id: 'home-party', zh: 'HomeParty', en: 'HomeParty', emoji: '🎉' },
 ];
+
+/** Selecting this interest reveals the "games you play" chip sub-input. */
+export const MOBILE_GAMES_TAG_ID = 'mobile-games';
 
 export const tagById = (id: string): InterestTag | undefined =>
   INTEREST_TAGS.find((t) => t.id === id);

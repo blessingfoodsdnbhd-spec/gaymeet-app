@@ -235,6 +235,7 @@
   "about": {
     "section": "关于",
     "promptsSection": "个人答题",
+    "gamesPlays": "玩",
     "shareMessage": "来看看 {{name}} 的 Meyou 资料 → {{url}}",
     "interestsCount": "兴趣 · {{n}} 个共同",
     "stats": {
@@ -313,6 +314,11 @@
     "interestsTitle": "我的兴趣",
     "interestsEmpty": "还没有兴趣",
     "interestsManage": "+ 管理",
+    "mobileGames": {
+      "label": "玩的游戏",
+      "placeholder": "输入游戏名称…",
+      "add": "添加"
+    },
     "personasTitle": "主題身份",
     "personasEmpty": "你尚未加入任何主題",
     "promptsTitle": "个人答题",
@@ -403,6 +409,8 @@
     "showDistanceHint": "关闭后只显示城市,不显示距离公里数",
     "hideOnlineStatus": "隐藏我的在线状态",
     "hideOnlineStatusHint": "仅限 Premium — 其他人将看不到你的在线或最后活跃时间",
+    "incognitoBrowsing": "隐身浏览",
+    "incognitoBrowsingHint": "仅限 Premium — 开启后,你查看他人资料不会出现在对方的「谁在看你」中",
     "premiumBadge": "会员",
     "blocklist": "黑名单",
     "updateFailed": "设置失败"

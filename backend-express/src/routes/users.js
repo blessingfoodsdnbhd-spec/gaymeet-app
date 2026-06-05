@@ -58,6 +58,12 @@ router.post('/:id/view', auth, async (req, res, next) => {
     const viewedId = req.params.id;
     if (!mongoose.isValidObjectId(viewedId)) return err(res, 'Invalid id');
     if (viewedId === req.user._id.toString()) return ok(res, { skipped: true });
+    // Premium incognito browsing → don't log the view. Honored only while
+    // Premium is active; a lapsed subscriber falls through to normal logging.
+    const { isPremiumActive } = require('../utils/premium');
+    if (req.user.incognitoBrowsing && isPremiumActive(req.user)) {
+      return res.status(204).end();
+    }
     await ProfileView.findOneAndUpdate(
       { viewerId: req.user._id, viewedId },
       { $set: { viewedAt: new Date() } },
@@ -79,10 +85,29 @@ router.patch('/me', auth, async (req, res, next) => {
       'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
       'relationshipStatus', 'intents',
+      'mobileGames', 'isPublicProfile', 'incognitoBrowsing',
     ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // mobileGames: trim, drop empties, cap each entry at 30 chars, dedupe
+    // (case-insensitive), cap the list at 10.
+    if (updates.mobileGames !== undefined) {
+      const raw = Array.isArray(updates.mobileGames) ? updates.mobileGames : [];
+      const seen = new Set();
+      const clean = [];
+      for (const g of raw) {
+        const v = String(g ?? '').trim().slice(0, 30);
+        if (!v) continue;
+        const key = v.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        clean.push(v);
+        if (clean.length >= 10) break;
+      }
+      updates.mobileGames = clean;
     }
 
     // DOB is the source of truth: normalize it and denormalize the computed age

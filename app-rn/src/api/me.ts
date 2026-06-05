@@ -41,6 +41,12 @@ export interface User {
   interests: InterestTagId[];
   interestsOnboardedAt: string | null;
   prompts: { q: string; a: string }[];
+  /** Specific mobile games the user plays (only when 'mobile-games' interest is on). */
+  mobileGames?: string[];
+  /** Premium incognito browsing — self-only; views aren't logged when on. */
+  incognitoBrowsing?: boolean;
+  /** Whether the public web profile (meyou.uk/u/:id) shows details. Default true. */
+  isPublicProfile?: boolean;
 
   // Optional / legacy fields read by some screens
   /** Likes ("想认识") received — drives the popularity badge on cards. */
@@ -92,6 +98,10 @@ export const patchMe = (
     relationshipStatus?: string | null;
     mbti?: string | null;
     intents?: string[];
+    /** Game titles (server trims/dedupes, ≤30 chars each, ≤10 total). */
+    mobileGames?: string[];
+    incognitoBrowsing?: boolean;
+    isPublicProfile?: boolean;
   },
 ) => unwrap<User>(api.patch('/users/me', patch));
 
