@@ -47,7 +47,11 @@ export function VoteDetailScreen() {
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const qc = useQueryClient();
-  const { width } = useWindowDimensions();
+  const { width, height: screenH } = useWindowDimensions();
+  // Bigger cover so the contest reads as a full visual showcase (~58% of the
+  // screen — a touch larger than AboutUserSheet's 0.5). contentFit="contain"
+  // keeps the whole image visible over the surface2 letterbox.
+  const coverH = Math.round(screenH * 0.58);
   const eventId = route.params.eventId;
   const [page, setPage] = React.useState(0);
   const [busyVote, setBusyVote] = React.useState<string | null>(null);
@@ -220,7 +224,7 @@ export function VoteDetailScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
         {/* Cover carousel */}
-        <View style={{ width, height: Math.round(width * 0.62), backgroundColor: theme.colors.surface2 }}>
+        <View style={{ width, height: coverH, backgroundColor: theme.colors.surface2 }}>
           <ScrollView
             horizontal
             pagingEnabled
@@ -228,7 +232,7 @@ export function VoteDetailScreen() {
             onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
           >
             {ev.coverPhotos.map((url, i) => (
-              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: Math.round(width * 0.62) }} contentFit="contain" cachePolicy="memory-disk" />
+              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" />
             ))}
           </ScrollView>
           {ev.coverPhotos.length > 1 && (

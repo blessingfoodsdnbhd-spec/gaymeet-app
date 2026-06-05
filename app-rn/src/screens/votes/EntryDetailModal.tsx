@@ -81,7 +81,8 @@ export function EntryDetailModal({
           </Pressable>
           <Pressable
             onPress={() => onOpenUser(entry.submitter.id)}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            hitSlop={{ top: 10, bottom: 10 }}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 6 }}
           >
             <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={28} />
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
