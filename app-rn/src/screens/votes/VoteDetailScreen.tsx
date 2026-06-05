@@ -166,7 +166,7 @@ export function VoteDetailScreen() {
             onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
           >
             {ev.coverPhotos.map((url, i) => (
-              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: Math.round(width * 0.62) }} contentFit="cover" cachePolicy="memory-disk" />
+              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: Math.round(width * 0.62) }} contentFit="contain" cachePolicy="memory-disk" />
             ))}
           </ScrollView>
           {ev.coverPhotos.length > 1 && (
@@ -279,7 +279,7 @@ export function VoteDetailScreen() {
                     onPress={() => nav.navigate('UserDetail', { userId: entry!.submitter.id })}
                     style={{ flex: 1, alignItems: 'center' }}
                   >
-                    <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12 }} contentFit="cover" />
+                    <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" />
                     <Text style={{ fontSize: 22, marginTop: 4 }}>{medalFor(rank)}</Text>
                     <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: theme.colors.text }}>{entry!.submitter.displayName}</Text>
                     <Text style={{ fontSize: 11, color: theme.colors.muted }}>{t('votes.voteCount', { n: entry!.voteCount })}</Text>
@@ -307,7 +307,7 @@ export function VoteDetailScreen() {
                 return (
                   <View key={entry.id} style={{ width: '47%', opacity: eliminated ? 0.55 : 1 }}>
                     <Pressable onLongPress={() => !mine && onReportEntry(entry)} delayLongPress={350}>
-                      <ExpoImage source={{ uri: entry.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="cover" />
+                      <ExpoImage source={{ uri: entry.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" />
                       {eliminated && (
                         <View style={{ position: 'absolute', top: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
                           <Text style={{ color: '#FFF', fontSize: 10.5, fontWeight: '700' }}>

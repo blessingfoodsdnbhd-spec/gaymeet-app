@@ -103,7 +103,7 @@ export function SubmitEntryScreen() {
               }}
             >
               {photoUrl ? (
-                <ExpoImage source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <ExpoImage source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} contentFit="contain" />
               ) : uploading ? (
                 <ActivityIndicator color={theme.colors.primary} />
               ) : (

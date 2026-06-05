@@ -60,7 +60,7 @@ export function VoteEventCard({
     >
       <View style={styles.coverWrap}>
         {cover ? (
-          <ExpoImage source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" />
+          <ExpoImage source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="contain" cachePolicy="memory-disk" />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.surface2 }]} />
         )}
