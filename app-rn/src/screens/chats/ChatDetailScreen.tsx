@@ -48,6 +48,7 @@ import {
   deleteConversation,
   deleteMessage,
   editMessage,
+  getConversations,
   getMessages,
   sendMessage,
   sendImageMessage,
@@ -88,9 +89,34 @@ export function ChatDetailScreen() {
   const me = useAuth((s) => s.user);
 
   const matchId = route.params.chatId; // route param is named chatId but holds matchId
-  const thread: ChatThread | undefined = useChats((s) =>
+  const storeThread: ChatThread | undefined = useChats((s) =>
     s.threads.find((t) => t.matchId === matchId),
   );
+  const setThreads = useChats((s) => s.setThreads);
+
+  // Self-sufficient thread resolution. The Zustand `threads` store is populated
+  // ONLY by ChatsListScreen — so a push-notification deep-link straight into a
+  // chat (cold start, or any time the Chats tab hasn't mounted) finds an empty
+  // store, leaving `otherId` undefined and the messages query disabled — i.e.
+  // the chat hangs blank until the user manually opens the list. Fetch the
+  // conversation list here too (shared ['chats','list'] key → dedupes with
+  // ChatsListScreen and reuses its cache when warm), and resolve the thread
+  // from the store OR this fetch, whichever lands first.
+  const convosQ = useQuery({
+    queryKey: ['chats', 'list'],
+    queryFn: getConversations,
+    staleTime: 30_000,
+    enabled: !storeThread,
+  });
+  const thread: ChatThread | undefined =
+    storeThread ?? convosQ.data?.find((tt) => tt.matchId === matchId);
+
+  // Keep the store in sync so the rest of the app (and a later list visit) sees
+  // these threads, and so re-renders here read a stable reference.
+  useEffect(() => {
+    if (!storeThread && convosQ.data) setThreads(convosQ.data);
+  }, [storeThread, convosQ.data, setThreads]);
+
   const setFocus = useChats((s) => s.setFocus);
   const markRead = useChats((s) => s.markRead);
   const typingMap = useChats((s) => s.typing);
@@ -723,7 +749,7 @@ export function ChatDetailScreen() {
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
-        {msgsQ.isLoading ? (
+        {msgsQ.isLoading || (!thread && convosQ.isLoading) ? (
           <View style={styles.centerFill}>
             <ActivityIndicator color={theme.colors.primary} />
           </View>
