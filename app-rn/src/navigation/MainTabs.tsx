@@ -154,14 +154,14 @@ export function MainTabs() {
       })}
     >
       <Tab.Screen
-        name="Discover"
-        component={DiscoverScreen}
-        options={{ tabBarLabel: t('tabs.discover') }}
-      />
-      <Tab.Screen
         name="Votes"
         component={VotesTabScreen}
         options={{ tabBarLabel: t('tabs.vote') }}
+      />
+      <Tab.Screen
+        name="Discover"
+        component={DiscoverScreen}
+        options={{ tabBarLabel: t('tabs.discover') }}
       />
       <Tab.Screen
         name="WorldChat"
