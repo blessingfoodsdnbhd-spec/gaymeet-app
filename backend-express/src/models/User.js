@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, default: '' },
     tags: [{ type: String }],
     avatarUrl: { type: String, default: null },
+    // ~5s voice intro (B2 audio URL). Auto-plays in Nearby when the viewer
+    // has the "介绍声音" toggle on. Community/social feature.
+    voiceIntroUrl: { type: String, default: null },
     photos: [{ type: String }],
 
     // ── Meyou 密友 (v2) interest matching ─────────────────────────────────
@@ -277,7 +280,7 @@ userSchema.methods.comparePassword = function (plain) {
 
 // Fields safe to show to ANY viewer (public profile surface).
 const PUBLIC_USER_FIELDS = [
-  '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos',
+  '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos', 'voiceIntroUrl',
   'interests', 'interestsOnboardedAt', 'prompts', 'mobileGames',
   'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',

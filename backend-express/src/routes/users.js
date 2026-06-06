@@ -85,7 +85,7 @@ router.patch('/me', auth, async (req, res, next) => {
       'countryCode', 'lookingFor', 'role',
       'zodiac', 'mbti', 'bloodType', 'kinks',
       'relationshipStatus', 'intents',
-      'mobileGames', 'isPublicProfile', 'incognitoBrowsing',
+      'mobileGames', 'isPublicProfile', 'incognitoBrowsing', 'voiceIntroUrl',
     ];
     const updates = {};
     for (const key of allowed) {

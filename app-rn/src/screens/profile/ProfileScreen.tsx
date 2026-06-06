@@ -20,6 +20,7 @@ import {
   Edit2,
   Globe,
   Lock,
+  Mic,
   ShieldCheck,
   Megaphone,
   Settings as SettingsIcon,
@@ -42,6 +43,8 @@ import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { TopicPickerSheet } from './TopicPickerSheet';
+import { VoiceRecorderSheet } from './VoiceRecorderSheet';
+import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { HighlightsSection } from '../votes/HighlightsSection';
@@ -49,7 +52,7 @@ import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
-import { getMyStats, getViewers, patchMe } from '../../api/me';
+import { getMyStats, getViewers, patchMe, deleteVoiceIntro } from '../../api/me';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { fetchIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
@@ -176,6 +179,21 @@ export function ProfileScreen() {
   );
   const personaLocale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
   const [topicPickerOpen, setTopicPickerOpen] = useState(false);
+  const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+
+  const onDeleteVoice = async () => {
+    if (voiceBusy) return;
+    setVoiceBusy(true);
+    try {
+      await deleteVoiceIntro();
+      setUser({ ...user!, voiceIntroUrl: null });
+    } catch {
+      // best-effort
+    } finally {
+      setVoiceBusy(false);
+    }
+  };
 
   // Pending unlock-request count drives the badge on the inbox link
   // shown under the Personas section. Always-on so the user sees new
@@ -842,6 +860,28 @@ export function ProfileScreen() {
             </Text>
           )}
 
+          {/* 介绍声音 / Voice Intro */}
+          <SectionTitle>{t('profile.voiceIntro.label')}</SectionTitle>
+          {user.voiceIntroUrl ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
+                <VoicePlayButton url={user.voiceIntroUrl} size={18} color={theme.colors.primaryDeep} />
+                <Text style={{ fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>0:05</Text>
+              </View>
+              <Pressable onPress={onDeleteVoice} disabled={voiceBusy} hitSlop={8}>
+                <Text style={{ fontSize: 14, color: theme.colors.muted }}>{t('profile.voiceIntro.delete')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => setVoiceRecorderOpen(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 11, borderRadius: 999, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.colors.line }}
+            >
+              <Mic size={16} color={theme.colors.primary} strokeWidth={2} />
+              <Text style={{ fontSize: 14, color: theme.colors.text2 }}>{t('profile.voiceIntro.record')}</Text>
+            </Pressable>
+          )}
+
           {/* 高光时刻 — top-3 contest placements (renders nothing if none). */}
           <HighlightsSection userId={user.id} />
 
@@ -1169,6 +1209,11 @@ export function ProfileScreen() {
             topicIcon: tp.icon,
           });
         }}
+      />
+      <VoiceRecorderSheet
+        open={voiceRecorderOpen}
+        onClose={() => setVoiceRecorderOpen(false)}
+        onSaved={(voiceIntroUrl) => setUser({ ...user!, voiceIntroUrl })}
       />
       {photoViewer.node}
     </SafeAreaView>

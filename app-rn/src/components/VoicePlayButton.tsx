@@ -1,0 +1,69 @@
+import React from 'react';
+import { Pressable } from 'react-native';
+import { Volume2, Pause } from 'lucide-react-native';
+import { Audio } from 'expo-av';
+import { useTheme } from '../theme/ThemeProvider';
+
+/**
+ * Tap-to-play a voice-intro URL. Toggles play/stop, auto-unloads on finish and
+ * on unmount. `autoPlay` plays once on mount (used by Nearby auto-play).
+ */
+export function VoicePlayButton({
+  url,
+  size = 18,
+  color,
+  autoPlay = false,
+  onPlayingChange,
+}: {
+  url: string;
+  size?: number;
+  color?: string;
+  autoPlay?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
+}) {
+  const theme = useTheme();
+  const soundRef = React.useRef<Audio.Sound | null>(null);
+  const [playing, setPlaying] = React.useState(false);
+  const c = color ?? theme.colors.primary;
+
+  const set = (v: boolean) => {
+    setPlaying(v);
+    onPlayingChange?.(v);
+  };
+
+  const stop = React.useCallback(async () => {
+    try { await soundRef.current?.unloadAsync(); } catch {}
+    soundRef.current = null;
+    set(false);
+  }, []);
+
+  const play = React.useCallback(async () => {
+    if (!url) return;
+    if (soundRef.current) { stop(); return; }
+    try {
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
+      const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
+      soundRef.current = sound;
+      set(true);
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if (s.isLoaded && s.didJustFinish) stop();
+      });
+    } catch {
+      set(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, stop]);
+
+  // Auto-play once on mount when requested.
+  React.useEffect(() => {
+    if (autoPlay && url) play();
+    return () => { stop(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Pressable onPress={play} hitSlop={8}>
+      {playing ? <Pause size={size} color={c} strokeWidth={2} fill={c} /> : <Volume2 size={size} color={c} strokeWidth={2} />}
+    </Pressable>
+  );
+}

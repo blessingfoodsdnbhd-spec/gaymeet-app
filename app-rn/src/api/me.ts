@@ -11,6 +11,8 @@ export interface User {
   nickname: string;
   bio?: string;
   avatarUrl?: string | null;
+  /** ~5s voice intro (audio URL). Auto-plays in Nearby when the viewer opts in. */
+  voiceIntroUrl?: string | null;
   photos?: string[];
   age?: number | null;
   /** Date of birth (ISO). Source of truth for age + zodiac when set; `age` is
@@ -179,6 +181,24 @@ export interface LikedMeResponse {
 }
 export const getLikedMe = () =>
   unwrap<LikedMeResponse>(api.get('/users/likes'));
+
+/** Upload a ~5s voice intro (audio file:// uri) → returns the stored URL.
+ *  Separate from uploadFile() which is image-only (resizes/forces JPEG). */
+export const uploadVoiceIntro = (uri: string) => {
+  const ext = (uri.split('?')[0].split('.').pop() || 'm4a').toLowerCase();
+  const fd = new FormData();
+  fd.append('file', { uri, name: `voice.${ext}`, type: `audio/${ext === 'm4a' ? 'm4a' : ext}` } as any);
+  return unwrap<{ voiceIntroUrl: string }>(
+    api.post('/me/voice-intro', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      transformRequest: (d) => d,
+      timeout: 60_000,
+    }) as any,
+  );
+};
+
+export const deleteVoiceIntro = () =>
+  unwrap<{ ok: true }>(api.delete('/me/voice-intro') as any);
 
 /** Log that I opened someone's profile ("谁在看你"). Fire-and-forget from
  *  AboutUserSheet on mount; backend skips self and de-dups per viewer→viewed. */

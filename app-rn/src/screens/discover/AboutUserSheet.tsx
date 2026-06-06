@@ -42,6 +42,8 @@ import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import { shareProfile } from '../../utils/shareProfile';
 import { SendNoteSheet } from './SendNoteSheet';
+import { VoicePlayButton } from '../../components/VoicePlayButton';
+import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
@@ -94,6 +96,9 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const [page, setPage] = useState(0);
   // 小纸条 composer open state (anonymous note to this user).
   const [noteOpen, setNoteOpen] = useState(false);
+  // Voice-intro playing state (drives the "正在播放介绍" badge).
+  const [voicePlaying, setVoicePlaying] = useState(false);
+  const introVoice = useDiscoverPrefs((s) => s.introVoice);
 
   const { width: screenW, height: screenH } = useWindowDimensions();
 
@@ -374,6 +379,25 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                 })()}
               </Text>
               <FollowBadge status={user.followStatus} size={18} />
+              {/* Voice intro — always tappable; auto-plays once on open when the
+                  Nearby "介绍声音" toggle is on. Not for own profile. */}
+              {!isSelf && !!user.voiceIntroUrl && (
+                <VoicePlayButton
+                  key={`${user.id}-${open ? 'o' : 'c'}`}
+                  url={user.voiceIntroUrl}
+                  size={20}
+                  autoPlay={open && introVoice}
+                  onPlayingChange={setVoicePlaying}
+                />
+              )}
+              {voicePlaying && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.primary }} />
+                  <Text style={{ fontSize: 11.5, color: theme.colors.primaryDeep, fontWeight: '700' }}>
+                    {t('about.playingIntro')}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 6 }}>

@@ -1,11 +1,26 @@
 const router = require('express').Router();
+const path = require('path');
+const multer = require('multer');
 const User = require('../models/User');
 const Match = require('../models/Match');
 const Follow = require('../models/Follow');
 const Moment = require('../models/Moment');
+const r2 = require('../services/r2Service');
 const { auth } = require('../middleware/auth');
 const { isAdminUser } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
+
+// ~5s voice intro upload — memory storage, audio only, ≤512 KB.
+const voiceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 512 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const m = file.mimetype || '';
+    // expo-av records m4a, which some platforms report as audio/* or video/mp4.
+    if (m.startsWith('audio/') || m === 'video/mp4') return cb(null, true);
+    cb(new Error('Only audio files are allowed'));
+  },
+});
 
 // The canonical interest tag ids — must match
 // app-rn/src/data/interestTags.ts (keep both lists in sync).
@@ -191,6 +206,43 @@ router.get('/pricing', async (_req, res) => {
 // True iff the authenticated user's email is in the ADMIN_EMAILS allowlist.
 router.get('/is-admin', auth, (req, res) => {
   ok(res, { isAdmin: isAdminUser(req.user) });
+});
+
+// ── POST /api/me/voice-intro ──────────────────────────────────────────────────
+// Multipart audio (field "file"), ≤512 KB, audio only → B2 → set voiceIntroUrl.
+router.post('/voice-intro', auth, voiceUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return err(res, 'No file uploaded');
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.m4a';
+    const key = `voice-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const url = await r2.uploadFile(req.file.buffer, key, req.file.mimetype);
+    if (!url) return err(res, 'Upload failed', 500);
+
+    const old = req.user.voiceIntroUrl;
+    await User.updateOne({ _id: req.user._id }, { $set: { voiceIntroUrl: url } });
+    if (old && old !== url) {
+      const k = r2.keyFromUrl(old);
+      if (k) r2.deleteFile(k).catch(() => {});
+    }
+    ok(res, { voiceIntroUrl: url });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/me/voice-intro ────────────────────────────────────────────────
+router.delete('/voice-intro', auth, async (req, res, next) => {
+  try {
+    const old = req.user.voiceIntroUrl;
+    await User.updateOne({ _id: req.user._id }, { $set: { voiceIntroUrl: null } });
+    if (old) {
+      const k = r2.keyFromUrl(old);
+      if (k) r2.deleteFile(k).catch(() => {});
+    }
+    ok(res, { ok: true });
+  } catch (e) {
+    next(e);
+  }
 });
 
 module.exports = router;

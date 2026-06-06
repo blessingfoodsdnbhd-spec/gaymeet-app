@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Heart, Search, SlidersHorizontal, Send, Star, X } from 'lucide-react-native';
+import { Crown, Heart, Search, SlidersHorizontal, Send, Star, Volume2, VolumeX, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +19,7 @@ import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
 import { BoostButton } from './BoostButton';
 import { TopicTabs, type ActiveTab } from './TopicTabs';
+import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { TopicPersonaList } from './TopicPersonaList';
 import { TopicPersonaSheet } from './TopicPersonaSheet';
 import { getTopics } from '../../api/topics';
@@ -63,6 +64,8 @@ export function DiscoverScreen() {
   const me = useAuth((s) => s.user);
   const queryClient = useQueryClient();
   const nav = useNavigation<Nav>();
+  const introVoice = useDiscoverPrefs((s) => s.introVoice);
+  const setIntroVoice = useDiscoverPrefs((s) => s.setIntroVoice);
 
   const [mode, setMode] = useState<Mode>({ kind: 'cards' });
   // Currently-open topic persona, identified by (slug, userId). Null when
@@ -314,6 +317,14 @@ export function DiscoverScreen() {
           <>
             <IconButton onPress={runSearch}>
               <Search size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </IconButton>
+            {/* 🔊 介绍声音 — when on, opening a profile auto-plays their voice intro. */}
+            <IconButton onPress={() => setIntroVoice(!introVoice)}>
+              {introVoice ? (
+                <Volume2 size={18} color={theme.colors.primary} strokeWidth={2} />
+              ) : (
+                <VolumeX size={18} color={theme.colors.text} strokeWidth={1.6} />
+              )}
             </IconButton>
             <BoostButton />
             <IconButton onPress={() => setFiltersOpen(true)}>

@@ -261,7 +261,8 @@
       "failed": "Search failed"
     },
     "networkError": "Network error, try later",
-    "loadNearbyFailed": "Couldn't load Nearby"
+    "loadNearbyFailed": "Couldn't load Nearby",
+    "introVoiceToggle": "🔊 Intro Voice"
   },
   "moments": {
     "filters": {
@@ -388,7 +389,8 @@
     "liked": "Liked",
     "becomeMatch": "Become a match",
     "message": "Message",
-    "messageFailed": "Couldn't open chat"
+    "messageFailed": "Couldn't open chat",
+    "playingIntro": "Playing intro"
   },
   "userDetail": {
     "aboutSection": "About",
@@ -459,6 +461,18 @@
       "label": "Games You Play",
       "placeholder": "Type a game name…",
       "add": "Add"
+    },
+    "voiceIntro": {
+      "label": "Voice Intro",
+      "record": "Record 5-sec intro",
+      "tapToStart": "Tap to record",
+      "recording": "Recording…",
+      "save": "Save",
+      "delete": "Delete",
+      "micPermTitle": "Microphone needed",
+      "micPermBody": "Enable microphone access to record a voice intro.",
+      "recordFailed": "Couldn't record",
+      "saveFailedTitle": "Couldn't save"
     },
     "personasTitle": "Topic personas",
     "personasEmpty": "You haven't joined any topics yet",
