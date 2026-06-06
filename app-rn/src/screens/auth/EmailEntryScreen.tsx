@@ -21,16 +21,20 @@ export function EmailEntryScreen() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const valid = EMAIL_RE.test(email);
+  // Normalize before validating/sending — mobile paste/autocomplete often adds
+  // a trailing space or capitalizes, which otherwise fails EMAIL_RE and leaves
+  // Continue disabled (and the server lowercases anyway).
+  const clean = email.trim().toLowerCase();
+  const valid = EMAIL_RE.test(clean);
 
   const onSubmit = async () => {
     if (!valid || busy) return;
     setBusy(true);
     try {
-      const res = await sendOtp(email);
+      const res = await sendOtp(clean);
       // devCode present only while no real email provider is configured —
       // pass it through so the OTP screen can auto-fill it.
-      nav.navigate('OTPCode', { email, devCode: res?.devCode });
+      nav.navigate('OTPCode', { email: clean, devCode: res?.devCode });
     } catch (e: any) {
       const status = e?.response?.status;
       const detail =
