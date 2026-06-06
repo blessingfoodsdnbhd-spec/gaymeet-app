@@ -117,7 +117,7 @@ export function FriendsListScreen() {
             />
           )}
           renderItem={({ item }) => (
-            <FriendRow user={item} onPress={() => openWith(item)} />
+            <FriendRow user={item} onPress={() => nav.navigate('UserDetail', { userId: item._id })} />
           )}
           ListEmptyComponent={
             <EmptyState

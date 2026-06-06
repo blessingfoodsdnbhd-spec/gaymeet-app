@@ -101,7 +101,7 @@ export function ViewersScreen() {
             <ViewerRow
               user={item}
               onPress={
-                isPremium && !item.isBlurred
+                isPremium
                   ? () => nav.navigate('UserDetail', { userId: item._id })
                   : () => setUpsellOpen(true)
               }

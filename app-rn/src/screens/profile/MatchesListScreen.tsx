@@ -95,7 +95,7 @@ export function MatchesListScreen() {
           renderItem={({ item }) => (
             <MatchRow
               thread={item}
-              onPress={() => nav.navigate('ChatDetail', { chatId: item.matchId })}
+              onPress={() => nav.navigate('UserDetail', { userId: item.user.id })}
             />
           )}
           ListEmptyComponent={

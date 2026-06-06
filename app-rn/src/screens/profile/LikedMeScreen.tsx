@@ -100,7 +100,7 @@ export function LikedMeScreen() {
             <LikerRow
               user={item}
               onPress={
-                isPremium && !item.isBlurred
+                isPremium
                   ? () => nav.navigate('UserDetail', { userId: item._id })
                   : () => setUpsellOpen(true)
               }
