@@ -31,6 +31,20 @@ function emitRoomsState() {
   }
 }
 
+/** Live online count for ANY room id (country code or custom ChatRoom id). */
+function roomOnlineCount(roomId) {
+  return io ? io.sockets.adapter.rooms.get(socketRoom(roomId))?.size ?? 0 : 0;
+}
+
+/** Push a fresh count to one room — used for custom rooms, which aren't in the
+ *  periodic ROOMS snapshot. */
+function emitRoomCount(roomId) {
+  if (!io || !roomId) return;
+  io.to(socketRoom(roomId)).emit('world-chat:online-count', { roomId, count: roomOnlineCount(roomId) });
+}
+
+const isCustomRoomId = (id) => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
+
 /**
  * Initialise Socket.io on the given HTTP server.
  * Must be called once from server.js after connectDB().
@@ -429,14 +443,18 @@ function initSocket(server) {
       socket.data = { ...(socket.data || {}), inCall: false, callId: null };
     });
 
-    // World Chat: switch rooms. Client emits when entering a country room.
+    // World Chat: switch rooms. Client emits when entering a country OR a
+    // custom (user-created) room. Custom room ids are 24-hex ChatRoom ids.
     socket.on('world-chat:join-room', ({ roomId } = {}) => {
-      const next = VALID_ROOM_IDS.has(roomId) ? roomId : 'world';
+      const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) ? roomId : 'world';
       const prev = socket.data?.wcRoom || 'world';
       if (next !== prev) {
         socket.leave(socketRoom(prev));
         socket.join(socketRoom(next));
         socket.data = { ...(socket.data || {}), wcRoom: next };
+        // Custom rooms aren't in the periodic ROOMS snapshot — push their counts.
+        if (isCustomRoomId(prev)) emitRoomCount(prev);
+        if (isCustomRoomId(next)) emitRoomCount(next);
       }
       emitRoomsState();
     });
@@ -503,4 +521,4 @@ function getIO() {
   return io;
 }
 
-module.exports = { initSocket, getIO, getRoomCounts };
+module.exports = { initSocket, getIO, getRoomCounts, roomOnlineCount };

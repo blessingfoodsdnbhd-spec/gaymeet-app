@@ -109,7 +109,7 @@ export function WorldChatRoomsScreen() {
             const showNative = item.label.native && item.label.native !== primary;
             return (
               <Pressable
-                onPress={() => nav.navigate('WorldChatRoom', { roomId: item.id, title: `${item.flag} ${primary}` })}
+                onPress={() => nav.navigate('CountryRooms', { countryCode: item.id, title: `${item.flag} ${primary}` })}
                 style={({ pressed }) => [
                   styles.card,
                   { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1 },

@@ -131,6 +131,9 @@ export type WsWorldChatReceive = {
 export type WsWorldChatOnlineCount = { roomId?: string; count: number };
 export type WsWorldChatRoomsState = { counts: Record<string, number> };
 export type WsWorldChatDeleted = { messageId: string };
+export type WsWorldChatRoomClosed = { roomId: string };
+export type WsWorldChatRoomDeleted = { roomId: string };
+export type WsWorldChatKicked = { roomId: string };
 
 export interface WsEventMap {
   'match:new': WsMatchNew;
@@ -139,6 +142,9 @@ export interface WsEventMap {
   'world-chat:online-count': WsWorldChatOnlineCount;
   'world-chat:rooms-state': WsWorldChatRoomsState;
   'world-chat:message-deleted': WsWorldChatDeleted;
+  'world-chat:room-closed': WsWorldChatRoomClosed;
+  'world-chat:room-deleted': WsWorldChatRoomDeleted;
+  'world-chat:kicked': WsWorldChatKicked;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
   'chat:edited': WsChatEdited;

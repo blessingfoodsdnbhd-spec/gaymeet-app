@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, ChevronLeft } from 'lucide-react-native';
+import { Send, ChevronLeft, MoreVertical, Crown, Lock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import {
   sendWorldChat,
   reportWorldChat,
   deleteWorldChatMessage,
+  getChatRoom,
   type WorldChatMessage,
 } from '../../api/worldChat';
 import { blockUser } from '../../api/safety';
@@ -35,6 +36,7 @@ import { on as wsOn, emit as wsEmit } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
+import { RoomSettingsSheet } from './RoomSettingsSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -67,7 +69,25 @@ export function WorldChatScreen() {
 
   const roomId = route.params?.roomId ?? 'world';
   const roomTitle = route.params?.title ?? t('worldChat.title');
+  const isCustom = route.params?.custom ?? /^[a-f0-9]{24}$/i.test(roomId);
   const KEY = React.useMemo(() => ['worldChat', 'recent', roomId], [roomId]);
+
+  // Custom (user-created) rooms carry a title, member/online counts, privacy and
+  // creator privileges — fetched here; country rooms skip this.
+  const roomQ = useQuery({
+    queryKey: ['worldChat', 'room', roomId],
+    queryFn: () => getChatRoom(roomId),
+    enabled: isCustom,
+    staleTime: 10_000,
+    select: (d) => d.room,
+  });
+  const room = roomQ.data;
+  const headerTitle = room?.title ?? roomTitle;
+  const isCreator = !!room?.isCreator;
+  const creatorId = room?.creator?.id ?? null;
+  const closed = room?.status === 'closed';
+
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -127,8 +147,23 @@ export function WorldChatScreen() {
         // legacy payload with no roomId).
         if (!cancelled && (!evt.roomId || evt.roomId === roomId)) setOnline(evt.count);
       });
-      if (cancelled) { uRecv(); uDel(); uCount(); return; }
-      unsubs = [uRecv, uDel, uCount];
+      // Room lifecycle (custom rooms only). room-closed is room-scoped; kicked is
+      // user-targeted, so confirm it's THIS room.
+      const uClosed = await wsOn('world-chat:room-closed', ({ roomId: rid }) => {
+        if (!cancelled && rid === roomId) qc.invalidateQueries({ queryKey: ['worldChat', 'room', roomId] });
+      });
+      const uRoomDel = await wsOn('world-chat:room-deleted', ({ roomId: rid }) => {
+        if (cancelled || rid !== roomId) return;
+        Alert.alert(t('worldChat.rooms.roomDeleted'));
+        nav.goBack();
+      });
+      const uKicked = await wsOn('world-chat:kicked', ({ roomId: rid }) => {
+        if (cancelled || rid !== roomId) return;
+        Alert.alert(t('worldChat.rooms.kicked'));
+        nav.goBack();
+      });
+      if (cancelled) { uRecv(); uDel(); uCount(); uClosed(); uRoomDel(); uKicked(); return; }
+      unsubs = [uRecv, uDel, uCount, uClosed, uRoomDel, uKicked];
     })();
     return () => {
       cancelled = true;
@@ -256,13 +291,26 @@ export function WorldChatScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
-            {roomTitle}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            {isCustom && room?.isPrivate && <Lock size={13} color={theme.colors.muted} />}
+            <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
+              {headerTitle}
+            </Text>
+            {closed && (
+              <Text style={{ fontSize: 11, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
+            )}
+          </View>
           <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-            🟢 {t('worldChat.online', { n: online ?? '—' })}
+            {isCustom && room
+              ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${online ?? room.onlineCount}`
+              : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
           </Text>
         </View>
+        {isCustom && room && (
+          <Pressable onPress={() => setSettingsOpen(true)} hitSlop={8} style={{ marginLeft: 8 }}>
+            <MoreVertical size={22} color={theme.colors.text} />
+          </Pressable>
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -298,6 +346,7 @@ export function WorldChatScreen() {
               <Row
                 msg={item}
                 mine={item.userId === myId}
+                isCreator={!!creatorId && item.userId === creatorId}
                 onLongPress={() => setSelected(item)}
                 onOpenUser={() =>
                   item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
@@ -307,7 +356,14 @@ export function WorldChatScreen() {
           />
         )}
 
-        {/* Composer */}
+        {/* Composer (hidden once a custom room is closed) */}
+        {closed ? (
+          <View style={[styles.composer, { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line, justifyContent: 'center' }]}>
+            <Text style={{ flex: 1, textAlign: 'center', color: theme.colors.muted, fontSize: 13.5 }}>
+              {t('worldChat.rooms.closedNotice')}
+            </Text>
+          </View>
+        ) : (
         <View style={[styles.composer, { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line }]}>
           <View
             style={{
@@ -351,6 +407,7 @@ export function WorldChatScreen() {
             <Send size={18} color="#FFFFFF" strokeWidth={2} />
           </Pressable>
         </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Long-press action sheet: own message → delete; others → report/block/DM */}
@@ -370,6 +427,23 @@ export function WorldChatScreen() {
             </>
           ))}
       </Sheet>
+
+      {/* Custom-room settings (creator) / leave (member). */}
+      {isCustom && room && (
+        <RoomSettingsSheet
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          room={room}
+          onChanged={() => {
+            setSettingsOpen(false);
+            roomQ.refetch();
+          }}
+          onExit={() => {
+            setSettingsOpen(false);
+            nav.goBack();
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -377,11 +451,13 @@ export function WorldChatScreen() {
 function Row({
   msg,
   mine,
+  isCreator,
   onLongPress,
   onOpenUser,
 }: {
   msg: WorldChatMessage;
   mine: boolean;
+  isCreator?: boolean;
   onLongPress: () => void;
   onOpenUser: () => void;
 }) {
@@ -407,6 +483,7 @@ function Row({
               </Text>
             </Pressable>
           )}
+          {isCreator && <Crown size={12} color={theme.colors.primary} />}
           <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(msg.createdAt)}</Text>
         </View>
         <View
