@@ -72,11 +72,14 @@ export function OTPCodeScreen() {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-submit the moment 6 digits are entered.
+  // Auto-submit once the OTP is 6 digits AND the optional invite code is either
+  // empty or complete (6+ chars) — so a user mid-typing an invite isn't cut off,
+  // but the common no-invite login fires immediately.
+  const canSubmit = code.length === 6 && (inviteCode.length === 0 || inviteCode.length >= 6);
   useEffect(() => {
-    if (code.length === 6) submit(code);
+    if (canSubmit) submit(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, inviteCode]);
 
   const resend = async () => {
     if (resendIn > 0) return;
@@ -154,19 +157,6 @@ export function OTPCodeScreen() {
               <Text style={{ color: theme.colors.danger, fontSize: 13, marginTop: 8 }}>{t('otp.invalid')}</Text>
             )}
 
-            {/* Always-visible Continue button (auto-submit handles the common
-                case, but this gives a manual path + a loading state so the user
-                always sees that something is happening — esp. on cold starts). */}
-            <View style={{ marginTop: 20 }}>
-              <Button
-                label={t('otp.verify')}
-                onPress={() => submit(code)}
-                loading={busy}
-                disabled={code.length !== 6}
-                fullWidth
-              />
-            </View>
-
             {/* Optional invite code — new users get 30 days Premium for both sides. */}
             <Text style={{ marginTop: 24, fontSize: 12.5, color: theme.colors.muted }}>
               {t('invite.optionalField')}
@@ -194,7 +184,20 @@ export function OTPCodeScreen() {
               }}
             />
 
-            <Pressable onPress={resend} disabled={resendIn > 0} style={{ marginTop: 28, alignSelf: 'center' }}>
+            {/* Primary submit — ALWAYS visible, right below the inputs. Auto-submit
+                handles the common case, but this guarantees a tappable path + a
+                loading state so the user is never stuck (esp. on Render cold starts). */}
+            <View style={{ marginTop: 24 }}>
+              <Button
+                label={t('otp.verify')}
+                onPress={() => submit(code)}
+                loading={busy}
+                disabled={code.length !== 6}
+                fullWidth
+              />
+            </View>
+
+            <Pressable onPress={resend} disabled={resendIn > 0} style={{ marginTop: 24, alignSelf: 'center' }}>
               <Text
                 style={{
                   color: resendIn > 0 ? theme.colors.muted : theme.colors.primary,
