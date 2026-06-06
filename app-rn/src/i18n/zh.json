@@ -137,7 +137,9 @@
     "title": "输入验证码",
     "resend": "{{seconds}}s 后可重发",
     "resendCta": "重发验证码",
-    "resendFailed": "重发失败"
+    "resendFailed": "重发失败",
+    "verify": "继续",
+    "invalid": "验证码不正确,请重试"
   },
   "tags": {
     "title": "你的兴趣?",

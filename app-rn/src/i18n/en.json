@@ -137,7 +137,9 @@
     "title": "Enter the code",
     "resend": "Resend in {{seconds}}s",
     "resendCta": "Resend code",
-    "resendFailed": "Resend failed"
+    "resendFailed": "Resend failed",
+    "verify": "Continue",
+    "invalid": "That code isn't right — try again"
   },
   "tags": {
     "title": "What are you into?",
