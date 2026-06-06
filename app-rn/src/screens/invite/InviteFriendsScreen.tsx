@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, Share, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Share, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Copy, Share2, Gift, Ticket } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { useAuth } from '../../store/auth';
+import { useToast } from '../../components/ToastProvider';
 import { getMyInviteCode, getInviteStats } from '../../api/invites';
 import { InviteShareCard, CARD_SIZE } from './InviteShareCard';
 import { shareInviteCard } from '../../utils/shareInviteCard';
@@ -23,6 +24,7 @@ export function InviteFriendsScreen() {
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
   const me = useAuth((s) => s.user);
+  const toast = useToast();
   const cardRef = React.useRef<View>(null);
 
   const codeQ = useQuery({ queryKey: ['invite', 'code'], queryFn: getMyInviteCode, staleTime: 60_000 });
@@ -34,7 +36,7 @@ export function InviteFriendsScreen() {
   const onCopy = async () => {
     if (!codeQ.data) return;
     await Clipboard.setStringAsync(code).catch(() => {});
-    Alert.alert(t('invite.copied'));
+    toast.success(t('invite.copied'));
   };
 
   const onShareText = async () => {

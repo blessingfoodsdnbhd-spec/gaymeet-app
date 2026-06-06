@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, Style
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -14,14 +14,16 @@ import { redeemInvite } from '../../api/invites';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Rt = RouteProp<RootStackParamList, 'RedeemInvite'>;
 
 export function RedeemInviteScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+  const route = useRoute<Rt>();
   const qc = useQueryClient();
   const setUser = useAuth((s) => s.setUser);
-  const [code, setCode] = React.useState('');
+  const [code, setCode] = React.useState((route.params?.code ?? '').toUpperCase());
   const [busy, setBusy] = React.useState(false);
 
   const onRedeem = async () => {

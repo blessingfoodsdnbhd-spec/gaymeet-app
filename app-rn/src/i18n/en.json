@@ -712,6 +712,7 @@
       "follow": "New followers",
       "viewers": "Daily profile viewers",
       "wants": "People who want to know you",
+      "digest": "Daily hot contests",
       "comeback": "Comeback reminders",
       "quietSection": "Quiet hours",
       "quietHours": "Quiet hours",
@@ -861,6 +862,24 @@
     "active": "You're a Premium member",
     "expiresAt": "Expires: {{date}}",
     "benefitsSection": "Benefits",
+    "cancelPolicy": "Cancel anytime in Settings. No long-term commitment.",
+    "upsell": {
+      "title": "Meyou Premium",
+      "cta": "See Premium",
+      "later": "Maybe later",
+      "viewers": "See exactly who viewed your profile.",
+      "likes": "See everyone who wants to know you.",
+      "privacy": "Hide your online status and browse incognito.",
+      "profile80": "Your profile looks great — go Premium for 3× the visibility."
+    },
+    "testimonials": {
+      "section": "What members say",
+      "disclaimer": "*Anonymized samples.",
+      "1": { "name": "小美 · 25 · 吉隆坡", "quote": "Met so many photography friends through Meyou — the contests are addictive!" },
+      "2": { "name": "Jay · 28 · Singapore", "quote": "The plaza rooms are great for meeting people without the dating pressure." },
+      "3": { "name": "阿哲 · 23 · 台北", "quote": "Voice intros are such a nice touch — you get a real feel for people." },
+      "4": { "name": "Nina · 26 · 香港", "quote": "Premium's profile viewers + incognito are 100% worth it." }
+    },
     "benefits": {
       "hideOnline": "Hide your online status",
       "incognito": "Browse incognito",

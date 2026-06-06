@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy, patchMe } from '../../../api/me';
+import { UpgradePremiumSheet } from '../../../components/UpgradePremiumSheet';
 import {
   SettingsShell,
   SettingsCard,
@@ -36,6 +37,7 @@ export function PrivacySettings() {
   const [incognito, setIncognito] = useState(!!user?.incognitoBrowsing);
   // toPublicJSON already folds vipLevel into isPremium.
   const isPremium = !!user?.isPremium;
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const flipNearby = async (v: boolean) => {
     setNearbyVisible(v);
@@ -95,30 +97,36 @@ export function PrivacySettings() {
           hint={t('privacySettings.showDistanceHint')}
         />
         <Divider />
-        {/* Premium-only. Free users see the row disabled with a Premium badge. */}
-        <ToggleRow
-          label={t('privacySettings.hideOnlineStatus')}
-          value={isPremium ? hideOnline : false}
-          onValueChange={flipHideOnline}
-          hint={t('privacySettings.hideOnlineStatusHint')}
-          disabled={!isPremium}
-          badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
-        />
+        {/* Premium-only. Free users: the disabled Switch lets the tap fall
+            through to the Pressable, which opens the upgrade sheet. */}
+        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+          <ToggleRow
+            label={t('privacySettings.hideOnlineStatus')}
+            value={isPremium ? hideOnline : false}
+            onValueChange={flipHideOnline}
+            hint={t('privacySettings.hideOnlineStatusHint')}
+            disabled={!isPremium}
+            badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
+          />
+        </Pressable>
         <Divider />
         {/* Premium-only — incognito browsing keeps you out of others' 谁在看你. */}
-        <ToggleRow
-          label={t('privacySettings.incognitoBrowsing')}
-          value={isPremium ? incognito : false}
-          onValueChange={flipIncognito}
-          hint={t('privacySettings.incognitoBrowsingHint')}
-          disabled={!isPremium}
-          badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
-        />
+        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+          <ToggleRow
+            label={t('privacySettings.incognitoBrowsing')}
+            value={isPremium ? incognito : false}
+            onValueChange={flipIncognito}
+            hint={t('privacySettings.incognitoBrowsingHint')}
+            disabled={!isPremium}
+            badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
+          />
+        </Pressable>
       </SettingsCard>
 
       <SettingsCard flat style={{ paddingVertical: 4 }}>
         <LinkRow label={t('privacySettings.blocklist')} />
       </SettingsCard>
+      <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.privacy')} />
     </SettingsShell>
   );
 }

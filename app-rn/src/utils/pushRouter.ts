@@ -76,6 +76,9 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'comeback': {
       return safeNavigate('Main');
     }
+    case 'daily_digest': {
+      return safeNavigate('VotesList');
+    }
     case 'invite_redeemed': {
       return safeNavigate('InviteFriends');
     }

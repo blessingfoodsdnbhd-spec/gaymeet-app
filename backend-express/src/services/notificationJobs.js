@@ -118,13 +118,44 @@ async function wantsYouDigest() {
   }
 }
 
-// Fires every 15 min; the daily digests only run when the UTC hour is 20 (8pm),
-// deduped per-user-per-day by the ledger so the multiple 8pm-hour ticks are safe.
+/** Daily 8am UTC: the 3 hottest active contests → users active in the last
+ *  14 days who haven't turned the digest off. Deduped per-user-per-day. */
+async function hotEventsDigest() {
+  const top = await VoteEvent.find({ status: 'active' })
+    .sort({ voteCount: -1, updatedAt: -1 })
+    .limit(3)
+    .select('title')
+    .lean();
+  if (!top.length) return;
+  const titles = top.map((e) => e.title).join(' · ');
+  const users = await User.find({
+    fcmToken: { $ne: null },
+    lastActiveAt: { $gt: new Date(Date.now() - 14 * DAY) },
+  })
+    .select('_id')
+    .limit(2000)
+    .lean();
+  for (const u of users) {
+    if (await alreadyNotified(u._id, 'daily_digest', null, null, 20 * HOUR)) continue;
+    await notify(u._id, 'daily_digest', {
+      title: '今日热门活动 🔥',
+      body: `${titles} — 来投票吧`,
+      data: {},
+    });
+  }
+}
+
+// Fires every 15 min; daily digests run only on their target UTC hour, deduped
+// per-user-per-day by the ledger so the multiple in-hour ticks are safe.
 async function dailyTick() {
   try {
-    if (new Date().getUTCHours() !== 20) return;
-    await viewersDigest();
-    await wantsYouDigest();
+    const hour = new Date().getUTCHours();
+    if (hour === 8) {
+      await hotEventsDigest();
+    } else if (hour === 20) {
+      await viewersDigest();
+      await wantsYouDigest();
+    }
   } catch (_) {
     /* best-effort */
   }

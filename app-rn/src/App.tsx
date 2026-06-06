@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ToastProvider } from './components/ToastProvider';
 import { initSentry } from './lib/sentry';
 
 initSentry();
@@ -52,6 +53,17 @@ function wakeBackend() {
     .catch(() => {})
     .finally(() => clearTimeout(cancel));
 }
+
+// Deep links. meyou://invite/<code> (and the https mirror) → the redeem screen
+// with the code pre-filled. Other schemes fall through to push-tap routing.
+const LINKING = {
+  prefixes: ['meyou://', 'https://meyou.uk', 'https://www.meyou.uk'],
+  config: {
+    screens: {
+      RedeemInvite: 'invite/:code',
+    },
+  },
+};
 
 export function App() {
   const [bootDone, setBootDone] = useState(false);
@@ -115,8 +127,10 @@ export function App() {
         <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
           <ThemeProvider>
+            <ToastProvider>
             <NavigationContainer
               ref={navigationRef}
+              linking={LINKING}
               onReady={() => {
                 // If the app was cold-launched by a push tap, replay the
                 // routing intent now that the navigator is ready.
@@ -136,6 +150,7 @@ export function App() {
                   active announcement or it's been "don't show again". */}
               <AnnouncementBootstrap />
             </NavigationContainer>
+            </ToastProvider>
           </ThemeProvider>
         </QueryClientProvider>
     </ErrorBoundary>

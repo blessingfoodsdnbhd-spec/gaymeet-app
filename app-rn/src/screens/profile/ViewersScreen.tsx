@@ -22,6 +22,7 @@ import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { shortTime } from '../../utils/time';
 import { useAuth } from '../../store/auth';
 import { EmptyState } from '../../components/EmptyState';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { shareProfile } from '../../utils/shareProfile';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -44,6 +45,7 @@ export function ViewersScreen() {
   const nav = useNavigation<Nav>();
   const me = useAuth((s) => s.user);
   const isPremium = !!(me as any)?.isPremium;
+  const [upsellOpen, setUpsellOpen] = React.useState(false);
 
   const viewersQ = useQuery({
     queryKey: ['users', 'viewers'],
@@ -101,7 +103,7 @@ export function ViewersScreen() {
               onPress={
                 isPremium && !item.isBlurred
                   ? () => nav.navigate('UserDetail', { userId: item._id })
-                  : () => nav.navigate('Premium')
+                  : () => setUpsellOpen(true)
               }
             />
           )}
@@ -116,6 +118,7 @@ export function ViewersScreen() {
           }
         />
       )}
+      <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.viewers')} />
     </SafeAreaView>
   );
 }

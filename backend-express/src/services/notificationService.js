@@ -19,6 +19,7 @@ const ALL_TYPES = [
   'vote_result',
   'viewers_digest',
   'wants_you_digest',
+  'daily_digest',
   'comeback',
 ];
 

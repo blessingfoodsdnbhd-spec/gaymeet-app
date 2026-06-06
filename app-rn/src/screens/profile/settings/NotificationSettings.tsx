@@ -14,6 +14,7 @@ const GROUPS: { key: string; types: string[] }[] = [
   { key: 'follow', types: ['follow'] },
   { key: 'viewers', types: ['viewers_digest'] },
   { key: 'wants', types: ['wants_you_digest'] },
+  { key: 'digest', types: ['daily_digest'] },
   { key: 'comeback', types: ['comeback'] },
 ];
 

@@ -198,6 +198,43 @@ export function PremiumScreen() {
           ))}
         </View>
 
+        {/* Testimonials — anonymized samples (disclosed below). */}
+        <View style={{ marginTop: 28 }}>
+          <Text style={[styles.section, { color: theme.colors.muted, paddingHorizontal: 20 }]}>
+            {t('premium.testimonials.section')}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+          >
+            {['1', '2', '3', '4'].map((i) => (
+              <View
+                key={i}
+                style={{
+                  width: 240,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: theme.colors.line,
+                  backgroundColor: theme.colors.surface,
+                  padding: 16,
+                }}
+              >
+                <Text style={{ color: '#F5B301', fontSize: 14, letterSpacing: 1 }}>★★★★★</Text>
+                <Text style={{ color: theme.colors.text, fontSize: 14, lineHeight: 21, marginTop: 8 }}>
+                  {t(`premium.testimonials.${i}.quote`)}
+                </Text>
+                <Text style={{ color: theme.colors.muted, fontSize: 12.5, marginTop: 10, fontWeight: '600' }}>
+                  {t(`premium.testimonials.${i}.name`)}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+          <Text style={{ color: theme.colors.muted, fontSize: 10.5, fontStyle: 'italic', paddingHorizontal: 20, marginTop: 8 }}>
+            {t('premium.testimonials.disclaimer')}
+          </Text>
+        </View>
+
         <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
           <Text style={[styles.section, { color: theme.colors.muted }]}>{t('premium.plansSection')}</Text>
           {pricingQ.isLoading ? (
@@ -284,6 +321,9 @@ export function PremiumScreen() {
           </Pressable>
         </View>
 
+        <Text style={{ color: theme.colors.muted, fontSize: 11.5, textAlign: 'center', marginBottom: 10, marginTop: 2 }}>
+          {t('premium.cancelPolicy')}
+        </Text>
         <Button
           label={
             selected === 'annual'

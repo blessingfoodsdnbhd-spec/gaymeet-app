@@ -20,6 +20,7 @@ import { Button } from '../../components/Button';
 import { getLikedMe, type LikerUser } from '../../api/me';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { useAuth } from '../../store/auth';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -42,6 +43,7 @@ export function LikedMeScreen() {
   const nav = useNavigation<Nav>();
   const me = useAuth((s) => s.user);
   const isPremium = !!(me as any)?.isPremium;
+  const [upsellOpen, setUpsellOpen] = React.useState(false);
 
   const likesQ = useQuery({
     queryKey: ['users', 'likedMe'],
@@ -100,7 +102,7 @@ export function LikedMeScreen() {
               onPress={
                 isPremium && !item.isBlurred
                   ? () => nav.navigate('UserDetail', { userId: item._id })
-                  : () => nav.navigate('Premium')
+                  : () => setUpsellOpen(true)
               }
             />
           )}
@@ -113,6 +115,7 @@ export function LikedMeScreen() {
           }
         />
       )}
+      <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.likes')} />
     </SafeAreaView>
   );
 }

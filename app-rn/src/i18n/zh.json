@@ -712,6 +712,7 @@
       "follow": "新的关注",
       "viewers": "每日 profile 访客",
       "wants": "想认识你的人",
+      "digest": "每日热门活动",
       "comeback": "回归提醒",
       "quietSection": "免打扰时段",
       "quietHours": "免打扰时段",
@@ -861,6 +862,24 @@
     "active": "你已是 Premium 会员",
     "expiresAt": "到期: {{date}}",
     "benefitsSection": "专属权益",
+    "cancelPolicy": "随时可在设置中取消,没有长期绑定。",
+    "upsell": {
+      "title": "Meyou Premium",
+      "cta": "查看 Premium",
+      "later": "以后再说",
+      "viewers": "看清楚究竟是谁看了你的 profile。",
+      "likes": "看看所有想认识你的人。",
+      "privacy": "隐藏在线状态,隐身浏览。",
+      "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。"
+    },
+    "testimonials": {
+      "section": "用户评价",
+      "disclaimer": "*匿名示例。",
+      "1": { "name": "小美 · 25 · 吉隆坡", "quote": "用 Meyou 认识了很多摄影同好 — 投票活动太上瘾了!" },
+      "2": { "name": "Jay · 28 · 新加坡", "quote": "广场聊天室很适合认识新朋友,没有交友的压力。" },
+      "3": { "name": "阿哲 · 23 · 台北", "quote": "语音介绍很贴心 — 一下子就能感受到对方的个性。" },
+      "4": { "name": "Nina · 26 · 香港", "quote": "Premium 的访客和隐身功能,完全值得。" }
+    },
     "benefits": {
       "hideOnline": "隐藏在线状态",
       "incognito": "隐身浏览",

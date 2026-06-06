@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Button } from './Button';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -17,6 +17,8 @@ export function EmptyState({
   onPrimary,
   secondaryLabel,
   onSecondary,
+  retryLabel,
+  onRetry,
 }: {
   emoji?: string;
   title: string;
@@ -25,6 +27,9 @@ export function EmptyState({
   onPrimary?: () => void;
   secondaryLabel?: string;
   onSecondary?: () => void;
+  /** When set, renders a subtle "网络错误 · 重试" retry link (for query errors). */
+  retryLabel?: string;
+  onRetry?: () => void;
 }) {
   const theme = useTheme();
   return (
@@ -37,6 +42,11 @@ export function EmptyState({
           {!!primaryLabel && onPrimary && <Button label={primaryLabel} onPress={onPrimary} />}
           {!!secondaryLabel && onSecondary && <Button label={secondaryLabel} variant="soft" onPress={onSecondary} />}
         </View>
+      )}
+      {!!retryLabel && onRetry && (
+        <Pressable onPress={onRetry} hitSlop={8} style={{ marginTop: 18 }}>
+          <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '700' }}>{retryLabel}</Text>
+        </Pressable>
       )}
     </View>
   );

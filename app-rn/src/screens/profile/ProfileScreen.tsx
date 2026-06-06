@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -49,7 +49,9 @@ import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { HighlightsSection } from '../votes/HighlightsSection';
-import { ProfileCompletionCard } from '../../components/ProfileCompletionCard';
+import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
@@ -96,6 +98,21 @@ export function ProfileScreen() {
     select: (d) => d.count,
   });
   const unread = unreadQ.data ?? 0;
+
+  // One-time Premium nudge once the profile is ≥80% complete (Phase 6).
+  const { percent: completionPct } = useProfileCompletion(user);
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  useEffect(() => {
+    if (!user || completionPct < 80 || completionPct >= 100) return;
+    AsyncStorage.getItem('premium.upsell80.v1')
+      .then((v) => {
+        if (!v) {
+          setUpsellOpen(true);
+          AsyncStorage.setItem('premium.upsell80.v1', '1').catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [completionPct, user]);
 
   // Inline editable fields — local state, auto-saved onEndEditing.
   const [nickname, setNickname] = useState(user?.nickname ?? '');
@@ -1262,6 +1279,7 @@ export function ProfileScreen() {
         onClose={() => setVoiceRecorderOpen(false)}
         onSaved={(voiceIntroUrl) => setUser({ ...user!, voiceIntroUrl })}
       />
+      <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.profile80')} />
       {photoViewer.node}
     </SafeAreaView>
   );

@@ -66,5 +66,5 @@ export type RootStackParamList = {
   AnnouncementAdmin: undefined;
   NotificationCenter: undefined;
   InviteFriends: undefined;
-  RedeemInvite: undefined;
+  RedeemInvite: { code?: string } | undefined;
 };

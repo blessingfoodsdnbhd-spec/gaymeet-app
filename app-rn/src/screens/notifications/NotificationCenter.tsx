@@ -33,6 +33,7 @@ const EMOJI: Record<string, string> = {
   vote_result: '🏆',
   viewers_digest: '👀',
   wants_you_digest: '💘',
+  daily_digest: '🔥',
   comeback: '👋',
   invite_redeemed: '🎁',
 };
