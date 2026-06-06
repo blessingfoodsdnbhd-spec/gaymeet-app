@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -104,15 +104,15 @@ export function VotesListScreen() {
       ) : (
         <FlatList
           data={events}
-          key="grid2"
-          numColumns={2}
+          key="feed1"
           keyExtractor={(e) => e.id}
-          columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-          contentContainerStyle={{ paddingTop: 14, paddingBottom: 28, gap: 12 }}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 28, gap: 8 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={theme.colors.primary} />
+          }
           renderItem={({ item }) => (
-            <View style={{ flex: 1 }}>
-              <VoteEventCard event={item} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
-            </View>
+            <VoteEventCard event={item} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
           )}
           ListEmptyComponent={
             <View style={[styles.center, { paddingTop: 60 }]}>

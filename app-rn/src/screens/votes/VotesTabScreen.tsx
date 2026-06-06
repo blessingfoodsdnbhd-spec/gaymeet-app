@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -104,8 +104,11 @@ export function VotesTabScreen() {
         <FlatList
           data={events}
           keyExtractor={(e) => e.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 96, gap: 14 }}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 96, gap: 8 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={theme.colors.primary} />
+          }
           renderItem={({ item }) => (
             <VoteEventCard event={item} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
           )}
