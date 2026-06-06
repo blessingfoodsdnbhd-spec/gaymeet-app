@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
-import { ChevronLeft, Heart, ExternalLink, Flag, Users, Pencil, Megaphone, ChevronRight, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Heart, ExternalLink, Flag, Users, Pencil, Megaphone, ChevronRight, Trash2, Share2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -34,6 +34,8 @@ import {
 } from '../../api/votes';
 import { categoryEmoji, medalFor, timeRemaining } from './voteHelpers';
 import { EntryDetailModal } from './EntryDetailModal';
+import { VoteShareCard, CARD_SIZE } from './VoteShareCard';
+import { shareVoteCard } from '../../utils/shareVoteCard';
 import { blockUser } from '../../api/safety';
 import { shortTime } from '../../utils/time';
 import type { RootStackParamList } from '../../navigation/types';
@@ -56,6 +58,7 @@ export function VoteDetailScreen() {
   const [page, setPage] = React.useState(0);
   const [busyVote, setBusyVote] = React.useState<string | null>(null);
   const [entryViewerIndex, setEntryViewerIndex] = React.useState<number | null>(null);
+  const shareCardRef = React.useRef<View>(null);
 
   const q = useQuery({
     queryKey: ['votes', 'detail', eventId],
@@ -206,6 +209,9 @@ export function VoteDetailScreen() {
         <Text numberOfLines={1} style={{ flex: 1, marginHorizontal: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {ev.title}
         </Text>
+        <Pressable onPress={() => shareVoteCard(shareCardRef, t)} hitSlop={8} style={{ marginRight: 16 }}>
+          <Share2 size={19} color={theme.colors.muted} />
+        </Pressable>
         {detail?.isCreator && ev.status !== 'ended' && (
           <Pressable onPress={() => nav.navigate('CreateVote', { editEventId: eventId })} hitSlop={8} style={{ marginRight: 16 }}>
             <Pencil size={19} color={theme.colors.muted} />
@@ -490,6 +496,28 @@ export function VoteDetailScreen() {
           nav.navigate('UserDetail', { userId });
         }}
       />
+
+      {/* Off-screen branded card captured for sharing. */}
+      <View style={styles.offscreen} pointerEvents="none">
+        <View ref={shareCardRef} collapsable={false} style={{ width: CARD_SIZE, height: CARD_SIZE }}>
+          <VoteShareCard
+            eventId={eventId}
+            title={ev.title}
+            coverUrl={ev.coverPhotos[0]}
+            categoryLabel={`${categoryEmoji(ev.category)} ${t(`votes.category.${ev.category}`)}`}
+            countdownText={
+              ev.status === 'ended'
+                ? t('votes.ended')
+                : ev.status === 'pending'
+                  ? t('votes.startsAt', { date: shortTime(ev.startAt) })
+                  : tr.d > 0
+                    ? t('votes.countdown.days', { d: tr.d, h: tr.h })
+                    : t('votes.countdown.hm', { h: tr.h, m: tr.m })
+            }
+            statsText={`${t('votes.entriesCount', { n: ev.entryCount })} · ${t('votes.voteCount', { n: ev.voteCount })}`}
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -508,4 +536,5 @@ const styles = StyleSheet.create({
   dots: { position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+  offscreen: { position: 'absolute', left: -9999, top: 0 },
 });

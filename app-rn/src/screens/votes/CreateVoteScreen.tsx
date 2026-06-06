@@ -101,9 +101,7 @@ export function CreateVoteScreen() {
     enabled: isEdit,
   });
   const editStatus = editQ.data?.event.status;
-  const locked = isEdit && editStatus === 'active'; // can only supplement
-  const [origCoverLen, setOrigCoverLen] = React.useState(0);
-  const [origRefLen, setOrigRefLen] = React.useState(0);
+  const locked = isEdit && editStatus === 'active'; // immutable fields lock; photos stay editable
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -136,8 +134,6 @@ export function CreateVoteScreen() {
     if (ev.type === 'multiRound' && ev.rounds.length) setRoundCount(ev.rounds.length);
     setStartAt(new Date(ev.startAt));
     setEndAt(new Date(ev.endAt));
-    setOrigCoverLen(ev.coverPhotos?.length ?? 0);
-    setOrigRefLen(ev.referencePhotos?.length ?? 0);
     setPrefilled(true);
   }, [editQ.data, prefilled]);
 
@@ -317,10 +313,10 @@ export function CreateVoteScreen() {
         )}
 
         <Label>{t('votes.field.coverPhotos')}</Label>
-        <PhotoRow photos={cover} onAdd={() => pick('cover')} onRemove={(u) => setCover((p) => p.filter((x) => x !== u))} busy={uploading === 'cover'} lockedCount={locked ? origCoverLen : 0} />
+        <PhotoRow photos={cover} onAdd={() => pick('cover')} onRemove={(u) => setCover((p) => p.filter((x) => x !== u))} busy={uploading === 'cover'} />
 
         <Label>{t('votes.field.referencePhotos')}</Label>
-        <PhotoRow photos={refs} onAdd={() => pick('ref')} onRemove={(u) => setRefs((p) => p.filter((x) => x !== u))} busy={uploading === 'ref'} lockedCount={locked ? origRefLen : 0} />
+        <PhotoRow photos={refs} onAdd={() => pick('ref')} onRemove={(u) => setRefs((p) => p.filter((x) => x !== u))} busy={uploading === 'ref'} />
 
         <Label>{t('votes.field.externalLink')}</Label>
         <TextInput value={externalLink} onChangeText={setExternalLink} placeholder="https://…" autoCapitalize="none" keyboardType="url" placeholderTextColor={theme.colors.muted} style={input} />

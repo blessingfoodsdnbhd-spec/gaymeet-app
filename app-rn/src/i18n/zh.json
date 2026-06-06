@@ -188,6 +188,10 @@
     "startsAt": "{{date}} 开始",
     "entriesCount": "{{n}} 个作品",
     "voteCount": "{{n}} 票",
+    "share": {
+      "label": "分享",
+      "tagline": "来参加"
+    },
     "countdown": {
       "days": "剩 {{d}} 天 {{h}} 小时",
       "hm": "剩 {{h}} 小时 {{m}} 分"

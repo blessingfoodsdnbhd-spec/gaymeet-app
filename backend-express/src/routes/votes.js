@@ -262,10 +262,10 @@ router.patch('/:id', auth, async (req, res, next) => {
 
     const b = req.body || {};
 
-    // While ACTIVE the creator may only SUPPLEMENT — add description detail,
-    // append cover/reference photos, update the link. Anything that would
-    // affect entry/vote integrity (title, category, dates, rules, rounds) is
-    // locked. Photos are append-only (no removals/shortening).
+    // While ACTIVE the creator may SUPPLEMENT or RESTYLE the presentation —
+    // description, cover/reference photos (full replace: add + remove, ≤5,
+    // valid URLs), and the link. Anything that would affect entry/vote
+    // integrity (title, category, dates, rules, rounds) stays locked.
     if (st === 'active') {
       const lockedTouched = ['title', 'category', 'startAt', 'endAt', 'rules', 'type', 'rounds'].filter(
         (k) => b[k] !== undefined,
@@ -274,20 +274,8 @@ router.patch('/:id', auth, async (req, res, next) => {
         return err(res, `Can't change ${lockedTouched.join(', ')} while the contest is active`, 400);
       }
       if (b.description !== undefined) ev.description = String(b.description).slice(0, DESC_MAX);
-      if (Array.isArray(b.coverPhotos)) {
-        const next = b.coverPhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
-        if (next.length < ev.coverPhotos.length || !ev.coverPhotos.every((u) => next.includes(u))) {
-          return err(res, "Cover photos are append-only while active", 400);
-        }
-        ev.coverPhotos = next;
-      }
-      if (Array.isArray(b.referencePhotos)) {
-        const next = b.referencePhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
-        if (next.length < ev.referencePhotos.length || !ev.referencePhotos.every((u) => next.includes(u))) {
-          return err(res, "Reference photos are append-only while active", 400);
-        }
-        ev.referencePhotos = next;
-      }
+      if (Array.isArray(b.coverPhotos)) ev.coverPhotos = b.coverPhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
+      if (Array.isArray(b.referencePhotos)) ev.referencePhotos = b.referencePhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS);
       if (b.externalLink !== undefined) {
         if (b.externalLink && !isHttpUrl(b.externalLink)) return err(res, 'Invalid external link');
         ev.externalLink = b.externalLink || null;

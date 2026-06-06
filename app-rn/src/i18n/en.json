@@ -188,6 +188,10 @@
     "startsAt": "Starts {{date}}",
     "entriesCount": "{{n}} entries",
     "voteCount": "{{n}} votes",
+    "share": {
+      "label": "Share",
+      "tagline": "Join the contest"
+    },
     "countdown": {
       "days": "{{d}}d {{h}}h left",
       "hm": "{{h}}h {{m}}m left"
