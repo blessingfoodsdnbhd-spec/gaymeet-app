@@ -263,6 +263,17 @@ router.post('/apple', async (req, res, next) => {
   }
 });
 
+// Scoped fixed-code logins for accounts that can't receive email — app-store
+// reviewers + the official Meyou bot (a fake-address seed account the owner
+// uses to post in the plaza / manage events). email -> code. The primary
+// reviewer pair stays env-overridable. Everyone else uses the real OTP.
+// TODO: revisit once a real email provider is fully wired.
+const BYPASS_LOGINS = {
+  [(process.env.REVIEW_LOGIN_EMAIL || 'hafiz@example.com').toLowerCase().trim()]:
+    process.env.REVIEW_LOGIN_CODE || '111111',
+  'meyou-bot@meyou.uk': '888888',
+};
+
 // ── POST /api/auth/send-otp ───────────────────────────────────────────────────
 // Body: { email: string }
 // Generates a 6-digit OTP valid for 10 minutes and logs it to console.
@@ -273,6 +284,11 @@ router.post('/send-otp', async (req, res, next) => {
     if (!email || !email.includes('@')) return err(res, '请输入有效的邮箱地址');
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    // Bypass accounts can't receive email — don't try to send, just succeed.
+    // They sign in with their fixed code in verify-otp.
+    if (BYPASS_LOGINS[normalizedEmail]) return ok(res, { success: true });
+
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -314,19 +330,12 @@ router.post('/verify-otp', async (req, res, next) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // ── Reviewer bypass ──────────────────────────────────────────────────────
-    // App store reviewers (Google Play / Apple) need to log in, but prod has
-    // no email provider wired yet, so the real OTP never reaches an inbox.
-    // A single hard-coded review account accepts a fixed code, so reviewers
-    // (and us) can sign in without an inbox. Scoped to ONE email + ONE code,
-    // both env-overridable. Everyone else still goes through the real OTP.
-    // TODO: remove once a real email provider is configured.
-    const REVIEW_EMAIL = (process.env.REVIEW_LOGIN_EMAIL || 'hafiz@example.com')
-      .toLowerCase()
-      .trim();
-    const REVIEW_CODE = process.env.REVIEW_LOGIN_CODE || '111111';
+    // ── Fixed-code bypass ─────────────────────────────────────────────────────
+    // Reviewers + the Meyou bot can't receive email (no provider wired / fake
+    // address), so each accepts a scoped fixed code (see BYPASS_LOGINS above).
+    // Everyone else still goes through the real OTP.
     const isReviewBypass =
-      normalizedEmail === REVIEW_EMAIL && code.trim() === REVIEW_CODE;
+      !!BYPASS_LOGINS[normalizedEmail] && code.trim() === BYPASS_LOGINS[normalizedEmail];
 
     if (!isReviewBypass) {
       const stored = await OtpCode.findOne({ email: normalizedEmail });
