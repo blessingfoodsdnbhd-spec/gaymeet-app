@@ -1,6 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import Constants from 'expo-constants';
-import { getAccessToken, getRefreshToken, setTokens } from '../store/auth';
+import { getAccessToken, getRefreshToken, setTokens, expireSession } from '../store/auth';
+import { showToast } from '../utils/toastBridge';
+import i18n from '../i18n';
 
 const baseURL =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
@@ -63,13 +65,25 @@ api.interceptors.response.use(
   (r) => r,
   async (err) => {
     const cfg = err?.config as (AxiosRequestConfig & { _retried?: boolean }) | undefined;
-    if (err?.response?.status === 401 && cfg && !cfg._retried) {
+    // Auth endpoints (login / OTP / refresh) legitimately return 401 (wrong
+    // code, etc.) — those must surface to the caller, NOT trigger a logout.
+    const isAuthCall = (cfg?.url || '').includes('/auth/');
+
+    if (err?.response?.status === 401 && cfg && !cfg._retried && !isAuthCall) {
       cfg._retried = true;
       const newAccess = await refreshAccessToken();
       if (newAccess) {
         cfg.headers = { ...(cfg.headers ?? {}), Authorization: `Bearer ${newAccess}` };
         return api.request(cfg);
       }
+      // Refresh failed → the session is truly expired. Clean logout (no API
+      // calls → no recursion), a friendly toast, and SWALLOW the error so no
+      // screen pops a scary "Invalid or expired token" alert. RootNavigator
+      // reacts to user=null and routes back to Welcome; the global toast
+      // survives the navigation.
+      await expireSession();
+      showToast(i18n.t('auth.sessionExpired'), 'error');
+      return new Promise(() => {}); // never settles — downstream handlers no-op
     }
     return Promise.reject(err);
   },

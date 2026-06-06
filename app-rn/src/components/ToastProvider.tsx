@@ -2,6 +2,7 @@ import React from 'react';
 import { Animated, Text, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
+import { setToastHandler } from '../utils/toastBridge';
 
 type ToastKind = 'success' | 'error' | 'info';
 
@@ -45,6 +46,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  // Expose the toast to non-React callers (e.g. the axios 401 interceptor).
+  React.useEffect(() => {
+    setToastHandler((message, kind) => show(message, kind));
+    return () => setToastHandler(null);
+  }, [show]);
 
   const api = React.useMemo<ToastApi>(
     () => ({

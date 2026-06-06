@@ -110,6 +110,9 @@
     "youBadge": "你",
     "editNickname": "編輯暱稱"
   },
+  "auth": {
+    "sessionExpired": "登入已过期,请重新登入"
+  },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",
     "continueApple": "用 Apple 继续",

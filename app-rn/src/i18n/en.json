@@ -110,6 +110,9 @@
     "youBadge": "ME",
     "editNickname": "Edit nickname"
   },
+  "auth": {
+    "sessionExpired": "Your session expired — please log in again"
+  },
   "welcome": {
     "tagline": "Meet people who love the same things.",
     "continueApple": "Continue with Apple",

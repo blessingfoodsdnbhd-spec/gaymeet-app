@@ -55,6 +55,29 @@ async function clearSessionCaches() {
   await clearCachedIsAdmin();
 }
 
+/**
+ * Clean logout triggered by an expired/invalid session (a 401 the refresh
+ * couldn't recover). Unlike signOut() this makes NO network calls — calling an
+ * API here would 401 again and recurse. Wipes caches + tokens + user so
+ * RootNavigator routes back to Welcome. Guarded so parallel 401s only run it
+ * once.
+ */
+let _expiring = false;
+export async function expireSession() {
+  if (_expiring) return;
+  _expiring = true;
+  try {
+    wsDisconnect();
+    await clearSessionCaches();
+    await setTokens(null, null);
+    useAuth.setState({ user: null });
+  } finally {
+    setTimeout(() => {
+      _expiring = false;
+    }, 2000);
+  }
+}
+
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   hydrated: false,
