@@ -21,6 +21,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
+import { VerifiedBadge } from '../../components/NameWithBadge';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { getNotesUnread } from '../../api/notes';
 import { useChats } from '../../store/chats';
@@ -399,6 +400,7 @@ function ThreadRow({
           >
             {thread.user.nickname}
           </Text>
+          {thread.user.isOfficial && <VerifiedBadge size={14} />}
           {thread.source === 'match' && (
             <Flame size={13} color={theme.colors.primary} fill={theme.colors.primary} />
           )}

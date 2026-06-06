@@ -47,7 +47,7 @@ router.get('/', auth, async (req, res, next) => {
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .populate(
         'users',
-        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode isVerified ' +
+        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode isVerified isOfficial ' +
           'dob location preferences premiumExpiresAt vipLevel vipExpiresAt'
       )
       .lean();
@@ -78,6 +78,7 @@ router.get('/', auth, async (req, res, next) => {
           user: {
             id: other._id.toString(),
             nickname: other.nickname,
+            isOfficial: other.isOfficial ?? false,
             avatarUrl: other.avatarUrl ?? null,
             isOnline: hidden ? false : (other.isOnline ?? false),
             isPremium: other.isPremium ?? false,

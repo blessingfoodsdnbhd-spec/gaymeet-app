@@ -113,6 +113,12 @@
   "auth": {
     "sessionExpired": "登入已过期,请重新登入"
   },
+  "errors": {
+    "reservedName": "此名称为官方保留"
+  },
+  "verified": {
+    "tooltip": "已验证的官方账号"
+  },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",
     "continueApple": "用 Apple 继续",

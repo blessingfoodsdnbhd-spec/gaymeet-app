@@ -113,6 +113,12 @@
   "auth": {
     "sessionExpired": "Your session expired — please log in again"
   },
+  "errors": {
+    "reservedName": "This name is reserved for official use"
+  },
+  "verified": {
+    "tooltip": "Verified official account"
+  },
   "welcome": {
     "tagline": "Meet people who love the same things.",
     "continueApple": "Continue with Apple",

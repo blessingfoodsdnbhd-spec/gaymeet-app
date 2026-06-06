@@ -7,6 +7,7 @@ export interface WorldChatMessage {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  isOfficial?: boolean;
   countryCode?: string | null;
   city?: string | null;
   body: string;

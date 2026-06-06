@@ -41,6 +41,7 @@ export interface ChatUser {
   isOnline?: boolean;
   isPremium?: boolean;
   isVerified?: boolean;
+  isOfficial?: boolean;
   countryCode?: string | null;
   /** ISO; null when a Premium user hides presence. */
   lastActiveAt?: string | null;

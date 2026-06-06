@@ -35,6 +35,7 @@ import {
 import { categoryEmoji, medalFor, timeRemaining } from './voteHelpers';
 import { EntryDetailModal } from './EntryDetailModal';
 import { VoteShareCard, CARD_SIZE } from './VoteShareCard';
+import { VerifiedBadge } from '../../components/NameWithBadge';
 import { shareVoteCard } from '../../utils/shareVoteCard';
 import { blockUser } from '../../api/safety';
 import { shortTime } from '../../utils/time';
@@ -305,6 +306,7 @@ export function VoteDetailScreen() {
             >
               <Avatar name={ev.creator.displayName} uri={ev.creator.avatarUrl} size={28} />
               <Text style={{ fontSize: 13, color: theme.colors.text2 }}>{t('votes.byCreator', { name: ev.creator.displayName })}</Text>
+              {ev.creator.isOfficial && <VerifiedBadge size={14} />}
             </Pressable>
           )}
 

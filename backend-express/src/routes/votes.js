@@ -59,7 +59,7 @@ function serializeEvent(ev, creator) {
     id: ev._id.toString(),
     creatorId: ev.creatorId?._id?.toString?.() ?? ev.creatorId.toString(),
     creator: creator
-      ? { id: creator._id.toString(), displayName: creator.nickname, avatarUrl: creator.avatarUrl ?? null }
+      ? { id: creator._id.toString(), displayName: creator.nickname, avatarUrl: creator.avatarUrl ?? null, isOfficial: creator.isOfficial ?? false }
       : undefined,
     title: ev.title,
     description: ev.description,
@@ -373,7 +373,7 @@ router.get('/', auth, async (req, res, next) => {
 
     // Active first, then newest. ($near already imposes distance order when used.)
     const sort = q.location ? undefined : { status: 1, _id: -1 };
-    let cursor = VoteEvent.find(q).limit(limit).populate('creatorId', 'nickname avatarUrl');
+    let cursor = VoteEvent.find(q).limit(limit).populate('creatorId', 'nickname avatarUrl isOfficial');
     if (sort) cursor = cursor.sort(sort);
     const rows = await cursor.lean();
     // 'active' sorts before 'ended'/'pending' alphabetically — good enough; the
@@ -389,7 +389,7 @@ router.get('/', auth, async (req, res, next) => {
 router.get('/:id', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl').lean();
+    const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl isOfficial').lean();
     if (!ev) return err(res, 'Not found', 404);
 
     const entriesRaw = await VoteEntry.find({ eventId: ev._id })

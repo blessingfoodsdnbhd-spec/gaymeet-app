@@ -61,6 +61,7 @@ export interface User {
   /** ISO timestamp of last activity. null when a Premium user hides presence. */
   lastActiveAt?: string | null;
   isVerified?: boolean;
+  isOfficial?: boolean;
   isPremium?: boolean;
   premiumExpiresAt?: string | null;
   isBoosted?: boolean;
@@ -143,6 +144,7 @@ export interface FollowedUser {
   isOnline?: boolean;
   isPremium?: boolean;
   isVerified?: boolean;
+  isOfficial?: boolean;
   isFollowing?: boolean;
   isSelf?: boolean;
   level?: number;
@@ -178,6 +180,7 @@ export interface LikerUser {
   isBlurred?: boolean;
   isPremium?: boolean;
   isVerified?: boolean;
+  isOfficial?: boolean;
   lastActiveAt?: string | null;
   /** Distance in meters (premium only); for client-side 距离 sort. */
   distanceM?: number | null;

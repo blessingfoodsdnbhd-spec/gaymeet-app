@@ -334,6 +334,11 @@ export function ProfileScreen() {
     }) => patchMe(patch),
     onSuccess: (updated) => setUser(updated),
     onError: (e: any) => {
+      if (e?.response?.data?.code === 'RESERVED_NAME') {
+        setNickname(user?.nickname ?? ''); // revert the field
+        Alert.alert(t('errors.reservedName'));
+        return;
+      }
       const detail = e?.response?.data?.error || e?.message || '';
       Alert.alert(t('profile.edit.saveFailed'), detail);
     },

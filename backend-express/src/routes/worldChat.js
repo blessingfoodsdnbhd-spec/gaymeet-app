@@ -137,6 +137,7 @@ router.post('/send', auth, async (req, res, next) => {
       userId: uid,
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
+      isOfficial: req.user.isOfficial ?? false,
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
@@ -494,7 +495,7 @@ router.get('/recent', auth, async (req, res, next) => {
     const rows = await WorldChatMessage.find(q)
       .sort({ _id: -1 })
       .limit(limit)
-      .populate('userId', 'nickname avatarUrl countryCode city')
+      .populate('userId', 'nickname avatarUrl countryCode city isOfficial')
       .lean();
 
     const messages = rows
@@ -504,6 +505,7 @@ router.get('/recent', auth, async (req, res, next) => {
         userId: m.userId._id.toString(),
         displayName: m.userId.nickname,
         avatarUrl: m.userId.avatarUrl ?? null,
+        isOfficial: m.userId.isOfficial ?? false,
         countryCode: m.userId.countryCode ?? null,
         city: m.userId.city ?? null,
         body: m.body,

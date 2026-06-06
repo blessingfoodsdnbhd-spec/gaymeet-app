@@ -145,6 +145,9 @@ const userSchema = new mongoose.Schema(
     // Verification (real-person check)
     isVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
+    // Official Meyou account (bot / support). Grants the verified badge + the
+    // right to use reserved names. Set manually in the DB; never user-settable.
+    isOfficial: { type: Boolean, default: false },
 
     // VIP tier system (0=free, 1=VIP1 RM19, 2=VIP2 RM39, 3=VIP3 RM69)
     vipLevel: { type: Number, default: 0, min: 0, max: 3 },
@@ -285,7 +288,7 @@ const PUBLIC_USER_FIELDS = [
   'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
-  'isVerified', 'verifiedAt', 'vipLevel', 'vipExpiresAt',
+  'isVerified', 'verifiedAt', 'isOfficial', 'vipLevel', 'vipExpiresAt',
   'level', 'currentExp', 'popularityScore',
   'lookingFor', 'role', 'zodiac', 'mbti', 'bloodType', 'kinks',
   'relationshipStatus', 'intents',

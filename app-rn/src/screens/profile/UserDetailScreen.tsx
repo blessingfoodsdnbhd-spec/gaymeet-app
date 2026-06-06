@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
+import { VerifiedBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
@@ -195,15 +196,18 @@ export function UserDetailScreen() {
                 showOnline={user.isOnline}
               />
             </Pressable>
-            <Text style={[styles.name, { color: theme.colors.text }]}>
-              {user.nickname}
-              {(() => {
-                const a = computeAge(user.dob) ?? user.age;
-                if (a == null) return '';
-                const z = computeZodiac(user.dob);
-                return ` · ${a}${z ? ` ${z.emoji}` : ''}`;
-              })()}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Text style={[styles.name, { color: theme.colors.text }]}>
+                {user.nickname}
+                {(() => {
+                  const a = computeAge(user.dob) ?? user.age;
+                  if (a == null) return '';
+                  const z = computeZodiac(user.dob);
+                  return ` · ${a}${z ? ` ${z.emoji}` : ''}`;
+                })()}
+              </Text>
+              {(user as any).isOfficial && <VerifiedBadge size={16} />}
+            </View>
             {user.countryCode && (
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>
                 {user.countryCode}

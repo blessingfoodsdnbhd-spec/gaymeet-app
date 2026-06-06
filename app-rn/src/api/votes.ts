@@ -17,7 +17,7 @@ export interface VoteRound {
 export interface VoteEventSummary {
   id: string;
   creatorId: string;
-  creator?: { id: string; displayName: string; avatarUrl: string | null };
+  creator?: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean };
   title: string;
   description: string;
   category: VoteCategory;

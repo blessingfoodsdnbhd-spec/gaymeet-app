@@ -37,6 +37,7 @@ import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
+import { VerifiedBadge } from '../../components/NameWithBadge';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -483,6 +484,7 @@ function Row({
               </Text>
             </Pressable>
           )}
+          {!mine && msg.isOfficial && <VerifiedBadge size={13} />}
           {isCreator && <Crown size={12} color={theme.colors.primary} />}
           <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(msg.createdAt)}</Text>
         </View>

@@ -81,6 +81,24 @@ router.post('/:id/view', auth, async (req, res, next) => {
   }
 });
 
+// Names reserved for official accounts (anti-impersonation). `meyou`/`密友` are
+// brand substrings (block anything containing them — covers "Meyou 官方",
+// "Meyou Official", etc.); the rest match the full normalized name.
+const RESERVED_SUBSTR = ['meyou', '密友'];
+const RESERVED_EXACT = [
+  'admin', '管理员', '管理員', 'support', '客服', 'notification', 'system', '系统',
+  '官方', 'official', 'bot',
+];
+function normalizeName(s) {
+  return String(s || '').toLowerCase().replace(/[\s._\-]/g, '').trim();
+}
+function isReservedName(name) {
+  const n = normalizeName(name);
+  if (!n) return false;
+  if (RESERVED_SUBSTR.some((r) => n.includes(r))) return true;
+  return RESERVED_EXACT.includes(n);
+}
+
 // ── PATCH /api/users/me ───────────────────────────────────────────────────────
 router.patch('/me', auth, async (req, res, next) => {
   try {
@@ -126,6 +144,13 @@ router.patch('/me', auth, async (req, res, next) => {
       } else {
         updates.dob = null;
       }
+    }
+
+    // Block changing your display name TO a reserved/official name (unless this
+    // IS an official account). Existing names are untouched — this only fires on
+    // a change.
+    if (updates.nickname !== undefined && req.user.isOfficial !== true && isReservedName(updates.nickname)) {
+      return res.status(400).json({ error: 'This name is reserved for official use', code: 'RESERVED_NAME' });
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
