@@ -4,7 +4,7 @@ import type { InboxNote, SentNote } from '../api/notes';
 export type AuthStackParamList = {
   Welcome: undefined;
   EmailEntry: undefined;
-  OTPCode: { email: string; devCode?: string };
+  OTPCode: { email: string; devCode?: string; inviteCode?: string };
   InterestTagsPicker: undefined;
 };
 
@@ -65,4 +65,6 @@ export type RootStackParamList = {
   UnlockRequests: undefined;
   AnnouncementAdmin: undefined;
   NotificationCenter: undefined;
+  InviteFriends: undefined;
+  RedeemInvite: undefined;
 };

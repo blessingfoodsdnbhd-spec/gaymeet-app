@@ -19,6 +19,32 @@
     "4": { "title": "语音介绍 — 5 秒让人听见真实的你", "subtitle": "录制 1-5 秒语音介绍,让别人秒懂你的个性。" },
     "5": { "title": "欢迎加入 Meyou", "subtitle": "现在让我们完善你的 profile,开始认识朋友吧。" }
   },
+  "invite": {
+    "title": "邀请朋友",
+    "reward": "双方都得 30 天 Premium",
+    "cardTitle": "邀请朋友 — 双方 +30 天 Premium",
+    "heroTitle": "邀请朋友,双方都有奖",
+    "myCode": "我的邀请码",
+    "copy": "复制",
+    "copied": "已复制",
+    "share": "分享",
+    "shareImage": "分享图片",
+    "stats": "已邀请 {{n}} 个朋友 · 已获得 {{days}} 天 Premium",
+    "recent": "最近邀请",
+    "haveCode": "已经有邀请码?",
+    "optionalField": "邀请码(选填)",
+    "codePlaceholder": "邀请码",
+    "shareText": "{{name}} 邀请你加入 Meyou — 用邀请码 {{code}} 注册,双方立即获得 30 天 Premium · {{link}}",
+    "redeemTitle": "输入邀请码",
+    "redeemHint": "输入朋友的邀请码,你们双方都将获得 30 天 Premium。",
+    "redeemCta": "兑换",
+    "successTitle": "已解锁 Premium 🎉",
+    "success": "你获得了 30 天 Premium!你的朋友也获得了 30 天。",
+    "invalidCode": "邀请码无效。",
+    "cantUseSelf": "不能使用自己的邀请码。",
+    "alreadyRedeemed": "你已经使用过邀请码了。",
+    "card": { "invitedBy": "{{name}} 邀请你加入 Meyou" }
+  },
   "announcement": {
     "dontShowAgain": "今後不顯示",
     "close": "關閉"

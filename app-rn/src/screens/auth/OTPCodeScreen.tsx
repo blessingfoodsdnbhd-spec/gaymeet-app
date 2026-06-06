@@ -22,6 +22,7 @@ export function OTPCodeScreen() {
   const signIn = useAuth((s) => s.signIn);
 
   const [code, setCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(route.params.inviteCode ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(59);
@@ -49,7 +50,7 @@ export function OTPCodeScreen() {
     setBusy(true);
     setErr(null);
     try {
-      const res = await verifyOtp(route.params.email, c);
+      const res = await verifyOtp(route.params.email, c, inviteCode.trim().toUpperCase() || undefined);
       await signIn(res.accessToken, res.refreshToken, res.user);
     } catch {
       setErr('invalid');
@@ -127,6 +128,34 @@ export function OTPCodeScreen() {
             width: '80%',
             alignSelf: 'center',
             marginTop: 20,
+          }}
+        />
+
+        {/* Optional invite code — new users get 30 days Premium for both sides. */}
+        <Text style={{ marginTop: 24, fontSize: 12.5, color: theme.colors.muted, alignSelf: 'center' }}>
+          {t('invite.optionalField')}
+        </Text>
+        <TextInput
+          value={inviteCode}
+          onChangeText={(v) => setInviteCode(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          placeholder={t('invite.codePlaceholder')}
+          placeholderTextColor={theme.colors.muted}
+          style={{
+            fontSize: 18,
+            letterSpacing: 4,
+            textAlign: 'center',
+            color: theme.colors.text,
+            borderWidth: 1,
+            borderColor: theme.colors.line,
+            borderRadius: 12,
+            backgroundColor: theme.colors.surface,
+            paddingVertical: 11,
+            paddingHorizontal: 16,
+            width: '70%',
+            alignSelf: 'center',
+            marginTop: 8,
           }}
         />
 

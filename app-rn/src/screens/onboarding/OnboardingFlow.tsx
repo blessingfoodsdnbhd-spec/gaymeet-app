@@ -8,6 +8,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { brandGradient } from '../../theme/tokens';
 import { useOnboarding } from '../../store/onboarding';
+import { safeNavigate } from '../../navigation/navigationRef';
 
 const SLIDES = [
   { key: '1', emoji: '🏆' },
@@ -92,7 +93,22 @@ export function OnboardingFlow() {
         {page < last ? (
           <Button label={t('onboarding.next')} onPress={() => goTo(page + 1)} fullWidth />
         ) : (
-          <Button label={t('onboarding.done')} onPress={complete} fullWidth />
+          <>
+            <Button label={t('onboarding.done')} onPress={complete} fullWidth />
+            <Pressable
+              onPress={() => {
+                complete();
+                // Onboarding unmounts → Main mounts; jump to the redeem screen.
+                setTimeout(() => safeNavigate('RedeemInvite'), 350);
+              }}
+              hitSlop={8}
+              style={{ alignSelf: 'center', marginTop: 14 }}
+            >
+              <Text style={{ color: theme.colors.primary, fontSize: 13.5, fontWeight: '700' }}>
+                {t('invite.haveCode')}
+              </Text>
+            </Pressable>
+          </>
         )}
       </View>
     </SafeAreaView>

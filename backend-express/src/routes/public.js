@@ -52,6 +52,33 @@ router.get('/profile/:userId', async (req, res) => {
   }
 });
 
+// ── GET /api/public/profile-by-code/:code ─────────────────────────────────────
+// Powers the meyou.uk/invite/:code landing page — the inviter's public name +
+// avatar so the page can say "<name> 邀请你加入 Meyou". No private fields.
+router.get('/profile-by-code/:code', async (req, res) => {
+  try {
+    const code = String(req.params.code || '').toUpperCase().trim();
+    if (!code) return res.status(404).json({ error: 'Not found' });
+    const InviteCode = require('../models/InviteCode');
+    const invite = await InviteCode.findOne({ code }).select('userId').lean();
+    if (!invite) return res.status(404).json({ error: 'Not found' });
+    const user = await User.findById(invite.userId).select('nickname avatarUrl photos isPublicProfile').lean();
+    if (!user) return res.status(404).json({ error: 'Not found' });
+    res.json({
+      data: {
+        code,
+        displayName: user.isPublicProfile === false ? null : user.nickname,
+        avatarUrl:
+          user.isPublicProfile === false
+            ? null
+            : user.avatarUrl || (Array.isArray(user.photos) ? user.photos[0] : null) || null,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ── GET /api/public/announcement-hero ─────────────────────────────────────────
 // The latest active announcement's image — used as the hero banner on the
 // meyou.uk/u/:id landing page. Returns { imageUrl: string | null }.

@@ -34,6 +34,7 @@ const EMOJI: Record<string, string> = {
   viewers_digest: '👀',
   wants_you_digest: '💘',
   comeback: '👋',
+  invite_redeemed: '🎁',
 };
 
 const KEY = ['notifications', 'list'];

@@ -349,6 +349,7 @@ router.post('/verify-otp', async (req, res, next) => {
     }
 
     let user = await User.findOne({ email: normalizedEmail });
+    const isNewUser = !user;
     if (!user) {
       const myReferralCode = await generateUniqueReferralCode();
       user = await User.create({
@@ -356,6 +357,18 @@ router.post('/verify-otp', async (req, res, next) => {
         nickname: normalizedEmail.split('@')[0],
         referralCode: myReferralCode,
       });
+    }
+
+    // New users may pass an invite code — redeem it atomically. Best-effort:
+    // an invalid/duplicate code must never block sign-in (client shows a toast).
+    if (isNewUser && req.body.inviteCode) {
+      try {
+        const { redeemInvite } = require('../services/inviteService');
+        await redeemInvite(user._id, req.body.inviteCode);
+        user = (await User.findById(user._id)) || user; // reflect granted Premium
+      } catch (_) {
+        /* ignore — sign-in proceeds without the reward */
+      }
     }
 
     const accessToken = signAccess(user._id.toString());

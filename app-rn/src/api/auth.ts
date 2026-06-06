@@ -83,8 +83,8 @@ async function postAuth<T>(path: string, body: unknown): Promise<T> {
 export const sendOtp = (email: string) =>
   postAuth<{ success: true; devCode?: string }>('/auth/send-otp', { email });
 
-export const verifyOtp = (email: string, code: string) =>
-  postAuth<AuthResponse>('/auth/verify-otp', { email, code });
+export const verifyOtp = (email: string, code: string, inviteCode?: string) =>
+  postAuth<AuthResponse>('/auth/verify-otp', { email, code, inviteCode: inviteCode || undefined });
 
 export const signInApple = (identityToken: string, name?: string) =>
   postAuth<AuthResponse>('/auth/apple', { identityToken, name });

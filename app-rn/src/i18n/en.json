@@ -19,6 +19,32 @@
     "4": { "title": "Voice intro — be heard in 5s", "subtitle": "Record a 1–5 second voice intro so others instantly get your vibe." },
     "5": { "title": "Welcome to Meyou", "subtitle": "Let's finish your profile and start meeting people." }
   },
+  "invite": {
+    "title": "Invite Friends",
+    "reward": "Both get 30 days Premium",
+    "cardTitle": "Invite friends — both +30 days Premium",
+    "heroTitle": "Invite friends, you both win",
+    "myCode": "My invite code",
+    "copy": "Copy",
+    "copied": "Copied",
+    "share": "Share",
+    "shareImage": "Share as image",
+    "stats": "Invited {{n}} friends · earned {{days}} days of Premium",
+    "recent": "Recent invites",
+    "haveCode": "Have an invite code?",
+    "optionalField": "Invite code (optional)",
+    "codePlaceholder": "INVITE CODE",
+    "shareText": "{{name}} invited you to Meyou — sign up with code {{code}} and you both get 30 days Premium · {{link}}",
+    "redeemTitle": "Redeem a code",
+    "redeemHint": "Enter a friend's invite code. You'll both get 30 days of Premium.",
+    "redeemCta": "Redeem",
+    "successTitle": "Premium unlocked 🎉",
+    "success": "You got 30 days of Premium! Your friend got 30 days too.",
+    "invalidCode": "That invite code isn't valid.",
+    "cantUseSelf": "You can't use your own invite code.",
+    "alreadyRedeemed": "You've already redeemed an invite code.",
+    "card": { "invitedBy": "{{name}} invited you to Meyou" }
+  },
   "announcement": {
     "dontShowAgain": "Don't show again",
     "close": "Close"

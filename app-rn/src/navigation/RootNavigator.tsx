@@ -39,6 +39,8 @@ import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
 import { NotificationCenter } from '../screens/notifications/NotificationCenter';
+import { InviteFriendsScreen } from '../screens/invite/InviteFriendsScreen';
+import { RedeemInviteScreen } from '../screens/invite/RedeemInviteScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -127,6 +129,16 @@ export function RootNavigator() {
             name="NotificationCenter"
             component={NotificationCenter}
             options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="InviteFriends"
+            component={InviteFriendsScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="RedeemInvite"
+            component={RedeemInviteScreen}
+            options={{ animation: 'slide_from_bottom' }}
           />
           <Stack.Screen
             name="NotesInbox"

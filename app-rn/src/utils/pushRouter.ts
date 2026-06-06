@@ -76,6 +76,9 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'comeback': {
       return safeNavigate('Main');
     }
+    case 'invite_redeemed': {
+      return safeNavigate('InviteFriends');
+    }
     case 'photo_request': {
       // Owner side: new request landed in their inbox.
       return safeNavigate('PhotoRequests');

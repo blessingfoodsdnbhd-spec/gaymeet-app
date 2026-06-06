@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Crown,
   Edit2,
+  Gift,
   Globe,
   Lock,
   Mic,
@@ -1157,6 +1158,26 @@ export function ProfileScreen() {
             ]}
           />
 
+          {/* Invite friends — mutual Premium reward (viral growth hook). */}
+          <Pressable
+            onPress={() => nav.navigate('InviteFriends')}
+            style={({ pressed }) => [
+              styles.inviteCard,
+              { backgroundColor: theme.colors.primarySoft, opacity: pressed ? 0.92 : 1 },
+            ]}
+          >
+            <Gift size={24} color={theme.colors.primaryDeep} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: theme.colors.primaryDeep }}>
+                {t('invite.cardTitle')}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep, marginTop: 2, opacity: 0.85 }}>
+                {t('invite.reward')}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={theme.colors.primaryDeep} />
+          </Pressable>
+
           {/* Settings */}
           <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
           <Card flat style={{ paddingVertical: 4 }}>
@@ -1382,6 +1403,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   bellBadgeText: { color: '#FFFFFF', fontSize: 9.5, fontWeight: '800' },
+  inviteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 20,
+  },
   avatarSpinner: {
     borderRadius: 48,
     backgroundColor: 'rgba(0,0,0,0.45)',
