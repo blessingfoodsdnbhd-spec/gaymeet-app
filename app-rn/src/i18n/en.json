@@ -468,8 +468,9 @@
     },
     "voiceIntro": {
       "label": "Voice Intro",
-      "record": "Record 5-sec intro",
+      "record": "Record 1-5 sec intro",
       "tapToStart": "Tap to record",
+      "tooShort": "Record at least 1 second",
       "recording": "Recording…",
       "save": "Save",
       "delete": "Delete",

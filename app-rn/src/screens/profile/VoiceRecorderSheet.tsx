@@ -10,6 +10,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { uploadVoiceIntro } from '../../api/me';
 
 const MAX_MS = 5000;
+const MIN_MS = 1000;
 const BARS = 28;
 
 function meterToLevel(db: number | undefined): number {
@@ -21,8 +22,9 @@ function meterToLevel(db: number | undefined): number {
 type Phase = 'idle' | 'recording' | 'recorded';
 
 /**
- * Bottom-sheet recorder for a ~5s voice intro. Tap mic to start, auto-stops at
- * 5s (or tap to stop), waveform reflects live mic level, then preview → save.
+ * Bottom-sheet recorder for a 1–5s voice intro. Tap mic to start, auto-stops at
+ * 5s (or tap to stop any time after 1s), waveform reflects live mic level, then
+ * preview → save. Save is disabled until at least MIN_MS is recorded.
  */
 export function VoiceRecorderSheet({
   open,
@@ -127,7 +129,7 @@ export function VoiceRecorderSheet({
   };
 
   const onSave = async () => {
-    if (!uri || saving) return;
+    if (!uri || saving || elapsed < MIN_MS) return;
     setSaving(true);
     try {
       const { voiceIntroUrl } = await uploadVoiceIntro(uri);
@@ -141,6 +143,7 @@ export function VoiceRecorderSheet({
   };
 
   const secs = (elapsed / 1000).toFixed(1);
+  const tooShort = elapsed < MIN_MS;
 
   return (
     <Sheet open={open} onClose={onClose} maxHeight="62%">
@@ -196,7 +199,12 @@ export function VoiceRecorderSheet({
 
         {phase === 'recorded' && (
           <View style={{ width: '100%', marginTop: 22 }}>
-            <Button label={t('profile.voiceIntro.save')} onPress={onSave} loading={saving} fullWidth />
+            {tooShort && (
+              <Text style={{ fontSize: 12.5, color: theme.colors.accentRose, textAlign: 'center', marginBottom: 10 }}>
+                {t('profile.voiceIntro.tooShort')}
+              </Text>
+            )}
+            <Button label={t('profile.voiceIntro.save')} onPress={onSave} loading={saving} disabled={tooShort} fullWidth />
           </View>
         )}
       </View>

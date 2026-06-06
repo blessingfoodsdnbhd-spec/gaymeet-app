@@ -468,8 +468,9 @@
     },
     "voiceIntro": {
       "label": "介绍声音",
-      "record": "录制 5 秒介绍",
+      "record": "录制 1-5 秒介绍",
       "tapToStart": "点击录音",
+      "tooShort": "请录制至少 1 秒",
       "recording": "录制中…",
       "save": "保存",
       "delete": "删除",
