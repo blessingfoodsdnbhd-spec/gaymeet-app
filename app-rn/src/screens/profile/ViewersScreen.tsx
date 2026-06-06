@@ -23,6 +23,9 @@ import { shortTime } from '../../utils/time';
 import { useAuth } from '../../store/auth';
 import { EmptyState } from '../../components/EmptyState';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
+import { SortChipRow } from '../../components/SortChipRow';
+import { sortList } from '../../utils/listSort';
+import { useListSortPrefs } from '../../store/listSortPrefs';
 import { shareProfile } from '../../utils/shareProfile';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -53,6 +56,21 @@ export function ViewersScreen() {
     staleTime: 30_000,
   });
 
+  const sortKey = useListSortPrefs((s) => s.sort.viewers);
+  const setSort = useListSortPrefs((s) => s.setSort);
+  const sortOptions = [
+    { key: 'recent', label: t('sort.viewedTime') },
+    { key: 'distance', label: t('sort.distance') },
+    { key: 'age', label: t('sort.age') },
+    { key: 'active', label: t('sort.active') },
+  ];
+  const data = React.useMemo(() => {
+    const viewers = (viewersQ.data?.viewers ?? []).filter(Boolean);
+    return isPremium
+      ? sortList(viewers, sortKey, { distanceM: (u) => u.distanceM, dob: (u) => u.dob, lastActive: (u) => u.lastActiveAt })
+      : viewers;
+  }, [viewersQ.data, sortKey, isPremium]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
@@ -77,15 +95,14 @@ export function ViewersScreen() {
         </View>
       ) : (
         <FlatList
-          data={(viewersQ.data?.viewers ?? []).filter(Boolean)}
+          data={data}
           keyExtractor={(u) => u._id}
           contentContainerStyle={{ paddingVertical: 4 }}
           ListHeaderComponent={
-            !isPremium && (viewersQ.data?.count ?? 0) > 0 ? (
-              <UpgradeBanner
-                count={viewersQ.data?.count ?? 0}
-                onPress={() => nav.navigate('Premium')}
-              />
+            isPremium ? (
+              <SortChipRow options={sortOptions} active={sortKey} onChange={(k) => setSort('viewers', k as any)} />
+            ) : (viewersQ.data?.count ?? 0) > 0 ? (
+              <UpgradeBanner count={viewersQ.data?.count ?? 0} onPress={() => nav.navigate('Premium')} />
             ) : null
           }
           ItemSeparatorComponent={() => (

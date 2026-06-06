@@ -410,9 +410,10 @@ function ThreadRow({
             fontSize: 13,
             color: theme.colors.text2,
             marginTop: 4,
+            fontStyle: thread.lastMessageSystem ? 'italic' : 'normal',
           }}
         >
-          {thread.lastMessage || t('chats.sayHi')}
+          {thread.lastMessageSystem ? t('system.match.created') : thread.lastMessage || t('chats.sayHi')}
         </Text>
       </View>
       {thread.unreadCount > 0 && (

@@ -84,6 +84,30 @@ router.post('/', auth, async (req, res, next) => {
         if (!existing) {
           match = await Match.create({ users: [me._id, targetUserId] });
           isNewMatch = true;
+
+          // Seed a system greeting so the conversation shows up in BOTH users'
+          // 消息 tab immediately, even if neither sends a message. lastMessageBy
+          // is left null to flag the thread's preview as a system message (the
+          // client localizes it). readBy = both → no phantom unread badge.
+          try {
+            const Message = require('../models/Message');
+            const SYSTEM_BODY = '你们已成为同频朋友 ✨ 来打个招呼吧';
+            await Message.create({
+              matchId: match._id,
+              senderId: me._id,
+              type: 'text',
+              content: SYSTEM_BODY,
+              isSystem: true,
+              readBy: [me._id, targetUserId],
+            });
+            await Match.findByIdAndUpdate(match._id, {
+              lastMessage: SYSTEM_BODY,
+              lastMessageAt: new Date(),
+              lastMessageBy: null,
+            });
+          } catch (_) {
+            // best-effort — never block the match response
+          }
         }
 
         // Notify the OTHER user via socket so they get a MatchOverlay.

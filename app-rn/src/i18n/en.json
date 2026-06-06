@@ -45,6 +45,18 @@
     "alreadyRedeemed": "You've already redeemed an invite code.",
     "card": { "invitedBy": "{{name}} invited you to Meyou" }
   },
+  "sort": {
+    "matchTime": "Match time",
+    "receivedTime": "Received",
+    "followTime": "Followed",
+    "viewedTime": "Viewed",
+    "distance": "Distance",
+    "age": "Age",
+    "active": "Active"
+  },
+  "system": {
+    "match": { "created": "You're now Meyou ✨ Say hi 👋" }
+  },
   "announcement": {
     "dontShowAgain": "Don't show again",
     "close": "Close"

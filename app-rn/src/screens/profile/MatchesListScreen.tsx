@@ -17,6 +17,9 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { SortChipRow } from '../../components/SortChipRow';
+import { sortList } from '../../utils/listSort';
+import { useListSortPrefs } from '../../store/listSortPrefs';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { shortTime } from '../../utils/time';
 import { computeAge } from '../../utils/zodiac';
@@ -56,6 +59,24 @@ export function MatchesListScreen() {
     [threadsQ.data],
   );
 
+  const sortKey = useListSortPrefs((s) => s.sort.matches);
+  const setSort = useListSortPrefs((s) => s.setSort);
+  const sortOptions = [
+    { key: 'recent', label: t('sort.matchTime') },
+    { key: 'distance', label: t('sort.distance') },
+    { key: 'age', label: t('sort.age') },
+    { key: 'active', label: t('sort.active') },
+  ];
+  const sorted = useMemo(
+    () =>
+      sortList(matches, sortKey, {
+        distanceM: (m) => m.user.distanceM,
+        dob: (m) => m.user.dob,
+        lastActive: (m) => m.user.lastActiveAt,
+      }),
+    [matches, sortKey],
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
@@ -80,8 +101,11 @@ export function MatchesListScreen() {
         </View>
       ) : (
         <FlatList
-          data={matches}
+          data={sorted}
           keyExtractor={(m) => m.matchId}
+          ListHeaderComponent={
+            <SortChipRow options={sortOptions} active={sortKey} onChange={(k) => setSort('matches', k as any)} />
+          }
           contentContainerStyle={{ paddingVertical: 4 }}
           ItemSeparatorComponent={() => (
             <View

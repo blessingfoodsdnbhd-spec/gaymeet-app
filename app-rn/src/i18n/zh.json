@@ -45,6 +45,18 @@
     "alreadyRedeemed": "你已经使用过邀请码了。",
     "card": { "invitedBy": "{{name}} 邀请你加入 Meyou" }
   },
+  "sort": {
+    "matchTime": "同频时间",
+    "receivedTime": "收到时间",
+    "followTime": "关注时间",
+    "viewedTime": "看过时间",
+    "distance": "距离",
+    "age": "年龄",
+    "active": "活跃时间"
+  },
+  "system": {
+    "match": { "created": "你们已成为同频朋友 ✨ 来打个招呼吧 👋" }
+  },
   "announcement": {
     "dontShowAgain": "今後不顯示",
     "close": "關閉"

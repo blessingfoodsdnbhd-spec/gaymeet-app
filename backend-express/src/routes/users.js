@@ -24,10 +24,12 @@ router.get('/me/viewers', auth, async (req, res, next) => {
     const views = await ProfileView.find({ viewedId: req.user._id })
       .sort({ viewedAt: -1 })
       .limit(100)
-      .populate('viewerId', 'nickname avatarUrl isOnline lastActiveAt isPremium isVerified dob')
+      .populate('viewerId', 'nickname avatarUrl isOnline lastActiveAt isPremium isVerified dob location')
       .lean();
     const valid = views.filter((v) => v.viewerId); // populate → null if deleted
     const { isPremiumActive } = require('../utils/premium');
+    const { haversineMeters } = require('../utils/geo');
+    const myCoords = req.user.location?.coordinates;
     const premium = isPremiumActive(req.user);
     const viewers = valid.map((v) => {
       const u = v.viewerId;
@@ -39,6 +41,8 @@ router.get('/me/viewers', auth, async (req, res, next) => {
           avatarUrl: u.avatarUrl ?? null,
           isOnline: u.isOnline ?? false,
           dob: u.dob ? u.dob.toISOString() : null,
+          lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
+          distanceM: haversineMeters(myCoords, u.location?.coordinates),
           isBlurred: false,
         };
       }
@@ -494,7 +498,15 @@ router.get('/likes', auth, async (req, res, next) => {
 
     const { isPremiumActive } = require('../utils/premium');
     if (isPremiumActive(me)) {
-      ok(res, { count: likers.length, users: likers });
+      // Full user docs already carry dob/lastActiveAt/location; add a numeric
+      // distance so the client can sort by 距离. (dob/lastActiveAt serialize to
+      // ISO via JSON automatically.)
+      const { haversineMeters } = require('../utils/geo');
+      const myCoords = me.location?.coordinates;
+      ok(res, {
+        count: likers.length,
+        users: likers.map((u) => ({ ...u, distanceM: haversineMeters(myCoords, u.location?.coordinates) })),
+      });
     } else {
       // Free: count + blurred rows. We DO send the real avatarUrl so the client
       // can render a heavily-blurred teaser (blurRadius), but the name stays

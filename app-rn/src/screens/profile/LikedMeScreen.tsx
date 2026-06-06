@@ -21,6 +21,9 @@ import { getLikedMe, type LikerUser } from '../../api/me';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { useAuth } from '../../store/auth';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
+import { SortChipRow } from '../../components/SortChipRow';
+import { sortList } from '../../utils/listSort';
+import { useListSortPrefs } from '../../store/listSortPrefs';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -51,6 +54,21 @@ export function LikedMeScreen() {
     staleTime: 30_000,
   });
 
+  const sortKey = useListSortPrefs((s) => s.sort.likes);
+  const setSort = useListSortPrefs((s) => s.setSort);
+  const sortOptions = [
+    { key: 'recent', label: t('sort.receivedTime') },
+    { key: 'distance', label: t('sort.distance') },
+    { key: 'age', label: t('sort.age') },
+    { key: 'active', label: t('sort.active') },
+  ];
+  const data = React.useMemo(() => {
+    const users = (likesQ.data?.users ?? []).filter(Boolean);
+    return isPremium
+      ? sortList(users, sortKey, { distanceM: (u) => u.distanceM, dob: (u) => u.dob, lastActive: (u) => u.lastActiveAt })
+      : users;
+  }, [likesQ.data, sortKey, isPremium]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
@@ -79,11 +97,13 @@ export function LikedMeScreen() {
           // the backend is supposed to do this server-side. populate() on a
           // Swipe whose fromUser was deleted returns null; rendering a null
           // row crashes FlatList via the keyExtractor + LikerRow._id access.
-          data={(likesQ.data?.users ?? []).filter(Boolean)}
+          data={data}
           keyExtractor={(u) => u._id}
           contentContainerStyle={{ paddingVertical: 4 }}
           ListHeaderComponent={
-            !isPremium && (likesQ.data?.count ?? 0) > 0 ? (
+            isPremium ? (
+              <SortChipRow options={sortOptions} active={sortKey} onChange={(k) => setSort('likes', k as any)} />
+            ) : (likesQ.data?.count ?? 0) > 0 ? (
               <UpgradeBanner count={likesQ.data?.count ?? 0} onPress={() => nav.navigate('Premium')} />
             ) : null
           }

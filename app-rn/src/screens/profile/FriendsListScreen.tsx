@@ -17,6 +17,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { EmptyState } from '../../components/EmptyState';
+import { SortChipRow } from '../../components/SortChipRow';
+import { sortList } from '../../utils/listSort';
+import { useListSortPrefs } from '../../store/listSortPrefs';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { getFollowing, type FollowedUser } from '../../api/me';
@@ -52,6 +55,24 @@ export function FriendsListScreen() {
     enabled: !!myId,
     staleTime: 60_000,
   });
+
+  const sortKey = useListSortPrefs((s) => s.sort.following);
+  const setSort = useListSortPrefs((s) => s.setSort);
+  const sortOptions = [
+    { key: 'recent', label: t('sort.followTime') },
+    { key: 'distance', label: t('sort.distance') },
+    { key: 'age', label: t('sort.age') },
+    { key: 'active', label: t('sort.active') },
+  ];
+  const data = React.useMemo(
+    () =>
+      sortList(friendsQ.data ?? [], sortKey, {
+        distanceM: (u) => u.distanceM,
+        dob: (u) => u.dob,
+        lastActive: (u) => u.lastActiveAt,
+      }),
+    [friendsQ.data, sortKey],
+  );
 
   const openWith = async (user: FollowedUser) => {
     try {
@@ -104,9 +125,14 @@ export function FriendsListScreen() {
         </View>
       ) : (
         <FlatList
-          data={friendsQ.data ?? []}
+          data={data}
           keyExtractor={(u) => u._id}
           contentContainerStyle={{ paddingVertical: 4 }}
+          ListHeaderComponent={
+            data.length > 0 ? (
+              <SortChipRow options={sortOptions} active={sortKey} onChange={(k) => setSort('following', k as any)} />
+            ) : null
+          }
           ItemSeparatorComponent={() => (
             <View
               style={{

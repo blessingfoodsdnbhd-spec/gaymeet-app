@@ -146,6 +146,10 @@ export interface FollowedUser {
   isFollowing?: boolean;
   isSelf?: boolean;
   level?: number;
+  dob?: string | null;
+  lastActiveAt?: string | null;
+  /** Distance in meters; for client-side 距离 sort. */
+  distanceM?: number | null;
 }
 export const getFollowing = (userId: string) =>
   unwrap<FollowedUser[]>(api.get(`/users/${userId}/following`));
@@ -174,6 +178,9 @@ export interface LikerUser {
   isBlurred?: boolean;
   isPremium?: boolean;
   isVerified?: boolean;
+  lastActiveAt?: string | null;
+  /** Distance in meters (premium only); for client-side 距离 sort. */
+  distanceM?: number | null;
 }
 export interface LikedMeResponse {
   count: number;
@@ -216,6 +223,9 @@ export interface ViewerUser {
   /** ISO timestamp of the most recent view. */
   viewedAt: string;
   isBlurred?: boolean;
+  lastActiveAt?: string | null;
+  /** Distance in meters (premium only); for client-side 距离 sort. */
+  distanceM?: number | null;
 }
 export interface ViewersResponse {
   count: number;

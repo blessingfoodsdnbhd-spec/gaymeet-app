@@ -11,6 +11,8 @@ export interface Message {
   type: 'text' | 'sticker' | 'image' | 'location';
   createdAt: string;
   readBy?: string[];
+  /** System message (match greeting) — rendered centered, no bubble. */
+  isSystem?: boolean;
   /** Client-only marker for optimistic sends. */
   pendingId?: string;
   status?: 'sending' | 'sent' | 'failed';
@@ -45,6 +47,8 @@ export interface ChatUser {
   dob?: string | null;
   /** Server-formatted distance string, e.g. "3.9 km". */
   distance?: string | null;
+  /** Distance in meters for client-side 距离 sort. */
+  distanceM?: number | null;
 }
 
 export interface ChatThread {
@@ -53,6 +57,8 @@ export interface ChatThread {
   user: ChatUser;
   lastMessage: string | null;
   lastMessageAt: string | null;
+  /** The preview is the auto-generated match greeting (localize + style it). */
+  lastMessageSystem?: boolean;
   unreadCount: number;
   source: 'match' | 'dm';
 }

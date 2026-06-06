@@ -777,6 +777,26 @@ export function ChatDetailScreen() {
                 );
               }
               const msg = item.msg;
+              // System message (match greeting) — centered, no bubble/avatar,
+              // localized client-side (the stored content is a fallback).
+              if (msg.isSystem) {
+                return (
+                  <Text
+                    style={{
+                      alignSelf: 'center',
+                      textAlign: 'center',
+                      color: theme.colors.muted,
+                      fontSize: 13,
+                      fontStyle: 'italic',
+                      marginVertical: 14,
+                      marginHorizontal: 40,
+                      lineHeight: 19,
+                    }}
+                  >
+                    {t('system.match.created')}
+                  </Text>
+                );
+              }
               const mine = msg.senderId === me?.id;
               const failed = msg.status === 'failed';
               const onLongPress = () => setActionsFor(msg);

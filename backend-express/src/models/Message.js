@@ -22,6 +22,9 @@ const messageSchema = new mongoose.Schema(
       default: 'text',
     },
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    // System messages (e.g. the "you matched" greeting) — rendered centered,
+    // no bubble/avatar. Stored content is a fallback; the client localizes.
+    isSystem: { type: Boolean, default: false },
     // Image messages: mediaUrl points to the B2 URL produced by
     // /api/upload. mediaType is 'image' for now; 'gif' reserved for
     // when sticker-style animated images get their own pipeline.

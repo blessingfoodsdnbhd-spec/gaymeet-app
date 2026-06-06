@@ -93,7 +93,7 @@ router.get('/:id/following', auth, async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('following', 'nickname avatarUrl isOnline level isPremium isVerified')
+      .populate('following', 'nickname avatarUrl isOnline level isPremium isVerified dob lastActiveAt location')
       .lean();
 
     const ids = follows.map((f) => f.following._id);
@@ -103,10 +103,15 @@ router.get('/:id/following', auth, async (req, res, next) => {
     }).lean();
     const followingSet = new Set(myFollows.map((f) => f.following.toString()));
 
+    const { haversineMeters } = require('../utils/geo');
+    const myCoords = req.user.location?.coordinates;
     ok(
       res,
       follows.map((f) => ({
         ...f.following,
+        dob: f.following.dob ? new Date(f.following.dob).toISOString() : null,
+        lastActiveAt: f.following.lastActiveAt ? new Date(f.following.lastActiveAt).toISOString() : null,
+        distanceM: haversineMeters(myCoords, f.following.location?.coordinates),
         isFollowing: followingSet.has(f.following._id.toString()),
         isSelf: f.following._id.toString() === req.user._id.toString(),
       }))

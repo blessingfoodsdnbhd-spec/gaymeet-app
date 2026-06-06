@@ -91,9 +91,13 @@ router.get('/', auth, async (req, res, next) => {
                 ? other.lastActiveAt.toISOString()
                 : null,
             distance: formatDist(distM),
+            distanceM: distM,
           },
           lastMessage: m.lastMessage ?? null,
           lastMessageAt: m.lastMessageAt ? m.lastMessageAt.toISOString() : null,
+          // A preview with no human sender = the system match greeting; the
+          // client localizes + styles it.
+          lastMessageSystem: !!(m.lastMessage && !m.lastMessageBy),
           unreadCount: unread,
           source: m.source ?? 'match',
         };
