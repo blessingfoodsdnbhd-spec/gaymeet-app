@@ -11,6 +11,8 @@ import Animated, {
 import { Image as ExpoImage } from 'expo-image';
 
 import { DiscoverCard } from './DiscoverCard';
+import { useDiscoverPrefs } from '../../store/discoverPrefs';
+import { prefetchVoice, clearVoiceCache } from '../../utils/voiceCache';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -51,6 +53,17 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       // best-effort; if a single URL fails the others may still cache
     });
   }, [cards]);
+
+  // Preload the TOP cards' voice intros (only when the Nearby toggle is on) so
+  // auto-play in AboutUserSheet is instant instead of a 3–4s download.
+  const introVoice = useDiscoverPrefs((s) => s.introVoice);
+  useEffect(() => {
+    if (!introVoice) return;
+    cards.slice(0, 5).forEach((c) => prefetchVoice((c as any).voiceIntroUrl));
+  }, [cards, introVoice]);
+
+  // Free the preloaded sounds when the deck unmounts.
+  useEffect(() => () => { clearVoiceCache(); }, []);
 
   const finalize = useCallback(
     (liked: boolean) => {

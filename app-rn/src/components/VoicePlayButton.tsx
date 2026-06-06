@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 import { Volume2, Pause } from 'lucide-react-native';
 import { Audio } from 'expo-av';
 import { useTheme } from '../theme/ThemeProvider';
+import { takeVoice, ensureAudioMode } from '../utils/voiceCache';
 
 /**
  * Tap-to-play a voice-intro URL. Toggles play/stop, auto-unloads on finish and
@@ -41,8 +42,25 @@ export function VoicePlayButton({
     if (!url) return;
     if (soundRef.current) { stop(); return; }
     try {
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
-      const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
+      // Fast path: a preloaded sound (prefetched while the card was visible)
+      // is already decoded — just replay it. Saves the 3–4s download+decode.
+      const pre = takeVoice(url);
+      let sound: Audio.Sound;
+      if (pre) {
+        sound = pre;
+        soundRef.current = sound;
+        set(true);
+        sound.setOnPlaybackStatusUpdate((s) => {
+          if (s.isLoaded && s.didJustFinish) stop();
+        });
+        await sound.replayAsync().catch(() => sound.playAsync());
+        return;
+      }
+      // Slow path: not preloaded (e.g. opened from the grid). shouldPlay:true
+      // starts on load — one bridge round-trip instead of load-then-play.
+      await ensureAudioMode();
+      const r = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
+      sound = r.sound;
       soundRef.current = sound;
       set(true);
       sound.setOnPlaybackStatusUpdate((s) => {

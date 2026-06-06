@@ -3,6 +3,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
+import { ensureAudioMode } from './utils/voiceCache';
 import { initSentry } from './lib/sentry';
 
 initSentry();
@@ -101,6 +102,9 @@ export function App() {
           // Invalid token — let the user see Welcome
         }
       }
+
+      // Warm the audio session so the first voice-intro play is fast.
+      ensureAudioMode().catch(() => {});
 
       await fontsPromise;
       setFontsLoaded(true);
