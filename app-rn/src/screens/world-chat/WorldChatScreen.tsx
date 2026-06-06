@@ -26,6 +26,7 @@ import {
   getRecentWorldChat,
   sendWorldChat,
   reportWorldChat,
+  deleteWorldChatMessage,
   type WorldChatMessage,
 } from '../../api/worldChat';
 import { blockUser } from '../../api/safety';
@@ -224,6 +225,29 @@ export function WorldChatScreen() {
     }
   };
 
+  const onDelete = (m: WorldChatMessage) => {
+    setSelected(null);
+    Alert.alert(t('worldChat.deleteConfirmTitle'), t('worldChat.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('worldChat.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          // Optimistic removal; the WS broadcast drops it for everyone else.
+          qc.setQueryData<Cache>(KEY, (prev) =>
+            prev ? { messages: prev.messages.filter((x) => x.messageId !== m.messageId) } : prev,
+          );
+          try {
+            await deleteWorldChatMessage(m.messageId);
+          } catch {
+            Alert.alert(t('worldChat.actionFailed'));
+            qc.invalidateQueries({ queryKey: KEY });
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       {/* Header */}
@@ -274,7 +298,7 @@ export function WorldChatScreen() {
               <Row
                 msg={item}
                 mine={item.userId === myId}
-                onLongPress={() => item.userId !== myId && setSelected(item)}
+                onLongPress={() => setSelected(item)}
                 onOpenUser={() =>
                   item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
                 }
@@ -329,16 +353,22 @@ export function WorldChatScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Long-press action sheet: report / block / DM */}
+      {/* Long-press action sheet: own message → delete; others → report/block/DM */}
       <Sheet open={!!selected} onClose={() => setSelected(null)} maxHeight="40%">
-        {selected && (
-          <>
-            <ActionRow label={t('worldChat.report')} onPress={() => onReport(selected)} />
-            <ActionRow label={t('worldChat.block')} danger onPress={() => onBlock(selected)} />
-            <ActionRow label={t('worldChat.dm')} onPress={() => onDM(selected)} />
-            <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
-          </>
-        )}
+        {selected &&
+          (selected.userId === myId ? (
+            <>
+              <ActionRow label={t('worldChat.delete')} danger onPress={() => onDelete(selected)} />
+              <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
+            </>
+          ) : (
+            <>
+              <ActionRow label={t('worldChat.report')} onPress={() => onReport(selected)} />
+              <ActionRow label={t('worldChat.block')} danger onPress={() => onBlock(selected)} />
+              <ActionRow label={t('worldChat.dm')} onPress={() => onDM(selected)} />
+              <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
+            </>
+          ))}
       </Sheet>
     </SafeAreaView>
   );

@@ -43,3 +43,8 @@ export const sendWorldChat = (body: string, roomId = 'world') =>
 
 export const reportWorldChat = (messageId: string, reason?: string) =>
   api.post('/world-chat/report', { messageId, reason });
+
+/** Delete your OWN message. Backend is owner-only (403 otherwise) and
+ *  broadcasts world-chat:message-deleted so every client drops it live. */
+export const deleteWorldChatMessage = (messageId: string) =>
+  api.delete(`/world-chat/${messageId}`);

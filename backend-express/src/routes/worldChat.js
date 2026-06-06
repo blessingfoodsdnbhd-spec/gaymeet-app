@@ -164,6 +164,25 @@ router.post('/report', auth, async (req, res, next) => {
   }
 });
 
+// ── Delete your OWN message ───────────────────────────────────────────────────
+// Owner-only. Broadcasts the same world-chat:message-deleted event the admin
+// path uses, so every client drops it live. (Single-segment path — never
+// shadows the two-segment /admin/:messageId route.)
+router.delete('/:messageId', auth, async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    if (!mongoose.isValidObjectId(messageId)) return err(res, 'Invalid messageId');
+    const msg = await WorldChatMessage.findById(messageId);
+    if (!msg) return err(res, 'Not found', 404);
+    if (msg.userId.toString() !== req.user._id.toString()) return err(res, 'Not your message', 403);
+    await WorldChatMessage.deleteOne({ _id: messageId });
+    broadcast('world-chat:message-deleted', { messageId });
+    ok(res, { ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── Admin: hard-delete a message ──────────────────────────────────────────────
 router.delete('/admin/:messageId', requireAdminAuth, async (req, res, next) => {
   try {
