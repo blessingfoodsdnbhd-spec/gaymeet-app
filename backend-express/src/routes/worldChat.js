@@ -6,6 +6,7 @@ const WorldChatBan = require('../models/WorldChatBan');
 const WorldChatReport = require('../models/WorldChatReport');
 const ChatRoom = require('../models/ChatRoom');
 const Follow = require('../models/Follow');
+const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
@@ -358,7 +359,14 @@ router.post('/rooms/:id/invite', auth, async (req, res, next) => {
     const toAdd = ids.filter((id) => friendIds.has(String(id)));
     if (!toAdd.length) return err(res, 'None of those users are your friends', 400);
     await ChatRoom.updateOne({ _id: room._id }, { $addToSet: { memberIds: { $each: toAdd } } });
-    for (const uid of toAdd) broadcastToUser(uid, 'world-chat:room-invited', { roomId: room._id.toString(), title: room.title });
+    for (const uid of toAdd) {
+      broadcastToUser(uid, 'world-chat:room-invited', { roomId: room._id.toString(), title: room.title });
+      notify(uid, 'room_invite', {
+        title: '你被邀请加入聊天室 💬',
+        body: room.title,
+        data: { roomId: room._id.toString(), custom: '1' },
+      }).catch(() => {});
+    }
     const fresh = await ChatRoom.findById(room._id).select('memberIds');
     ok(res, { invited: toAdd.length, memberCount: fresh.memberIds.length });
   } catch (e) {

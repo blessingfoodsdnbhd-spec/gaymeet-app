@@ -64,4 +64,5 @@ export type RootStackParamList = {
   };
   UnlockRequests: undefined;
   AnnouncementAdmin: undefined;
+  NotificationCenter: undefined;
 };

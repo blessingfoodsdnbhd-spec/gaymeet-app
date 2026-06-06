@@ -50,6 +50,32 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'follow': {
       return safeNavigate('FriendsList');
     }
+    case 'note': {
+      return safeNavigate('NotesInbox');
+    }
+    case 'vote_first_vote':
+    case 'vote_ending_24h':
+    case 'vote_ending_1h':
+    case 'vote_ended':
+    case 'vote_result': {
+      const eventId = data.eventId ? String(data.eventId) : null;
+      if (!eventId) return safeNavigate('VotesList');
+      return safeNavigate('VoteDetail', { eventId });
+    }
+    case 'room_invite': {
+      const roomId = data.roomId ? String(data.roomId) : null;
+      if (!roomId) return safeNavigate('Main');
+      return safeNavigate('WorldChatRoom', { roomId, custom: true });
+    }
+    case 'viewers_digest': {
+      return safeNavigate('Viewers');
+    }
+    case 'wants_you_digest': {
+      return safeNavigate('LikedMe');
+    }
+    case 'comeback': {
+      return safeNavigate('Main');
+    }
     case 'photo_request': {
       // Owner side: new request landed in their inbox.
       return safeNavigate('PhotoRequests');

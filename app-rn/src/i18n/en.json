@@ -663,6 +663,11 @@
     "hoursAgo": "Active {{n}} h ago",
     "daysAgo": "Active {{n}} d ago"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read"
+  },
   "notificationSettings": {
     "title": "Notifications",
     "systemPushLabel": "System push",
@@ -671,7 +676,23 @@
     "statusGranted": "On",
     "statusDenied": "Off",
     "statusUndetermined": "Not set",
-    "statusUnknown": "Unknown"
+    "statusUnknown": "Unknown",
+    "prefs": {
+      "importantSection": "Important",
+      "important": "Matches, notes & room invites",
+      "importantHint": "Always on — these are the moments you won't want to miss.",
+      "moreSection": "More notifications",
+      "votes": "Contest updates",
+      "follow": "New followers",
+      "viewers": "Daily profile viewers",
+      "wants": "People who want to know you",
+      "comeback": "Comeback reminders",
+      "quietSection": "Quiet hours",
+      "quietHours": "Quiet hours",
+      "quietHoursHint": "We'll hold pushes during this window (UTC). They still appear in your Notification Center.",
+      "from": "From",
+      "to": "To"
+    }
   },
   "accountSettings": {
     "title": "Account & security",

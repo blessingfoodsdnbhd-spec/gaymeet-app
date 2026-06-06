@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
+const { notify } = require('../services/notificationService');
 
 // ── POST /api/users/:id/follow — toggle follow / unfollow ─────────────────────
 router.post('/:id/follow', auth, async (req, res, next) => {
@@ -35,10 +36,10 @@ router.post('/:id/follow', auth, async (req, res, next) => {
 
       // Push the followed user — fire-and-forget. req.user is loaded by the
       // auth middleware and has nickname.
-      sendPushToUser(targetId, {
+      notify(targetId, 'follow', {
         title: `${req.user.nickname || 'Someone'} is following you`,
         body: 'Tap to view their profile',
-        data: { type: 'follow', fromUserId: String(req.user._id) },
+        data: { fromUserId: String(req.user._id) },
       }).catch(() => {});
 
       return ok(res, { following: true });

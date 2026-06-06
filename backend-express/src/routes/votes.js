@@ -11,6 +11,7 @@ const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
+const { notify, coalesceOk } = require('../services/notificationService');
 
 const TITLE_MAX = 80;
 const DESC_MAX = 500;
@@ -109,16 +110,16 @@ async function finalizeEvent(ev, now) {
       { upsert: true },
     );
     const medal = ['🥇', '🥈', '🥉'][i];
-    sendPushToUser(e.submitterId, {
+    notify(e.submitterId, 'vote_result', {
       title: `${medal} You placed #${i + 1}!`,
       body: ev.title,
-      data: { type: 'vote_result', eventId: ev._id.toString() },
+      data: { eventId: ev._id.toString() },
     }).catch(() => {});
   }
-  sendPushToUser(ev.creatorId, {
+  notify(ev.creatorId, 'vote_ended', {
     title: 'Your contest ended 🎉',
     body: ev.title,
-    data: { type: 'vote_ended', eventId: ev._id.toString() },
+    data: { eventId: ev._id.toString() },
   }).catch(() => {});
 }
 
@@ -524,8 +525,16 @@ router.post('/:id/entries/:entryId/vote', auth, async (req, res, next) => {
     await VoteEntry.updateOne({ _id: entryId }, { $inc: { voteCount: 1 } });
     await VoteEvent.updateOne({ _id: id }, { $inc: { voteCount: 1 } });
 
-    // Coalesced "got a vote" nudge: at most ~1/hour per entry (best-effort —
-    // skip if the entry was created very recently to avoid an instant ping).
+    // First-vote nudge to the entrant (entry.voteCount is the pre-increment
+    // value). Coalesced to ~1/hour per entry as a safety net against races.
+    if ((entry.voteCount || 0) === 0 && coalesceOk(`firstvote:${entryId}`, 60 * 60 * 1000)) {
+      notify(entry.submitterId, 'vote_first_vote', {
+        title: '你的作品收到第一票!🎉',
+        body: ev.title,
+        data: { eventId: id },
+      }).catch(() => {});
+    }
+
     ok(res, { ok: true });
   } catch (e) {
     next(e);

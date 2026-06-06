@@ -5,6 +5,7 @@ const NoteBlock = require('../models/NoteBlock');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
+const { notify } = require('../services/notificationService');
 
 const BODY_MAX = 200;
 const QUOTA_FREE = 1;
@@ -53,6 +54,12 @@ router.post('/', auth, async (req, res, next) => {
     }
 
     const note = await Note.create({ senderId: req.user._id, recipientId, body });
+    // Anonymous — never reveal the sender in the push.
+    notify(recipientId, 'note', {
+      title: '你收到一张小纸条 📝',
+      body: '有人给你写了一张匿名小纸条',
+      data: {},
+    }).catch(() => {});
     created(res, {
       _id: note._id,
       createdAt: note.createdAt.toISOString(),

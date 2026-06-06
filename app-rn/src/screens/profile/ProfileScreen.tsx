@@ -54,6 +54,7 @@ import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
 import { useAuth } from '../../store/auth';
 import { getMyStats, getViewers, patchMe, deleteVoiceIntro } from '../../api/me';
+import { getUnreadCount } from '../../api/notifications';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { fetchIsAdmin } from '../../api/admin';
 import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
@@ -85,6 +86,15 @@ export function ProfileScreen() {
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
   const queryClient = useQueryClient();
+
+  // Unread notification count for the header bell badge.
+  const unreadQ = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: getUnreadCount,
+    staleTime: 30_000,
+    select: (d) => d.count,
+  });
+  const unread = unreadQ.data ?? 0;
 
   // Inline editable fields — local state, auto-saved onEndEditing.
   const [nickname, setNickname] = useState(user?.nickname ?? '');
@@ -550,6 +560,16 @@ export function ProfileScreen() {
       <TopBar
         right={
           <>
+            <IconButton onPress={() => nav.navigate('NotificationCenter')}>
+              <View>
+                <Bell size={18} color={theme.colors.text} strokeWidth={1.6} />
+                {unread > 0 && (
+                  <View style={[styles.bellBadge, { backgroundColor: theme.colors.primary, borderColor: theme.colors.bg }]}>
+                    <Text style={styles.bellBadgeText}>{unread > 9 ? '9+' : unread}</Text>
+                  </View>
+                )}
+              </View>
+            </IconButton>
             <IconButton onPress={() => user && shareProfile(user.id, user.nickname, t)}>
               <Share2 size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
@@ -1349,6 +1369,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
+  bellBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -7,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  bellBadgeText: { color: '#FFFFFF', fontSize: 9.5, fontWeight: '800' },
   avatarSpinner: {
     borderRadius: 48,
     backgroundColor: 'rgba(0,0,0,0.45)',

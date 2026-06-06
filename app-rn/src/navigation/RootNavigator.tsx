@@ -38,6 +38,7 @@ import { EventUpdatesScreen } from '../screens/votes/EventUpdatesScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
+import { NotificationCenter } from '../screens/notifications/NotificationCenter';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -120,6 +121,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="Viewers"
             component={ViewersScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="NotificationCenter"
+            component={NotificationCenter}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

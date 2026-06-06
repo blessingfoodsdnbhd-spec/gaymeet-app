@@ -663,6 +663,11 @@
     "hoursAgo": "{{n}} 小时前活跃",
     "daysAgo": "{{n}} 天前活跃"
   },
+  "notifications": {
+    "title": "通知",
+    "empty": "暂无通知",
+    "markAllRead": "全部已读"
+  },
   "notificationSettings": {
     "title": "通知",
     "systemPushLabel": "系统推送",
@@ -671,7 +676,23 @@
     "statusGranted": "已开启",
     "statusDenied": "已关闭",
     "statusUndetermined": "未设置",
-    "statusUnknown": "未知"
+    "statusUnknown": "未知",
+    "prefs": {
+      "importantSection": "重要",
+      "important": "配对、小纸条与聊天室邀请",
+      "importantHint": "始终开启 — 这些是你不会想错过的时刻。",
+      "moreSection": "更多通知",
+      "votes": "投票活动提醒",
+      "follow": "新的关注",
+      "viewers": "每日 profile 访客",
+      "wants": "想认识你的人",
+      "comeback": "回归提醒",
+      "quietSection": "免打扰时段",
+      "quietHours": "免打扰时段",
+      "quietHoursHint": "在此时间段内(UTC)我们会暂停推送,但通知仍会出现在通知中心。",
+      "from": "开始",
+      "to": "结束"
+    }
   },
   "accountSettings": {
     "title": "账户与安全",

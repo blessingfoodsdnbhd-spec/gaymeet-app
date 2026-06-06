@@ -6,6 +6,7 @@ const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
 const { sendPushToUser } = require('../utils/push');
+const { notify } = require('../services/notificationService');
 
 const FREE_DAILY_SWIPES = 20;
 
@@ -104,10 +105,10 @@ router.post('/', auth, async (req, res, next) => {
           // Best-effort push to the OTHER party — the swiper is currently
           // in-app and got the matched=true response, so they don't need a
           // notification. Receiver may have liked us hours/days ago.
-          sendPushToUser(targetUserId, {
+          notify(targetUserId, 'match', {
             title: "It's a match! 🎉",
             body: `You matched with ${me.nickname || 'someone'}`,
-            data: { type: 'match', matchId: match._id.toString() },
+            data: { matchId: match._id.toString() },
           }).catch(() => { /* never fails the request */ });
         }
 
