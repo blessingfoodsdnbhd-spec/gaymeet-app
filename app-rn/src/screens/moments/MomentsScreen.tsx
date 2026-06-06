@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import { MomentItem } from './MomentItem';
 import { useAboutUserSheet } from '../../components/useAboutUserSheet';
 import { uploadFile } from '../../api/upload';
@@ -232,11 +233,12 @@ export function MomentsScreen() {
           // the safe area at the SafeAreaView; don't double-count.
           contentInsetAdjustmentBehavior="never"
           ListEmptyComponent={
-            <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted, textAlign: 'center', lineHeight: 22 }}>
-                {t(`moments.emptyByFilter.${filter}`)}
-              </Text>
-            </View>
+            <EmptyState
+              emoji="📷"
+              title={t(`moments.emptyByFilter.${filter}`)}
+              primaryLabel={t('empty.moments.cta')}
+              onPrimary={() => nav.navigate('Composer')}
+            />
           }
         />
       )}

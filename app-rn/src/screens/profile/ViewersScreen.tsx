@@ -21,6 +21,8 @@ import { getViewers, type ViewerUser } from '../../api/me';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { shortTime } from '../../utils/time';
 import { useAuth } from '../../store/auth';
+import { EmptyState } from '../../components/EmptyState';
+import { shareProfile } from '../../utils/shareProfile';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -104,11 +106,13 @@ export function ViewersScreen() {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted, textAlign: 'center' }}>
-                {t('viewers.empty')}
-              </Text>
-            </View>
+            <EmptyState
+              emoji="👀"
+              title={t('viewers.empty')}
+              subtitle={t('empty.viewers.subtitle')}
+              primaryLabel={t('empty.viewers.cta')}
+              onPrimary={() => me && shareProfile(me.id, me.nickname, t)}
+            />
           }
         />
       )}

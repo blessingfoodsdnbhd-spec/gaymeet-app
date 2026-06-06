@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 
 import { CardStack, type CardStackHandle } from './CardStack';
 import { NearbyGrid } from './NearbyGrid';
@@ -444,6 +445,7 @@ function CardsBody({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<Nav>();
 
   if (cardsQ.isLoading) {
     return (
@@ -468,24 +470,14 @@ function CardsBody({
   if (!top) {
     return (
       <View style={styles.centerFill}>
-        <Text
-          style={{
-            color: theme.colors.text,
-            fontSize: 18,
-            fontWeight: '600',
-            marginBottom: 6,
-          }}
-        >
-          {t('discover.emptyTitle')}
-        </Text>
-        <Text style={{ color: theme.colors.muted, fontSize: 14, textAlign: 'center' }}>
-          {t('discover.emptySubtitle')}
-        </Text>
-        <Button
-          label={t('discover.redo')}
-          variant="soft"
-          onPress={() => cardsQ.refetch()}
-          style={{ marginTop: 24 }}
+        <EmptyState
+          emoji="🍵"
+          title={t('discover.emptyTitle')}
+          subtitle={t('discover.emptySubtitle')}
+          primaryLabel={t('discover.redo')}
+          onPrimary={() => cardsQ.refetch()}
+          secondaryLabel={t('empty.discoverEnd.cta')}
+          onSecondary={() => nav.navigate('Main', { screen: 'WorldChat' })}
         />
       </View>
     );

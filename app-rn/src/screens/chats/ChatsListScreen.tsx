@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
+import { EmptyState } from '../../components/EmptyState';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { getNotesUnread } from '../../api/notes';
 import { useChats } from '../../store/chats';
@@ -220,11 +221,13 @@ export function ChatsListScreen() {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted, fontSize: 14 }}>
-                {t('chats.empty')}
-              </Text>
-            </View>
+            <EmptyState
+              emoji="💬"
+              title={t('chats.empty')}
+              subtitle={t('empty.chats.subtitle')}
+              primaryLabel={t('empty.chats.cta')}
+              onPrimary={() => nav.navigate('Main', { screen: 'WorldChat' })}
+            />
           }
         />
       )}

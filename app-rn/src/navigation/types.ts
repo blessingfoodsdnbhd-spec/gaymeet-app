@@ -19,6 +19,8 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
+  /** First-run intro for new accounts, shown before Main. */
+  Onboarding: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   ChatDetail: { chatId: string };
   // Profile sub-pages — presented as pushes over MainTabs.

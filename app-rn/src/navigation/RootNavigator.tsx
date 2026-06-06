@@ -2,8 +2,10 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { useAuth } from '../store/auth';
+import { useOnboarding } from '../store/onboarding';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
+import { OnboardingFlow } from '../screens/onboarding/OnboardingFlow';
 import { ChatDetailScreen } from '../screens/chats/ChatDetailScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
 import { TagsEditScreen } from '../screens/profile/TagsEditScreen';
@@ -41,8 +43,15 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const user = useAuth((s) => s.user);
+  const onbDone = useOnboarding((s) => s.done);
+  const onbHydrated = useOnboarding((s) => s.hydrated);
   const needsTags = !!user && !user.interestsOnboardedAt;
   const signedIn = !!user && !needsTags;
+  // Only genuinely-new accounts (no photos, no prompts) see the intro. Show it
+  // immediately for fresh users (avoids a Main flash) and hide once we've
+  // hydrated and confirmed they've already completed it.
+  const fresh = !!user && (user.photos?.length ?? 0) === 0 && (user.prompts?.length ?? 0) === 0;
+  const showOnboarding = signedIn && fresh && (!onbHydrated || !onbDone);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -62,6 +71,8 @@ export function RootNavigator() {
             />
           )}
         </Stack.Screen>
+      ) : showOnboarding ? (
+        <Stack.Screen name="Onboarding" component={OnboardingFlow} />
       ) : (
         <>
           <Stack.Screen name="Main" component={MainTabs} />

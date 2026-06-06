@@ -48,6 +48,7 @@ import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { HighlightsSection } from '../votes/HighlightsSection';
+import { ProfileCompletionCard } from '../../components/ProfileCompletionCard';
 import { getTopics, type Topic } from '../../api/topics';
 import { uploadFile } from '../../api/upload';
 import { getIncomingUnlocks } from '../../api/topicUnlocks';
@@ -567,6 +568,11 @@ export function ProfileScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Profile completion nudge — hides itself at 100%. */}
+          <View style={{ marginTop: 12 }}>
+            <ProfileCompletionCard user={user} />
+          </View>
+
           {/* Avatar — tap to change. Photos[0] is always the avatar. */}
           <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 6 }}>
             <Pressable onPress={pickAvatar} disabled={uploadingAvatar} hitSlop={6}>

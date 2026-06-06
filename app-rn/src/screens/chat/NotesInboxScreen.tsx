@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import {
   getInbox,
   getSentNotes,
@@ -125,7 +126,15 @@ export function NotesInboxScreen() {
           renderItem={({ item }) => (
             <InboxRow note={item} onPress={() => nav.navigate('NoteDetail', { note: item })} />
           )}
-          ListEmptyComponent={<Empty text={t('notes.emptyInbox')} />}
+          ListEmptyComponent={
+            <EmptyState
+              emoji="📝"
+              title={t('notes.emptyInbox')}
+              subtitle={t('empty.notes.subtitle')}
+              primaryLabel={t('empty.notes.cta')}
+              onPrimary={() => nav.navigate('Main', { screen: 'Discover' })}
+            />
+          }
         />
       ) : (
         <FlatList

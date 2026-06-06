@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
+import { EmptyState } from '../../components/EmptyState';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { getFollowing, type FollowedUser } from '../../api/me';
@@ -119,11 +120,15 @@ export function FriendsListScreen() {
             <FriendRow user={item} onPress={() => openWith(item)} />
           )}
           ListEmptyComponent={
-            <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted, textAlign: 'center' }}>
-                {t('profile.friendsList.empty')}
-              </Text>
-            </View>
+            <EmptyState
+              emoji="🫂"
+              title={t('empty.friends.title')}
+              subtitle={t('empty.friends.subtitle')}
+              primaryLabel={t('empty.friends.cta')}
+              onPrimary={() => nav.navigate('Main', { screen: 'WorldChat' })}
+              secondaryLabel={t('empty.friends.cta2')}
+              onSecondary={() => nav.navigate('Main', { screen: 'Discover' })}
+            />
           }
         />
       )}

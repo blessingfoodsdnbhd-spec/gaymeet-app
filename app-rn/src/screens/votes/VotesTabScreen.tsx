@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import { listVoteEvents, type VoteCategory } from '../../api/votes';
 import { VoteEventCard } from './VoteEventCard';
 import { VOTE_CATEGORIES } from './voteHelpers';
@@ -109,10 +110,13 @@ export function VotesTabScreen() {
             <VoteEventCard event={item} onPress={() => nav.navigate('VoteDetail', { eventId: item.id })} />
           )}
           ListEmptyComponent={
-            <View style={[styles.center, { paddingTop: 70 }]}>
-              <Text style={{ color: theme.colors.muted, marginBottom: 16 }}>{t('votes.empty')}</Text>
-              <Button label={t('votes.createFirst')} onPress={() => nav.navigate('CreateVote')} />
-            </View>
+            <EmptyState
+              emoji="🏆"
+              title={t('votes.empty')}
+              subtitle={t('empty.votes.subtitle')}
+              primaryLabel={t('votes.createFirst')}
+              onPrimary={() => nav.navigate('CreateVote')}
+            />
           }
         />
       )}

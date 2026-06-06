@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { shortTime } from '../../utils/time';
 import { computeAge } from '../../utils/zodiac';
@@ -98,11 +99,15 @@ export function MatchesListScreen() {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.centerFill}>
-              <Text style={{ color: theme.colors.muted, textAlign: 'center' }}>
-                {t('profile.matchesList.empty')}
-              </Text>
-            </View>
+            <EmptyState
+              emoji="💞"
+              title={t('empty.matches.title')}
+              subtitle={t('empty.matches.subtitle')}
+              primaryLabel={t('empty.matches.cta')}
+              onPrimary={() => nav.navigate('Main', { screen: 'Discover' })}
+              secondaryLabel={t('empty.matches.cta2')}
+              onSecondary={() => nav.navigate('Main', { screen: 'WorldChat' })}
+            />
           }
         />
       )}

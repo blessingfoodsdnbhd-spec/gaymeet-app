@@ -1,4 +1,24 @@
 {
+  "empty": {
+    "viewers": { "subtitle": "Share your profile to get more eyes on you.", "cta": "Share my profile" },
+    "votes": { "subtitle": "Start a contest and invite people to join." },
+    "notes": { "subtitle": "Write a little note to someone nearby.", "cta": "Find people" },
+    "friends": { "title": "You're not following anyone yet", "subtitle": "Meet people in the Plaza or in Discover.", "cta": "Go to Plaza", "cta2": "Discover" },
+    "matches": { "title": "No matches yet", "subtitle": "Tap “Match” on someone's profile in Discover.", "cta": "Go to Discover", "cta2": "Plaza" },
+    "moments": { "cta": "Post a moment" },
+    "discoverEnd": { "cta": "Chat in the Plaza" },
+    "chats": { "subtitle": "Meet new people in the Plaza.", "cta": "Go to Plaza" }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "done": "Get Started",
+    "1": { "title": "Contests — win badges", "subtitle": "Enter your work and the top 3 win a permanent “Highlight” badge." },
+    "2": { "title": "World Plaza — chat globally", "subtitle": "15 country rooms to chat with people around the world in real time." },
+    "3": { "title": "Nearby — connect by interest", "subtitle": "Find people around you and click through shared interests." },
+    "4": { "title": "Voice intro — be heard in 5s", "subtitle": "Record a 1–5 second voice intro so others instantly get your vibe." },
+    "5": { "title": "Welcome to Meyou", "subtitle": "Let's finish your profile and start meeting people." }
+  },
   "announcement": {
     "dontShowAgain": "Don't show again",
     "close": "Close"
@@ -468,6 +488,18 @@
     "footnote": "Showing people who allow Nearby"
   },
   "profile": {
+    "completion": {
+      "title": "Profile completion {{n}}%",
+      "subtitle": "Complete {{n}} more to unlock more visibility",
+      "items": {
+        "photos": "Add a profile photo",
+        "voice": "Record a voice intro",
+        "interests": "Pick at least 3 interests",
+        "demographic": "Fill in your basics (age, MBTI, status…)",
+        "prompts": "Answer a prompt",
+        "bio": "Write a short bio"
+      }
+    },
     "stats": {
       "matches": "Matches",
       "friends": "Following",

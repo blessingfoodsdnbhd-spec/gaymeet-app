@@ -16,6 +16,7 @@ import * as Location from 'expo-location';
 import { requestLocation, getCurrentLocation } from '../utils/permissions';
 import { updateLocation, patchMe } from '../api/me';
 import { useAuth } from '../store/auth';
+import { useOnboarding } from '../store/onboarding';
 import { getConversations } from '../api/chats';
 import { on as wsOn } from '../api/ws';
 
@@ -25,6 +26,14 @@ export function MainTabs() {
   const theme = useTheme();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  // After onboarding finishes we mount fresh here — land on Profile once so the
+  // completion card greets the new user, then clear the one-shot.
+  const landProfile = useOnboarding((s) => s.landProfile);
+  const clearLandProfile = useOnboarding((s) => s.clearLandProfile);
+  useEffect(() => {
+    if (landProfile) clearLandProfile();
+  }, [landProfile, clearLandProfile]);
 
   // Total unread for the Messages tab badge. Reuses the SAME ['chats','list']
   // query as ChatsListScreen (React Query dedupes by key) — ChatDetailScreen
@@ -116,6 +125,7 @@ export function MainTabs() {
 
   return (
     <Tab.Navigator
+      initialRouteName={landProfile ? 'Profile' : 'Votes'}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
