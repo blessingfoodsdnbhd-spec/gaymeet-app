@@ -5,11 +5,13 @@ const User = require('../models/User');
 /**
  * Admin authorization — shared by every /api/admin/* route.
  *
- * Two accepted credentials (either one grants access):
+ * Accepted credentials (any one grants access):
  *   1. X-Admin-Token header == process.env.ADMIN_TOKEN  (machine / curl path,
  *      the original gate — unchanged for backward compat).
- *   2. A valid Bearer JWT whose user.email is in ADMIN_EMAILS  (in-app admin
- *      path, so the announcement manager works from the phone with no token).
+ *   2. A valid Bearer JWT for an official account (user.isOfficial === true),
+ *      so Meyou 官方 / meyou-bot can manage announcements from the app.
+ *   3. A valid Bearer JWT whose user.email is in ADMIN_EMAILS  (backup human
+ *      admins, so the announcement manager works from the phone with no token).
  *
  * ADMIN_EMAILS is a comma-separated allowlist, compared case-insensitively:
  *   ADMIN_EMAILS=blessingfoodsdnbhd@gmail.com,someone@else.com
@@ -24,9 +26,16 @@ function adminEmails() {
     .filter(Boolean);
 }
 
-/** True if the given user document's email is in the ADMIN_EMAILS allowlist. */
+/**
+ * True if the user may access admin routes. Either:
+ *   - the account is an official account (isOfficial === true), so Meyou 官方
+ *     (meyou-bot) can post announcements without being in the email allowlist; OR
+ *   - the user's email is in the ADMIN_EMAILS allowlist (backup human admins).
+ */
 function isAdminUser(user) {
-  const email = (user?.email || '').trim().toLowerCase();
+  if (!user) return false;
+  if (user.isOfficial === true) return true;
+  const email = (user.email || '').trim().toLowerCase();
   if (!email) return false;
   return adminEmails().includes(email);
 }
