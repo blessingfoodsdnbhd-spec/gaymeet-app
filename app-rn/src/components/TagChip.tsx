@@ -1,5 +1,14 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+// Pressable from react-native-gesture-handler, NOT react-native. TagChip renders
+// inside the Sheet's RNGH gesture tree (FiltersSheet); on Android, an RN-core
+// Pressable there doesn't share RNGH's touch system, so chip taps don't register
+// even after the ScrollView was swapped to RNGH (PR BBB). RNGH's Pressable is an
+// API-compatible drop-in that participates in the gesture tree, so taps fire on
+// Android. Safe app-wide: the root is wrapped in GestureHandlerRootView (App.tsx)
+// and each Sheet nests its own, so non-sheet usages (profile, interest editor)
+// keep working too.
+import { Pressable } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { InterestTag } from '../data/interestTags';
