@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+// IMPORTANT: ScrollView from react-native-gesture-handler, NOT react-native.
+// The Sheet renders inside a GestureHandlerRootView/GestureDetector (RNGH) tree.
+// On Android, RN-core ScrollView doesn't share RNGH's touch system, so once the
+// list is scrolled the Pressables below the fold (the interest chips) stop
+// receiving taps ("android 选择不到") — the distance pills work only because
+// they sit above the fold. RNGH's ScrollView coordinates with the gesture tree
+// so inner touchables fire on Android. Drop-in API-compatible on both platforms.
+import { ScrollView } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
@@ -94,6 +101,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
     <Sheet open={open} onClose={onClose} maxHeight="80%">
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         style={{ maxHeight: scrollMaxH }}
       >
         <Text style={[styles.title, { color: theme.colors.text }]}>
