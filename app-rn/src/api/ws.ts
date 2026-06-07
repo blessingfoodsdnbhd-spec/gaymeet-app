@@ -97,6 +97,16 @@ export type WsChatEdited = {
   editedAt: string;
 };
 
+/** Emoji reaction toggled on a message. `reactions` is the message's FULL
+ *  updated map { emoji: [userId,…] } so the client can replace wholesale. */
+export type WsChatReaction = {
+  matchId: string;
+  messageId: string;
+  emoji: string;
+  userId: string;
+  reactions: Record<string, string[]>;
+};
+
 export type WsChatDeleted = {
   matchId: string;
   messageId: string;
@@ -149,6 +159,8 @@ export interface WsEventMap {
   'chat:read': WsChatRead;
   'chat:edited': WsChatEdited;
   'chat:deleted': WsChatDeleted;
+  'chat:reaction-added': WsChatReaction;
+  'chat:reaction-removed': WsChatReaction;
   'user:online': WsPresence;
   'user:offline': WsPresence;
   'topic-unlock:requested': WsTopicUnlock;

@@ -341,6 +341,9 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
       // bytes happened to land there first. Edit/Delete URLs also went
       // to /messages/undefined and silently 404'd.
       let m = { ...raw, id: raw._id.toString() };
+      // Reactions: lean() returns a Map (JSON-stringifies to {}) — normalize to
+      // a plain { emoji: [userId,…] } object so the client can render pills.
+      m.reactions = Message.serializeReactions(raw.reactions);
       if (m.type === 'image') {
         const ttl = m.expiresAt ? new Date(m.expiresAt).getTime() : null;
         if (ttl !== null && ttl < now) {
@@ -510,6 +513,97 @@ router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
     } catch (_) {}
 
     ok(res, { messageId: req.params.msgId });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/conversations/:matchId/messages/:msgId/reactions ────────────────
+// Toggle the caller's emoji reaction on a message (WhatsApp/iMessage-style).
+// Body: { emoji }. Any participant of the conversation may react (NOT owner-only,
+// unlike edit/delete). Toggles: if the caller already reacted with this emoji it
+// is removed, else added. Broadcasts chat:reaction-added / chat:reaction-removed
+// to BOTH parties with the message's full updated reactions map.
+//
+// In-memory per-user rate limit: max 10 toggles/sec (best-effort; the process is
+// single-region so a plain Map suffices — abuse is cosmetic, not destructive).
+const reactionHits = new Map(); // userId -> recent toggle timestamps (ms)
+function reactionRateLimited(userId) {
+  const now = Date.now();
+  const recent = (reactionHits.get(userId) || []).filter((t) => now - t < 1000);
+  recent.push(now);
+  reactionHits.set(userId, recent);
+  return recent.length > 10;
+}
+
+router.post('/:matchId/messages/:msgId/reactions', auth, async (req, res, next) => {
+  try {
+    const emoji = typeof req.body?.emoji === 'string' ? req.body.emoji.trim() : '';
+    if (!emoji) return err(res, 'emoji required', 400);
+    // Cap length (a single emoji incl. ZWJ sequences/skin tones stays well under
+    // 8 code units); blocks abusive long strings without an emoji-only regex
+    // that would reject valid compound emoji.
+    if (emoji.length > 8) return err(res, 'emoji too long', 400);
+    if (reactionRateLimited(req.user._id.toString())) {
+      return err(res, 'Too many reactions', 429);
+    }
+
+    // Membership check (same gate as edit/delete) — only conversation
+    // participants can react.
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const message = await Message.findOne({
+      _id: req.params.msgId,
+      matchId: match._id,
+    });
+    if (!message) return err(res, 'Message not found', 404);
+
+    if (!message.reactions) message.reactions = new Map();
+    const uid = req.user._id.toString();
+    const list = (message.reactions.get(emoji) || []).map((x) => x.toString());
+    let action;
+    if (list.includes(uid)) {
+      const next = list.filter((x) => x !== uid);
+      if (next.length) message.reactions.set(emoji, next);
+      else message.reactions.delete(emoji); // drop empty buckets
+      action = 'removed';
+    } else {
+      message.reactions.set(emoji, [...list, uid]);
+      action = 'added';
+    }
+    message.markModified('reactions');
+    await message.save();
+
+    const reactions = Message.serializeReactions(message.reactions);
+    const payload = {
+      matchId: match._id.toString(),
+      messageId: message._id.toString(),
+      emoji,
+      userId: uid,
+      reactions,
+    };
+
+    // Broadcast to both parties — mirrors the chat:edited / chat:deleted emits.
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users
+          .find((u) => u.toString() !== uid)
+          ?.toString();
+        const event =
+          action === 'added' ? 'chat:reaction-added' : 'chat:reaction-removed';
+        io.to(`user:${uid}`).emit(event, payload);
+        if (otherId) io.to(`user:${otherId}`).emit(event, payload);
+      }
+    } catch (_) {}
+
+    ok(res, { ...payload, action });
   } catch (e) {
     next(e);
   }

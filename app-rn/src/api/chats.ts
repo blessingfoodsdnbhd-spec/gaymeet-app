@@ -32,6 +32,8 @@ export interface Message {
   // Edit metadata (Phase 2f).
   edited?: boolean;
   editedAt?: string | null;
+  /** Emoji reactions: { emoji: [userId,…] }. Absent/`{}` when none. */
+  reactions?: Record<string, string[]>;
 }
 
 export interface ChatUser {
@@ -127,6 +129,23 @@ export const editMessage = (matchId: string, msgId: string, content: string) =>
 export const deleteMessage = (matchId: string, msgId: string) =>
   unwrap<{ messageId: string }>(
     api.delete(`/conversations/${matchId}/messages/${msgId}`),
+  );
+
+export interface ReactionResult {
+  matchId: string;
+  messageId: string;
+  emoji: string;
+  userId: string;
+  /** The message's full updated reactions map. */
+  reactions: Record<string, string[]>;
+  action: 'added' | 'removed';
+}
+
+/** Toggle the caller's emoji reaction on a message. Any participant may react
+ *  (not owner-gated). Server broadcasts chat:reaction-added/removed to both. */
+export const toggleReaction = (matchId: string, msgId: string, emoji: string) =>
+  unwrap<ReactionResult>(
+    api.post(`/conversations/${matchId}/messages/${msgId}/reactions`, { emoji }),
   );
 
 /**

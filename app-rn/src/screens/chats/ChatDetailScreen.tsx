@@ -53,6 +53,7 @@ import {
   sendMessage,
   sendImageMessage,
   sendLocationMessage,
+  toggleReaction,
   type Message,
   type ChatThread,
 } from '../../api/chats';
@@ -64,6 +65,7 @@ import {
   type WsChatTyping,
   type WsChatEdited,
   type WsChatDeleted,
+  type WsChatReaction,
 } from '../../api/ws';
 import { downloadAndCache, deleteCachedImage } from '../../utils/imageCache';
 import type { RootStackParamList } from '../../navigation/types';
@@ -79,6 +81,36 @@ function idxFor(id: string) {
 }
 
 const STICKERS = ['😊', '😂', '🥰', '😘', '😎', '🤔', '😅', '🙃', '😴', '🥺', '🤍', '✨', '🌸', '☕', '🌆', '🎬'];
+
+// Quick-reaction row shown on long-press (WhatsApp/iMessage style).
+const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '👍', '👎'];
+// Curated grid for the "+" full picker — pure-JS (no native emoji-lib dependency,
+// so it can't break the EAS build). Covers the common faces/gestures/hearts.
+const EMOJI_PICKER = [
+  '❤️', '😂', '😮', '😢', '👍', '👎', '🔥', '🎉', '😍', '🥰', '😘', '😎',
+  '🤔', '😅', '🙃', '😴', '🥺', '😭', '😡', '🤯', '🥳', '😇', '🤗', '🙏',
+  '👏', '💪', '🤝', '✌️', '🤞', '👌', '✨', '⭐', '💯', '💖', '💔', '💋',
+  '😋', '😜', '🤪', '😏', '🙄', '😬', '😱', '🤩', '🥲', '😤', '👀', '💀',
+];
+
+/** Apply a reaction toggle locally (optimistic): add the user to the emoji's
+ *  list, or remove + drop empty buckets if already present. */
+function applyReactionToggle(
+  reactions: Record<string, string[]> | undefined,
+  emoji: string,
+  uid: string,
+): Record<string, string[]> {
+  const next: Record<string, string[]> = { ...(reactions ?? {}) };
+  const list = next[emoji] ?? [];
+  if (list.includes(uid)) {
+    const filtered = list.filter((x) => x !== uid);
+    if (filtered.length) next[emoji] = filtered;
+    else delete next[emoji];
+  } else {
+    next[emoji] = [...list, uid];
+  }
+  return next;
+}
 
 export function ChatDetailScreen() {
   const theme = useTheme();
@@ -128,6 +160,9 @@ export function ChatDetailScreen() {
   const [composerActionsOpen, setComposerActionsOpen] = useState(false);
   // Long-press action sheet target message (null = closed)
   const [actionsFor, setActionsFor] = useState<Message | null>(null);
+  // "+" full emoji picker target, and who-reacted modal target ({msg, emoji}).
+  const [emojiPickerFor, setEmojiPickerFor] = useState<Message | null>(null);
+  const [whoReactedFor, setWhoReactedFor] = useState<{ msg: Message; emoji: string } | null>(null);
   // Edit sheet state
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const [editDraft, setEditDraft] = useState('');
@@ -249,8 +284,23 @@ export function ChatDetailScreen() {
           (prev) => (prev ?? []).filter((m) => m.id !== evt.messageId),
         );
       });
-      if (cancelled) { u1(); uE(); uD(); return; }
-      unsubRecv = () => { u1(); uE(); uD(); };
+      // chat:reaction-added / -removed — both carry the message's FULL updated
+      // reactions map, so one handler replaces it wholesale. Cross-match ignored.
+      const onReaction = (evt: WsChatReaction) => {
+        if (cancelled || evt.matchId !== matchId) return;
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) =>
+            (prev ?? []).map((m) =>
+              m.id === evt.messageId ? { ...m, reactions: evt.reactions } : m,
+            ),
+        );
+      };
+      const uRa = await wsOn('chat:reaction-added', onReaction);
+      const uRr = await wsOn('chat:reaction-removed', onReaction);
+
+      if (cancelled) { u1(); uE(); uD(); uRa(); uRr(); return; }
+      unsubRecv = () => { u1(); uE(); uD(); uRa(); uRr(); };
 
       const u2 = await wsOn('chat:typing', (evt: WsChatTyping) => {
         if (cancelled || evt.matchId !== matchId) return;
@@ -608,6 +658,44 @@ export function ChatDetailScreen() {
     },
   });
 
+  // Reaction toggle. Optimistically updates the bubble's pills, then POSTs;
+  // the server echoes the authoritative full map (and broadcasts to the peer
+  // via WS). On error we refetch to undo the optimistic change.
+  const reactMut = useMutation({
+    mutationFn: ({ msgId, emoji }: { msgId: string; emoji: string }) =>
+      toggleReaction(matchId, msgId, emoji),
+    onSuccess: (res) => {
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) =>
+          (prev ?? []).map((m) =>
+            m.id === res.messageId ? { ...m, reactions: res.reactions } : m,
+          ),
+      );
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats', 'messages', matchId] });
+    },
+  });
+
+  const onReact = useCallback(
+    (msg: Message, emoji: string) => {
+      const uid = me?.id;
+      if (!uid || !msg.id) return;
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) =>
+          (prev ?? []).map((m) =>
+            m.id === msg.id
+              ? { ...m, reactions: applyReactionToggle(m.reactions, emoji, uid) }
+              : m,
+          ),
+      );
+      reactMut.mutate({ msgId: msg.id, emoji });
+    },
+    [me?.id, matchId, queryClient, reactMut],
+  );
+
   /** Compute which long-press actions to show for a given message. */
   const actionsAvailable = useMemo(() => {
     if (!actionsFor) {
@@ -843,6 +931,55 @@ export function ChatDetailScreen() {
                   }}
                 >
                   {bubble}
+                  {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        justifyContent: mine ? 'flex-end' : 'flex-start',
+                        gap: 4,
+                        marginTop: 3,
+                        maxWidth: '80%',
+                      }}
+                    >
+                      {Object.entries(msg.reactions).map(([emoji, ids]) => {
+                        const reactedByMe = !!me?.id && ids.includes(me.id);
+                        return (
+                          <Pressable
+                            key={emoji}
+                            onPress={() => onReact(msg, emoji)}
+                            onLongPress={() => setWhoReactedFor({ msg, emoji })}
+                            delayLongPress={300}
+                            hitSlop={4}
+                            style={[
+                              styles.reactionPill,
+                              {
+                                backgroundColor: reactedByMe
+                                  ? theme.colors.primarySoft
+                                  : theme.colors.surface2,
+                                borderColor: reactedByMe
+                                  ? theme.colors.primary
+                                  : theme.colors.line,
+                              },
+                            ]}
+                          >
+                            <Text style={{ fontSize: 13 }}>{emoji}</Text>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: reactedByMe
+                                  ? theme.colors.primaryDeep
+                                  : theme.colors.text2,
+                              }}
+                            >
+                              {ids.length}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
                   {msg.edited && (
                     <Text
                       style={{
@@ -1002,6 +1139,47 @@ export function ChatDetailScreen() {
       >
         {actionsFor && (
           <>
+            {/* Quick emoji reactions (WhatsApp/iMessage). Sits ABOVE the
+                copy/edit/delete actions so it never conflicts with them. Tap an
+                emoji → toggle + close; "+" → full picker. */}
+            {!actionsFor.isSystem && (
+              <View style={styles.reactionPickerRow}>
+                {REACTION_EMOJIS.map((emoji) => {
+                  const active = !!me?.id && !!actionsFor.reactions?.[emoji]?.includes(me.id);
+                  return (
+                    <Pressable
+                      key={emoji}
+                      onPress={() => {
+                        const m = actionsFor;
+                        setActionsFor(null);
+                        onReact(m, emoji);
+                      }}
+                      hitSlop={4}
+                      style={[
+                        styles.reactionPickerEmoji,
+                        active && { backgroundColor: theme.colors.primarySoft },
+                      ]}
+                    >
+                      <Text style={{ fontSize: 26 }}>{emoji}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => {
+                    const m = actionsFor;
+                    setActionsFor(null);
+                    setEmojiPickerFor(m);
+                  }}
+                  hitSlop={4}
+                  style={[
+                    styles.reactionPickerEmoji,
+                    { backgroundColor: theme.colors.surface2 },
+                  ]}
+                >
+                  <Plus size={22} color={theme.colors.text2} strokeWidth={2} />
+                </Pressable>
+              </View>
+            )}
             {actionsAvailable.canEdit && (
               <ActionRow
                 icon={<Edit2 size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
@@ -1040,6 +1218,77 @@ export function ChatDetailScreen() {
               centered
               onPress={() => setActionsFor(null)}
             />
+          </>
+        )}
+      </Sheet>
+
+      {/* "+" full emoji picker — opened from the reaction row. Curated grid
+          (no native emoji lib). Tap an emoji → toggle + close. */}
+      <Sheet
+        open={!!emojiPickerFor}
+        onClose={() => setEmojiPickerFor(null)}
+        maxHeight="50%"
+      >
+        {emojiPickerFor && (
+          <>
+            <Text style={[styles.pickerTitle, { color: theme.colors.text }]}>
+              {t('chat.reactions.add')}
+            </Text>
+            <View style={styles.emojiGrid}>
+              {EMOJI_PICKER.map((emoji) => (
+                <Pressable
+                  key={emoji}
+                  onPress={() => {
+                    const m = emojiPickerFor;
+                    setEmojiPickerFor(null);
+                    onReact(m, emoji);
+                  }}
+                  hitSlop={2}
+                  style={styles.emojiGridCell}
+                >
+                  <Text style={{ fontSize: 28 }}>{emoji}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+      </Sheet>
+
+      {/* Who-reacted list. 1-on-1 chat has only two participants, so every
+          userId resolves to me or the other person — no extra lookups. */}
+      <Sheet
+        open={!!whoReactedFor}
+        onClose={() => setWhoReactedFor(null)}
+        maxHeight="45%"
+      >
+        {whoReactedFor && (
+          <>
+            <Text style={[styles.pickerTitle, { color: theme.colors.text }]}>
+              {whoReactedFor.emoji}{'  '}
+              {t('chat.reactions.who', {
+                count: whoReactedFor.msg.reactions?.[whoReactedFor.emoji]?.length ?? 0,
+              })}
+            </Text>
+            {(whoReactedFor.msg.reactions?.[whoReactedFor.emoji] ?? []).map((uid) => {
+              const isMe = uid === me?.id;
+              const name = isMe
+                ? t('chats.detail.you')
+                : thread?.user.nickname ?? '';
+              const avatarUri = isMe ? me?.avatarUrl : thread?.user.avatarUrl;
+              return (
+                <View key={uid} style={styles.whoRow}>
+                  <Avatar
+                    name={name}
+                    uri={avatarUri ?? undefined}
+                    avatarIdx={idxFor(uid)}
+                    size={36}
+                  />
+                  <Text style={{ fontSize: 15, color: theme.colors.text }}>
+                    {name}
+                  </Text>
+                </View>
+              );
+            })}
           </>
         )}
       </Sheet>
@@ -1259,6 +1508,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  // Reaction pill shown under a message bubble.
+  reactionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 11,
+    borderWidth: 1,
+  },
+  // Quick-reaction emoji row at the top of the long-press action sheet.
+  reactionPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginBottom: 6,
+  },
+  reactionPickerEmoji: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 14,
+  },
+  emojiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  emojiGridCell: {
+    width: '12.5%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  whoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
   },
   centerFill: {
     flex: 1,

@@ -474,6 +474,10 @@
         "copy": "复制",
         "cancel": "取消"
       }
+    },
+    "reactions": {
+      "add": "添加表情",
+      "who": "{{count}} 人反应了"
     }
   },
   "chats": {
@@ -486,7 +490,8 @@
       "online": "在线",
       "offline": "离线",
       "messagePlaceholder": "说点什么…",
-      "unmatchFailed": "取消同频失败"
+      "unmatchFailed": "取消同频失败",
+      "you": "你"
     }
   },
   "match": {

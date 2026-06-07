@@ -474,6 +474,10 @@
         "copy": "Copy",
         "cancel": "Cancel"
       }
+    },
+    "reactions": {
+      "add": "Add reaction",
+      "who": "{{count}} reactions"
     }
   },
   "chats": {
@@ -486,7 +490,8 @@
       "online": "online",
       "offline": "offline",
       "messagePlaceholder": "Say something…",
-      "unmatchFailed": "Unmatch failed"
+      "unmatchFailed": "Unmatch failed",
+      "you": "You"
     }
   },
   "match": {

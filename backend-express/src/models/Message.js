@@ -50,6 +50,11 @@ const messageSchema = new mongoose.Schema(
     // (Premium-gated; see routes/conversations.js PATCH).
     edited: { type: Boolean, default: false },
     editedAt: { type: Date, default: null },
+    // Emoji reactions (WhatsApp/iMessage-style). Map of emoji glyph → array of
+    // userId strings who reacted with it, e.g. { "❤️": ["u1","u2"], "😂": ["u3"] }.
+    // Left undefined (not an empty Map) for messages with no reactions so the
+    // doc stays compact. Toggled via POST /:matchId/messages/:msgId/reactions.
+    reactions: { type: Map, of: [String], default: undefined },
   },
   { timestamps: true }
 );
@@ -67,6 +72,24 @@ const Message = mongoose.model('Message', messageSchema);
  * who only sees the push (without opening the app) understands the
  * message type without leaking content.
  */
+/**
+ * Normalize a message's `reactions` into a plain wire object
+ * { emoji: [userId, …] }. Necessary because `.lean()` returns the field as a
+ * Map instance (which JSON.stringify renders as `{}`), and a hydrated doc's
+ * field is also a Map. Empty/absent → `{}`. Empty emoji buckets are dropped.
+ */
+Message.serializeReactions = function serializeReactions(reactions) {
+  if (!reactions) return {};
+  const entries =
+    reactions instanceof Map ? reactions.entries() : Object.entries(reactions);
+  const out = {};
+  for (const [emoji, ids] of entries) {
+    const arr = (ids || []).map((x) => x.toString());
+    if (arr.length) out[emoji] = arr;
+  }
+  return out;
+};
+
 Message.previewOf = function previewOf(msg) {
   if (!msg) return '';
   switch (msg.type) {
