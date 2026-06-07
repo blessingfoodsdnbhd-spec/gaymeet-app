@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -116,6 +116,11 @@ export function ProfileScreen() {
 
   // Inline editable fields — local state, auto-saved onEndEditing.
   const [nickname, setNickname] = useState(user?.nickname ?? '');
+  // Name field needs an explicit edit affordance (users couldn't tell the bold
+  // name was tappable). Focus state highlights the underline + pencil; the ref
+  // lets the pencil icon focus the input.
+  const [nameFocused, setNameFocused] = useState(false);
+  const nameInputRef = useRef<TextInput>(null);
   const [bio, setBio] = useState(user?.bio ?? '');
   // Date of birth drives age + zodiac. Edited as a YYYY-MM-DD string; the
   // backend stores it and denormalizes the computed age.
@@ -637,15 +642,42 @@ export function ProfileScreen() {
               )}
             </Pressable>
 
-            <TextInput
-              value={nickname}
-              onChangeText={setNickname}
-              onEndEditing={saveNickname}
-              placeholder={t('profile.edit.nickname')}
-              placeholderTextColor={theme.colors.muted}
-              maxLength={30}
-              style={[styles.nicknameInput, { color: theme.colors.text }]}
-            />
+            {/* Name + edit affordance. The bold name alone read as a static
+                heading ("看不清楚" — users couldn't tell it was editable), so
+                wrap it in a row with a visible pencil and an underline that
+                turns brand-colored on focus. Tapping the pencil focuses input. */}
+            <Pressable
+              onPress={() => nameInputRef.current?.focus()}
+              style={[
+                styles.nameEditRow,
+                {
+                  borderBottomColor: nameFocused
+                    ? theme.colors.primary
+                    : theme.colors.line,
+                },
+              ]}
+            >
+              <TextInput
+                ref={nameInputRef}
+                value={nickname}
+                onChangeText={setNickname}
+                onFocus={() => setNameFocused(true)}
+                onEndEditing={() => {
+                  setNameFocused(false);
+                  saveNickname();
+                }}
+                onBlur={() => setNameFocused(false)}
+                placeholder={t('profile.edit.nickname')}
+                placeholderTextColor={theme.colors.muted}
+                maxLength={30}
+                style={[styles.nicknameInput, { color: theme.colors.text }]}
+              />
+              <Edit2
+                size={16}
+                color={nameFocused ? theme.colors.primary : theme.colors.muted}
+                strokeWidth={2}
+              />
+            </Pressable>
           </View>
 
           {/* Stats — 6 tiles in two rows of 3. Tap any to drill into the list. */}
@@ -1440,12 +1472,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  nameEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingLeft: 8,
+    paddingRight: 6,
+    paddingBottom: 2,
+    borderBottomWidth: 1.5,
+  },
   nicknameInput: {
     fontSize: 22,
     fontWeight: '700',
-    marginTop: 14,
     textAlign: 'center',
-    minWidth: 120,
+    minWidth: 80,
     paddingVertical: 4,
   },
   statsRow: {
