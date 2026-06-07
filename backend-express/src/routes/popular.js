@@ -2,6 +2,7 @@ const router = require('express').Router();
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { NOT_OFFICIAL } = require('../utils/discovery');
 
 const DAILY_FREE_TICKETS = 5;
 
@@ -42,6 +43,7 @@ router.get('/today', auth, async (req, res, next) => {
       dailyTicketsDate: today,
       dailyTicketsReceived: { $gt: 0 },
       'preferences.hideFromNearby': { $ne: true },
+      ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from leaderboard
     })
       .sort({ dailyTicketsReceived: -1 })
       .limit(10)
@@ -57,6 +59,7 @@ router.get('/today', auth, async (req, res, next) => {
         _id: { $nin: excludeIds },
         'preferences.hideFromNearby': { $ne: true },
         'preferences.stealthMode': { $ne: true },
+        ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from leaderboard
       })
         .sort({ popularityScore: -1, lastActiveAt: -1 })
         .limit(10 - entries.length)

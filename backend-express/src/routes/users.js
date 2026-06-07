@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { computeAge } = require('../utils/zodiac');
+const { NOT_OFFICIAL, isNotOfficial } = require('../utils/discovery');
 const ProfileView = require('../models/ProfileView');
 
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
@@ -24,9 +25,10 @@ router.get('/me/viewers', auth, async (req, res, next) => {
     const views = await ProfileView.find({ viewedId: req.user._id })
       .sort({ viewedAt: -1 })
       .limit(100)
-      .populate('viewerId', 'nickname avatarUrl isOnline lastActiveAt isPremium isVerified dob location')
+      .populate('viewerId', 'nickname avatarUrl isOnline lastActiveAt isPremium isVerified isOfficial dob location')
       .lean();
-    const valid = views.filter((v) => v.viewerId); // populate → null if deleted
+    // populate → null if deleted; also hide official accounts (Meyou 官方)
+    const valid = views.filter((v) => v.viewerId && isNotOfficial(v.viewerId));
     const { isPremiumActive } = require('../utils/premium');
     const { haversineMeters } = require('../utils/geo');
     const myCoords = req.user.location?.coordinates;
@@ -307,6 +309,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       _id: { $nin: excludeIds },
       'preferences.hideFromNearby': { $ne: true },
       'preferences.stealthMode': { $ne: true },
+      ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
     };
 
     if (minAge || maxAge) {
@@ -437,6 +440,7 @@ router.get('/discover', auth, async (req, res, next) => {
             _id: { $nin: excludeIds },
             'preferences.hideFromNearby': { $ne: true },
             'preferences.stealthMode': { $ne: true },
+            ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
             ...(role ? { role } : {}),
             ...(zodiac ? { zodiac } : {}),
             ...(mbti ? { mbti } : {}),
@@ -479,6 +483,7 @@ router.get('/locations', auth, async (req, res, next) => {
         'location.coordinates': { $exists: true, $ne: null },
         'preferences.stealthMode':    { $ne: true },
         'preferences.hideFromNearby': { $ne: true },
+        ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from the globe
       },
       { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
         isOnline: 1, lastActiveAt: 1, 'preferences.hideDistance': 1 }
@@ -519,7 +524,7 @@ router.get('/likes', auth, async (req, res, next) => {
     // has been deleted, but the Swipe row stays behind. Including those as
     // nulls in the wire array crashes mobile clients that key/render off
     // user._id, and makes the count disagree with the array length.
-    const likers = swipes.map((s) => s.fromUser).filter(Boolean);
+    const likers = swipes.map((s) => s.fromUser).filter(isNotOfficial);
 
     const { isPremiumActive } = require('../utils/premium');
     if (isPremiumActive(me)) {
@@ -576,6 +581,7 @@ router.get('/widget-data', auth, async (req, res, next) => {
           isOnline: true,
           'preferences.stealthMode': { $ne: true },
           'preferences.hideFromNearby': { $ne: true },
+          ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from widget
         },
       },
       { $project: { dist: 1 } },

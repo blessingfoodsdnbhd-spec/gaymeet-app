@@ -5,6 +5,7 @@ const Place = require('../models/Place');
 const Story = require('../models/Story');
 const { auth } = require('../middleware/auth');
 const { ok } = require('../utils/respond');
+const { NOT_OFFICIAL } = require('../utils/discovery');
 
 // ── GET /api/globe/points ─────────────────────────────────────────────────────
 // Returns all three point types for the 3-D globe view:
@@ -18,6 +19,7 @@ router.get('/points', auth, async (req, res, next) => {
           'location.coordinates': { $exists: true, $ne: null },
           'preferences.stealthMode': { $ne: true },
           'preferences.hideFromNearby': { $ne: true },
+          ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from the globe
         },
         { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
           isOnline: 1, 'preferences.hideDistance': 1 }
