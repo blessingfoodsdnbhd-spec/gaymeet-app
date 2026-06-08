@@ -494,6 +494,7 @@ export function ChatDetailScreen() {
     }
     const res = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
+      allowsEditing: true, // crop step before sending (#10)
       quality: 0.85,
     });
     if (res.canceled) return;
@@ -508,6 +509,7 @@ export function ChatDetailScreen() {
     }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
+      allowsEditing: true, // crop step before sending (#10)
       quality: 0.85,
     });
     if (res.canceled) return;

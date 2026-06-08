@@ -515,6 +515,8 @@
     "follow": "Follow",
     "following": "Following",
     "followFailed": "Couldn't follow",
+    "unfollowConfirm": "Unfollow this person?",
+    "unfollowAction": "Unfollow",
     "like": "Like",
     "liked": "Liked",
     "becomeMatch": "Become a match",
@@ -577,6 +579,8 @@
     "photoDeleteFailed": "Couldn't delete photo",
     "deletePhotoTitle": "Delete this photo?",
     "deletePhotoAction": "Delete",
+    "photoActions": "Photo options",
+    "setAsAvatar": "Set as avatar",
     "relationshipStatus": {
       "label": "Relationship status",
       "single": "Single",

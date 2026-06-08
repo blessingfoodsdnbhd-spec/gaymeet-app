@@ -44,8 +44,11 @@ async function optimizeImage(buffer, key, contentType) {
   try {
     const out = await sharp(buffer)
       .rotate()
-      .resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 80, progressive: true, mozjpeg: true })
+      // Less aggressive (was 1280 / q80): users reported blocky photos. The
+      // 1280 cap was also downscaling the client's 1920 upload — raise to 1600
+      // and bump quality to 90 so high-detail shots stay crisp.
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 90, progressive: true, mozjpeg: true })
       .toBuffer();
     const newKey = key.replace(/\.[^./]+$/, '') + '.jpg';
     return { buffer: out, key: newKey, contentType: 'image/jpeg' };

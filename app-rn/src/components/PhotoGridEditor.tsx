@@ -22,6 +22,8 @@ export function PhotoGridEditor({
   onAdd,
   onRemove,
   onView,
+  onSetAvatar,
+  avatarUrl,
   badgeIcon,
 }: {
   photos: string[];
@@ -31,6 +33,10 @@ export function PhotoGridEditor({
   onRemove: (url: string) => void;
   /** Tap the photo (not the X) to open it fullscreen. */
   onView?: (index: number) => void;
+  /** Long-press a photo to set it as the avatar (gallery grids only). */
+  onSetAvatar?: (url: string) => void;
+  /** The current avatar URL — that slot gets a highlighted ring + badge. */
+  avatarUrl?: string | null;
   badgeIcon?: React.ReactNode;
 }) {
   const theme = useTheme();
@@ -51,11 +57,20 @@ export function PhotoGridEditor({
           backgroundColor: theme.colors.surface2,
         };
         if (s.kind === 'photo' && s.url) {
+          const isAvatar = !!avatarUrl && s.url === avatarUrl;
           return (
-            <View key={`p-${s.url}`} style={common}>
+            <View
+              key={`p-${s.url}`}
+              style={[
+                common,
+                isAvatar && { borderWidth: 2, borderColor: theme.colors.primary },
+              ]}
+            >
               <Pressable
                 onPress={() => onView?.(i)}
-                disabled={!onView}
+                onLongPress={onSetAvatar ? () => onSetAvatar(s.url!) : undefined}
+                delayLongPress={300}
+                disabled={!onView && !onSetAvatar}
                 style={StyleSheet.absoluteFill}
               >
                 <ExpoImage

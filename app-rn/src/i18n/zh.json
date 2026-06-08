@@ -515,6 +515,8 @@
     "follow": "关注",
     "following": "已关注",
     "followFailed": "关注失败",
+    "unfollowConfirm": "确认取消关注?",
+    "unfollowAction": "取消关注",
     "like": "想认识",
     "liked": "已喜欢",
     "becomeMatch": "成为同频",
@@ -577,6 +579,8 @@
     "photoDeleteFailed": "删除照片失败",
     "deletePhotoTitle": "删除这张照片?",
     "deletePhotoAction": "删除",
+    "photoActions": "照片选项",
+    "setAsAvatar": "设为头像",
     "relationshipStatus": {
       "label": "感情状态",
       "single": "单身",

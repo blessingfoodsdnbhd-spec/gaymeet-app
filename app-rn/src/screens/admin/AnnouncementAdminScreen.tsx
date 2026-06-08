@@ -76,7 +76,7 @@ export function AnnouncementAdminScreen() {
           Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
           return;
         }
-        res = await ImagePicker.launchCameraAsync({ quality: 0.85 });
+        res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (perm.status !== 'granted') {
@@ -85,6 +85,7 @@ export function AnnouncementAdminScreen() {
         }
         res = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
+          allowsEditing: true, // crop step (#10)
           quality: 0.85,
         });
       }

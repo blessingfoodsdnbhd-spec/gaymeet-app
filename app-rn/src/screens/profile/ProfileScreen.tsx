@@ -60,7 +60,7 @@ import { getMyStats, getViewers, patchMe, deleteVoiceIntro } from '../../api/me'
 import { getUnreadCount } from '../../api/notifications';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { fetchIsAdmin } from '../../api/admin';
-import { uploadProfilePhoto, deleteProfilePhoto } from '../../api/upload';
+import { uploadProfilePhoto, deleteProfilePhoto, reorderPhotos } from '../../api/upload';
 import {
   uploadPrivatePhoto,
   deletePrivatePhoto,
@@ -488,11 +488,14 @@ export function ProfileScreen() {
 
   const addPublicPhoto = async () => {
     if (publicBusy) return;
-    const uri = await pickFromLibrary();
+    // editable=true → native crop step (#10). primary=false → the new photo is
+    // appended but does NOT auto-become the avatar (#5); the user sets the
+    // avatar explicitly via the photo action sheet.
+    const uri = await pickFromLibrary(true);
     if (!uri) return;
     setPublicBusy(true);
     try {
-      const r = await uploadProfilePhoto(uri);
+      const r = await uploadProfilePhoto(uri, false);
       setUser({ ...user, avatarUrl: r.avatarUrl, photos: r.photos });
     } catch (e: any) {
       console.error('[upload-public] failed', { uri, status: e?.response?.status, message: e?.message });
@@ -521,6 +524,30 @@ export function ProfileScreen() {
           }
         },
       },
+    ]);
+  };
+
+  // Long-press a gallery photo → choose to make it the avatar (or delete).
+  // photos[0] is the avatar, so "set as avatar" is a reorder to the front.
+  const setAsAvatar = (url: string) => {
+    if (!user) return;
+    if (url === user.avatarUrl) return; // already the avatar
+    Alert.alert(t('profile.photoActions'), '', [
+      {
+        text: t('profile.setAsAvatar'),
+        onPress: async () => {
+          try {
+            const others = (user.photos ?? []).filter((p) => p !== url);
+            const r = await reorderPhotos([url, ...others]);
+            setUser({ ...user, photos: r.photos, avatarUrl: r.avatarUrl });
+          } catch (e: any) {
+            const detail = e?.response?.data?.error || e?.message || '';
+            Alert.alert(t('profile.edit.uploadFailed'), detail);
+          }
+        },
+      },
+      { text: t('profile.deletePhotoAction'), style: 'destructive', onPress: () => removePublicPhoto(url) },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -729,6 +756,8 @@ export function ProfileScreen() {
             onAdd={addPublicPhoto}
             onRemove={removePublicPhoto}
             onView={(i) => photoViewer.open(user.photos ?? [], i)}
+            onSetAvatar={setAsAvatar}
+            avatarUrl={user.avatarUrl}
           />
 
           {/* Private photos — hidden behind PRIVATE_PHOTOS_ENABLED for the

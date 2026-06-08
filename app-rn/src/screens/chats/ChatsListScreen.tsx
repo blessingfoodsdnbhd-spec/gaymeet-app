@@ -210,7 +210,11 @@ export function ChatsListScreen() {
             </>
           }
           renderItem={({ item }) => (
-            <ThreadRow thread={item} onPress={() => openThread(item)} />
+            <ThreadRow
+              thread={item}
+              onPress={() => openThread(item)}
+              onAvatarPress={() => nav.navigate('UserDetail', { userId: item.user.id })}
+            />
           )}
           ItemSeparatorComponent={() => (
             <View
@@ -356,9 +360,11 @@ function NewMatchesStrip({
 function ThreadRow({
   thread,
   onPress,
+  onAvatarPress,
 }: {
   thread: ChatThread;
   onPress: () => void;
+  onAvatarPress: () => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -380,13 +386,18 @@ function ThreadRow({
         backgroundColor: pressed ? theme.colors.surface2 : 'transparent',
       })}
     >
-      <Avatar
-        name={thread.user.nickname}
-        uri={thread.user.avatarUrl}
-        avatarIdx={idxFor(thread.user.id)}
-        size={52}
-        showOnline={thread.user.isOnline}
-      />
+      {/* Avatar opens the OTHER user's full-screen profile; tapping the rest
+          of the row opens the conversation. Nested Pressable captures the
+          avatar tap so the row's onPress doesn't also fire. */}
+      <Pressable onPress={onAvatarPress} hitSlop={6}>
+        <Avatar
+          name={thread.user.nickname}
+          uri={thread.user.avatarUrl}
+          avatarIdx={idxFor(thread.user.id)}
+          size={52}
+          showOnline={thread.user.isOnline}
+        />
+      </Pressable>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text

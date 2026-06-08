@@ -30,7 +30,9 @@ export async function resizeForUpload(uri: string): Promise<string> {
     const w = await getWidth(uri);
     const actions = w > 1920 ? [{ resize: { width: 1920 } }] : [];
     const out = await ImageManipulator.manipulateAsync(uri, actions, {
-      compress: 0.8,
+      // 0.85 (was 0.8) — users reported visible blockiness on high-detail
+      // photos. Pairs with the server sharp quality bump (80→90).
+      compress: 0.85,
       format: ImageManipulator.SaveFormat.JPEG,
     });
     return out.uri;
@@ -111,12 +113,15 @@ export interface PhotosUploadResult {
   photos: string[];
 }
 
-export async function uploadProfilePhoto(uri: string): Promise<PhotosUploadResult> {
+export async function uploadProfilePhoto(
+  uri: string,
+  primary = true,
+): Promise<PhotosUploadResult> {
   const fd = await fileFromUri(uri, 'photo');
-  // "Change avatar" UX → backend prepends instead of appending so the new
-  // upload becomes photos[0] (the avatar). Without this the old photos[0]
-  // sticks and the avatar visually never updates.
-  fd.append('primary', '1');
+  // primary=true (avatar picker) → backend prepends so the upload becomes
+  // photos[0]/avatar. primary=false (adding a gallery photo) → append WITHOUT
+  // promoting it to the avatar; the user picks the avatar explicitly.
+  fd.append('primary', primary ? '1' : '0');
   return unwrap<PhotosUploadResult>(
     api.post('/users/photos', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -129,4 +134,11 @@ export async function uploadProfilePhoto(uri: string): Promise<PhotosUploadResul
 export const deleteProfilePhoto = (url: string) =>
   unwrap<{ photos: string[]; avatarUrl: string | null }>(
     api.delete('/users/photos', { data: { url } }) as any,
+  );
+
+/** Reorder the photo gallery. photos[0] becomes the avatar — so "set as avatar"
+ *  is just a reorder that moves the chosen url to the front. */
+export const reorderPhotos = (photos: string[]) =>
+  unwrap<{ photos: string[]; avatarUrl: string | null }>(
+    api.patch('/users/photos/reorder', { photos }) as any,
   );

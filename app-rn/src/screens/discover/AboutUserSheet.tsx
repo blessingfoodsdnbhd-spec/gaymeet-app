@@ -193,8 +193,10 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     // after the ~round-trip (which felt broken — users thought the tap missed).
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['follow', user?.id] });
-      const prev = queryClient.getQueryData(['follow', user?.id]);
-      queryClient.setQueryData(['follow', user?.id], { following: true });
+      const prev = queryClient.getQueryData<{ following: boolean }>(['follow', user?.id]);
+      // Flip to the opposite of the current state (toggleFollow toggles server-
+      // side) so the button updates instantly for BOTH follow and unfollow.
+      queryClient.setQueryData(['follow', user?.id], { following: !prev?.following });
       return { prev };
     },
     onSuccess: (data) => {
@@ -216,10 +218,18 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
   const onFollow = () => {
     if (!user || followMut.isPending) return;
-    // Tap-to-follow only: if already following, ignore (we don't toggle off
-    // from here — that's what FriendsList is for). Backend still toggles,
-    // so we explicitly skip rather than firing.
-    if (isAlreadyFollowing) return;
+    // Already following → confirm before unfollowing; otherwise follow directly.
+    if (isAlreadyFollowing) {
+      Alert.alert(t('about.unfollowConfirm'), '', [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('about.unfollowAction'),
+          style: 'destructive',
+          onPress: () => followMut.mutate(),
+        },
+      ]);
+      return;
+    }
     followMut.mutate();
   };
 
