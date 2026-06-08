@@ -494,7 +494,9 @@ export function ChatDetailScreen() {
     }
     const res = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      allowsEditing: true, // crop step before sending (#10)
+      // Free-aspect crop on Android only; iOS editor is square-only so keep the
+      // photo's natural shape there (PR JJJ).
+      allowsEditing: Platform.OS === 'android',
       quality: 0.85,
     });
     if (res.canceled) return;
@@ -509,7 +511,8 @@ export function ChatDetailScreen() {
     }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true, // crop step before sending (#10)
+      // Free-aspect crop on Android only; iOS editor is square-only (PR JJJ).
+      allowsEditing: Platform.OS === 'android',
       quality: 0.85,
     });
     if (res.canceled) return;

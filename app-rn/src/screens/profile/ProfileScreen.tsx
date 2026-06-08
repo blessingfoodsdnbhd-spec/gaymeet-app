@@ -488,10 +488,11 @@ export function ProfileScreen() {
 
   const addPublicPhoto = async () => {
     if (publicBusy) return;
-    // editable=true → native crop step (#10). primary=false → the new photo is
-    // appended but does NOT auto-become the avatar (#5); the user sets the
-    // avatar explicitly via the photo action sheet.
-    const uri = await pickFromLibrary(true);
+    // Crop only on Android: there allowsEditing gives a FREE-aspect crop. On iOS
+    // the native editor is square-only, which cropped portrait photos badly
+    // (PR JJJ) — so iOS keeps the photo's natural shape (no editor). primary=false
+    // → appended but not auto-promoted to avatar (#5).
+    const uri = await pickFromLibrary(Platform.OS === 'android');
     if (!uri) return;
     setPublicBusy(true);
     try {

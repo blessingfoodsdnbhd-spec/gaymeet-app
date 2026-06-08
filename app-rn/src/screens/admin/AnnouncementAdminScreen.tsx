@@ -9,6 +9,7 @@ import {
   Switch,
   Alert,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
@@ -76,7 +77,7 @@ export function AnnouncementAdminScreen() {
           Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
           return;
         }
-        res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
+        res = await ImagePicker.launchCameraAsync({ allowsEditing: Platform.OS === 'android', quality: 0.85 });
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (perm.status !== 'granted') {
@@ -85,7 +86,8 @@ export function AnnouncementAdminScreen() {
         }
         res = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
-          allowsEditing: true, // crop step (#10)
+          // Free-aspect crop on Android only; iOS editor is square-only (PR JJJ).
+          allowsEditing: Platform.OS === 'android',
           quality: 0.85,
         });
       }
