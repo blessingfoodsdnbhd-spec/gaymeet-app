@@ -11,6 +11,13 @@ export interface MomentAuthor {
   countryCode?: string | null;
 }
 
+/** Populated tagged friend (subset returned by the backend). */
+export interface TaggedFriend {
+  _id: string;
+  nickname: string;
+  avatarUrl?: string | null;
+}
+
 export interface Moment {
   _id: string;
   user: MomentAuthor;
@@ -22,6 +29,10 @@ export interface Moment {
   commentCount?: number;
   createdAt: string;
   tag?: string;
+  /** Friends tagged in this post (FB-style). */
+  taggedUserIds?: TaggedFriend[];
+  /** Human-readable place label shown under the post. */
+  locationLabel?: string | null;
 }
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -60,6 +71,12 @@ export const postMoment = (body: {
   content: string;
   images?: string[];
   visibility?: 'public' | 'friends' | 'private';
+  /** Tagged friends (ids the author follows / who follow them; ≤10). */
+  taggedUserIds?: string[];
+  /** Location: lat/lng + a display label. */
+  lat?: number;
+  lng?: number;
+  locationLabel?: string;
 }) => unwrap<Moment>(api.post('/moments', body));
 
 // ── Comments ──────────────────────────────────────────────────────────────────

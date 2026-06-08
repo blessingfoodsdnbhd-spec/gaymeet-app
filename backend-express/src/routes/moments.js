@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const mongoose = require('mongoose');
 const Moment = require('../models/Moment');
 const MomentComment = require('../models/MomentComment');
 const User = require('../models/User');
@@ -47,8 +48,12 @@ router.get('/', auth, async (req, res, next) => {
       followingIds = Array.from(idMap.values());
       filter = {
         isActive: true,
-        user: { $in: followingIds },
         visibility: { $in: ['public', 'friends'] },
+        // Posts by people I follow/match, PLUS posts I'm tagged in (FB-style).
+        $or: [
+          { user: { $in: followingIds } },
+          { taggedUserIds: req.user._id },
+        ],
       };
     } else if (feed === 'nearby') {
       // Find users within MOMENTS_NEARBY_KM of me, then filter moments to that set.
@@ -101,6 +106,7 @@ router.get('/', auth, async (req, res, next) => {
       .skip(skip)
       .limit(parseInt(limit))
       .populate('user', 'nickname avatarUrl isPremium countryCode')
+      .populate('taggedUserIds', 'nickname avatarUrl')
       .lean();
 
     if (feed === 'following') {
@@ -130,6 +136,7 @@ router.get('/:id', auth, async (req, res, next) => {
   try {
     const moment = await Moment.findOne({ _id: req.params.id, isActive: true })
       .populate('user', 'nickname avatarUrl isPremium countryCode')
+      .populate('taggedUserIds', 'nickname avatarUrl')
       .lean();
 
     if (!moment) return err(res, 'Moment not found', 404);
@@ -162,7 +169,10 @@ router.get('/:id', auth, async (req, res, next) => {
 // ── POST /api/moments ─────────────────────────────────────────────────────────
 router.post('/', auth, async (req, res, next) => {
   try {
-    const { content = '', images = [], visibility = 'public', lat, lng } = req.body;
+    const {
+      content = '', images = [], visibility = 'public', lat, lng,
+      locationLabel, taggedUserIds,
+    } = req.body;
 
     if (!content && images.length === 0) {
       return err(res, 'content or images required');
@@ -181,10 +191,52 @@ router.post('/', auth, async (req, res, next) => {
     if (lat != null && lng != null) {
       data.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
       data.hasLocation = true;
+      if (locationLabel) data.locationLabel = String(locationLabel).slice(0, 120);
+    }
+
+    // Tag friends (FB-style). Only people the author follows OR who follow the
+    // author may be tagged (anti-spam); deduped, self stripped, capped at 10.
+    let taggedIds = [];
+    if (Array.isArray(taggedUserIds) && taggedUserIds.length) {
+      const ids = [...new Set(taggedUserIds.map(String))].filter(
+        (id) => mongoose.isValidObjectId(id) && id !== req.user._id.toString(),
+      );
+      if (ids.length > 10) return err(res, 'max 10 tagged friends');
+      if (ids.length) {
+        const Follow = require('../models/Follow');
+        const rels = await Follow.find({
+          $or: [
+            { follower: req.user._id, following: { $in: ids } },
+            { following: req.user._id, follower: { $in: ids } },
+          ],
+        }).select('follower following').lean();
+        const allowed = new Set();
+        rels.forEach((r) => {
+          allowed.add(r.follower.toString());
+          allowed.add(r.following.toString());
+        });
+        taggedIds = ids.filter((id) => allowed.has(id));
+      }
+      data.taggedUserIds = taggedIds;
     }
 
     const moment = await Moment.create(data);
-    const populated = await moment.populate('user', 'nickname avatarUrl isPremium');
+    const populated = await moment.populate([
+      { path: 'user', select: 'nickname avatarUrl isPremium' },
+      { path: 'taggedUserIds', select: 'nickname avatarUrl' },
+    ]);
+
+    // Notify tagged friends — fire-and-forget. Tap opens the moment.
+    if (taggedIds.length) {
+      const author = req.user.nickname || 'Someone';
+      taggedIds.forEach((uid) => {
+        sendPushToUser(uid, {
+          title: author,
+          body: `${author} tagged you in a moment`,
+          data: { type: 'comment', momentId: moment._id.toString() },
+        }).catch(() => {});
+      });
+    }
 
     created(res, {
       ...populated.toObject(),

@@ -390,6 +390,17 @@
     "introVoiceToggle": "🔊 Intro Voice"
   },
   "moments": {
+    "compose": {
+      "tag": "Tag Friends",
+      "location": "Add Location",
+      "taggedCount": "{{n}} tagged",
+      "currentLocation": "My current location",
+      "removeLocation": "Remove location",
+      "noFriends": "No friends to tag yet",
+      "locationPermTitle": "Location permission needed",
+      "locationPermBody": "Enable location to tag where you are.",
+      "locationFailed": "Couldn't get location"
+    },
     "filters": {
       "all": "All",
       "friends": "Following",
@@ -990,6 +1001,7 @@
   },
   "common": {
     "back": "Back",
+    "search": "Search",
     "close": "Close",
     "settings": "Settings",
     "loading": "Loading…",

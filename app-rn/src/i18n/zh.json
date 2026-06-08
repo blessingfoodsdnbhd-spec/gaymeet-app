@@ -390,6 +390,17 @@
     "introVoiceToggle": "🔊 介绍声音"
   },
   "moments": {
+    "compose": {
+      "tag": "标记朋友",
+      "location": "添加位置",
+      "taggedCount": "{{n}} 人",
+      "currentLocation": "我的当前位置",
+      "removeLocation": "移除位置",
+      "noFriends": "还没有可标记的朋友",
+      "locationPermTitle": "需要位置权限",
+      "locationPermBody": "开启定位以标记你所在的位置。",
+      "locationFailed": "无法获取位置"
+    },
     "filters": {
       "all": "全部",
       "friends": "关注",
@@ -990,6 +1001,7 @@
   },
   "common": {
     "back": "返回",
+    "search": "搜索",
     "close": "关闭",
     "settings": "设置",
     "loading": "加载中…",

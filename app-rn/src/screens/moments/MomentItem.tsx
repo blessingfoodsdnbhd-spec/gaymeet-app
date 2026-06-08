@@ -135,6 +135,30 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         </View>
       ) : null}
 
+      {/* Location + tagged friends (FB-style). Tagged names open the profile. */}
+      {moment.locationLabel ? (
+        <View style={styles.metaRow}>
+          <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>
+            📍 {moment.locationLabel}
+          </Text>
+        </View>
+      ) : null}
+      {moment.taggedUserIds && moment.taggedUserIds.length > 0 ? (
+        <View style={[styles.metaRow, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+          <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>📎 </Text>
+          {moment.taggedUserIds.map((u, i) => (
+            <Text
+              key={u._id}
+              onPress={() => (nav as any).navigate('UserDetail', { userId: u._id })}
+              style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}
+            >
+              @{u.nickname}
+              {i < moment.taggedUserIds!.length - 1 ? '   ' : ''}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
       {photos.length > 0 && (
         <View style={styles.photoArea}>
           <PhotoGrid
@@ -292,6 +316,10 @@ const styles = StyleSheet.create({
   contentWrap: {
     paddingHorizontal: 20,
     marginTop: 10,
+  },
+  metaRow: {
+    paddingHorizontal: 20,
+    marginTop: 6,
   },
   content: {
     fontSize: 15,

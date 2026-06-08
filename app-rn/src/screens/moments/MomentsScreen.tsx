@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -52,35 +52,6 @@ export function MomentsScreen() {
     staleTime: 30_000,
   });
 
-  const [capturing, setCapturing] = useState(false);
-
-  const onCamera = async () => {
-    if (capturing) return;
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(t('moments.cameraPermTitle'), t('moments.cameraPermBody'));
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-    setCapturing(true);
-    try {
-      const url = await uploadFile(result.assets[0].uri);
-      await postMoment({ content: '', images: [url] });
-      queryClient.invalidateQueries({ queryKey: ['moments'] });
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const body = e?.response?.data;
-      const detail = body?.error || body?.message || e?.message || 'unknown';
-      console.warn('camera quick-post failed', { status, body, error: e });
-      Alert.alert(t('moments.publishFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
-    } finally {
-      setCapturing(false);
-    }
-  };
 
   const likeMut = useMutation({
     mutationFn: (id: string) => toggleLike(id),
@@ -118,18 +89,11 @@ export function MomentsScreen() {
       <TopBar
         title={t('tabs.moments')}
         right={
-          <>
-            <IconButton onPress={onCamera}>
-              {capturing ? (
-                <ActivityIndicator size="small" color={theme.colors.text} />
-              ) : (
-                <Camera size={18} color={theme.colors.text} strokeWidth={1.6} />
-              )}
-            </IconButton>
-            <IconButton onPress={() => nav.navigate('Composer')}>
-              <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
-            </IconButton>
-          </>
+          // Single "+" entry point — the camera button was a duplicate path to
+          // posting (it quick-posted a photo); the composer (+) covers it.
+          <IconButton onPress={() => nav.navigate('Composer')}>
+            <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
+          </IconButton>
         }
       />
 

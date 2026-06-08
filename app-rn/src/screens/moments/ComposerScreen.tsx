@@ -14,13 +14,15 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { ChevronLeft, ImagePlus, X } from 'lucide-react-native';
+import { ChevronLeft, ImagePlus, X, Users, MapPin } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
+import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSheet';
+import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
 import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
 
@@ -34,6 +36,10 @@ export function ComposerScreen() {
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [tagged, setTagged] = useState<TagPick[]>([]);
+  const [place, setPlace] = useState<MomentPlace | null>(null);
+  const [tagOpen, setTagOpen] = useState(false);
+  const [locOpen, setLocOpen] = useState(false);
   // Note: a per-moment interest tag picker used to live here, but the
   // backend Moment schema has no `tag` field and the 'interest' feed
   // filter matches by the *author's* shared interests, not a per-post
@@ -66,6 +72,10 @@ export function ComposerScreen() {
       return postMoment({
         content: content.trim(),
         images: uploadedUrls,
+        taggedUserIds: tagged.length ? tagged.map((p) => p._id) : undefined,
+        ...(place
+          ? { lat: place.lat, lng: place.lng, locationLabel: place.label }
+          : {}),
       });
     },
     onSuccess: () => {
@@ -261,6 +271,31 @@ export function ComposerScreen() {
             </View>
           )}
 
+          {/* Tag friends + add location (FB/IG-style). */}
+          <Pressable onPress={() => setTagOpen(true)} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
+            <Users size={18} color={theme.colors.primary} strokeWidth={2} />
+            <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
+              {t('moments.compose.tag')}
+            </Text>
+            {tagged.length > 0 && (
+              <Text style={{ fontSize: 13, color: theme.colors.muted }}>
+                {t('moments.compose.taggedCount', { n: tagged.length })}
+              </Text>
+            )}
+          </Pressable>
+          {tagged.length > 0 && (
+            <Text style={{ fontSize: 13, color: theme.colors.primaryDeep, marginTop: 2 }}>
+              📎 {tagged.map((p) => `@${p.nickname}`).join(' ')}
+            </Text>
+          )}
+
+          <Pressable onPress={() => setLocOpen(true)} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
+            <MapPin size={18} color={theme.colors.primary} strokeWidth={2} />
+            <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
+              {place ? place.label : t('moments.compose.location')}
+            </Text>
+          </Pressable>
+
         </ScrollView>
 
         <View style={{ padding: 20 }}>
@@ -273,6 +308,19 @@ export function ComposerScreen() {
           />
         </View>
       </KeyboardAvoidingView>
+
+      <FriendPickerSheet
+        open={tagOpen}
+        onClose={() => setTagOpen(false)}
+        selectedIds={tagged.map((p) => p._id)}
+        onConfirm={setTagged}
+      />
+      <MomentLocationSheet
+        open={locOpen}
+        onClose={() => setLocOpen(false)}
+        current={place}
+        onPick={setPlace}
+      />
     </SafeAreaView>
   );
 }
@@ -283,6 +331,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 14,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    marginTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   photoTile: {
     width: '31.5%',

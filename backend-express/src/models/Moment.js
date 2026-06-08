@@ -12,6 +12,11 @@ const momentSchema = new mongoose.Schema(
       coordinates: [Number], // [lng, lat] — optional
     },
     hasLocation: { type: Boolean, default: false },
+    // Human-readable place label shown under the post (e.g. "Kuala Lumpur").
+    locationLabel: { type: String, default: null },
+    // Friends tagged in this post (FB-style). The post also surfaces in each
+    // tagged user's "friends" feed. Capped at 10 at the route layer.
+    taggedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     visibility: {
       type: String,
       enum: ['public', 'friends', 'private'],
