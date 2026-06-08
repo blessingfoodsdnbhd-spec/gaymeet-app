@@ -176,7 +176,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         <View style={styles.photoArea}>
           <PhotoGrid
             photos={photos}
-            maxWidth={width - 40}
+            maxWidth={width}
             onPhotoPress={(i) => photoViewer.open(photos, i)}
           />
         </View>
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   photoArea: {
     marginTop: 12,
-    marginHorizontal: 20,
+    marginHorizontal: 0, // photo bleeds edge-to-edge (ZZZ); body keeps its padding
   },
   actions: {
     flexDirection: 'row',

@@ -47,8 +47,10 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const virtualLng = useAuth((s) => s.user?.preferences?.virtualLng ?? null);
   const virtualLabel = useAuth((s) => s.user?.preferences?.virtualLocationLabel ?? null);
   const virtualActive = virtualLat != null && virtualLng != null;
-  const gap = 4;
-  const horizontalPad = 14;
+  // Edge-to-edge like the Vote cards (ZZZ): no side padding, a 1px hairline
+  // between columns. tile = full window width / cols, DPI-adaptive.
+  const gap = 1;
+  const horizontalPad = 0;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
   const tileH = tileW; // square
 
@@ -251,10 +253,9 @@ const styles = StyleSheet.create({
   },
   tileBg: {
     flex: 1,
-    // Rounded a touch so the now-spaced tiles read as cards instead of
-    // sharp squares floating in the new gap. If the user prefers the
-    // old brutalist sharp-edge look, drop this to 0.
-    borderRadius: 10,
+    // Sharp corners for the edge-to-edge grid (ZZZ) — rounded corners would
+    // leave white notches against the screen edge / hairline gaps.
+    borderRadius: 0,
     overflow: 'hidden',
   },
   tileInitial: {
