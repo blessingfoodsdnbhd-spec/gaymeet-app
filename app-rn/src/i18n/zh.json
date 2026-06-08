@@ -752,6 +752,9 @@
   },
   "notifications": {
     "title": "通知",
+    "follow": { "title": "有人关注了你", "body": "点击查看资料" },
+    "viewers": { "title": "谁看过你", "body": "今天有 {{count}} 人看了你的资料" },
+    "wants": { "title": "想认识你", "body": "今天有 {{count}} 人想认识你" },
     "empty": "暂无通知",
     "markAllRead": "全部已读"
   },

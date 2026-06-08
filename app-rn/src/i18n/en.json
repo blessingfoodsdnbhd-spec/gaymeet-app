@@ -752,6 +752,9 @@
   },
   "notifications": {
     "title": "Notifications",
+    "follow": { "title": "Someone started following you", "body": "Tap to view their profile" },
+    "viewers": { "title": "Profile views", "body": "{{count}} people viewed your profile today" },
+    "wants": { "title": "New admirers", "body": "{{count}} people want to know you today" },
     "empty": "No notifications yet",
     "markAllRead": "Mark all read"
   },

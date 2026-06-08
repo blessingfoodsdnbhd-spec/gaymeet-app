@@ -40,6 +40,31 @@ const EMOJI: Record<string, string> = {
 
 const KEY = ['notifications', 'list'];
 
+/**
+ * Render a notification's title/body from its TYPE + data via i18n, so the text
+ * always matches the app language — old records have stale English DB strings
+ * (pre-FFF #6) and some backend ZH templates leaked English words ("profile").
+ * Types we can fully reconstruct client-side are localized; everything else
+ * falls back to the stored title/body. (follow's data carries no name, so it
+ * shows a generic localized phrase rather than "{name}".)
+ */
+function localizeNotif(
+  n: AppNotification,
+  t: (k: string, o?: Record<string, unknown>) => string,
+): { title: string; body: string } {
+  const d = n.data || {};
+  switch (n.type) {
+    case 'follow':
+      return { title: t('notifications.follow.title'), body: t('notifications.follow.body') };
+    case 'viewers_digest':
+      return { title: t('notifications.viewers.title'), body: t('notifications.viewers.body', { count: d.count ?? 0 }) };
+    case 'wants_you_digest':
+      return { title: t('notifications.wants.title'), body: t('notifications.wants.body', { count: d.count ?? 0 }) };
+    default:
+      return { title: n.title, body: n.body };
+  }
+}
+
 export function NotificationCenter() {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -123,17 +148,22 @@ export function NotificationCenter() {
               <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface2 }]}>
                 <Text style={{ fontSize: 20 }}>{EMOJI[item.type] ?? '🔔'}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5, fontWeight: '700', color: theme.colors.text }} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                {!!item.body && (
-                  <Text style={{ fontSize: 13, color: theme.colors.text2, marginTop: 2 }} numberOfLines={2}>
-                    {item.body}
-                  </Text>
-                )}
-                <Text style={{ fontSize: 11, color: theme.colors.muted, marginTop: 3 }}>{shortTime(item.createdAt)}</Text>
-              </View>
+              {(() => {
+                const loc = localizeNotif(item, t);
+                return (
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: '700', color: theme.colors.text }} numberOfLines={1}>
+                      {loc.title}
+                    </Text>
+                    {!!loc.body && (
+                      <Text style={{ fontSize: 13, color: theme.colors.text2, marginTop: 2 }} numberOfLines={2}>
+                        {loc.body}
+                      </Text>
+                    )}
+                    <Text style={{ fontSize: 11, color: theme.colors.muted, marginTop: 3 }}>{shortTime(item.createdAt)}</Text>
+                  </View>
+                );
+              })()}
               {!item.read && <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />}
             </Pressable>
           )}
