@@ -366,6 +366,45 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
   }
 });
 
+// ── POST /api/conversations/:matchId/read ─────────────────────────────────────
+// Reliable HTTP mark-as-read. The WS `join_room` emit is fire-and-forget and
+// SILENTLY drops when the socket isn't connected yet (common on first open /
+// after backgrounding) — which left the unread badge sticking until the chat
+// was opened a SECOND time. This deterministic endpoint marks every message
+// readBy the caller + zeroes their unreadCounts on the Match, and broadcasts
+// chat:read so the other party's "seen" state updates.
+router.post('/:matchId/read', auth, async (req, res, next) => {
+  try {
+    const uid = req.user._id.toString();
+    const match = await Match.findOne({ _id: req.params.matchId, users: req.user._id });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    await Message.updateMany(
+      { matchId: match._id, readBy: { $ne: req.user._id } },
+      { $addToSet: { readBy: req.user._id } },
+    );
+    await Match.findByIdAndUpdate(match._id, { [`unreadCounts.${uid}`]: 0 });
+
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) {
+        const otherId = match.users.find((u) => u.toString() !== uid)?.toString();
+        if (otherId) {
+          io.to(`user:${otherId}`).emit('chat:read', {
+            matchId: match._id.toString(),
+            readBy: uid,
+          });
+        }
+      }
+    } catch (_) {}
+
+    ok(res, { matchId: match._id.toString(), unreadCount: 0 });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── Helper: refresh Match.lastMessage from the current newest message ────────
 // Called after an edit (latest's content may have changed) or delete
 // (the deleted row may have been the latest). One small query each.

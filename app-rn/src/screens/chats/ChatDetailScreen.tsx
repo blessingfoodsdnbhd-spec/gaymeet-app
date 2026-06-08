@@ -54,6 +54,7 @@ import {
   sendImageMessage,
   sendLocationMessage,
   toggleReaction,
+  markConversationRead,
   type Message,
   type ChatThread,
 } from '../../api/chats';
@@ -180,12 +181,13 @@ export function ChatDetailScreen() {
   useEffect(() => {
     setFocus(matchId);
     markRead(matchId);
-    // Tell the server we're now reading this thread. The backend
-    // `join_room` handler (services/socketService.js) marks all unread
-    // messages as readBy this user AND resets unreadCounts[userId] = 0
-    // on the Match document — so the next /api/conversations fetch
-    // returns unreadCount: 0 for this row.
+    // Mark read on the server. The WS emit is kept (it also joins the socket
+    // room for live receipts), but it's fire-and-forget and DROPS when the
+    // socket isn't connected — which left the badge stuck until the 2nd open.
+    // The HTTP call is the reliable path: it deterministically zeroes the
+    // server-side unreadCount so the back-nav refetch returns 0.
     wsEmit('join_room', { matchId });
+    markConversationRead(matchId).catch(() => {});
     // Mirror that reset locally in the chats-list query cache so the
     // badge clears the moment the user navigates back, instead of
     // waiting for the next refetch (ChatsListScreen reads the FlatList

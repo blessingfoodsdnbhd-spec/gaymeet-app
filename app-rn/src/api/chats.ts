@@ -148,6 +148,14 @@ export const toggleReaction = (matchId: string, msgId: string, emoji: string) =>
     api.post(`/conversations/${matchId}/messages/${msgId}/reactions`, { emoji }),
   );
 
+/** Reliable HTTP mark-as-read — zeroes the caller's unread on this thread.
+ *  Used instead of the fire-and-forget WS join_room (which drops when the
+ *  socket isn't connected, leaving the unread badge stuck). */
+export const markConversationRead = (matchId: string) =>
+  unwrap<{ matchId: string; unreadCount: number }>(
+    api.post(`/conversations/${matchId}/read`),
+  );
+
 /**
  * Find existing match or open a new dm. If the target user is already
  * matched, opening is free. Otherwise the backend charges 10 coins from
