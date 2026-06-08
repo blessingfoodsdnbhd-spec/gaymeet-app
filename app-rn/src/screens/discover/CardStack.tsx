@@ -12,7 +12,7 @@ import { Image as ExpoImage } from 'expo-image';
 
 import { DiscoverCard } from './DiscoverCard';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
-import { prefetchVoice, clearVoiceCache } from '../../utils/voiceCache';
+import { prefetchMany, clearVoiceCache } from '../../utils/voiceCache';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -59,7 +59,9 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const introVoice = useDiscoverPrefs((s) => s.introVoice);
   useEffect(() => {
     if (!introVoice) return;
-    cards.slice(0, 5).forEach((c) => prefetchVoice((c as any).voiceIntroUrl));
+    // Warm more of the deck (was top 5) now the cache holds 20 — covers
+    // several swipes ahead so taps stay instant.
+    prefetchMany(cards.slice(0, 12).map((c) => (c as any).voiceIntroUrl));
   }, [cards, introVoice]);
 
   // Free the preloaded sounds when the deck unmounts.

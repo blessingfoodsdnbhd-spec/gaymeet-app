@@ -9,6 +9,7 @@ import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs, type GridColumns } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
 import { VirtualLocationSheet } from '../../components/VirtualLocationSheet';
+import { prefetchMany } from '../../utils/voiceCache';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -23,6 +24,14 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  // Preload the visible grid's voice intros so tapping a tile's profile plays
+  // instantly (the user's slow path was grid taps — the deck preloaded, the grid
+  // didn't). Gated on the auto-play pref to match the deck's behavior.
+  const introVoicePref = useDiscoverPrefs((s) => s.introVoice);
+  React.useEffect(() => {
+    if (!introVoicePref) return;
+    prefetchMany(users.map((u) => (u as any).voiceIntroUrl));
+  }, [users, introVoicePref]);
   // Per user feedback "左边右边 留一点空白" — was edge-to-edge brick
   // (horizontalPad=0, gap=0); now padded sides + a thin gap between
   // tiles so the grid reads as cards, not a poster wall.

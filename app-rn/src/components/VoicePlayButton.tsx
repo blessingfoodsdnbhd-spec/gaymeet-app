@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, ActivityIndicator } from 'react-native';
 import { Volume2, Pause } from 'lucide-react-native';
 import { Audio } from 'expo-av';
 import { useTheme } from '../theme/ThemeProvider';
@@ -34,6 +34,9 @@ export function VoicePlayButton({
   // (rapid double-tap / re-entry) — that's what produced stacked playback.
   const loadingRef = React.useRef(false);
   const [playing, setPlaying] = React.useState(false);
+  // Visible loading state so a cold (un-preloaded) tap shows a spinner instead
+  // of looking unresponsive/broken while the file downloads.
+  const [loading, setLoading] = React.useState(false);
   const c = color ?? theme.colors.primary;
 
   const set = (v: boolean) => {
@@ -72,9 +75,14 @@ export function VoicePlayButton({
         return;
       }
       // Slow path: not preloaded (e.g. opened from the grid). shouldPlay:true
-      // starts on load — one bridge round-trip instead of load-then-play.
+      // starts on load — one bridge round-trip instead of load-then-play. Show
+      // a spinner while it downloads so the tap doesn't look dead.
+      setLoading(true);
       await ensureAudioMode();
-      const r = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
+      const r = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true, progressUpdateIntervalMillis: 50 },
+      );
       sound = r.sound;
       soundRef.current = sound;
       set(true);
@@ -85,6 +93,7 @@ export function VoicePlayButton({
       set(false);
     } finally {
       loadingRef.current = false;
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, stop]);
@@ -98,7 +107,13 @@ export function VoicePlayButton({
 
   return (
     <Pressable onPress={play} hitSlop={8}>
-      {playing ? <Pause size={size} color={c} strokeWidth={2} fill={c} /> : <Volume2 size={size} color={c} strokeWidth={2} />}
+      {loading ? (
+        <ActivityIndicator size="small" color={c} />
+      ) : playing ? (
+        <Pause size={size} color={c} strokeWidth={2} fill={c} />
+      ) : (
+        <Volume2 size={size} color={c} strokeWidth={2} />
+      )}
     </Pressable>
   );
 }

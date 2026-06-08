@@ -182,8 +182,12 @@ async function authorize() {
 async function uploadFile(buffer, key, contentType) {
   if (!configured) return null;
 
-  // Resize + recompress before anything touches the network.
-  ({ buffer, key, contentType } = await optimizeImage(buffer, key, contentType));
+  // Resize + recompress images before anything touches the network. Skip for
+  // non-image uploads (e.g. voice-intro m4a) — sharp would just fail and fall
+  // back to the original anyway, so the attempt was wasted CPU per upload.
+  if ((contentType || '').startsWith('image/')) {
+    ({ buffer, key, contentType } = await optimizeImage(buffer, key, contentType));
+  }
 
   const auth = await authorize();
 

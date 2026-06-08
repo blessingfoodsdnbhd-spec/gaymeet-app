@@ -10,7 +10,10 @@ import { Audio } from 'expo-av';
  * unload it) or taken by the player (then the player owns + unloads it).
  */
 
-const MAX = 5;
+// Voice intros are tiny — caching more keeps far more taps instant. Bumped
+// 5 → 20 so the whole visible Nearby grid (not just the deck's top cards)
+// stays preloaded.
+const MAX = 20;
 // Insertion order = LRU order. Value null = "reserved / still loading".
 const cache = new Map<string, Audio.Sound | null>();
 
@@ -48,6 +51,18 @@ export async function prefetchVoice(url?: string | null) {
     }
   } catch {
     if (cache.get(url) === null) cache.delete(url);
+  }
+}
+
+/** Preload many intros (background, best-effort). Caps at MAX so we don't churn
+ *  the cache; used to warm the whole visible Nearby grid / deck on mount. */
+export function prefetchMany(urls: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  for (const u of urls) {
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    if (seen.size > MAX) break;
+    prefetchVoice(u);
   }
 }
 
