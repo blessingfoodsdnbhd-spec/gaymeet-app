@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Pencil } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs, type GridColumns } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
+import { VirtualLocationSheet } from '../../components/VirtualLocationSheet';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -31,6 +33,9 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   // Premium virtual-location indicator — shown when the user is browsing from a
   // spoofed location so the Nearby results' origin is never silently misleading.
   const virtualLabel = useAuth((s) => s.user?.preferences?.virtualLocationLabel ?? null);
+  const user = useAuth((s) => s.user);
+  const setUser = useAuth((s) => s.setUser);
+  const [vlocOpen, setVlocOpen] = React.useState(false);
   const gap = 4;
   const horizontalPad = 14;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
@@ -40,7 +45,9 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
     <View style={{ flex: 1 }}>
       <View style={styles.cityRow}>
         {virtualLabel ? (
-          <View
+          <Pressable
+            onPress={() => setVlocOpen(true)}
+            hitSlop={6}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -56,7 +63,8 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
             <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
               📍 {t('virtualLocation.indicator', { city: virtualLabel })}
             </Text>
-          </View>
+            <Pencil size={12} color={theme.colors.primaryDeep} strokeWidth={2} />
+          </Pressable>
         ) : cityLabel ? (
           <View
             style={{
@@ -144,6 +152,22 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Tap the virtual-location indicator → change city or revert to GPS.
+          Only shown when active, and only Premium users can set it, so no
+          free-user gating is needed here. */}
+      <VirtualLocationSheet
+        open={vlocOpen}
+        onClose={() => setVlocOpen(false)}
+        currentLabel={virtualLabel}
+        onApplied={(label) => {
+          if (!user) return;
+          setUser({
+            ...user,
+            preferences: { ...(user.preferences ?? {}), virtualLocationLabel: label },
+          });
+        }}
+      />
     </View>
   );
 }
