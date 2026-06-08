@@ -3,6 +3,8 @@ const VoteEntry = require('../models/VoteEntry');
 const User = require('../models/User');
 const ProfileView = require('../models/ProfileView');
 const Swipe = require('../models/Swipe');
+const ChatRoom = require('../models/ChatRoom');
+const WorldChatMessage = require('../models/WorldChatMessage');
 const { notify, alreadyNotified } = require('./notificationService');
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -161,11 +163,51 @@ async function dailyTick() {
   }
 }
 
+/**
+ * Every 10 min: delete custom World-Chat rooms that have gone cold — no activity
+ * for ≥3h AND nobody currently connected. `lastActiveAt` (bumped on every
+ * message) is the reliable persisted signal; the live socket count guards
+ * against deleting a room people are sitting in; the createdAt guard avoids
+ * nuking brand-new empty rooms. Broadcasts world-chat:room-deleted so any
+ * lingering client in the room is bounced back to the world room.
+ */
+async function emptyRoomSweep() {
+  try {
+    const cutoff = new Date(Date.now() - 3 * HOUR);
+    const stale = await ChatRoom.find({
+      lastActiveAt: { $lt: cutoff },
+      createdAt: { $lt: cutoff },
+    }).select('_id').lean();
+    if (!stale.length) return;
+
+    let io = null;
+    let roomOnlineCount = () => 0;
+    try {
+      const s = require('./socketService');
+      io = s.getIO();
+      if (typeof s.roomOnlineCount === 'function') roomOnlineCount = s.roomOnlineCount;
+    } catch (_) {}
+
+    for (const r of stale) {
+      const id = r._id.toString();
+      if (roomOnlineCount(id) > 0) continue; // someone is still in it — keep
+      await Promise.all([
+        ChatRoom.deleteOne({ _id: r._id }),
+        WorldChatMessage.deleteMany({ roomId: id }),
+      ]);
+      if (io) io.emit('world-chat:room-deleted', { roomId: id });
+    }
+  } catch (_) {
+    /* best-effort */
+  }
+}
+
 function startNotificationJobs() {
   if (process.env.NODE_ENV === 'test') return;
   setInterval(voteDeadlineSweep, 60 * 1000).unref?.();
   setInterval(comebackSweep, 60 * 60 * 1000).unref?.();
   setInterval(dailyTick, 15 * 60 * 1000).unref?.();
+  setInterval(emptyRoomSweep, 10 * 60 * 1000).unref?.();
   console.log('[notifications] scheduled jobs started');
 }
 
