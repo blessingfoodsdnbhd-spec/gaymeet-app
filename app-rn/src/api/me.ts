@@ -76,6 +76,8 @@ export interface User {
     hideOnlineStatus?: boolean;
     hideFromNearby?: boolean;
     stealthMode?: boolean;
+    /** Premium virtual location ("location spoofing") display label; null=off. */
+    virtualLocationLabel?: string | null;
   };
 }
 
@@ -142,6 +144,14 @@ export const setPrivacy = (patch: {
 
 export const updateLocation = (latitude: number, longitude: number) =>
   unwrap<{ success: true }>(api.put('/users/me/location', { latitude, longitude }));
+
+/** Premium virtual location ("location spoofing"). Backend 403s non-Premium
+ *  with code PREMIUM_REQUIRED. label is shown in the Nearby indicator. */
+export const setVirtualLocation = (latitude: number, longitude: number, label: string) =>
+  unwrap<{ success: true }>(api.post('/users/me/teleport', { latitude, longitude, label }));
+
+export const clearVirtualLocation = () =>
+  unwrap<{ success: true }>(api.delete('/users/me/teleport'));
 
 export interface MyStats {
   matches: number;

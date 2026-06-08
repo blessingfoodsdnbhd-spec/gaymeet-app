@@ -543,6 +543,14 @@
     "peopleCount": "{{n}} nearby",
     "footnote": "Showing people who allow Nearby"
   },
+  "virtualLocation": {
+    "title": "Virtual Location",
+    "subtitle": "Premium — browse Nearby as if you were in another city.",
+    "off": "Off",
+    "revert": "Use my real location",
+    "indicator": "Virtual: {{city}}",
+    "failed": "Couldn't update location"
+  },
   "profile": {
     "completion": {
       "title": "Profile completion {{n}}%",
@@ -611,7 +619,7 @@
     "voiceIntro": {
       "label": "Voice Intro",
       "record": "Record 1-5 sec intro",
-      "tapToStart": "Tap to record",
+      "tapToStart": "Tap to record a 1–30 sec intro",
       "tooShort": "Record at least 1 second",
       "recording": "Recording…",
       "save": "Save",

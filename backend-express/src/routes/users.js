@@ -218,6 +218,11 @@ router.put('/me/location', auth, async (req, res, next) => {
 // ── POST /api/users/me/teleport ───────────────────────────────────────────────
 router.post('/me/teleport', auth, async (req, res, next) => {
   try {
+    // Virtual location ("location spoofing") is a Premium feature.
+    const { isPremiumActive } = require('../utils/premium');
+    if (!isPremiumActive(req.user)) {
+      return res.status(403).json({ error: 'Premium required', code: 'PREMIUM_REQUIRED' });
+    }
     const { latitude, longitude, label } = req.body;
     if (latitude == null || longitude == null) {
       return err(res, 'latitude and longitude required');

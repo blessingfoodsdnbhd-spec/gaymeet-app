@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
+import { useDiscoverPrefs, type GridColumns } from '../../store/discoverPrefs';
+import { useAuth } from '../../store/auth';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -22,7 +24,13 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   // Per user feedback "左边右边 留一点空白" — was edge-to-edge brick
   // (horizontalPad=0, gap=0); now padded sides + a thin gap between
   // tiles so the grid reads as cards, not a poster wall.
-  const cols = 4;
+  // Column count is user-selectable (2/3/4) and persisted; the tile width is
+  // derived from the live window width so it adapts across Android DPIs/sizes.
+  const cols = useDiscoverPrefs((s) => s.gridColumns);
+  const setCols = useDiscoverPrefs((s) => s.setGridColumns);
+  // Premium virtual-location indicator — shown when the user is browsing from a
+  // spoofed location so the Nearby results' origin is never silently misleading.
+  const virtualLabel = useAuth((s) => s.user?.preferences?.virtualLocationLabel ?? null);
   const gap = 4;
   const horizontalPad = 14;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
@@ -31,7 +39,25 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.cityRow}>
-        {cityLabel ? (
+        {virtualLabel ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 999,
+              backgroundColor: theme.colors.primarySoft,
+              borderWidth: 1,
+              borderColor: theme.colors.primary,
+            }}
+          >
+            <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
+              📍 {t('virtualLocation.indicator', { city: virtualLabel })}
+            </Text>
+          </View>
+        ) : cityLabel ? (
           <View
             style={{
               flexDirection: 'row',
@@ -58,9 +84,38 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
         ) : (
           <View />
         )}
-        <Text style={{ fontSize: 12, color: theme.colors.muted }}>
-          {t('nearby.peopleCount', { n: users.length })}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 12, color: theme.colors.muted }}>
+            {t('nearby.peopleCount', { n: users.length })}
+          </Text>
+          {/* Column chooser: 2 / 3 / 4 — persisted via discoverPrefs. */}
+          <View style={[styles.colChooser, { borderColor: theme.colors.line }]}>
+            {([2, 3, 4] as GridColumns[]).map((n) => {
+              const active = cols === n;
+              return (
+                <Pressable
+                  key={n}
+                  onPress={() => setCols(n)}
+                  hitSlop={4}
+                  style={[
+                    styles.colOption,
+                    active && { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: active ? '#FFFFFF' : theme.colors.text2,
+                    }}
+                  >
+                    {n}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -162,6 +217,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 12,
+  },
+  colChooser: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  colOption: {
+    width: 26,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tileBg: {
     flex: 1,

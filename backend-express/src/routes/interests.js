@@ -10,10 +10,11 @@ const { auth } = require('../middleware/auth');
 const { isAdminUser } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
 
-// ~5s voice intro upload — memory storage, audio only, ≤512 KB.
+// ≤30s voice intro upload — memory storage, audio only, ≤2 MB (was 512 KB for
+// the old 5s cap; 30s of m4a fits comfortably under 2 MB).
 const voiceUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 512 * 1024 },
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const m = file.mimetype || '';
     // expo-av records m4a, which some platforms report as audio/* or video/mp4.

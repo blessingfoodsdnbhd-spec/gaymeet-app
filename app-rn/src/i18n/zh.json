@@ -543,6 +543,14 @@
     "peopleCount": "{{n}} 人在附近",
     "footnote": "仅显示开启了「附近」的同好"
   },
+  "virtualLocation": {
+    "title": "我的虚拟位置",
+    "subtitle": "Premium 功能 — 以其他城市的身份浏览「附近」。",
+    "off": "关闭",
+    "revert": "使用我的真实位置",
+    "indicator": "虚拟位置: {{city}}",
+    "failed": "更新位置失败"
+  },
   "profile": {
     "completion": {
       "title": "Profile 完成度 {{n}}%",
@@ -611,7 +619,7 @@
     "voiceIntro": {
       "label": "介绍声音",
       "record": "录制 1-5 秒介绍",
-      "tapToStart": "点击录音",
+      "tapToStart": "点击录制 1-30 秒介绍",
       "tooShort": "请录制至少 1 秒",
       "recording": "录制中…",
       "save": "保存",

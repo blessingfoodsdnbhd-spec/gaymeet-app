@@ -9,7 +9,7 @@ import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
 import { uploadVoiceIntro } from '../../api/me';
 
-const MAX_MS = 5000;
+const MAX_MS = 30000; // 30s cap (was 5s) — auto-stops at MAX_MS via the meter poll
 const MIN_MS = 1000;
 const BARS = 28;
 

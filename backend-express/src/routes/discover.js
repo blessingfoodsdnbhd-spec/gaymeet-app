@@ -12,6 +12,20 @@ const { isPremiumActive } = require('../utils/premium');
 
 const MAX_DISTANCE_M = 100_000; // 100 km — Meyou is Malaysia-only at launch
 
+// Resolve the origin coordinates for distance/geo queries. Premium users with a
+// virtual location set ("location spoofing") use that; everyone else uses their
+// real GPS location. KL is the last-resort default when neither is present.
+function resolveOrigin(me) {
+  const v = me.preferences || {};
+  if (isPremiumActive(me) && v.virtualLat != null && v.virtualLng != null) {
+    return { lat: v.virtualLat, lng: v.virtualLng };
+  }
+  return {
+    lat: me.location?.coordinates?.[1] ?? 3.1390,
+    lng: me.location?.coordinates?.[0] ?? 101.6869,
+  };
+}
+
 function formatDistance(meters) {
   if (meters == null) return null;
   if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
@@ -79,8 +93,7 @@ router.get('/cards', auth, async (req, res, next) => {
       ...usersWhoBlockedMe.map((u) => u._id),
     ];
 
-    const lat = me.location?.coordinates?.[1] ?? 3.1390;
-    const lng = me.location?.coordinates?.[0] ?? 101.6869;
+    const { lat, lng } = resolveOrigin(me); // Premium virtual location or GPS
     const myInterests = me.interests || [];
 
     const baseQuery = {
@@ -214,8 +227,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       ...usersWhoBlockedMe.map((u) => u._id),
     ];
 
-    const lat = me.location?.coordinates?.[1] ?? 3.1390;
-    const lng = me.location?.coordinates?.[0] ?? 101.6869;
+    const { lat, lng } = resolveOrigin(me); // Premium virtual location or GPS
     const myInterests = me.interests || [];
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -400,8 +412,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       ...usersWhoBlockedMe.map((u) => u._id),
     ];
 
-    const lat = me.location?.coordinates?.[1] ?? 3.1390;
-    const lng = me.location?.coordinates?.[0] ?? 101.6869;
+    const { lat, lng } = resolveOrigin(me); // Premium virtual location or GPS
     const myInterests = me.interests || [];
 
     const baseQuery = {
