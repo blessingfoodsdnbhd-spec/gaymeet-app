@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import messaging from '@react-native-firebase/messaging';
 import { registerToken, unregisterToken } from '../api/notifications';
 import { routeFromPushData, stashColdTap, type PushData } from './pushRouter';
+import { queryClient } from '../api/queryClient';
 
 /**
  * Request push permission, fetch the unified FCM token, register it with
@@ -87,16 +88,20 @@ export async function clearPushToken() {
 
 // ── Notification display + tap handling ──────────────────────────────────────
 // expo-notifications handler controls how a notification looks while the app
-// is foregrounded. Without this, foreground pushes are silently dropped
-// because RN's default is "don't interrupt the user".
+// is FOREGROUNDED. We suppress the OS foreground banner/alert entirely — it was
+// overlapping the in-app nav header (VVV). In-app, notifications surface through
+// the app's own Notification Center (the bell) + the OS badge; the banner is
+// redundant and intrusive while the user is actively in the app. This does NOT
+// affect background delivery or tap-routing (handled by the response listener
+// below) — only how a notification presents while the app is open.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldShowAlert: false,
+    shouldPlaySound: false,
     shouldSetBadge: true,
-    // SDK 53+ split shouldShowAlert into banner + list flags; both kept on.
-    shouldShowBanner: true,
-    shouldShowList: true,
+    // SDK 53+ split shouldShowAlert into banner + list flags.
+    shouldShowBanner: false,
+    shouldShowList: false,
   }),
 });
 
@@ -131,6 +136,11 @@ export function setupPushListeners(): () => void {
   });
 
   const offForeground = messaging().onMessage(async (rm) => {
+    // Live-refresh the in-app Notification Center (bell list + unread badge) so
+    // a foreground push appears there immediately — it no longer shows an OS
+    // banner (VVV), so this is how the user sees it without leaving the app.
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
     const title =
       rm?.notification?.title ?? (rm?.data as any)?.title ?? '';
     const body = rm?.notification?.body ?? (rm?.data as any)?.body ?? '';
