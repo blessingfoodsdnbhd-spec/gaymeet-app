@@ -7,10 +7,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, MoreHorizontal, Send } from 'lucide-react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft, Crown, MoreHorizontal, Send, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -21,6 +22,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../theme/ThemeProvider';
 import { VerifiedBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
+import { VoicePlayButton } from '../../components/VoicePlayButton';
+import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { HighlightsSection } from '../votes/HighlightsSection';
@@ -62,6 +65,11 @@ export function UserDetailScreen() {
   const isPremium = !!(me as any)?.isPremium;
   const { userId } = route.params;
   const photoViewer = usePhotoViewer();
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const carouselH = Math.round(screenH * 0.5);
+  const [page, setPage] = React.useState(0);
+  const introVoice = useDiscoverPrefs((s) => s.introVoice);
 
   const userQ = useQuery({
     queryKey: ['user', userId],
@@ -70,6 +78,12 @@ export function UserDetailScreen() {
   });
 
   const user = userQ.data;
+  // Top carousel photos — all public photos, falling back to the avatar.
+  const carouselPhotos: string[] = user
+    ? (user.photos && user.photos.length > 0
+        ? user.photos
+        : (user.avatarUrl ? [user.avatarUrl] : []))
+    : [];
 
   const onMore = () => {
     if (!user) return;
@@ -144,26 +158,15 @@ export function UserDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={8}>
-          <ChevronLeft size={26} color={theme.colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }} />
-        {user && (
-          <Pressable
-            onPress={onMore}
-            hitSlop={8}
-            style={{
-              width: 36, height: 36, borderRadius: 18,
-              alignItems: 'center', justifyContent: 'center',
-              backgroundColor: theme.colors.surface2,
-            }}
-          >
-            <MoreHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
-          </Pressable>
-        )}
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['bottom']}>
+      {/* Floating back button — always available, incl. while loading. */}
+      <Pressable
+        onPress={() => nav.goBack()}
+        hitSlop={8}
+        style={[styles.floatBtn, { top: insets.top + 8, left: 14 }]}
+      >
+        <ChevronLeft size={22} color="#FFFFFF" strokeWidth={2.2} />
+      </Pressable>
 
       {userQ.isLoading && (
         <View style={styles.center}>
@@ -179,25 +182,85 @@ export function UserDetailScreen() {
 
       {user && (
         <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.profileHeader}>
-            <Pressable
-              onPress={() => user.photos?.length && photoViewer.open(user.photos, 0)}
-              disabled={!user.photos?.length}
-            >
-              <Avatar
-                name={user.nickname}
-                uri={user.avatarUrl}
-                avatarIdx={idxFor(userId)}
-                size={92}
-                shape="circle"
-                showOnline={user.isOnline}
-              />
+          {/* Full-bleed photo carousel — replaces the small round avatar.
+              Paged, swipeable through all photos; tap to open the zoom viewer. */}
+          <View
+            style={{
+              width: screenW,
+              height: carouselH,
+              marginHorizontal: -20,
+              backgroundColor: theme.colors.surface2,
+            }}
+          >
+            {carouselPhotos.length > 0 ? (
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e) =>
+                  setPage(Math.round(e.nativeEvent.contentOffset.x / screenW))
+                }
+              >
+                {carouselPhotos.map((url, idx) => (
+                  <Pressable
+                    key={`c-${idx}-${url}`}
+                    onPress={() => photoViewer.open(carouselPhotos, idx)}
+                    style={{ width: screenW, height: carouselH }}
+                  >
+                    <ExpoImage
+                      source={{ uri: url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                <Avatar
+                  name={user.nickname}
+                  uri={user.avatarUrl}
+                  avatarIdx={idxFor(userId)}
+                  size={120}
+                  shape="circle"
+                />
+              </View>
+            )}
+
+            {carouselPhotos.length > 1 && (
+              <View style={styles.dots} pointerEvents="none">
+                {carouselPhotos.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.5)' },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Voice intro — auto-plays once on open when the pref is on. */}
+            {!!user.voiceIntroUrl && (
+              <View style={styles.voiceBtn}>
+                <VoicePlayButton url={user.voiceIntroUrl} autoPlay={introVoice} size={20} color="#FFFFFF" />
+              </View>
+            )}
+
+            <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
+              <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
+          </View>
+
+          {/* Name + age + zodiac + country, below the photo. */}
+          <View style={{ paddingTop: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.name, { color: theme.colors.text }]}>
+              <Text style={[styles.name, { color: theme.colors.text, marginTop: 0 }]}>
                 {user.nickname}
                 {(() => {
                   const a = computeAge(user.dob) ?? user.age;
@@ -214,28 +277,6 @@ export function UserDetailScreen() {
               </Text>
             )}
           </View>
-
-          {/* Public photos — horizontal strip of photos[1..] since [0] is
-              already the avatar at the top. Skip rendering when only the
-              avatar exists. */}
-          {user.photos && user.photos.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingTop: 18, gap: 8 }}
-            >
-              {user.photos.slice(1).map((url, i) => (
-                <Pressable key={url} onPress={() => photoViewer.open(user.photos!, i + 1)}>
-                  <ExpoImage
-                    source={{ uri: url }}
-                    style={{ width: 140, height: 180, borderRadius: 14 }}
-                    cachePolicy="memory-disk"
-                    contentFit="cover"
-                  />
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
 
           {/* Locked photos block — only shown if owner has any. Status
               drives whether the user sees a CTA, a disabled chip, or the
@@ -375,14 +416,41 @@ function idxFor(s: string): number {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
+  // Circular translucent overlay button (back / more) on the photo carousel.
+  floatBtn: {
+    position: 'absolute',
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 10,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  voiceBtn: {
+    position: 'absolute',
+    bottom: 12,
+    left: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  dots: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   center: {
     flex: 1,
