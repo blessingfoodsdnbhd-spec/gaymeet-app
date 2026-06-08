@@ -200,6 +200,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
           }
           count={moment.likeCount}
           onPress={() => onToggleLike(moment)}
+          onCountPress={() => (nav as any).navigate('MomentLikers', { momentId: moment._id })}
           highlighted={moment.isLiked}
         />
         <Action
@@ -218,38 +219,59 @@ function Action({
   count,
   highlighted,
   onPress,
+  onCountPress,
 }: {
   icon: React.ReactNode;
   count?: number;
   highlighted?: boolean;
   onPress?: () => void;
+  /** Tapping the count (vs the icon) does this — used so the ❤️ count opens the
+   *  likers list while the icon toggles the like. */
+  onCountPress?: () => void;
 }) {
   const theme = useTheme();
+  const countText =
+    count != null ? (
+      <Text
+        style={{
+          fontSize: 13,
+          color: highlighted ? theme.colors.accentRose : theme.colors.muted,
+          fontVariant: ['tabular-nums'],
+        }}
+      >
+        {count}
+      </Text>
+    ) : null;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        opacity: pressed ? 0.6 : 1,
-      })}
-    >
-      {icon}
-      {count != null && (
-        <Text
-          style={{
-            fontSize: 13,
-            color: highlighted ? theme.colors.accentRose : theme.colors.muted,
-            fontVariant: ['tabular-nums'],
-          }}
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Pressable
+        onPress={onPress}
+        hitSlop={6}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingLeft: 10,
+          paddingRight: onCountPress ? 4 : 10,
+          paddingVertical: 6,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        {icon}
+        {/* When the count is separately tappable, render it outside this
+            Pressable so only the icon toggles. */}
+        {!onCountPress && countText}
+      </Pressable>
+      {onCountPress && countText && (
+        <Pressable
+          onPress={count ? onCountPress : undefined}
+          hitSlop={6}
+          style={({ pressed }) => ({ paddingRight: 10, paddingVertical: 6, opacity: pressed ? 0.6 : 1 })}
         >
-          {count}
-        </Text>
+          {countText}
+        </Pressable>
       )}
-    </Pressable>
+    </View>
   );
 }
 

@@ -61,6 +61,23 @@ export const getUserMoments = (userId: string, page = 1) =>
 export const toggleLike = (id: string) =>
   unwrap<{ likeCount: number; isLiked: boolean }>(api.post(`/moments/${id}/like`));
 
+export interface MomentLiker {
+  _id: string;
+  nickname: string;
+  avatarUrl?: string | null;
+  isVerified?: boolean;
+  isOfficial?: boolean;
+  isPremium?: boolean;
+  followStatus?: 'mutual' | 'following' | 'followed-by' | 'none';
+  isFollowing?: boolean;
+}
+
+/** Users who liked a moment, newest-first (≤50/page). */
+export const getMomentLikers = (momentId: string, page = 1): Promise<MomentLiker[]> =>
+  api
+    .get(`/moments/${momentId}/likes`, { params: { page, limit: 50 } })
+    .then((r: any) => (r.data?.data ?? r.data)?.likers ?? []);
+
 /**
  * Soft-delete a moment (the author's own). Backend sets isActive=false;
  * GET single returns 404 afterwards and the feeds drop the row. Required

@@ -306,6 +306,52 @@ router.post('/:id/like', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/moments/:id/likes ────────────────────────────────────────────────
+// Paginated list of users who liked a moment, newest-first (likes are pushed,
+// so the array is oldest→newest — we reverse). Includes each liker's follow
+// status so the client can show a 关注/已关注 pill.
+router.get('/:id/likes', auth, async (req, res, next) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const lim = Math.min(parseInt(limit, 10) || 50, 50);
+    const skip = (parseInt(page, 10) - 1) * lim;
+
+    const moment = await Moment.findById(req.params.id).select('likes').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    const ordered = (moment.likes || []).slice().reverse(); // newest-first
+    const pageIds = ordered.slice(skip, skip + lim);
+
+    const users = await User.find({ _id: { $in: pageIds } })
+      .select('_id nickname avatarUrl isVerified isOfficial isPremium').lean();
+    const byId = new Map(users.map((u) => [u._id.toString(), u]));
+
+    const { followStatusMap } = require('../utils/followStatus');
+    const fsMap = await followStatusMap(req.user._id, pageIds);
+
+    const likers = pageIds
+      .map((id) => byId.get(id.toString()))
+      .filter(Boolean) // drop deleted accounts
+      .map((u) => {
+        const fs = fsMap.get(u._id.toString()) || 'none';
+        return {
+          _id: u._id.toString(),
+          nickname: u.nickname,
+          avatarUrl: u.avatarUrl ?? null,
+          isVerified: !!u.isVerified,
+          isOfficial: !!u.isOfficial,
+          isPremium: !!u.isPremium,
+          followStatus: fs,
+          isFollowing: fs === 'following' || fs === 'mutual',
+        };
+      });
+
+    ok(res, { likers });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/moments/:id/comment ─────────────────────────────────────────────
 router.post('/:id/comment', auth, async (req, res, next) => {
   try {

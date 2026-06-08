@@ -403,6 +403,7 @@
       "locationFailed": "Couldn't get location"
     },
     "viewOnMap": "View on map",
+    "likers": { "title": "Likes", "empty": "No likes yet" },
     "filters": {
       "all": "All",
       "friends": "Following",
