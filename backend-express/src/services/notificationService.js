@@ -62,7 +62,7 @@ setInterval(() => {
  *
  * @returns the created Notification doc, or null if the user disabled this type.
  */
-async function notify(userId, type, { title = '', body = '', data = {}, push = true } = {}) {
+async function notify(userId, type, { title = '', body = '', data = {}, push = true, i18n } = {}) {
   if (!userId) return null;
   try {
     const high = HIGH_PRIORITY.has(type);
@@ -70,6 +70,26 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
     if (!high && pref && Array.isArray(pref.disabled) && pref.disabled.includes(type)) {
       return null; // user opted out — don't persist or push
     }
+
+    // Localize from the recipient's app language when the caller supplies an
+    // `i18n` bundle: { en: { title, body }, zh: { title, body } }. We only hit
+    // the DB for the language when i18n is provided (every other notify() keeps
+    // its literal strings + zero extra queries). Falls back to en, then to the
+    // literal title/body.
+    if (i18n) {
+      let lang = 'en';
+      try {
+        const User = require('../models/User');
+        const u = await User.findById(userId).select('preferredLanguage').lean();
+        if (u && (u.preferredLanguage === 'zh' || u.preferredLanguage === 'en')) {
+          lang = u.preferredLanguage;
+        }
+      } catch (_) {}
+      const tpl = i18n[lang] || i18n.en || {};
+      if (tpl.title != null) title = tpl.title;
+      if (tpl.body != null) body = tpl.body;
+    }
+
     const doc = await Notification.create({ userId, type, title, body, data: data || {} });
     if (push) {
       const quiet = !high && inQuietHours(pref);

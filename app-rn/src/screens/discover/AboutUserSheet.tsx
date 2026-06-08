@@ -189,13 +189,26 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
   const followMut = useMutation({
     mutationFn: () => toggleFollow(user!.id),
+    // Optimistic: flip the button to "已关注" the instant it's tapped instead of
+    // after the ~round-trip (which felt broken — users thought the tap missed).
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['follow', user?.id] });
+      const prev = queryClient.getQueryData(['follow', user?.id]);
+      queryClient.setQueryData(['follow', user?.id], { following: true });
+      return { prev };
+    },
     onSuccess: (data) => {
+      // Reconcile with the server's authoritative result.
       queryClient.setQueryData(['follow', user?.id], data);
       // The friends list ('following list') count changed — refetch so
       // ProfileScreen stats stay in sync.
       queryClient.invalidateQueries({ queryKey: ['me', 'stats'] });
     },
-    onError: (e: any) => {
+    onError: (e: any, _vars, ctx: { prev: unknown } | undefined) => {
+      // Revert the optimistic flip, then surface the failure.
+      if (ctx && ctx.prev !== undefined) {
+        queryClient.setQueryData(['follow', user?.id], ctx.prev);
+      }
       const detail = e?.response?.data?.error || e?.message || '';
       Alert.alert(t('about.followFailed'), detail);
     },

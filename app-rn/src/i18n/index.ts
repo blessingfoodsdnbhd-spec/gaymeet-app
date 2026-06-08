@@ -35,9 +35,15 @@ AsyncStorage.getItem(STORAGE_KEY)
     // best-effort
   });
 
-// Persist any language change so the next launch picks it up.
+// Persist any language change so the next launch picks it up, and sync it to
+// the backend so server-sent push notifications arrive in the chosen language.
+// The sync is lazy-imported (avoids an api → client → auth → … load cycle) and
+// no-ops when signed out.
 i18n.on('languageChanged', (lng) => {
   AsyncStorage.setItem(STORAGE_KEY, lng).catch(() => {});
+  import('../api/me')
+    .then(({ syncPreferredLanguage }) => syncPreferredLanguage(lng))
+    .catch(() => {});
 });
 
 export default i18n;

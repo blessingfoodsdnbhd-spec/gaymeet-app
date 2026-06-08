@@ -389,7 +389,10 @@ router.post('/refresh', async (req, res, next) => {
     let payload;
     try {
       payload = verifyRefresh(refreshToken);
-    } catch {
+    } catch (e) {
+      // Diagnostic for the "logged out after a while" reports — surfaces whether
+      // refreshes fail on signature/expiry (e.g. a rotated JWT_REFRESH_SECRET).
+      console.warn('[auth/refresh] verify failed:', e?.name, e?.message);
       return err(res, 'Invalid or expired refresh token', 401);
     }
 
@@ -400,6 +403,7 @@ router.post('/refresh', async (req, res, next) => {
     // reset / account compromise). Legacy tokens (issued before tracking) have
     // no record and pass, then get recorded on rotation below.
     if (await RefreshToken.isRevoked(refreshToken)) {
+      console.warn('[auth/refresh] token revoked for user', String(payload.sub));
       return err(res, 'Session revoked, please sign in again', 401);
     }
 

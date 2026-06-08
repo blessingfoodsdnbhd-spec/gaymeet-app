@@ -5,6 +5,12 @@ import { Audio } from 'expo-av';
 import { useTheme } from '../theme/ThemeProvider';
 import { takeVoice, ensureAudioMode } from '../utils/voiceCache';
 
+// Module-level single-voice guard: only ONE voice may play app-wide at a time.
+// Without this, opening a profile repeatedly (or multiple buttons auto-playing —
+// grid card + AboutUserSheet + CardStack) stacked overlapping audio. Starting a
+// new playback stops whatever instance was playing.
+let activeVoiceStop: (() => void) | null = null;
+
 /**
  * Tap-to-play a voice-intro URL. Toggles play/stop, auto-unloads on finish and
  * on unmount. `autoPlay` plays once on mount (used by Nearby auto-play).
@@ -24,6 +30,9 @@ export function VoicePlayButton({
 }) {
   const theme = useTheme();
   const soundRef = React.useRef<Audio.Sound | null>(null);
+  // Guards a second play() from racing in while the first is still loading
+  // (rapid double-tap / re-entry) — that's what produced stacked playback.
+  const loadingRef = React.useRef(false);
   const [playing, setPlaying] = React.useState(false);
   const c = color ?? theme.colors.primary;
 
@@ -33,6 +42,7 @@ export function VoicePlayButton({
   };
 
   const stop = React.useCallback(async () => {
+    if (activeVoiceStop === stop) activeVoiceStop = null;
     try { await soundRef.current?.unloadAsync(); } catch {}
     soundRef.current = null;
     set(false);
@@ -40,7 +50,12 @@ export function VoicePlayButton({
 
   const play = React.useCallback(async () => {
     if (!url) return;
-    if (soundRef.current) { stop(); return; }
+    if (soundRef.current) { stop(); return; }     // already playing → toggle off
+    if (loadingRef.current) return;               // a load is already in flight
+    // Single-voice guard: stop whatever other instance is currently playing.
+    if (activeVoiceStop && activeVoiceStop !== stop) activeVoiceStop();
+    activeVoiceStop = stop;
+    loadingRef.current = true;
     try {
       // Fast path: a preloaded sound (prefetched while the card was visible)
       // is already decoded — just replay it. Saves the 3–4s download+decode.
@@ -68,6 +83,8 @@ export function VoicePlayButton({
       });
     } catch {
       set(false);
+    } finally {
+      loadingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, stop]);

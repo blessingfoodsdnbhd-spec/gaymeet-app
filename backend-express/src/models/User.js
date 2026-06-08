@@ -153,6 +153,10 @@ const userSchema = new mongoose.Schema(
     vipLevel: { type: Number, default: 0, min: 0, max: 3 },
     vipExpiresAt: { type: Date, default: null },
 
+    // App UI language the client last synced (from i18n). Used to localize
+    // server-sent push notifications. null → fall back to English templates.
+    preferredLanguage: { type: String, enum: ['en', 'zh', null], default: null },
+
     // Energy / Level system
     level: { type: Number, default: 1 },
     currentExp: { type: Number, default: 0 },

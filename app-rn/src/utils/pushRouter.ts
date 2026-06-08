@@ -9,7 +9,7 @@ import { safeNavigate, navigationRef } from '../navigation/navigationRef';
  *   match    → { type, matchId }              tap → ChatDetail (the new match opens chat)
  *   comment  → { type, momentId }             tap → Comments
  *   like     → { type, fromUserId? }          tap → MatchesList (likes-received feed)
- *   follow   → { type, fromUserId? }          tap → FriendsList
+ *   follow   → { type, fromUserId }            tap → UserDetail(fromUserId)
  *   gift / energy / other → no nav            tap → Main (default tab, soft no-op)
  *
  * Note: FCM's `data` payload values are ALWAYS strings (FCM marshals
@@ -48,7 +48,12 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       return safeNavigate('MatchesList');
     }
     case 'follow': {
-      return safeNavigate('FriendsList');
+      // Open the FOLLOWER's full-screen profile (the user who just followed
+      // you), not the followers list. The backend puts the follower's id on
+      // data.fromUserId (routes/follows.js). Fall back to the list if absent.
+      const fromUserId = data.fromUserId ? String(data.fromUserId) : null;
+      if (!fromUserId) return safeNavigate('FriendsList');
+      return safeNavigate('UserDetail', { userId: fromUserId });
     }
     case 'note': {
       return safeNavigate('NotesInbox');

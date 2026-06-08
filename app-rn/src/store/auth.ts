@@ -94,6 +94,13 @@ export const useAuth = create<AuthState>((set) => ({
     import('../utils/push')
       .then(({ registerPushToken }) => registerPushToken().catch(() => {}))
       .catch(() => {});
+    // Sync the current UI language to the backend so push notifications are
+    // localized (best-effort; lazy import to avoid a module-load cycle).
+    import('../api/me')
+      .then(({ syncPreferredLanguage }) =>
+        syncPreferredLanguage(require('../i18n').default.language),
+      )
+      .catch(() => {});
   },
 
   signOut: async () => {

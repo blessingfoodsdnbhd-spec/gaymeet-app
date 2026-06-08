@@ -110,10 +110,19 @@ router.patch('/me', auth, async (req, res, next) => {
       'zodiac', 'mbti', 'bloodType', 'kinks',
       'relationshipStatus', 'intents',
       'mobileGames', 'isPublicProfile', 'incognitoBrowsing', 'voiceIntroUrl',
+      'preferredLanguage',
     ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // preferredLanguage: only accept the supported UI locales; anything else
+    // (incl. region variants) is ignored so push localization stays predictable.
+    if (updates.preferredLanguage !== undefined) {
+      const lang = String(updates.preferredLanguage || '').slice(0, 2).toLowerCase();
+      if (lang === 'zh' || lang === 'en') updates.preferredLanguage = lang;
+      else delete updates.preferredLanguage;
     }
 
     // mobileGames: trim, drop empties, cap each entry at 30 chars, dedupe

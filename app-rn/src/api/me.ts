@@ -104,8 +104,27 @@ export const patchMe = (
     mobileGames?: string[];
     incognitoBrowsing?: boolean;
     isPublicProfile?: boolean;
+    /** App UI language synced to the backend for push localization. */
+    preferredLanguage?: 'en' | 'zh';
   },
 ) => unwrap<User>(api.patch('/users/me', patch));
+
+/**
+ * Best-effort: tell the backend the user's current UI language so server-sent
+ * push notifications (e.g. "X is following you") arrive localized. Safe to call
+ * unauthenticated — it no-ops when there's no session (avoids a pre-login 401).
+ */
+export async function syncPreferredLanguage(lang: string) {
+  const code = (lang || '').slice(0, 2).toLowerCase();
+  if (code !== 'en' && code !== 'zh') return;
+  try {
+    const { getAccessToken } = await import('../store/auth');
+    if (!(await getAccessToken())) return;
+    await patchMe({ preferredLanguage: code });
+  } catch {
+    // best-effort — language sync must never disrupt the app
+  }
+}
 
 /** Setting interests is what flips `interestsOnboardedAt` from null → now. */
 export const setInterests = (interests: InterestTagId[]) =>

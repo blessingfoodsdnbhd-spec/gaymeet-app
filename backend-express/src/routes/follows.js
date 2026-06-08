@@ -35,11 +35,17 @@ router.post('/:id/follow', auth, async (req, res, next) => {
       await User.findByIdAndUpdate(targetId, { $inc: { followersCount: 1 } });
 
       // Push the followed user — fire-and-forget. req.user is loaded by the
-      // auth middleware and has nickname.
+      // auth middleware and has nickname. Localized to the recipient's app
+      // language via the i18n bundle (notify() resolves preferredLanguage).
+      const who = req.user.nickname || 'Someone';
       notify(targetId, 'follow', {
-        title: `${req.user.nickname || 'Someone'} is following you`,
+        title: `${who} is following you`,
         body: 'Tap to view their profile',
         data: { fromUserId: String(req.user._id) },
+        i18n: {
+          en: { title: `${who} is following you`, body: 'Tap to view their profile' },
+          zh: { title: `${who} 关注了你`, body: '点击查看TA的主页' },
+        },
       }).catch(() => {});
 
       return ok(res, { following: true });

@@ -52,7 +52,12 @@ module.exports = {
   MONGODB_URI,
   JWT_SECRET:           required('JWT_SECRET',         'Any long random string, e.g. run: node -e "console.log(require(\'crypto\').randomBytes(40).toString(\'hex\'))"'),
   JWT_REFRESH_SECRET:   required('JWT_REFRESH_SECRET',  'Same as JWT_SECRET but a different value'),
-  JWT_EXPIRES_IN:       900,
+  // Access-token TTL. Was 900s (15m), which made sessions wholly dependent on
+  // the refresh-on-401 flow working perfectly — any hiccup there bounced users
+  // to the login screen every 15 minutes (reported on Google sign-in). 1h is a
+  // standard mobile default and greatly reduces that exposure; refresh tokens
+  // still rotate and sessions stay revocable. Overridable via env.
+  JWT_EXPIRES_IN:       parseInt(process.env.JWT_EXPIRES_IN || '3600', 10),
   JWT_REFRESH_EXPIRES_IN: 2592000,
   UPLOAD_DIR:           process.env.UPLOAD_DIR || './uploads',
   MAX_FILE_SIZE_MB:     parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10),
