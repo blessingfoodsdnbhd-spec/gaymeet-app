@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy, patchMe } from '../../../api/me';
 import { UpgradePremiumSheet } from '../../../components/UpgradePremiumSheet';
-import { VirtualLocationSheet } from '../../../components/VirtualLocationSheet';
 import {
   SettingsShell,
   SettingsCard,
@@ -22,6 +22,7 @@ function reportFailure(e: any, title: string) {
 
 export function PrivacySettings() {
   const { t } = useTranslation();
+  const nav = useNavigation<any>();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
 
@@ -39,8 +40,9 @@ export function PrivacySettings() {
   // toPublicJSON already folds vipLevel into isPremium.
   const isPremium = !!user?.isPremium;
   const [upsellOpen, setUpsellOpen] = useState(false);
-  const [vlocOpen, setVlocOpen] = useState(false);
   const virtualLabel = user?.preferences?.virtualLocationLabel ?? null;
+  const virtualActive =
+    user?.preferences?.virtualLat != null && user?.preferences?.virtualLng != null;
 
   const flipNearby = async (v: boolean) => {
     setNearbyVisible(v);
@@ -130,25 +132,15 @@ export function PrivacySettings() {
         {/* Premium virtual location. Free users → upgrade sheet; Premium → picker. */}
         <LinkRow
           label={t('virtualLocation.title')}
-          detail={virtualLabel ?? t('virtualLocation.off')}
-          onPress={() => (isPremium ? setVlocOpen(true) : setUpsellOpen(true))}
+          detail={
+            virtualActive ? (virtualLabel || t('virtualLocation.active')) : t('virtualLocation.off')
+          }
+          onPress={() => (isPremium ? nav.navigate('MapPicker') : setUpsellOpen(true))}
         />
         <Divider />
         <LinkRow label={t('privacySettings.blocklist')} />
       </SettingsCard>
       <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.privacy')} />
-      <VirtualLocationSheet
-        open={vlocOpen}
-        onClose={() => setVlocOpen(false)}
-        currentLabel={virtualLabel}
-        onApplied={(label) => {
-          if (!user) return;
-          setUser({
-            ...user,
-            preferences: { ...(user.preferences ?? {}), virtualLocationLabel: label },
-          });
-        }}
-      />
     </SettingsShell>
   );
 }

@@ -3,12 +3,12 @@ import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } fr
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pencil } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs, type GridColumns } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
-import { VirtualLocationSheet } from '../../components/VirtualLocationSheet';
 import { prefetchMany } from '../../utils/voiceCache';
 import type { DiscoverCardUser } from '../../api/discover';
 
@@ -23,6 +23,7 @@ interface Props {
 export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<any>();
   const { width } = useWindowDimensions();
   // Preload the visible grid's voice intros so tapping a tile's profile plays
   // instantly (the user's slow path was grid taps — the deck preloaded, the grid
@@ -39,12 +40,13 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   // derived from the live window width so it adapts across Android DPIs/sizes.
   const cols = useDiscoverPrefs((s) => s.gridColumns);
   const setCols = useDiscoverPrefs((s) => s.setGridColumns);
-  // Premium virtual-location indicator — shown when the user is browsing from a
-  // spoofed location so the Nearby results' origin is never silently misleading.
+  // Premium virtual-location indicator — shown whenever a virtual location is
+  // ACTIVE (coords set), so it never silently disappears when the map's
+  // reverse-geocoded label happens to be empty (SSS bug). Label is display-only.
+  const virtualLat = useAuth((s) => s.user?.preferences?.virtualLat ?? null);
+  const virtualLng = useAuth((s) => s.user?.preferences?.virtualLng ?? null);
   const virtualLabel = useAuth((s) => s.user?.preferences?.virtualLocationLabel ?? null);
-  const user = useAuth((s) => s.user);
-  const setUser = useAuth((s) => s.setUser);
-  const [vlocOpen, setVlocOpen] = React.useState(false);
+  const virtualActive = virtualLat != null && virtualLng != null;
   const gap = 4;
   const horizontalPad = 14;
   const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
@@ -53,9 +55,9 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.cityRow}>
-        {virtualLabel ? (
+        {virtualActive ? (
           <Pressable
-            onPress={() => setVlocOpen(true)}
+            onPress={() => nav.navigate('MapPicker')}
             hitSlop={6}
             style={{
               flexDirection: 'row',
@@ -70,7 +72,7 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
             }}
           >
             <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
-              📍 {t('virtualLocation.indicator', { city: virtualLabel })}
+              📍 {t('virtualLocation.indicator', { city: virtualLabel || t('virtualLocation.active') })}
             </Text>
             <Pencil size={12} color={theme.colors.primaryDeep} strokeWidth={2} />
           </Pressable>
@@ -161,22 +163,6 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Tap the virtual-location indicator → change city or revert to GPS.
-          Only shown when active, and only Premium users can set it, so no
-          free-user gating is needed here. */}
-      <VirtualLocationSheet
-        open={vlocOpen}
-        onClose={() => setVlocOpen(false)}
-        currentLabel={virtualLabel}
-        onApplied={(label) => {
-          if (!user) return;
-          setUser({
-            ...user,
-            preferences: { ...(user.preferences ?? {}), virtualLocationLabel: label },
-          });
-        }}
-      />
     </View>
   );
 }

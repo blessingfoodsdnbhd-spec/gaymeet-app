@@ -76,7 +76,10 @@ export interface User {
     hideOnlineStatus?: boolean;
     hideFromNearby?: boolean;
     stealthMode?: boolean;
-    /** Premium virtual location ("location spoofing") display label; null=off. */
+    /** Premium virtual location ("location spoofing"). Coords drive whether it's
+     *  ACTIVE (the indicator keys off these, not the label which may be empty). */
+    virtualLat?: number | null;
+    virtualLng?: number | null;
     virtualLocationLabel?: string | null;
   };
 }

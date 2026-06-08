@@ -12,6 +12,7 @@ import { TagsEditScreen } from '../screens/profile/TagsEditScreen';
 import { PromptsEditScreen } from '../screens/profile/PromptsEditScreen';
 import { MyMomentsScreen } from '../screens/profile/MyMomentsScreen';
 import { FriendsListScreen } from '../screens/profile/FriendsListScreen';
+import { MapPickerScreen } from '../screens/discover/MapPickerScreen';
 import { MatchesListScreen } from '../screens/profile/MatchesListScreen';
 import { PrivacySettings } from '../screens/profile/settings/PrivacySettings';
 import { NotificationSettings } from '../screens/profile/settings/NotificationSettings';
@@ -89,6 +90,7 @@ export function RootNavigator() {
           <Stack.Screen name="PromptsEdit" component={PromptsEditScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MyMoments" component={MyMomentsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="FriendsList" component={FriendsListScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="MapPicker" component={MapPickerScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MatchesList" component={MatchesListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="PrivacySettings" component={PrivacySettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettings} options={{ animation: 'slide_from_right' }} />

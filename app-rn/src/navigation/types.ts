@@ -29,6 +29,7 @@ export type RootStackParamList = {
   PromptsEdit: undefined;
   MyMoments: undefined;
   FriendsList: undefined;
+  MapPicker: undefined;
   MatchesList: undefined;
   PrivacySettings: undefined;
   NotificationSettings: undefined;
