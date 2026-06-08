@@ -623,6 +623,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
               label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
               done={isAlreadyFollowing}
+              pressableWhenDone
               busy={followMut.isPending || followQ.isLoading}
               onPress={onFollow}
             />
@@ -665,18 +666,22 @@ function SecondaryAction({
   done,
   busy,
   onPress,
+  pressableWhenDone = false,
 }: {
   icon: React.ReactNode;
   label: string;
   done: boolean;
   busy: boolean;
   onPress: () => void;
+  /** Keep the button tappable even in the "done" state — used by Follow so the
+   *  "已关注" state can be tapped to unfollow (Like stays one-way disabled). */
+  pressableWhenDone?: boolean;
 }) {
   const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
-      disabled={done || busy}
+      disabled={(done && !pressableWhenDone) || busy}
       style={({ pressed }) => [
         styles.secondaryBtn,
         {
