@@ -23,6 +23,7 @@ import { useListSortPrefs } from '../../store/listSortPrefs';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { getFollowing, getFollowers, type FollowedUser } from '../../api/me';
+import { toggleFollow } from '../../api/follows';
 import { openConversation } from '../../api/chats';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -78,6 +79,36 @@ export function FriendsListScreen() {
       }),
     [friendsQ.data, sortKey],
   );
+
+  // Follow/unfollow directly from a row. In 关注 (following) an unfollow removes
+  // the row; in 粉丝 (followers) it just flips the follow-back pill (they still
+  // follow me, so the row stays). Optimistic, reverts on error.
+  const onTogglePill = (u: FollowedUser) => {
+    const key = ['me', tab, myId];
+    const doToggle = () => {
+      if (tab === 'following') {
+        queryClient.setQueryData<FollowedUser[]>(key, (prev) =>
+          (prev ?? []).filter((x) => x._id !== u._id),
+        );
+      } else {
+        queryClient.setQueryData<FollowedUser[]>(key, (prev) =>
+          (prev ?? []).map((x) => (x._id === u._id ? { ...x, isFollowing: !x.isFollowing } : x)),
+        );
+      }
+      toggleFollow(u._id).catch(() => queryClient.invalidateQueries({ queryKey: key }));
+      queryClient.invalidateQueries({ queryKey: ['me', 'stats'] });
+    };
+    // Confirm only when removing a follow; following back is a single tap.
+    const isUnfollow = tab === 'following' || u.isFollowing;
+    if (isUnfollow) {
+      Alert.alert(t('about.unfollowConfirm'), '', [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('about.unfollowAction'), style: 'destructive', onPress: doToggle },
+      ]);
+    } else {
+      doToggle();
+    }
+  };
 
   const openWith = async (user: FollowedUser) => {
     try {
@@ -171,7 +202,14 @@ export function FriendsListScreen() {
             />
           )}
           renderItem={({ item }) => (
-            <FriendRow user={item} onPress={() => nav.navigate('UserDetail', { userId: item._id })} />
+            <FriendRow
+              user={item}
+              onPress={() => nav.navigate('UserDetail', { userId: item._id })}
+              // 关注 tab: every row is followed → "已关注". 粉丝 tab: pill reflects
+              // whether I follow them back.
+              following={tab === 'following' ? true : !!item.isFollowing}
+              onTogglePill={() => onTogglePill(item)}
+            />
           )}
           ListEmptyComponent={
             <EmptyState
@@ -190,8 +228,19 @@ export function FriendsListScreen() {
   );
 }
 
-function FriendRow({ user, onPress }: { user: FollowedUser; onPress: () => void }) {
+function FriendRow({
+  user,
+  onPress,
+  following,
+  onTogglePill,
+}: {
+  user: FollowedUser;
+  onPress: () => void;
+  following: boolean;
+  onTogglePill: () => void;
+}) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
@@ -221,6 +270,29 @@ function FriendRow({ user, onPress }: { user: FollowedUser; onPress: () => void 
           </Text>
         )}
       </View>
+      {/* Direct follow/unfollow. Nested Pressable so the row's onPress (→ profile)
+          doesn't also fire when the pill is tapped. following → "已关注" (filled);
+          not following (粉丝 tab) → "关注回去" (outlined). */}
+      <Pressable
+        onPress={onTogglePill}
+        hitSlop={6}
+        style={[
+          styles.pill,
+          following
+            ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+            : { backgroundColor: 'transparent', borderColor: theme.colors.primary },
+        ]}
+      >
+        <Text
+          style={{
+            fontSize: 12.5,
+            fontWeight: '600',
+            color: following ? '#FFFFFF' : theme.colors.primary,
+          }}
+        >
+          {following ? t('about.following') : t('friends.followBack')}
+        </Text>
+      </Pressable>
     </Pressable>
   );
 }
@@ -255,5 +327,11 @@ const styles = StyleSheet.create({
     height: 2,
     width: 40,
     borderRadius: 1,
+  },
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
   },
 });

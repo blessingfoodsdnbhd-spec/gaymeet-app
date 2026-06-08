@@ -553,7 +553,8 @@
   },
   "friends": {
     "tabFollowing": "Following",
-    "tabFollowers": "Followers"
+    "tabFollowers": "Followers",
+    "followBack": "Follow back"
   },
   "profile": {
     "completion": {

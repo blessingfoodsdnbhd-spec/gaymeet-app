@@ -553,7 +553,8 @@
   },
   "friends": {
     "tabFollowing": "关注",
-    "tabFollowers": "粉丝"
+    "tabFollowers": "粉丝",
+    "followBack": "关注回去"
   },
   "profile": {
     "completion": {
