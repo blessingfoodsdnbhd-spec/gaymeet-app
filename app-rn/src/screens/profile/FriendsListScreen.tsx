@@ -22,7 +22,7 @@ import { sortList } from '../../utils/listSort';
 import { useListSortPrefs } from '../../store/listSortPrefs';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
-import { getFollowing, type FollowedUser } from '../../api/me';
+import { getFollowing, getFollowers, type FollowedUser } from '../../api/me';
 import { openConversation } from '../../api/chats';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -49,9 +49,14 @@ export function FriendsListScreen() {
 
   const myId = me?.id;
 
+  // 关注 (following — people I follow) vs 粉丝 (followers — people who follow me).
+  // Previously this screen showed following only, so tapping 关注 with nobody
+  // followed looked like nothing happened.
+  const [tab, setTab] = React.useState<'following' | 'followers'>('following');
+
   const friendsQ = useQuery({
-    queryKey: ['me', 'following', myId],
-    queryFn: () => getFollowing(myId!),
+    queryKey: ['me', tab, myId],
+    queryFn: () => (tab === 'following' ? getFollowing(myId!) : getFollowers(myId!)),
     enabled: !!myId,
     staleTime: 60_000,
   });
@@ -110,6 +115,29 @@ export function FriendsListScreen() {
         <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {t('profile.stats.friends')}
         </Text>
+      </View>
+
+      {/* 关注 (following) / 粉丝 (followers) toggle. */}
+      <View style={[styles.tabRow, { borderBottomColor: theme.colors.line }]}>
+        {(['following', 'followers'] as const).map((k) => {
+          const active = tab === k;
+          return (
+            <Pressable key={k} onPress={() => setTab(k)} style={styles.tabBtn}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: active ? '700' : '500',
+                  color: active ? theme.colors.primary : theme.colors.muted,
+                }}
+              >
+                {t(k === 'following' ? 'friends.tabFollowing' : 'friends.tabFollowers')}
+              </Text>
+              {active && (
+                <View style={[styles.tabUnderline, { backgroundColor: theme.colors.primary }]} />
+              )}
+            </Pressable>
+          );
+        })}
       </View>
 
       {friendsQ.isLoading ? (
@@ -211,5 +239,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 60,
     paddingHorizontal: 28,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    height: 2,
+    width: 40,
+    borderRadius: 1,
   },
 });

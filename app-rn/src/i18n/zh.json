@@ -551,6 +551,10 @@
     "indicator": "虚拟位置: {{city}}",
     "failed": "更新位置失败"
   },
+  "friends": {
+    "tabFollowing": "关注",
+    "tabFollowers": "粉丝"
+  },
   "profile": {
     "completion": {
       "title": "Profile 完成度 {{n}}%",

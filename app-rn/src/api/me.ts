@@ -185,6 +185,9 @@ export interface FollowedUser {
 export const getFollowing = (userId: string) =>
   unwrap<FollowedUser[]>(api.get(`/users/${userId}/following`));
 
+export const getFollowers = (userId: string) =>
+  unwrap<FollowedUser[]>(api.get(`/users/${userId}/followers`));
+
 /** Public profile for any user by id. Backend returns User.toPublicJSON()
  *  minus the sensitive fields (password/fcmToken/blockedUsers/swipes). */
 export const getUserById = (userId: string) =>

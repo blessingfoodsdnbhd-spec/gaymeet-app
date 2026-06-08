@@ -551,6 +551,10 @@
     "indicator": "Virtual: {{city}}",
     "failed": "Couldn't update location"
   },
+  "friends": {
+    "tabFollowing": "Following",
+    "tabFollowers": "Followers"
+  },
   "profile": {
     "completion": {
       "title": "Profile completion {{n}}%",
