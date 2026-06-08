@@ -73,7 +73,7 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
     setPicked((prev) => {
       const next = { ...prev };
       if (next[u._id]) delete next[u._id];
-      else if (count < max) next[u._id] = { _id: u._id, nickname: u.nickname };
+      else next[u._id] = { _id: u._id, nickname: u.nickname }; // unlimited (QQQ)
       return next;
     });
   };

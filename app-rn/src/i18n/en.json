@@ -401,6 +401,7 @@
       "locationPermBody": "Enable location to tag where you are.",
       "locationFailed": "Couldn't get location"
     },
+    "viewOnMap": "View on map",
     "filters": {
       "all": "All",
       "friends": "Following",

@@ -198,10 +198,11 @@ router.post('/', auth, async (req, res, next) => {
     // author may be tagged (anti-spam); deduped, self stripped, capped at 10.
     let taggedIds = [];
     if (Array.isArray(taggedUserIds) && taggedUserIds.length) {
+      // No cap on tag count (QQQ) — still deduped + self-stripped, and every id
+      // must still pass the follow/follower relationship gate below (anti-spam).
       const ids = [...new Set(taggedUserIds.map(String))].filter(
         (id) => mongoose.isValidObjectId(id) && id !== req.user._id.toString(),
       );
-      if (ids.length > 10) return err(res, 'max 10 tagged friends');
       if (ids.length) {
         const Follow = require('../models/Follow');
         const rels = await Follow.find({

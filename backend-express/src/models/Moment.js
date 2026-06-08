@@ -15,7 +15,8 @@ const momentSchema = new mongoose.Schema(
     // Human-readable place label shown under the post (e.g. "Kuala Lumpur").
     locationLabel: { type: String, default: null },
     // Friends tagged in this post (FB-style). The post also surfaces in each
-    // tagged user's "friends" feed. Capped at 10 at the route layer.
+    // tagged user's "friends" feed. Uncapped (QQQ); each tag must be a follow/
+    // follower of the author (validated at the route layer).
     taggedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     visibility: {
       type: String,

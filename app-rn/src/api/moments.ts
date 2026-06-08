@@ -31,8 +31,10 @@ export interface Moment {
   tag?: string;
   /** Friends tagged in this post (FB-style). */
   taggedUserIds?: TaggedFriend[];
-  /** Human-readable place label shown under the post. */
+  /** Human-readable place label (legacy/optional — display is map-based, QQQ). */
   locationLabel?: string | null;
+  /** GeoJSON point: coordinates are [lng, lat]. Drives the "View on map" link. */
+  location?: { type?: string; coordinates?: number[] } | null;
 }
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {

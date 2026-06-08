@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, useWindowDimensions, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions, StyleSheet, Alert, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Heart, MessageSquare, MoreHorizontal } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -136,11 +136,24 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
       ) : null}
 
       {/* Location + tagged friends (FB-style). Tagged names open the profile. */}
-      {moment.locationLabel ? (
+      {moment.location?.coordinates && moment.location.coordinates.length === 2 ? (
         <View style={styles.metaRow}>
-          <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>
-            📍 {moment.locationLabel}
-          </Text>
+          <Pressable
+            onPress={() => {
+              const [lng, lat] = moment.location!.coordinates!;
+              const url = Platform.select({
+                ios: `maps:0,0?q=${lat},${lng}`,
+                android: `geo:${lat},${lng}?q=${lat},${lng}`,
+                default: `https://maps.google.com/?q=${lat},${lng}`,
+              });
+              if (url) Linking.openURL(url).catch(() => {});
+            }}
+            hitSlop={6}
+          >
+            <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
+              📍 {t('moments.viewOnMap')}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
       {moment.taggedUserIds && moment.taggedUserIds.length > 0 ? (
