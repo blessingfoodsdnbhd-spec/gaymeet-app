@@ -392,6 +392,7 @@
   "moments": {
     "compose": {
       "tag": "Tag Friends",
+      "addPhoto": "Add photo",
       "location": "Add Location",
       "taggedCount": "{{n}} tagged",
       "currentLocation": "My current location",
@@ -561,6 +562,9 @@
     "off": "Off",
     "revert": "Use my real location",
     "indicator": "Virtual: {{city}}",
+    "active": "On",
+    "mapHint": "Tap the map to set your virtual location",
+    "premiumOnly": "Premium feature",
     "failed": "Couldn't update location"
   },
   "friends": {

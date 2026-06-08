@@ -236,40 +236,44 @@ export function ComposerScreen() {
             {content.length} / {MAX_CONTENT}
           </Text>
 
-          {/* Photo grid */}
-          {(photos.length > 0 || photos.length < MAX_PHOTOS) && (
-            <View style={styles.photoGrid}>
-              {photos.map((uri, i) => (
-                <View key={uri + i} style={styles.photoTile}>
-                  <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
-                  <Pressable
-                    onPress={() => removeAt(i)}
-                    style={[styles.removeBtn, { backgroundColor: 'rgba(0,0,0,0.6)' }]}
-                  >
-                    <X size={14} color="#FFFFFF" strokeWidth={2.4} />
-                  </Pressable>
-                </View>
-              ))}
-              {photos.length < MAX_PHOTOS && (
+          {/* Photo row — horizontal scroll of 80×80 thumbnails + a larger,
+              friendlier dashed-pink "add photo" tile (TTT redesign). */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.photoRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            {photos.map((uri, i) => (
+              <View key={uri + i} style={styles.photoThumb}>
+                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
                 <Pressable
-                  onPress={onAddPhotoTap}
-                  style={[
-                    styles.photoTile,
-                    {
-                      backgroundColor: theme.colors.surface2,
-                      borderWidth: 1,
-                      borderColor: theme.colors.line,
-                      borderStyle: 'dashed',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    },
-                  ]}
+                  onPress={() => removeAt(i)}
+                  hitSlop={6}
+                  style={[styles.removeBtn, { backgroundColor: 'rgba(0,0,0,0.6)' }]}
                 >
-                  <ImagePlus size={28} color={theme.colors.muted} strokeWidth={1.6} />
+                  <X size={13} color="#FFFFFF" strokeWidth={2.4} />
                 </Pressable>
-              )}
-            </View>
-          )}
+              </View>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <Pressable
+                onPress={onAddPhotoTap}
+                style={[
+                  styles.addTile,
+                  {
+                    borderColor: theme.colors.primary,
+                    backgroundColor: theme.colors.primarySoft,
+                  },
+                ]}
+              >
+                <ImagePlus size={30} color={theme.colors.primary} strokeWidth={1.8} />
+                <Text style={{ fontSize: 11.5, color: theme.colors.primary, marginTop: 6, fontWeight: '600' }}>
+                  {t('moments.compose.addPhoto')}
+                </Text>
+              </Pressable>
+            )}
+          </ScrollView>
 
           {/* Tag friends + add location (FB/IG-style). */}
           <Pressable onPress={() => setTagOpen(true)} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
@@ -326,11 +330,27 @@ export function ComposerScreen() {
 }
 
 const styles = StyleSheet.create({
-  photoGrid: {
+  photoRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
     marginTop: 14,
+    paddingRight: 4,
+  },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  addTile: {
+    width: 100,
+    height: 100,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionRow: {
     flexDirection: 'row',
@@ -340,20 +360,13 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  photoTile: {
-    width: '31.5%',
-    aspectRatio: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-    position: 'relative',
-  },
   removeBtn: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

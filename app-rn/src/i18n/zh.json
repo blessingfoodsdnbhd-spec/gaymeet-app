@@ -392,6 +392,7 @@
   "moments": {
     "compose": {
       "tag": "标记朋友",
+      "addPhoto": "添加照片",
       "location": "添加位置",
       "taggedCount": "{{n}} 人",
       "currentLocation": "我的当前位置",
@@ -561,6 +562,9 @@
     "off": "关闭",
     "revert": "使用我的真实位置",
     "indicator": "虚拟位置: {{city}}",
+    "active": "已开启",
+    "mapHint": "点击地图设置你的虚拟位置",
+    "premiumOnly": "Premium 功能",
     "failed": "更新位置失败"
   },
   "friends": {
