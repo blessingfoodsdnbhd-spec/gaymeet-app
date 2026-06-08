@@ -365,7 +365,12 @@ router.post('/rooms/:id/invite', auth, async (req, res, next) => {
       notify(uid, 'room_invite', {
         title: '你被邀请加入聊天室 💬',
         body: room.title,
-        data: { roomId: room._id.toString(), custom: '1' },
+        data: {
+          roomId: room._id.toString(),
+          custom: '1',
+          fromUserName: req.user.nickname || '',
+          fromUserAvatarUrl: req.user.avatarUrl || '',
+        },
       }).catch(() => {});
     }
     const fresh = await ChatRoom.findById(room._id).select('memberIds');

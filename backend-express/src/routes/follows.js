@@ -41,7 +41,13 @@ router.post('/:id/follow', auth, async (req, res, next) => {
       notify(targetId, 'follow', {
         title: `${who} is following you`,
         body: 'Tap to view their profile',
-        data: { fromUserId: String(req.user._id) },
+        // fromUserName/Avatar let the Notification Center show the follower's
+        // avatar + name instead of a generic "+" icon (YYY).
+        data: {
+          fromUserId: String(req.user._id),
+          fromUserName: who,
+          fromUserAvatarUrl: req.user.avatarUrl || '',
+        },
         i18n: {
           en: { title: `${who} is following you`, body: 'Tap to view their profile' },
           zh: { title: `${who} 关注了你`, body: '点击查看TA的主页' },

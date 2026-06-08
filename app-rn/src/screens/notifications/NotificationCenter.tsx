@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
+import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { shortTime } from '../../utils/time';
 import { routeFromPushData } from '../../utils/pushRouter';
@@ -145,9 +146,22 @@ export function NotificationCenter() {
                 { backgroundColor: item.read ? 'transparent' : theme.colors.primarySoft, opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface2 }]}>
-                <Text style={{ fontSize: 20 }}>{EMOJI[item.type] ?? '🔔'}</Text>
-              </View>
+              {/* Person-type notifications (follow/match/dm/room_invite) show the
+                  sender's avatar when the backend included it; everything else
+                  (digests/system) keeps its emoji. Old records without avatar
+                  data fall back to the emoji too. */}
+              {item.data?.fromUserAvatarUrl || item.data?.fromUserName ? (
+                <Avatar
+                  name={String(item.data.fromUserName ?? '')}
+                  uri={item.data.fromUserAvatarUrl || undefined}
+                  avatarIdx={0}
+                  size={40}
+                />
+              ) : (
+                <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface2 }]}>
+                  <Text style={{ fontSize: 20 }}>{EMOJI[item.type] ?? '🔔'}</Text>
+                </View>
+              )}
               {(() => {
                 const loc = localizeNotif(item, t);
                 return (

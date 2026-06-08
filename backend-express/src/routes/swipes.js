@@ -132,7 +132,11 @@ router.post('/', auth, async (req, res, next) => {
           notify(targetUserId, 'match', {
             title: "It's a match! 🎉",
             body: `You matched with ${me.nickname || 'someone'}`,
-            data: { matchId: match._id.toString() },
+            data: {
+              matchId: match._id.toString(),
+              fromUserName: me.nickname || '',
+              fromUserAvatarUrl: me.avatarUrl || '',
+            },
           }).catch(() => { /* never fails the request */ });
         }
 
