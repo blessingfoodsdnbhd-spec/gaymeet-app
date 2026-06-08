@@ -19,7 +19,6 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
-import { useAboutUserSheet } from '../../components/useAboutUserSheet';
 import {
   getComments,
   postComment,
@@ -44,7 +43,6 @@ export function CommentsScreen() {
   const { momentId } = route.params;
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
-  const { openAbout, aboutSheet } = useAboutUserSheet();
 
   const commentsQ = useQuery({
     queryKey: ['moments', 'comments', momentId],
@@ -142,7 +140,10 @@ export function CommentsScreen() {
               />
             )}
             renderItem={({ item }) => (
-              <CommentRow comment={item} onTapAuthor={openAbout} />
+              <CommentRow
+                comment={item}
+                onTapAuthor={(userId) => (nav as any).navigate('UserDetail', { userId })}
+              />
             )}
             ListEmptyComponent={
               <View style={styles.centerFill}>
@@ -197,8 +198,6 @@ export function CommentsScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-
-      {aboutSheet}
     </SafeAreaView>
   );
 }
