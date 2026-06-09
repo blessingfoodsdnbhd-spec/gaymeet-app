@@ -59,6 +59,7 @@ import {
   type ChatThread,
 } from '../../api/chats';
 import { uploadFile } from '../../api/upload';
+import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import {
   on as wsOn,
   emit as wsEmit,
@@ -169,6 +170,7 @@ export function ChatDetailScreen() {
   const [editDraft, setEditDraft] = useState('');
   // Image viewer Modal
   const [viewerImage, setViewerImage] = useState<Message | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null); // VVVV — photo awaiting confirm
   const isPremium = !!(me as any)?.isPremium;
   const setTyping = useChats((s) => s.setTyping);
   // Typing emit debouncer state — tracks the last "I'm typing" we sent so we
@@ -502,8 +504,8 @@ export function ChatDetailScreen() {
       quality: 0.85,
     });
     if (res.canceled) return;
-    sendImageFromUri(res.assets[0].uri);
-  }, [sendImageFromUri, t]);
+    setPendingPhoto(res.assets[0].uri); // VVVV — confirm before sending
+  }, [t]);
 
   const pickGallery = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -518,8 +520,23 @@ export function ChatDetailScreen() {
       quality: 0.85,
     });
     if (res.canceled) return;
-    sendImageFromUri(res.assets[0].uri);
-  }, [sendImageFromUri, t]);
+    setPendingPhoto(res.assets[0].uri); // VVVV — confirm before sending
+  }, [t]);
+
+  // VVVV — staged photo awaiting the preview/confirm modal. On Send we fire the
+  // existing optimistic image send (which shows the sending bubble) and, if a
+  // caption was typed, send it as a follow-up text message.
+  const confirmSendPhoto = useCallback(
+    (caption: string) => {
+      const uri = pendingPhoto;
+      setPendingPhoto(null);
+      if (!uri) return;
+      sendImageFromUri(uri);
+      const c = caption.trim();
+      if (c) sendMut.mutate({ content: c, type: 'text' });
+    },
+    [pendingPhoto, sendImageFromUri, sendMut],
+  );
 
   const shareLocation = useCallback(async () => {
     const perm = await Location.requestForegroundPermissionsAsync();
@@ -1401,6 +1418,14 @@ export function ChatDetailScreen() {
           onClose={() => setViewerImage(null)}
         />
       </Modal>
+
+      {/* VVVV — preview + confirm before a picked photo is actually sent. */}
+      <PhotoConfirmModal
+        uri={pendingPhoto}
+        open={pendingPhoto !== null}
+        onCancel={() => setPendingPhoto(null)}
+        onSend={confirmSendPhoto}
+      />
     </SafeAreaView>
   );
 }

@@ -471,6 +471,7 @@
     }
   },
   "chat": {
+    "photoConfirm": {"captionPlaceholder": "添加说明…", "send": "发送"},
     "composer": {
       "camera": "拍照",
       "gallery": "相簿",

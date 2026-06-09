@@ -471,6 +471,7 @@
     }
   },
   "chat": {
+    "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
     "composer": {
       "camera": "Camera",
       "gallery": "Photo",

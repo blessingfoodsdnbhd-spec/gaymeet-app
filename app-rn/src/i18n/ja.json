@@ -793,6 +793,10 @@
     "reactions": {
       "add": "リアクションを追加",
       "who": "リアクション{{count}}件"
+    },
+    "photoConfirm": {
+      "captionPlaceholder": "キャプションを追加…",
+      "send": "送信"
     }
   },
   "chats": {
