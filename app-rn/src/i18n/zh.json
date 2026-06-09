@@ -581,6 +581,11 @@
     "footnote": "仅显示开启了「附近」的同好"
   },
   "virtualLocation": {
+    "myLocation": "我的虚拟位置",
+    "notSet": "未设置",
+    "reset": "重置",
+    "resetConfirm": "清除虚拟位置并使用真实位置?",
+    "searchPlaceholder": "搜索地址或地点",
     "title": "我的虚拟位置",
     "subtitle": "Premium 功能 — 以其他城市的身份浏览「附近」。",
     "off": "关闭",

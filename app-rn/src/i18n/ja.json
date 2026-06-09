@@ -868,7 +868,12 @@
     "active": "オン",
     "mapHint": "マップをタップして仮想位置を設定",
     "premiumOnly": "プレミアム機能",
-    "failed": "位置を更新できませんでした"
+    "failed": "位置を更新できませんでした",
+    "myLocation": "自分の仮想位置",
+    "notSet": "未設定",
+    "reset": "リセット",
+    "resetConfirm": "仮想位置を消去して実際の位置を使いますか？",
+    "searchPlaceholder": "住所・場所を検索"
   },
   "friends": {
     "tabFollowing": "フォロー中",

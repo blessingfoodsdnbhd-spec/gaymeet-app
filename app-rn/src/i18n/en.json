@@ -581,6 +581,11 @@
     "footnote": "Showing people who allow Nearby"
   },
   "virtualLocation": {
+    "myLocation": "My virtual location",
+    "notSet": "Not set",
+    "reset": "Reset",
+    "resetConfirm": "Clear your virtual location and use your real location?",
+    "searchPlaceholder": "Search address or place",
     "title": "Virtual Location",
     "subtitle": "Premium — browse Nearby as if you were in another city.",
     "off": "Off",

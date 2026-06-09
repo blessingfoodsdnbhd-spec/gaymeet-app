@@ -3,7 +3,7 @@ import { Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../store/auth';
-import { setPrivacy, patchMe } from '../../../api/me';
+import { setPrivacy, patchMe, clearVirtualLocation } from '../../../api/me';
 import { UpgradePremiumSheet } from '../../../components/UpgradePremiumSheet';
 import {
   SettingsShell,
@@ -43,6 +43,34 @@ export function PrivacySettings() {
   const virtualLabel = user?.preferences?.virtualLocationLabel ?? null;
   const virtualActive =
     user?.preferences?.virtualLat != null && user?.preferences?.virtualLng != null;
+
+  const resetVirtual = () => {
+    Alert.alert(t('virtualLocation.reset'), t('virtualLocation.resetConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('virtualLocation.reset'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await clearVirtualLocation();
+            if (user) {
+              setUser({
+                ...user,
+                preferences: {
+                  ...(user.preferences ?? {}),
+                  virtualLat: null,
+                  virtualLng: null,
+                  virtualLocationLabel: null,
+                },
+              });
+            }
+          } catch (e) {
+            reportFailure(e, t('virtualLocation.failed'));
+          }
+        },
+      },
+    ]);
+  };
 
   const flipNearby = async (v: boolean) => {
     setNearbyVisible(v);
@@ -129,14 +157,19 @@ export function PrivacySettings() {
       </SettingsCard>
 
       <SettingsCard flat style={{ paddingVertical: 4 }}>
-        {/* Premium virtual location. Free users → upgrade sheet; Premium → picker. */}
+        {/* Premium virtual location (NNNN) — no on/off toggle: it's always on
+            once a location is set, and unset by Reset. Free → upgrade sheet. */}
         <LinkRow
-          label={t('virtualLocation.title')}
-          detail={
-            virtualActive ? (virtualLabel || t('virtualLocation.active')) : t('virtualLocation.off')
-          }
+          label={t('virtualLocation.myLocation')}
+          detail={virtualActive ? (virtualLabel || t('virtualLocation.active')) : t('virtualLocation.notSet')}
           onPress={() => (isPremium ? nav.navigate('MapPicker') : setUpsellOpen(true))}
         />
+        {virtualActive && (
+          <>
+            <Divider />
+            <LinkRow label={t('virtualLocation.reset')} destructive onPress={resetVirtual} />
+          </>
+        )}
         <Divider />
         <LinkRow label={t('privacySettings.blocklist')} onPress={() => nav.navigate('BlockedList')} />
       </SettingsCard>

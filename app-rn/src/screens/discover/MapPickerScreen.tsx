@@ -1,15 +1,42 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Search } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { setVirtualLocation, clearVirtualLocation } from '../../api/me';
+import { useNominatimSearch } from '../../utils/useNominatimSearch';
+
+// Popular cities for Asian + Western markets (NNNN quick-jump chips).
+const CITY_PRESETS: { flag: string; name: string; lat: number; lng: number }[] = [
+  { flag: '🇲🇾', name: 'KL', lat: 3.139, lng: 101.6869 },
+  { flag: '🇸🇬', name: 'Singapore', lat: 1.3521, lng: 103.8198 },
+  { flag: '🇹🇭', name: 'Bangkok', lat: 13.7563, lng: 100.5018 },
+  { flag: '🇯🇵', name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+  { flag: '🇰🇷', name: 'Seoul', lat: 37.5665, lng: 126.978 },
+  { flag: '🇭🇰', name: 'Hong Kong', lat: 22.3193, lng: 114.1694 },
+  { flag: '🇹🇼', name: 'Taipei', lat: 25.033, lng: 121.5654 },
+  { flag: '🇺🇸', name: 'SF', lat: 37.7749, lng: -122.4194 },
+  { flag: '🇺🇸', name: 'NYC', lat: 40.7128, lng: -74.006 },
+  { flag: '🇬🇧', name: 'London', lat: 51.5074, lng: -0.1278 },
+  { flag: '🇮🇩', name: 'Bali', lat: -8.4095, lng: 115.1889 },
+  { flag: '🇻🇳', name: 'Saigon', lat: 10.8231, lng: 106.6297 },
+];
 
 /**
  * Full-screen map picker for the Premium virtual location (SSS). Uses Leaflet +
@@ -41,6 +68,21 @@ export function MapPickerScreen() {
     lng: startLng,
   });
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const { results, loading: searching } = useNominatimSearch(query);
+
+  // Move the (WebView) map + marker to coords and arm the pin for saving.
+  const goTo = (lat: number, lng: number) => {
+    setPicked({ lat, lng });
+    webRef.current?.injectJavaScript(
+      `try{map.setView([${lat}, ${lng}], 12);marker.setLatLng([${lat}, ${lng}]);}catch(e){};true;`,
+    );
+  };
+  const pickResult = (lat: number, lng: number) => {
+    Keyboard.dismiss();
+    setQuery('');
+    goTo(lat, lng);
+  };
 
   const html = useMemo(
     () => `<!DOCTYPE html><html><head>
@@ -143,6 +185,60 @@ export function MapPickerScreen() {
         </Pressable>
       </View>
 
+      {/* Address/place search (NNNN) — Nominatim, debounced. */}
+      <View style={styles.searchWrap}>
+        <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}>
+          <Search size={16} color={theme.colors.muted} strokeWidth={1.8} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('virtualLocation.searchPlaceholder')}
+            placeholderTextColor={theme.colors.muted}
+            style={{ flex: 1, fontSize: 14, color: theme.colors.text, padding: 0 }}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {searching && <ActivityIndicator size="small" color={theme.colors.muted} />}
+        </View>
+        {results.length > 0 && (
+          <View style={[styles.results, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}>
+            {results.map((r, i) => (
+              <Pressable
+                key={`${r.lat},${r.lng},${i}`}
+                onPress={() => pickResult(r.lat, r.lng)}
+                style={({ pressed }) => [
+                  styles.resultRow,
+                  { borderTopColor: theme.colors.line, opacity: pressed ? 0.6 : 1, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
+                ]}
+              >
+                <Text style={{ fontSize: 13, color: theme.colors.text }} numberOfLines={2}>{r.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Quick city chips. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipRow}
+        keyboardShouldPersistTaps="handled"
+      >
+        {CITY_PRESETS.map((c) => (
+          <Pressable
+            key={c.name}
+            onPress={() => goTo(c.lat, c.lng)}
+            style={({ pressed }) => [
+              styles.cityChip,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Text style={{ fontSize: 13, color: theme.colors.text2 }}>{c.flag} {c.name}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       <Text style={[styles.hint, { color: theme.colors.muted }]}>
         {t('virtualLocation.mapHint')}
       </Text>
@@ -189,6 +285,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     textAlign: 'center',
+  },
+  searchWrap: { paddingHorizontal: 16, paddingTop: 10, zIndex: 10 },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  results: {
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  resultRow: { paddingHorizontal: 12, paddingVertical: 10 },
+  chipRow: { gap: 8, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' },
+  cityChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   footer: {
     alignItems: 'center',
