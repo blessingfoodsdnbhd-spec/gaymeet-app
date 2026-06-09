@@ -209,7 +209,7 @@ export function ProfileScreen() {
 
         {/* Public photos — large 3-col preview (read-only). Tap a photo to
             view; tap 编辑 to manage. */}
-        <SectionHeader title={t('profile.publicPhotosLimit', { count: photos.length })} onEdit={goEdit} editLabel={t('editProfile.title')} />
+        <SectionTitle>{t('profile.publicPhotosLimit', { count: photos.length })}</SectionTitle>
         {photos.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
             {photos.map((url, i) => (
@@ -229,7 +229,7 @@ export function ProfileScreen() {
         )}
 
         {/* Bio preview (read-only). */}
-        <SectionHeader title={t('profile.edit.bio')} onEdit={goEdit} editLabel={t('editProfile.title')} />
+        <SectionTitle>{t('profile.edit.bio')}</SectionTitle>
         <Pressable onPress={goEdit}>
           <Text style={{ color: user.bio ? theme.colors.text : theme.colors.muted, fontSize: 14, lineHeight: 21 }} numberOfLines={4}>
             {user.bio || t('profile.edit.bioPlaceholder')}
@@ -237,7 +237,7 @@ export function ProfileScreen() {
         </Pressable>
 
         {/* Interests (read-only chips). */}
-        <SectionHeader title={t('profile.interestsTitle')} onEdit={goEdit} editLabel={t('editProfile.title')} />
+        <SectionTitle>{t('profile.interestsTitle')}</SectionTitle>
         <Pressable onPress={goEdit} style={styles.tagsRow}>
           {interests.length > 0 ? (
             interests.map((id) => {
@@ -250,7 +250,7 @@ export function ProfileScreen() {
         </Pressable>
 
         {/* Voice intro (read-only play). */}
-        <SectionHeader title={t('profile.voiceIntro.label')} onEdit={goEdit} editLabel={t('editProfile.title')} />
+        <SectionTitle>{t('profile.voiceIntro.label')}</SectionTitle>
         {user.voiceIntroUrl ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: theme.radius.pill, backgroundColor: theme.colors.primarySoft }}>
             <VoicePlayButton url={user.voiceIntroUrl} size={18} color={theme.colors.primaryDeep} />
@@ -379,19 +379,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <Text style={{ fontSize: 12, color: theme.colors.muted, letterSpacing: 0.72, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 }}>
       {children}
     </Text>
-  );
-}
-
-/** Section title with a trailing 编辑 link → EditProfileScreen. */
-function SectionHeader({ title, onEdit, editLabel }: { title: string; onEdit: () => void; editLabel: string }) {
-  const theme = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 24, marginBottom: 12 }}>
-      <Text style={{ fontSize: 12, color: theme.colors.muted, letterSpacing: 0.72, textTransform: 'uppercase' }}>{title}</Text>
-      <Pressable onPress={onEdit} hitSlop={8}>
-        <Text style={{ fontSize: 12.5, color: theme.colors.primary, fontWeight: '600' }}>{editLabel}</Text>
-      </Pressable>
-    </View>
   );
 }
 
