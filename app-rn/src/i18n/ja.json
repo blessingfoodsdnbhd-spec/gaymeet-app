@@ -1,0 +1,110 @@
+{
+  "common": {
+    "back": "戻る",
+    "search": "検索",
+    "close": "閉じる",
+    "settings": "設定",
+    "loading": "読み込み中…",
+    "retry": "再試行",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "ok": "OK"
+  },
+  "tabs": {
+    "discover": "発見",
+    "vote": "投票",
+    "worldChat": "広場",
+    "moments": "モーメント",
+    "chats": "メッセージ",
+    "profile": "自分"
+  },
+  "welcome": {
+    "tagline": "同じものが好きな人と出会おう。",
+    "continueApple": "Appleで続ける",
+    "continueGoogle": "Googleで続ける",
+    "continueEmail": "メールで続ける",
+    "disclaimer": "続けると利用規約とプライバシーポリシーに同意したことになります",
+    "wordmarkSubtitle": "密 友",
+    "appleFailedTitle": "ログイン失敗",
+    "appleFailedRetry": "もう一度お試しください",
+    "appleErrorTitle": "Appleサインインに失敗",
+    "googleErrorTitle": "Googleサインイン"
+  },
+  "onboarding": {
+    "skip": "スキップ",
+    "next": "次へ",
+    "done": "はじめる"
+  },
+  "email": {
+    "title": "メールアドレスは？",
+    "subtitle": "6桁の確認コードを送信します。",
+    "placeholder": "you@example.com",
+    "cta": "コードを送信",
+    "sendFailed": "送信に失敗"
+  },
+  "otp": {
+    "title": "コードを入力",
+    "resend": "{{seconds}}秒後に再送信",
+    "resendCta": "コードを再送信",
+    "resendFailed": "再送信に失敗",
+    "verify": "続ける",
+    "invalid": "コードが正しくありません。もう一度お試しください"
+  },
+  "errors": {
+    "reservedName": "この名前は公式用に予約されています"
+  },
+  "verified": {
+    "tooltip": "認証済みの公式アカウント"
+  },
+  "search": {
+    "placeholder": "ユーザー・投票・ルームを検索",
+    "hintTitle": "Meyouを検索",
+    "hintSubtitle": "ユーザー、投票イベント、チャットルームを探す。",
+    "empty": "「{{q}}」の結果がありません",
+    "tabs": {
+      "users": "ユーザー",
+      "votes": "投票",
+      "rooms": "ルーム"
+    }
+  },
+  "blocked": {
+    "title": "ブロックしたユーザー",
+    "emptyTitle": "ブロックしたユーザーはいません",
+    "emptySubtitle": "ブロックした相手はあなたを見たりメッセージを送ったりできません。",
+    "unblock": "ブロック解除"
+  },
+  "push": {
+    "primeTitle": "通知をオンにしますか？",
+    "primeBody": "フォロー・マッチ・メッセージがあったときにお知らせします。",
+    "primeAllow": "オンにする",
+    "primeLater": "後で"
+  },
+  "editProfile": {
+    "title": "プロフィール編集",
+    "done": "完了"
+  },
+  "discover": {
+    "modeCards": "おすすめ",
+    "modeNearby": "近く",
+    "modeLikedMe": "気になる相手"
+  },
+  "moments": {
+    "compose": {
+      "ephemeral": "24時間後に消える"
+    }
+  },
+  "languageSettings": {
+    "title": "言語"
+  },
+  "profile": {
+    "streak": "🔥 {{n}}日連続ログイン",
+    "settingsTitle": "設定",
+    "rows": {
+      "premium": "プレミアム",
+      "privacy": "プライバシー",
+      "notifications": "通知",
+      "language": "言語",
+      "account": "アカウント"
+    }
+  }
+}

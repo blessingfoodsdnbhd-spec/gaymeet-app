@@ -6,15 +6,24 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { SettingsShell, SettingsCard, Divider } from './SettingsShell';
 
-const OPTIONS: { id: 'zh' | 'en'; label: string; subtitle: string }[] = [
+const OPTIONS: { id: 'zh' | 'en' | 'ko' | 'ja'; label: string; subtitle: string }[] = [
   { id: 'zh', label: '中文', subtitle: 'Chinese' },
   { id: 'en', label: 'English', subtitle: '英文' },
+  { id: 'ko', label: '한국어', subtitle: 'Korean' },
+  { id: 'ja', label: '日本語', subtitle: 'Japanese' },
 ];
 
 export function LanguageSettings() {
   const theme = useTheme();
   const { i18n, t } = useTranslation();
-  const current = i18n.language.startsWith('zh') ? 'zh' : 'en';
+  const lng = i18n.language;
+  const current = lng.startsWith('zh')
+    ? 'zh'
+    : lng.startsWith('ko')
+      ? 'ko'
+      : lng.startsWith('ja')
+        ? 'ja'
+        : 'en';
 
   return (
     <SettingsShell title={t('languageSettings.title')}>

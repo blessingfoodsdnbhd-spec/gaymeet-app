@@ -3,6 +3,8 @@ import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import en from './en.json';
 import zh from './zh.json';
+import ko from './ko.json';
+import ja from './ja.json';
 
 const STORAGE_KEY = 'meyou.lang';
 
@@ -10,6 +12,10 @@ i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
     zh: { translation: zh },
+    // ko/ja are curated for high-visibility strings (I18N1); any missing key
+    // falls back per-key to English via fallbackLng below.
+    ko: { translation: ko },
+    ja: { translation: ja },
   },
   // Bilingual UI in the wild — default to Chinese to match the design copy,
   // user can switch in Settings → 语言 and we'll persist the choice below.
