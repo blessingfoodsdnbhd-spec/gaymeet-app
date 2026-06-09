@@ -20,13 +20,44 @@ import { Card } from '../../components/Card';
 import { useAuth } from '../../store/auth';
 import { setPrompts } from '../../api/me';
 
+// Prompt library (GGGG) — grouped by theme. Users pick any few to display.
+// Keys map to profile.promptsEdit.suggestions.<key> in en/zh.json.
 const SUGGESTED_QUESTION_KEYS = [
+  // 关于我 / About me
+  'recentObsession',
+  'proudOf',
+  'lookingForType',
+  'describeMe',
   'thisWeek',
+  // 找朋友 / Looking for friends
+  'wantToDo',
+  'stickWithHobby',
+  'weekendSpot',
+  'sundayRecharge',
+  // 兴趣 / Interests
+  'recentBook',
+  'favMovie',
+  'mustListen',
   'albumOnRepeat',
-  'idealWeekend',
-  'movieToTalk',
+  'dreamTrip',
   'playingThisMonth',
   'recommendBook',
+  'movieToTalk',
+  'idealWeekend',
+  // 价值观 / Values
+  'believeIn',
+  'afraidOf',
+  'idealLife',
+  'greenFlag',
+  // 创意趣题 / Fun
+  'weirdHabit',
+  'secretSkill',
+  'ifTimeTravel',
+  'twoTruths',
+  'cantLiveWithout',
+  'makesMeLaugh',
+  'comfortFood',
+  'bucketList',
 ] as const;
 
 interface Draft {
