@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   Copy,
   Edit2,
+  Flag,
   Image as ImageIcon,
   MapPin,
   MoreHorizontal,
@@ -114,6 +115,15 @@ function applyReactionToggle(
   return next;
 }
 
+// Normalize a message's senderId to a string id. Defensive: senderId is a
+// string id across all current delivery paths, but a populated {_id,…} object
+// (or ObjectId) from any future path would silently break the `=== me.id`
+// ownership check that gates Edit/Delete (WWWW).
+function senderIdOf(m: any): string {
+  const s = m?.senderId;
+  return s && typeof s === 'object' ? String(s._id ?? s.id ?? '') : String(s ?? '');
+}
+
 export function ChatDetailScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -121,6 +131,8 @@ export function ChatDetailScreen() {
   const route = useRoute<Rt>();
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
+  // My id, tolerant of id vs _id. Drives message ownership (Edit/Delete).
+  const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
 
   const matchId = route.params.chatId; // route param is named chatId but holds matchId
   const storeThread: ChatThread | undefined = useChats((s) =>
@@ -723,19 +735,20 @@ export function ChatDetailScreen() {
   /** Compute which long-press actions to show for a given message. */
   const actionsAvailable = useMemo(() => {
     if (!actionsFor) {
-      return { canEdit: false, canDelete: false };
+      return { mine: false, canEdit: false, canDelete: false };
     }
-    const mine = actionsFor.senderId === me?.id;
+    const mine = !!myId && senderIdOf(actionsFor) === myId;
     const within24h =
       Date.now() - new Date(actionsFor.createdAt).getTime() < 24 * 60 * 60 * 1000;
     return {
+      mine,
       canEdit:
         mine && isPremium && actionsFor.type === 'text' && within24h,
       // Standard messenger UX: anyone can delete their OWN message of any type
       // (text / image / location). No Premium gate.
       canDelete: mine,
     };
-  }, [actionsFor, me, isPremium]);
+  }, [actionsFor, myId, isPremium]);
 
   const onCopyMessage = useCallback(async (msg: Message) => {
     let text = msg.content || '';
@@ -909,7 +922,7 @@ export function ChatDetailScreen() {
                   </Text>
                 );
               }
-              const mine = msg.senderId === me?.id;
+              const mine = !!myId && senderIdOf(msg) === myId;
               const failed = msg.status === 'failed';
               const onLongPress = () => setActionsFor(msg);
 
@@ -1234,6 +1247,27 @@ export function ChatDetailScreen() {
                   const m = actionsFor;
                   setActionsFor(null);
                   onConfirmDelete(m);
+                }}
+              />
+            )}
+            {/* Others' messages — report / block the sender (WWWW). */}
+            {!actionsAvailable.mine && !actionsFor.isSystem && thread && (
+              <ActionRow
+                icon={<Flag size={20} color="#D14B4B" strokeWidth={1.8} />}
+                label={t('chat.message.actions.reportBlock')}
+                labelColor="#D14B4B"
+                onPress={() => {
+                  setActionsFor(null);
+                  showSafetyMenu({
+                    userId: thread.user.id,
+                    userName: thread.user.nickname,
+                    nav,
+                    includeUnmatch: false,
+                    onBlocked: () => {
+                      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+                      nav.goBack();
+                    },
+                  });
                 }}
               />
             )}

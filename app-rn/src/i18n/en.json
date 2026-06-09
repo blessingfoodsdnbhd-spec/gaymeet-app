@@ -506,6 +506,7 @@
       "copied": "Copied",
       "premiumOnly": "Premium feature",
       "actions": {
+        "reportBlock": "Report / Block",
         "edit": "Edit",
         "delete": "Delete",
         "copy": "Copy",

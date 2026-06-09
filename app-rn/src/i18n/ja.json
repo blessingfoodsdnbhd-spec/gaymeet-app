@@ -787,7 +787,8 @@
         "edit": "編集",
         "delete": "削除",
         "copy": "コピー",
-        "cancel": "キャンセル"
+        "cancel": "キャンセル",
+        "reportBlock": "通報 / ブロック"
       }
     },
     "reactions": {
