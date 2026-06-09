@@ -373,6 +373,7 @@
   "discover": {
     "modeCards": "For You",
     "modeNearby": "Nearby",
+    "modeLikedMe": "Likes You",
     "sharedInterests": "{{n}} shared interests",
     "emptyTitle": "That's it for today",
     "emptySubtitle": "You've seen everyone in your wavelength.\nCome back tomorrow 🍵",

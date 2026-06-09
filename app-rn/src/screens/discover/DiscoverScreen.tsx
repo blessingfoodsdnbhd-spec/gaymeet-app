@@ -20,6 +20,7 @@ import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
 import { BoostButton } from './BoostButton';
 import { TopicTabs, type ActiveTab } from './TopicTabs';
+import { LikedMeBody } from '../profile/LikedMeScreen';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { TopicPersonaList } from './TopicPersonaList';
 import { TopicPersonaSheet } from './TopicPersonaSheet';
@@ -368,6 +369,12 @@ export function DiscoverScreen() {
         />
       ) : mode.kind === 'nearby' ? (
         <NearbyBody nearbyQ={nearbyQ} onOpen={(u) => setAboutUser(u)} />
+      ) : mode.kind === 'likedme' ? (
+        // FFFF — "想认识你" rendered inline (shares LikedMeBody with the
+        // standalone screen). Premium gating / blur lives inside the body.
+        <View style={{ flex: 1 }}>
+          <LikedMeBody />
+        </View>
       ) : (
         <TopicPersonaList
           slug={mode.slug}

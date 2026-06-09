@@ -44,6 +44,31 @@ export function LikedMeScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
+        <Pressable onPress={() => nav.goBack()} hitSlop={8}>
+          <ChevronLeft size={26} color={theme.colors.text} />
+        </Pressable>
+        <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
+          {t('likedMe.title')}
+        </Text>
+      </View>
+      <LikedMeBody />
+    </SafeAreaView>
+  );
+}
+
+/**
+ * The "who liked you" list WITHOUT the screen header — so it can be reused both
+ * as the standalone LikedMeScreen and inline as the Discover "想认识你" tab body
+ * (FFFF). Owns its own query, premium gating, sort, and upsell sheet.
+ */
+export function LikedMeBody() {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const nav = useNavigation<Nav>();
   const me = useAuth((s) => s.user);
   const isPremium = !!(me as any)?.isPremium;
   const [upsellOpen, setUpsellOpen] = React.useState(false);
@@ -70,16 +95,7 @@ export function LikedMeScreen() {
   }, [likesQ.data, sortKey, isPremium]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={8}>
-          <ChevronLeft size={26} color={theme.colors.text} />
-        </Pressable>
-        <Text style={{ marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-          {t('likedMe.title')}
-        </Text>
-      </View>
-
+    <>
       {likesQ.isLoading ? (
         <View style={styles.centerFill}>
           <ActivityIndicator color={theme.colors.primary} />
@@ -136,7 +152,7 @@ export function LikedMeScreen() {
         />
       )}
       <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.likes')} />
-    </SafeAreaView>
+    </>
   );
 }
 

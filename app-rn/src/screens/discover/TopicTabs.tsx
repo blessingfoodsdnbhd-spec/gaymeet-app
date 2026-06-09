@@ -16,6 +16,7 @@ import type { Topic } from '../../api/topics';
 export type ActiveTab =
   | { kind: 'cards' }
   | { kind: 'nearby' }
+  | { kind: 'likedme' }
   | { kind: 'topic'; slug: string };
 
 interface Props {
@@ -83,6 +84,11 @@ export function TopicTabs({ topics, active, onChange, locale }: Props) {
           label={t('discover.modeNearby')}
           isActive={active.kind === 'nearby'}
           onPress={() => onChange({ kind: 'nearby' })}
+        />
+        <Pill
+          label={t('discover.modeLikedMe')}
+          isActive={active.kind === 'likedme'}
+          onPress={() => onChange({ kind: 'likedme' })}
         />
         {topics.map((tp) => (
           <Pill

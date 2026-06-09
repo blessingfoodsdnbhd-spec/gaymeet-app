@@ -373,6 +373,7 @@
   "discover": {
     "modeCards": "推荐",
     "modeNearby": "附近",
+    "modeLikedMe": "想认识你",
     "sharedInterests": "{{n}} 个共同兴趣",
     "emptyTitle": "今天就到这儿啦",
     "emptySubtitle": "已经看完了你的同好。\n明天再回来看看 🍵",
