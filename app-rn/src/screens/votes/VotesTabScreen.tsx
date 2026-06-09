@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { TopBar, IconButton } from '../../components/TopBar';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
@@ -68,14 +69,14 @@ export function VotesTabScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={{ flex: 1, fontSize: 20, fontWeight: '800', color: theme.colors.text }}>
-          {t('votes.listTitle')}
-        </Text>
-        <Pressable onPress={() => nav.navigate('CreateVote')} hitSlop={8}>
-          <Plus size={26} color={theme.colors.primary} strokeWidth={2.2} />
-        </Pressable>
-      </View>
+      <TopBar
+        title={t('tabs.vote')}
+        right={
+          <IconButton onPress={() => nav.navigate('CreateVote')}>
+            <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
+          </IconButton>
+        }
+      />
 
       <View style={{ gap: 8, paddingBottom: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>

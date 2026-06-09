@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { TopBar } from '../../components/TopBar';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { getWorldChatRooms, type WorldChatRoom } from '../../api/worldChat';
@@ -71,12 +72,10 @@ export function WorldChatRoomsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.text }}>{t('worldChat.rooms.title')}</Text>
-        <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-          🌍 {t('worldChat.online', { n: totalOnline })}
-        </Text>
-      </View>
+      <TopBar
+        title={t('tabs.worldChat')}
+        subtitle={`🌍 ${t('worldChat.online', { n: totalOnline })}`}
+      />
 
       <View style={{ paddingHorizontal: 20, paddingBottom: 6 }}>
         <View style={[styles.searchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}>

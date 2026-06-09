@@ -4,12 +4,13 @@ import { useTheme } from '../theme/ThemeProvider';
 
 interface Props {
   title?: string;
+  subtitle?: string; // small muted line under the title (e.g. Plaza online count)
   left?: React.ReactNode;
   right?: React.ReactNode;
   center?: React.ReactNode; // overrides title when present
 }
 
-export function TopBar({ title, left, right, center }: Props) {
+export function TopBar({ title, subtitle, left, right, center }: Props) {
   const theme = useTheme();
   return (
     <View
@@ -25,17 +26,26 @@ export function TopBar({ title, left, right, center }: Props) {
       <View style={{ flex: 1, alignItems: center ? 'center' : 'flex-start', paddingLeft: center ? 0 : 4 }}>
         {center
           ? center
-          : title && (
-              <Text
-                style={{
-                  fontSize: theme.typography.size.h1,
-                  fontWeight: theme.typography.weight.bold,
-                  color: theme.colors.text,
-                  letterSpacing: -0.4,
-                }}
-              >
-                {title}
-              </Text>
+          : (title || subtitle) && (
+              <View>
+                {title && (
+                  <Text
+                    style={{
+                      fontSize: theme.typography.size.h1,
+                      fontWeight: theme.typography.weight.bold,
+                      color: theme.colors.text,
+                      letterSpacing: -0.4,
+                    }}
+                  >
+                    {title}
+                  </Text>
+                )}
+                {subtitle && (
+                  <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+                    {subtitle}
+                  </Text>
+                )}
+              </View>
             )}
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>{right}</View>

@@ -614,6 +614,7 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <TopBar
+        title={t('tabs.profile')}
         right={
           <>
             <IconButton onPress={() => nav.navigate('NotificationCenter')}>

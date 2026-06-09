@@ -312,8 +312,7 @@ export function DiscoverScreen() {
         </View>
       )}
       <TopBar
-        center={null}
-        left={null}
+        title={t('tabs.discover')}
         right={
           <>
             <IconButton onPress={runSearch}>
