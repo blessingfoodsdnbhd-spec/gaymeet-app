@@ -125,6 +125,10 @@
     "primeAllow": "Turn on",
     "primeLater": "Not now"
   },
+  "editProfile": {
+    "title": "Edit Profile",
+    "done": "Done"
+  },
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",
@@ -689,7 +693,8 @@
       "changeAvatar": "Change avatar",
       "nickname": "Nickname",
       "bio": "Bio",
-      "bioPlaceholder": "A line or two about you",
+      "addPhotosHint": "Add photos to your profile",
+    "bioPlaceholder": "A line or two about you",
       "age": "Age",
       "dob": "Date of birth",
       "dobHint": "YYYY-MM-DD",

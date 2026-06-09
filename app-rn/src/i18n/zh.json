@@ -125,6 +125,10 @@
     "primeAllow": "开启",
     "primeLater": "暂不"
   },
+  "editProfile": {
+    "title": "编辑资料",
+    "done": "完成"
+  },
   "blocked": {
     "title": "已屏蔽用户",
     "emptyTitle": "没有已屏蔽的用户",
@@ -689,7 +693,8 @@
       "changeAvatar": "更换头像",
       "nickname": "昵称",
       "bio": "简介",
-      "bioPlaceholder": "一两句介绍自己",
+      "addPhotosHint": "添加照片到你的资料",
+    "bioPlaceholder": "一两句介绍自己",
       "age": "年龄",
       "dob": "出生日期",
       "dobHint": "YYYY-MM-DD",
