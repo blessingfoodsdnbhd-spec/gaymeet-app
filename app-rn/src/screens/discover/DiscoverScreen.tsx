@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Heart, Search, SlidersHorizontal, Send, Star, Volume2, VolumeX, X } from 'lucide-react-native';
+import { Crown, Heart, MapPin, Search, SlidersHorizontal, Send, Star, Volume2, VolumeX, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -64,6 +64,9 @@ export function DiscoverScreen() {
   const { t, i18n } = useTranslation();
   const locale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
   const me = useAuth((s) => s.user);
+  // Virtual-location active = coords set (drives the header MapPin color, QQQQ).
+  const virtualActive =
+    me?.preferences?.virtualLat != null && me?.preferences?.virtualLng != null;
   const queryClient = useQueryClient();
   const nav = useNavigation<Nav>();
   const introVoice = useDiscoverPrefs((s) => s.introVoice);
@@ -322,6 +325,16 @@ export function DiscoverScreen() {
                 pull-to-refresh; see follow-up note in the SEARCH1 commit. */}
             <IconButton onPress={() => nav.navigate('Search')}>
               <Search size={18} color={theme.colors.text} strokeWidth={1.6} />
+            </IconButton>
+            {/* QQQQ — virtual location: pink/filled when active, gray when off.
+                Tap → MapPicker for everyone (Save is premium-gated there). */}
+            <IconButton onPress={() => nav.navigate('MapPicker')}>
+              <MapPin
+                size={18}
+                color={virtualActive ? theme.colors.primary : theme.colors.muted}
+                fill={virtualActive ? theme.colors.primary : 'transparent'}
+                strokeWidth={virtualActive ? 2 : 1.6}
+              />
             </IconButton>
             {/* 🔊 介绍声音 — when on, opening a profile auto-plays their voice intro. */}
             <IconButton onPress={() => setIntroVoice(!introVoice)}>
