@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pencil } from 'lucide-react-native';
+import { Pencil, Lock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -18,9 +18,12 @@ interface Props {
   /** Optional label for the location pill. If omitted, the pill is hidden
    *  rather than showing a misleading hardcoded value. */
   cityLabel?: string;
+  /** Override the top-right count text (e.g. the 想认识你 tab — JJJJ). Defaults
+   *  to the "N people nearby" label. */
+  countLabel?: string;
 }
 
-export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
+export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<any>();
@@ -107,7 +110,7 @@ export function NearbyGrid({ users, onOpen, cityLabel }: Props) {
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Text style={{ fontSize: 12, color: theme.colors.muted }}>
-            {t('nearby.peopleCount', { n: users.length })}
+            {countLabel ?? t('nearby.peopleCount', { n: users.length })}
           </Text>
           {/* Column chooser: 2 / 3 / 4 — persisted via discoverPrefs. */}
           <View style={[styles.colChooser, { borderColor: theme.colors.line }]}>
@@ -186,6 +189,9 @@ function Tile({
   const [a, b] = avatarGradients[(user.avatarIdx ?? 0) % avatarGradients.length];
   const initial = (user.nickname || '?').trim().charAt(0).toUpperCase();
   const hasPhoto = !!user.avatarUrl;
+  // Blurred tiles = locked-behind-Premium likers (JJJJ). Heavy blur + a lock
+  // veil so free users see "someone liked you" without the identity.
+  const blurred = (user as any).isBlurred === true;
 
   return (
     <Pressable
@@ -203,6 +209,7 @@ function Tile({
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             transition={120}
+            blurRadius={blurred ? 28 : 0}
           />
         ) : (
           <LinearGradient
@@ -211,11 +218,17 @@ function Tile({
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           >
-            <Text style={styles.tileInitial}>{initial}</Text>
+            {!blurred && <Text style={styles.tileInitial}>{initial}</Text>}
           </LinearGradient>
         )}
 
-        {user.isOnline && <View style={styles.onlineDot} />}
+        {blurred && (
+          <View style={[StyleSheet.absoluteFill, styles.lockVeil]}>
+            <Lock size={22} color="#FFFFFF" strokeWidth={2} />
+          </View>
+        )}
+
+        {!blurred && user.isOnline && <View style={styles.onlineDot} />}
 
         <LinearGradient
           colors={['rgba(20,10,5,0)', 'rgba(20,10,5,0.65)']}
@@ -273,6 +286,11 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     letterSpacing: -2,
     lineHeight: 90,
+  },
+  lockVeil: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(40,28,52,0.32)',
   },
   onlineDot: {
     position: 'absolute',
