@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pencil, Lock } from 'lucide-react-native';
+import { Lock, MapPin } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -60,55 +60,38 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.cityRow}>
-        {virtualActive ? (
+        {/* QQQQ — compact virtual-location icon button (was a verbose pill).
+            Colored + filled when a virtual location is active, gray otherwise.
+            Tap → MapPicker for everyone (premium gating is enforced on Save). */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
           <Pressable
             onPress={() => nav.navigate('MapPicker')}
-            hitSlop={6}
+            hitSlop={8}
+            accessibilityLabel={t('virtualLocation.title')}
             style={{
-              flexDirection: 'row',
+              width: 34,
+              height: 34,
+              borderRadius: 17,
               alignItems: 'center',
-              gap: 6,
-              flexShrink: 1, // long city names truncate instead of crowding the count (OOOO)
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 999,
-              backgroundColor: theme.colors.primarySoft,
+              justifyContent: 'center',
+              backgroundColor: virtualActive ? theme.colors.primarySoft : 'transparent',
               borderWidth: 1,
-              borderColor: theme.colors.primary,
+              borderColor: virtualActive ? theme.colors.primary : theme.colors.line,
             }}
           >
-            <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12.5, color: theme.colors.primaryDeep }}>
-              📍 {t('virtualLocation.indicator', { city: virtualLabel || t('virtualLocation.active') })}
-            </Text>
-            <Pencil size={12} color={theme.colors.primaryDeep} strokeWidth={2} />
-          </Pressable>
-        ) : cityLabel ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 999,
-              backgroundColor: theme.colors.surface,
-              borderWidth: 1,
-              borderColor: theme.colors.line,
-            }}
-          >
-            <View
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: 4,
-                backgroundColor: theme.colors.online,
-              }}
+            <MapPin
+              size={18}
+              color={virtualActive ? theme.colors.primary : theme.colors.muted}
+              fill={virtualActive ? theme.colors.primary : 'transparent'}
+              strokeWidth={2}
             />
-            <Text style={{ fontSize: 12.5, color: theme.colors.text2 }}>{cityLabel}</Text>
-          </View>
-        ) : (
-          <View />
-        )}
+          </Pressable>
+          {cityLabel && !virtualActive ? (
+            <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12.5, color: theme.colors.text2 }}>
+              {cityLabel}
+            </Text>
+          ) : null}
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <Text style={{ fontSize: 12, color: theme.colors.muted }}>
             {countLabel ?? t('nearby.peopleCount', { n: users.length })}

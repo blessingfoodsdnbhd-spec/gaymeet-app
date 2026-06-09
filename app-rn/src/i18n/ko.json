@@ -873,7 +873,8 @@
     "notSet": "미설정",
     "reset": "초기화",
     "resetConfirm": "가상 위치를 지우고 실제 위치를 사용할까요?",
-    "searchPlaceholder": "주소·장소 검색"
+    "searchPlaceholder": "주소·장소 검색",
+    "unlockPremium": "프리미엄으로 잠금 해제"
   },
   "friends": {
     "tabFollowing": "팔로잉",

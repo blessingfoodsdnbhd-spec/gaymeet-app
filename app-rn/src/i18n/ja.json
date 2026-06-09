@@ -873,7 +873,8 @@
     "notSet": "未設定",
     "reset": "リセット",
     "resetConfirm": "仮想位置を消去して実際の位置を使いますか？",
-    "searchPlaceholder": "住所・場所を検索"
+    "searchPlaceholder": "住所・場所を検索",
+    "unlockPremium": "プレミアムで解放"
   },
   "friends": {
     "tabFollowing": "フォロー中",

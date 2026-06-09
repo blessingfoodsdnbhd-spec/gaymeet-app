@@ -581,6 +581,7 @@
     "footnote": "仅显示开启了「附近」的同好"
   },
   "virtualLocation": {
+    "unlockPremium": "升级 Premium 解锁",
     "myLocation": "我的虚拟位置",
     "notSet": "未设置",
     "reset": "重置",

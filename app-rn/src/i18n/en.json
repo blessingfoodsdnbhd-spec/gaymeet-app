@@ -581,6 +581,7 @@
     "footnote": "Showing people who allow Nearby"
   },
   "virtualLocation": {
+    "unlockPremium": "Unlock with Premium",
     "myLocation": "My virtual location",
     "notSet": "Not set",
     "reset": "Reset",

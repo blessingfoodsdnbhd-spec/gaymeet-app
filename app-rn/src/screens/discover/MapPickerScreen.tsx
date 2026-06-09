@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { ChevronLeft, Search } from 'lucide-react-native';
+import { ChevronLeft, Search, Crown } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { setVirtualLocation, clearVirtualLocation } from '../../api/me';
 import { useNominatimSearch } from '../../utils/useNominatimSearch';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 
 // Popular cities for Asian + Western markets (NNNN quick-jump chips).
 const CITY_PRESETS: { flag: string; name: string; lat: number; lng: number }[] = [
@@ -79,6 +80,10 @@ export function MapPickerScreen() {
     lng: startLng,
   });
   const [busy, setBusy] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  // toPublicJSON folds vipLevel into isPremium. Free users can browse/search the
+  // map but can't Save — the Save button upsells instead (QQQQ).
+  const isPremium = !!(user as any)?.isPremium;
   const [query, setQuery] = useState('');
   const { results, loading: searching } = useNominatimSearch(query);
 
@@ -187,13 +192,20 @@ export function MapPickerScreen() {
         <Text style={{ flex: 1, marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {t('virtualLocation.title')}
         </Text>
-        <Pressable onPress={onSave} disabled={busy} hitSlop={8}>
+        <Pressable onPress={isPremium ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={8}>
           {busy ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
-          ) : (
+          ) : isPremium ? (
             <Text style={{ color: theme.colors.primary, fontSize: 15, fontWeight: '600' }}>
               {t('common.save')}
             </Text>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Crown size={14} color={theme.colors.primaryDeep} strokeWidth={2} />
+              <Text style={{ color: theme.colors.primaryDeep, fontSize: 14, fontWeight: '700' }}>
+                {t('virtualLocation.unlockPremium')}
+              </Text>
+            </View>
           )}
         </Pressable>
       </View>
@@ -274,13 +286,23 @@ export function MapPickerScreen() {
         }}
       />
 
-      <View style={[styles.footer, { borderTopColor: theme.colors.line }]}>
-        <Pressable onPress={onClear} disabled={busy} hitSlop={6}>
-          <Text style={{ color: theme.colors.danger ?? '#D14B4B', fontSize: 14, fontWeight: '600' }}>
-            {t('virtualLocation.revert')}
-          </Text>
-        </Pressable>
-      </View>
+      {/* Free users get the revert link only when they actually have a virtual
+          location set (they can't have set one, but premium-lapsed users might). */}
+      {(isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
+        <View style={[styles.footer, { borderTopColor: theme.colors.line }]}>
+          <Pressable onPress={onClear} disabled={busy} hitSlop={6}>
+            <Text style={{ color: theme.colors.danger ?? '#D14B4B', fontSize: 14, fontWeight: '600' }}>
+              {t('virtualLocation.revert')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      <UpgradePremiumSheet
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        reason={t('virtualLocation.subtitle')}
+      />
     </SafeAreaView>
   );
 }
