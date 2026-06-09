@@ -64,6 +64,8 @@ export interface User {
   isOfficial?: boolean;
   isPremium?: boolean;
   premiumExpiresAt?: string | null;
+  /** Daily-login streak (STREAK1). */
+  streak?: { current: number; longest: number; lastActiveDate: string | null };
   isBoosted?: boolean;
   boostExpiresAt?: string | null;
   /** Count of the user's locked photos. Backend strips the actual URLs

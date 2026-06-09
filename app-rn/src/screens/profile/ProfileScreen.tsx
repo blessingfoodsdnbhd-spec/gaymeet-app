@@ -173,6 +173,11 @@ export function ProfileScreen() {
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
             containerStyle={{ marginTop: 12 }}
           />
+          {(user.streak?.current ?? 0) > 0 && (
+            <Text style={{ marginTop: 6, fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>
+              {t('profile.streak', { n: user.streak!.current })}
+            </Text>
+          )}
           {!official && <View style={{ height: 12 }} />}
           <Pressable
             onPress={goEdit}

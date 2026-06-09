@@ -32,6 +32,10 @@ async function auth(req, res, next) {
     User.updateOne({ _id: user._id }, { $set: { lastActiveAt: new Date() } }).catch(() => {});
   }
 
+  // Daily-login streak (STREAK1) — fire-and-forget; writes at most once/day and
+  // never throws, so it can't slow or break the request.
+  require('../utils/streak').touchStreak(user).catch(() => {});
+
   next();
 }
 

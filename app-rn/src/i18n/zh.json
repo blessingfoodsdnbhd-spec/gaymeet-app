@@ -678,6 +678,7 @@
     "promptsTitle": "个人答题",
     "promptsEmpty": "添加 prompt 让人更了解你",
     "promptsAdd": "+ 添加问题",
+    "streak": "🔥 连续登录 {{n}} 天",
     "settingsTitle": "设置",
     "rows": {
       "premium": "Premium 会员",

@@ -100,6 +100,14 @@ const userSchema = new mongoose.Schema(
     lastActiveAt: { type: Date, default: Date.now },
     isOnline: { type: Boolean, default: false },
 
+    // Daily-login streak (STREAK1). lastActiveDate is a UTC YYYY-MM-DD string;
+    // updated once per day by the auth middleware via utils/streak.touchStreak.
+    streak: {
+      current: { type: Number, default: 0 },
+      longest: { type: Number, default: 0 },
+      lastActiveDate: { type: String, default: null },
+    },
+
     // Premium
     isPremium: { type: Boolean, default: false },
     premiumExpiresAt: { type: Date, default: null },
@@ -310,6 +318,7 @@ const SELF_ONLY_FIELDS = [
   'dailyEnergySends', 'dailyEnergySendsDate',
   'ownedStickerPacks', 'totalExpReceived', 'referralCode', 'referralCount',
   'isDeleted', 'deletedAt', 'deleteScheduledAt',
+  'streak', // daily-login streak (STREAK1) — shown on own profile only
 ];
 
 // Preference keys safe to show to other users (display hints only). The full

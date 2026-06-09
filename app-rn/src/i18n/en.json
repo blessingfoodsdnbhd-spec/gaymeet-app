@@ -678,6 +678,7 @@
     "promptsTitle": "Prompts",
     "promptsEmpty": "Add a prompt so people get to know you",
     "promptsAdd": "+ Add prompt",
+    "streak": "🔥 {{n}}-day login streak",
     "settingsTitle": "Settings",
     "rows": {
       "premium": "Premium",
