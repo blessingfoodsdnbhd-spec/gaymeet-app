@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy, patchMe, clearVirtualLocation } from '../../../api/me';
 import { UpgradePremiumSheet } from '../../../components/UpgradePremiumSheet';
@@ -25,6 +26,7 @@ export function PrivacySettings() {
   const nav = useNavigation<any>();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
+  const queryClient = useQueryClient();
 
   // Optimistic local state — invert hideFromNearby into "visible".
   const [nearbyVisible, setNearbyVisible] = useState(
@@ -64,6 +66,8 @@ export function PrivacySettings() {
                 },
               });
             }
+            // Refresh Discover/Nearby to the real location (PPPP).
+            queryClient.invalidateQueries({ queryKey: ['discover'] });
           } catch (e) {
             reportFailure(e, t('virtualLocation.failed'));
           }

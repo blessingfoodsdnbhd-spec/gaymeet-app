@@ -16,6 +16,7 @@ import * as Location from 'expo-location';
 import { ChevronLeft, Search } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
@@ -50,7 +51,17 @@ export function MapPickerScreen() {
   const nav = useNavigation<any>();
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
+  const queryClient = useQueryClient();
   const webRef = useRef<WebView>(null);
+
+  // After the virtual location changes, the Discover/Nearby results are computed
+  // server-side from the new origin (resolveOrigin) — but the nearby query key
+  // doesn't include the coords, so it won't refetch on its own. Invalidate it so
+  // the grid refreshes to the new location automatically (PPPP).
+  const refreshDiscover = () => {
+    queryClient.invalidateQueries({ queryKey: ['discover'] });
+    queryClient.invalidateQueries({ queryKey: ['users', 'me-self'] });
+  };
 
   const prefs = user?.preferences;
   // Centre on the current virtual location if set, else KL (the user can pan).
@@ -128,6 +139,7 @@ export function MapPickerScreen() {
           },
         });
       }
+      refreshDiscover();
       nav.goBack();
     } catch (e: any) {
       const code = e?.response?.data?.code;
@@ -157,6 +169,7 @@ export function MapPickerScreen() {
           },
         });
       }
+      refreshDiscover();
       nav.goBack();
     } catch {
       // best-effort

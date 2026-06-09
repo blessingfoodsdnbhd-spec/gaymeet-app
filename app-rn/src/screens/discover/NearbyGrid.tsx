@@ -68,6 +68,7 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,
+              flexShrink: 1, // long city names truncate instead of crowding the count (OOOO)
               paddingHorizontal: 12,
               paddingVertical: 7,
               borderRadius: 999,
@@ -76,7 +77,7 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
               borderColor: theme.colors.primary,
             }}
           >
-            <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
+            <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12.5, color: theme.colors.primaryDeep }}>
               📍 {t('virtualLocation.indicator', { city: virtualLabel || t('virtualLocation.active') })}
             </Text>
             <Pencil size={12} color={theme.colors.primaryDeep} strokeWidth={2} />
@@ -108,7 +109,7 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
         ) : (
           <View />
         )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <Text style={{ fontSize: 12, color: theme.colors.muted }}>
             {countLabel ?? t('nearby.peopleCount', { n: users.length })}
           </Text>
@@ -249,6 +250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12, // keep the virtual-location pill off the count text (OOOO)
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
