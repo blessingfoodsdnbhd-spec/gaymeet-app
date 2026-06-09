@@ -166,6 +166,13 @@ export const openConversation = (otherUserId: string) =>
     api.post(`/conversations/open/${otherUserId}`),
   );
 
+/** Whether the current user is already matched (同频) with another user, and
+ *  the matchId if so — drives the AboutUserSheet 已同频 state (HHHH). */
+export const getMatchStatus = (otherUserId: string) =>
+  api
+    .get(`/matches/with/${otherUserId}`)
+    .then((r) => ((r.data?.data ?? r.data) as { matched: boolean; matchId: string | null }));
+
 /** Unmatch — tombstones the Match on the server; both sides receive
  *  a `match:removed` WS event. */
 export const deleteConversation = (matchId: string) =>

@@ -40,6 +40,22 @@ router.get('/', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/matches/with/:userId — am I matched with this user? ──────────────
+// Two-segment literal-prefixed path ("with") so it never collides with
+// /:matchId/messages. Drives the AboutUserSheet "成为同频" → "已同频" state so
+// it persists across re-opens (HHHH).
+router.get('/with/:userId', auth, async (req, res, next) => {
+  try {
+    const match = await Match.findOne({
+      users: { $all: [req.user._id, req.params.userId] },
+      isActive: true,
+    }).lean();
+    ok(res, { matched: !!match, matchId: match ? String(match._id) : null });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/matches/:matchId/messages ────────────────────────────────────────
 router.get('/:matchId/messages', auth, async (req, res, next) => {
   try {

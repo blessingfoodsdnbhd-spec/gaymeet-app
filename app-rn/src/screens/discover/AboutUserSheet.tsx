@@ -30,7 +30,7 @@ import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
-import { openConversation } from '../../api/chats';
+import { openConversation, getMatchStatus } from '../../api/chats';
 import { getMe, logProfileView } from '../../api/me';
 import {
   getPrivatePhotos,
@@ -186,6 +186,26 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     staleTime: 30_000,
   });
   const isAlreadyFollowing = !!followQ.data?.following;
+
+  // Whether I'm already matched (同频) with this user. Refetches on each open
+  // (no staleTime) so the button reflects a match created moments ago and
+  // stays "已同频" across re-opens (HHHH).
+  const matchQ = useQuery({
+    queryKey: ['match', user?.id],
+    queryFn: () => getMatchStatus(user!.id),
+    enabled: open && !!user && !isSelf,
+  });
+  const isMatched = !!matchQ.data?.matched;
+
+  const onOpenMatchChat = () => {
+    const mid = matchQ.data?.matchId;
+    if (mid) {
+      onClose();
+      nav.navigate('ChatDetail', { chatId: mid });
+    } else {
+      onMessage(); // fallback: resolve/open the conversation
+    }
+  };
 
   const followMut = useMutation({
     mutationFn: () => toggleFollow(user!.id),
@@ -627,21 +647,26 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               busy={followMut.isPending || followQ.isLoading}
               onPress={onFollow}
             />
-            <PrimaryLikeAction
-              label={
-                liked
-                  ? t('about.liked')
-                  : user.likedByThem
-                    ? t('about.becomeMatch')
-                    : t('about.like')
-              }
-              done={liked}
-              onPress={() => {
-                if (liked) return;
-                setLiked(true);
-                onLike();
-              }}
-            />
+            {isMatched ? (
+              // Already 同频 — solid pink (vs the gradient Like) + tap → chat.
+              <MatchedAction label={t('about.matched')} onPress={onOpenMatchChat} />
+            ) : (
+              <PrimaryLikeAction
+                label={
+                  liked
+                    ? t('about.liked')
+                    : user.likedByThem
+                      ? t('about.becomeMatch')
+                      : t('about.like')
+                }
+                done={liked}
+                onPress={() => {
+                  if (liked) return;
+                  setLiked(true);
+                  onLike();
+                }}
+              />
+            )}
             {isPremium && (
               <SecondaryAction
                 icon={<MessageCircle size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
@@ -702,6 +727,28 @@ function SecondaryAction({
       >
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+/** "已同频" — solid-pink primary action (distinct from the gradient Like and the
+ *  greyed one-way "已喜欢"), tappable to open the existing chat (HHHH). */
+function MatchedAction({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.primaryBtn,
+        { opacity: pressed ? 0.88 : 1, transform: pressed ? [{ scale: 0.98 }] : [] },
+      ]}
+    >
+      <View style={[styles.primaryInner, { backgroundColor: theme.colors.primary }]}>
+        <Heart size={18} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
+        <Text numberOfLines={1} style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', marginTop: 6 }}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
