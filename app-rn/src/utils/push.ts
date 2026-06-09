@@ -22,6 +22,31 @@ import { queryClient } from '../api/queryClient';
  * (setNotificationHandler, Android channel), since RNFirebase doesn't
  * auto-display incoming pushes when the app is foregrounded.
  */
+/**
+ * Read the current push-permission status WITHOUT triggering the OS prompt.
+ * Lets the app decide whether to show a priming explainer (undetermined),
+ * silently refresh the token (granted), or do nothing (denied). See PUSH1 —
+ * we defer the first permission request until the user is past onboarding.
+ */
+export async function getPushPermissionStatus(): Promise<'granted' | 'denied' | 'undetermined'> {
+  if (!Device.isDevice) return 'denied';
+  if (Platform.OS === 'ios') {
+    const s = await messaging().hasPermission();
+    if (
+      s === messaging.AuthorizationStatus.AUTHORIZED ||
+      s === messaging.AuthorizationStatus.PROVISIONAL
+    ) {
+      return 'granted';
+    }
+    if (s === messaging.AuthorizationStatus.NOT_DETERMINED) return 'undetermined';
+    return 'denied';
+  }
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status === 'granted') return 'granted';
+  if (status === 'undetermined') return 'undetermined';
+  return 'denied';
+}
+
 export async function registerPushToken(): Promise<string | null> {
   if (!Device.isDevice) return null; // simulators don't get push tokens
 

@@ -119,6 +119,12 @@
   "verified": {
     "tooltip": "已验证的官方账号"
   },
+  "push": {
+    "primeTitle": "想接收通知吗?",
+    "primeBody": "有人关注你、与你配对或给你发消息时第一时间提醒你。",
+    "primeAllow": "开启",
+    "primeLater": "暂不"
+  },
   "blocked": {
     "title": "已屏蔽用户",
     "emptyTitle": "没有已屏蔽的用户",

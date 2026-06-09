@@ -89,11 +89,11 @@ export const useAuth = create<AuthState>((set) => ({
     await clearSessionCaches();
     await setTokens(access, refresh);
     set({ user });
-    // Register push token in the background — see utils/push.ts.
-    // Imported lazily to avoid a circular dep at module-evaluation time.
-    import('../utils/push')
-      .then(({ registerPushToken }) => registerPushToken().catch(() => {}))
-      .catch(() => {});
+    // Push registration is NO LONGER triggered here (PUSH1): firing it at
+    // sign-in shows the OS permission prompt before a new user has even
+    // finished onboarding. MainTabs now drives it — silently refreshing the
+    // token when permission is already granted, or showing a priming explainer
+    // (once) after the user reaches the app proper. See navigation/MainTabs.tsx.
     // Sync the current UI language to the backend so push notifications are
     // localized (best-effort; lazy import to avoid a module-load cycle).
     import('../api/me')

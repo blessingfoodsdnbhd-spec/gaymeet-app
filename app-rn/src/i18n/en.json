@@ -119,6 +119,12 @@
   "verified": {
     "tooltip": "Verified official account"
   },
+  "push": {
+    "primeTitle": "Turn on notifications?",
+    "primeBody": "Get notified when someone follows you, matches with you, or sends a message.",
+    "primeAllow": "Turn on",
+    "primeLater": "Not now"
+  },
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",

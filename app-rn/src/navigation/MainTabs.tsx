@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Compass, Globe, MessageCircle, Newspaper, Trophy, User } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,46 @@ export function MainTabs() {
   useEffect(() => {
     if (landProfile) clearLandProfile();
   }, [landProfile, clearLandProfile]);
+
+  // PUSH1 — deferred push permission. MainTabs only mounts once the user is in
+  // the app proper (signed in AND past onboarding), so this is the right place
+  // to ask. If permission is already granted we just refresh the token
+  // silently; if it's undetermined we show a one-time priming explainer before
+  // the real OS prompt (asking in context lifts opt-in vs. a cold launch
+  // prompt). If they declined, we don't nag — NotificationSettings re-enables.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { getPushPermissionStatus, registerPushToken } = await import('../utils/push');
+      const status = await getPushPermissionStatus();
+      if (cancelled) return;
+      if (status === 'granted') {
+        registerPushToken().catch(() => {});
+        return;
+      }
+      if (status !== 'undetermined') return; // denied → leave it to Settings
+      const PRIMED_KEY = 'meyou.pushPrimed.v1';
+      const primed = await AsyncStorage.getItem(PRIMED_KEY);
+      if (cancelled || primed) return;
+      Alert.alert(t('push.primeTitle'), t('push.primeBody'), [
+        {
+          text: t('push.primeLater'),
+          style: 'cancel',
+          onPress: () => AsyncStorage.setItem(PRIMED_KEY, '1').catch(() => {}),
+        },
+        {
+          text: t('push.primeAllow'),
+          onPress: () => {
+            AsyncStorage.setItem(PRIMED_KEY, '1').catch(() => {});
+            registerPushToken().catch(() => {});
+          },
+        },
+      ]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   // Total unread for the Messages tab badge. Reuses the SAME ['chats','list']
   // query as ChatsListScreen (React Query dedupes by key) — ChatDetailScreen
