@@ -24,11 +24,18 @@ const momentSchema = new mongoose.Schema(
       default: 'public',
     },
     isActive: { type: Boolean, default: true },
+    // Ephemeral "24h story" moments (STORY1). null = permanent. Past expiry is
+    // hidden from feeds and swept by the cleanup job.
+    expiresAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 momentSchema.index({ user: 1, createdAt: -1 });
 momentSchema.index({ createdAt: -1, visibility: 1, isActive: 1 });
+// TTL "cron" (STORY1): MongoDB auto-deletes a moment ~60s after expiresAt.
+// Docs with expiresAt null/absent (permanent) are ignored by the TTL monitor.
+// Note: this purges the DB row only — orphaned B2 images are a follow-up.
+momentSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Moment', momentSchema);

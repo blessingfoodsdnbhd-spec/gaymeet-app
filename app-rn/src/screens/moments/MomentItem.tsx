@@ -112,6 +112,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
           <Text style={{ color: theme.colors.muted, fontSize: 11.5, marginTop: 2 }}>
             {shortTime(moment.createdAt)}
             {moment.user.countryCode ? ` · ${moment.user.countryCode}` : ''}
+            {moment.expiresAt ? ' · ⏰' : ''}
           </Text>
         </View>
         <Pressable hitSlop={8} onPress={onMore}>

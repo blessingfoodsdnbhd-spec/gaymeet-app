@@ -28,6 +28,8 @@ export interface Moment {
   isLiked: boolean;
   commentCount?: number;
   createdAt: string;
+  /** Set when this is an ephemeral 24h moment (STORY1). */
+  expiresAt?: string | null;
   tag?: string;
   /** Friends tagged in this post (FB-style). */
   taggedUserIds?: TaggedFriend[];
@@ -96,6 +98,8 @@ export const postMoment = (body: {
   lat?: number;
   lng?: number;
   locationLabel?: string;
+  /** Ephemeral "24h story" — auto-expires after this many hours (STORY1). */
+  expiresInHours?: number;
 }) => unwrap<Moment>(api.post('/moments', body));
 
 // ── Comments ──────────────────────────────────────────────────────────────────

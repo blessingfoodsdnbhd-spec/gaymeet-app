@@ -412,6 +412,7 @@
   },
   "moments": {
     "compose": {
+        "ephemeral": "Disappears after 24h",
       "tag": "Tag Friends",
       "addPhoto": "Add photo",
       "location": "Add Location",

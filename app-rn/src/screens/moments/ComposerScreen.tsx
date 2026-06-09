@@ -14,7 +14,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { ChevronLeft, ImagePlus, X, Users, MapPin } from 'lucide-react-native';
+import { ChevronLeft, ImagePlus, X, Users, MapPin, Clock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +40,7 @@ export function ComposerScreen() {
   const [place, setPlace] = useState<MomentPlace | null>(null);
   const [tagOpen, setTagOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
+  const [ephemeral, setEphemeral] = useState(false); // 24h auto-expire (STORY1)
   // Note: a per-moment interest tag picker used to live here, but the
   // backend Moment schema has no `tag` field and the 'interest' feed
   // filter matches by the *author's* shared interests, not a per-post
@@ -73,6 +74,7 @@ export function ComposerScreen() {
         content: content.trim(),
         images: uploadedUrls,
         taggedUserIds: tagged.length ? tagged.map((p) => p._id) : undefined,
+        ...(ephemeral ? { expiresInHours: 24 } : {}),
         ...(place
           ? { lat: place.lat, lng: place.lng, locationLabel: place.label }
           : {}),
@@ -298,6 +300,30 @@ export function ComposerScreen() {
             <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
               {place ? place.label : t('moments.compose.location')}
             </Text>
+          </Pressable>
+
+          {/* 24h ephemeral toggle (STORY1). */}
+          <Pressable
+            onPress={() => setEphemeral((v) => !v)}
+            style={[styles.actionRow, { borderTopColor: theme.colors.line }]}
+          >
+            <Clock size={18} color={ephemeral ? theme.colors.primary : theme.colors.muted} strokeWidth={2} />
+            <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
+              {t('moments.compose.ephemeral')}
+            </Text>
+            <View
+              style={{
+                width: 44,
+                height: 26,
+                borderRadius: 13,
+                padding: 3,
+                backgroundColor: ephemeral ? theme.colors.primary : theme.colors.surface2,
+                alignItems: ephemeral ? 'flex-end' : 'flex-start',
+                justifyContent: 'center',
+              }}
+            >
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF' }} />
+            </View>
           </Pressable>
 
         </ScrollView>

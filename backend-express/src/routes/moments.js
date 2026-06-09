@@ -101,7 +101,11 @@ router.get('/', auth, async (req, res, next) => {
       filter = { isActive: true, visibility: 'public' };
     }
 
-    const moments = await Moment.find(filter)
+    // Hide expired ephemeral moments (STORY1). expiresAt null/absent = permanent.
+    const notExpired = {
+      $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }],
+    };
+    const moments = await Moment.find({ $and: [filter, notExpired] })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -134,7 +138,11 @@ router.get('/', auth, async (req, res, next) => {
 // ── GET /api/moments/:id ──────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res, next) => {
   try {
-    const moment = await Moment.findOne({ _id: req.params.id, isActive: true })
+    const moment = await Moment.findOne({
+      _id: req.params.id,
+      isActive: true,
+      $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }],
+    })
       .populate('user', 'nickname avatarUrl isPremium countryCode')
       .populate('taggedUserIds', 'nickname avatarUrl')
       .lean();
@@ -171,7 +179,7 @@ router.post('/', auth, async (req, res, next) => {
   try {
     const {
       content = '', images = [], visibility = 'public', lat, lng,
-      locationLabel, taggedUserIds,
+      locationLabel, taggedUserIds, expiresInHours,
     } = req.body;
 
     if (!content && images.length === 0) {
@@ -187,6 +195,12 @@ router.post('/', auth, async (req, res, next) => {
       images,
       visibility,
     };
+
+    // Ephemeral "24h story" moments (STORY1). Clamp to 1–168h; absent = permanent.
+    const hrs = Number(expiresInHours);
+    if (Number.isFinite(hrs) && hrs > 0) {
+      data.expiresAt = new Date(Date.now() + Math.min(168, Math.max(1, hrs)) * 3600 * 1000);
+    }
 
     if (lat != null && lng != null) {
       data.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };

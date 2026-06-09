@@ -412,6 +412,7 @@
   },
   "moments": {
     "compose": {
+        "ephemeral": "24 小时后消失",
       "tag": "标记朋友",
       "addPhoto": "添加照片",
       "location": "添加位置",
