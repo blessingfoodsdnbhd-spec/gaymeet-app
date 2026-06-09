@@ -26,6 +26,8 @@ export type RootStackParamList = {
   // Profile sub-pages — presented as pushes over MainTabs.
   EditProfile: undefined;
   Search: undefined;
+  AdminReports: undefined;
+  AdminStats: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

@@ -316,6 +316,18 @@ export function ProfileScreen() {
                 label={t('profile.rows.announcementAdmin')}
                 onPress={() => nav.navigate('AnnouncementAdmin')}
               />
+              <Divider />
+              <SettingsRow
+                icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.adminReports')}
+                onPress={() => nav.navigate('AdminReports')}
+              />
+              <Divider />
+              <SettingsRow
+                icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.adminStats')}
+                onPress={() => nav.navigate('AdminStats')}
+              />
             </>
           )}
         </Card>

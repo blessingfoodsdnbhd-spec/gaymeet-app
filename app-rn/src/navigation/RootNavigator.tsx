@@ -22,6 +22,8 @@ import { NotificationSettings } from '../screens/profile/settings/NotificationSe
 import { LanguageSettings } from '../screens/profile/settings/LanguageSettings';
 import { AccountSettings } from '../screens/profile/settings/AccountSettings';
 import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScreen';
+import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
+import { AdminStatsScreen } from '../screens/admin/AdminStatsScreen';
 import { CommentsScreen } from '../screens/moments/CommentsScreen';
 import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
@@ -198,6 +200,8 @@ export function RootNavigator() {
             component={AnnouncementAdminScreen}
             options={{ animation: 'slide_from_right' }}
           />
+          <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="AdminStats" component={AdminStatsScreen} options={{ animation: 'slide_from_right' }} />
         </>
       )}
     </Stack.Navigator>

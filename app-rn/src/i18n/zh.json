@@ -130,6 +130,8 @@
     "done": "完成"
   },
   "search": {"placeholder": "搜索用户、投票、房间", "hintTitle": "搜索 Meyou", "hintSubtitle": "查找用户、投票活动和聊天室。", "empty": "没有找到“{{q}}”", "tabs": {"users": "用户", "votes": "投票", "rooms": "房间"}},
+  "adminReports": {"title": "举报管理", "empty": "没有待处理举报 🎉", "resolve": "已处理", "noReason": "(未填写原因)", "kind": {"worldChat": "广场", "vote": "投票"}},
+  "adminStats": {"title": "数据分析", "loadFailed": "加载失败", "totalUsers": "总用户", "dau": "日活", "mau": "月活", "signupsToday": "今日注册", "signups7d": "7日注册", "signups30d": "30日注册", "premium": "会员", "moments24h": "24h动态", "totalMoments": "动态总数", "totalVotes": "投票活动", "totalMatches": "同频数"},
   "blocked": {
     "title": "已屏蔽用户",
     "emptyTitle": "没有已屏蔽的用户",
@@ -688,7 +690,9 @@
       "languageValueEn": "English",
       "account": "账户与安全",
       "photoRequests": "私密照申请",
-      "announcementAdmin": "公告管理"
+      "adminReports": "举报管理",
+        "adminStats": "数据分析",
+        "announcementAdmin": "公告管理"
     },
     "edit": {
       "title": "编辑资料",

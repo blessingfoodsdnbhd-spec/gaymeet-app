@@ -130,6 +130,8 @@
     "done": "Done"
   },
   "search": {"placeholder": "Search users, votes, rooms", "hintTitle": "Search Meyou", "hintSubtitle": "Find people, vote events, and chat rooms.", "empty": "No results for “{{q}}”", "tabs": {"users": "Users", "votes": "Votes", "rooms": "Rooms"}},
+  "adminReports": {"title": "Reports", "empty": "No open reports 🎉", "resolve": "Resolve", "noReason": "(no reason given)", "kind": {"worldChat": "Plaza", "vote": "Vote"}},
+  "adminStats": {"title": "Analytics", "loadFailed": "Couldn't load stats", "totalUsers": "Total users", "dau": "DAU", "mau": "MAU", "signupsToday": "Signups today", "signups7d": "Signups 7d", "signups30d": "Signups 30d", "premium": "Premium", "moments24h": "Moments 24h", "totalMoments": "Total moments", "totalVotes": "Vote events", "totalMatches": "Matches"},
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",
@@ -688,7 +690,9 @@
       "languageValueEn": "English",
       "account": "Account & security",
       "photoRequests": "Photo requests",
-      "announcementAdmin": "Announcement manager"
+      "adminReports": "Reports",
+        "adminStats": "Analytics",
+        "announcementAdmin": "Announcement manager"
     },
     "edit": {
       "title": "Edit profile",

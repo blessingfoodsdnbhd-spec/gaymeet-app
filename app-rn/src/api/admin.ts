@@ -110,3 +110,45 @@ export async function updateAnnouncement(
 export async function deleteAnnouncement(id: string): Promise<void> {
   await api.delete(`/admin/announcements/${id}`);
 }
+
+// ── Reports dashboard (REPORT1) ──────────────────────────────────────────────
+
+export interface AdminReport {
+  id: string;
+  kind: 'worldChat' | 'vote';
+  reason: string;
+  reporter: string;
+  target: string;
+  createdAt: string;
+}
+
+export async function getAdminReports(): Promise<{ reports: AdminReport[]; count: number }> {
+  const r = await api.get('/admin/reports');
+  return unwrap<{ reports: AdminReport[]; count: number }>(r.data);
+}
+
+export async function resolveReport(kind: string, id: string): Promise<void> {
+  await api.post(`/admin/reports/${kind}/${id}/resolve`);
+}
+
+// ── Analytics dashboard (STATS1) ─────────────────────────────────────────────
+
+export interface AdminStats {
+  totalUsers: number;
+  dau: number;
+  mau: number;
+  signupsToday: number;
+  signups7d: number;
+  signups30d: number;
+  premiumCount: number;
+  premiumPct: number;
+  moments24h: number;
+  totalMoments: number;
+  totalVotes: number;
+  totalMatches: number;
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const r = await api.get('/admin/stats');
+  return unwrap<AdminStats>(r.data);
+}
