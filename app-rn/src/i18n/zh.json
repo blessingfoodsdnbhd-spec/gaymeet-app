@@ -702,6 +702,8 @@
       "nickname": "昵称",
       "bio": "简介",
       "addPhotosHint": "添加照片到你的资料",
+    "aboutYou": "关于你",
+    "notSet": "未设置",
     "bioPlaceholder": "一两句介绍自己",
       "age": "年龄",
       "dob": "出生日期",

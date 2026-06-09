@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Camera,
   ChevronLeft,
+  ChevronRight,
   Edit2,
   Lock,
   Mic,
@@ -35,6 +36,7 @@ import { PhotoGridEditor } from '../../components/PhotoGridEditor';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
+import { ChipPickerSheet } from '../../components/ChipPickerSheet';
 import { TopicPickerSheet } from './TopicPickerSheet';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
@@ -207,6 +209,8 @@ export function EditProfileScreen() {
   const personaLocale: 'en' | 'zh' = i18n.language.startsWith('zh') ? 'zh' : 'en';
   const [topicPickerOpen, setTopicPickerOpen] = useState(false);
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
+  // GGGG-3 — which categorical field's chip sheet is open.
+  const [picker, setPicker] = useState<null | 'body' | 'rel' | 'mbti' | 'intents'>(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
 
   const onDeleteVoice = async () => {
@@ -1060,112 +1064,34 @@ export function EditProfileScreen() {
           />
 
           {/* Body type — single-select chips, tap again to clear */}
-          <SectionTitle>{t('profile.edit.bodyType')}</SectionTitle>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {BODY_TYPES.map((id) => {
-              const active = bodyType === id;
-              return (
-                <Pressable
-                  key={id}
-                  onPress={() => pickBodyType(id)}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 16,
-                    paddingVertical: 9,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
-                    borderWidth: active ? 0 : 1,
-                    borderColor: theme.colors.line,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
-                    {t(`profile.edit.bodyTypes.${id}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Relationship status — single select (tap again to clear) */}
-          <SectionTitle>{t('profile.relationshipStatus.label')}</SectionTitle>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {RELATIONSHIP_OPTIONS.map((id) => {
-              const active = relationshipStatus === id;
-              return (
-                <Pressable
-                  key={id}
-                  onPress={() => pickRelationship(id)}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 16,
-                    paddingVertical: 9,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
-                    borderWidth: active ? 0 : 1,
-                    borderColor: theme.colors.line,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
-                    {t(`profile.relationshipStatus.${rsKey(id)}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* MBTI — single select 16 codes (tap again to clear) */}
-          <SectionTitle>{t('profile.mbti.label')}</SectionTitle>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {MBTI_TYPES.map((code) => {
-              const active = mbti === code;
-              return (
-                <Pressable
-                  key={code}
-                  onPress={() => pickMbti(code)}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 14,
-                    paddingVertical: 9,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
-                    borderWidth: active ? 0 : 1,
-                    borderColor: theme.colors.line,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '600', letterSpacing: 0.5, color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
-                    {code}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Intents — multi select */}
-          <SectionTitle>{t('profile.intents.label')}</SectionTitle>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {INTENT_OPTIONS.map((id) => {
-              const active = intents.includes(id);
-              return (
-                <Pressable
-                  key={id}
-                  onPress={() => toggleIntent(id)}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 16,
-                    paddingVertical: 9,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface2,
-                    borderWidth: active ? 0 : 1,
-                    borderColor: theme.colors.line,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: active ? theme.colors.primaryDeep : theme.colors.text2 }}>
-                    {t(`profile.intents.${id}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* Categorical fields — competitor-style grouped rows (GGGG-3): label
+              left, current value + chevron right, tap → chip sheet. */}
+          <SectionTitle>{t('profile.edit.aboutYou')}</SectionTitle>
+          <Card flat style={{ paddingVertical: 4 }}>
+            <FieldRow
+              label={t('profile.edit.bodyType')}
+              value={bodyType ? t(`profile.edit.bodyTypes.${bodyType}`) : t('profile.edit.notSet')}
+              onPress={() => setPicker('body')}
+            />
+            <RowDivider />
+            <FieldRow
+              label={t('profile.relationshipStatus.label')}
+              value={relationshipStatus ? t(`profile.relationshipStatus.${rsKey(relationshipStatus)}`) : t('profile.edit.notSet')}
+              onPress={() => setPicker('rel')}
+            />
+            <RowDivider />
+            <FieldRow
+              label={t('profile.mbti.label')}
+              value={mbti || t('profile.edit.notSet')}
+              onPress={() => setPicker('mbti')}
+            />
+            <RowDivider />
+            <FieldRow
+              label={t('profile.intents.label')}
+              value={intents.length ? intents.map((i) => t(`profile.intents.${i}`)).join('、') : t('profile.edit.notSet')}
+              onPress={() => setPicker('intents')}
+            />
+          </Card>
 
           {/* City (optional, free text) */}
           <SectionTitle>{t('profile.edit.city')}</SectionTitle>
@@ -1202,10 +1128,89 @@ export function EditProfileScreen() {
         onClose={() => setVoiceRecorderOpen(false)}
         onSaved={(voiceIntroUrl) => setUser({ ...user!, voiceIntroUrl })}
       />
+
+      {/* GGGG-3 chip sheets for the categorical field rows. */}
+      <ChipPickerSheet
+        open={picker === 'body'}
+        onClose={() => setPicker(null)}
+        title={t('profile.edit.bodyType')}
+        options={BODY_TYPES.map((id) => ({ id, label: t(`profile.edit.bodyTypes.${id}`) }))}
+        selected={bodyType ? [bodyType] : []}
+        onChange={(next) => {
+          const v = next[0] ?? null;
+          setBodyType(v);
+          saveMut.mutate({ bodyType: v ?? '' });
+        }}
+      />
+      <ChipPickerSheet
+        open={picker === 'rel'}
+        onClose={() => setPicker(null)}
+        title={t('profile.relationshipStatus.label')}
+        options={RELATIONSHIP_OPTIONS.map((id) => ({ id, label: t(`profile.relationshipStatus.${rsKey(id)}`) }))}
+        selected={relationshipStatus ? [relationshipStatus] : []}
+        onChange={(next) => {
+          const v = next[0] ?? null;
+          setRelationshipStatus(v);
+          saveMut.mutate({ relationshipStatus: v });
+        }}
+      />
+      <ChipPickerSheet
+        open={picker === 'mbti'}
+        onClose={() => setPicker(null)}
+        title={t('profile.mbti.label')}
+        options={MBTI_TYPES.map((code) => ({ id: code, label: code }))}
+        selected={mbti ? [mbti] : []}
+        onChange={(next) => {
+          const v = next[0] ?? null;
+          setMbti(v);
+          saveMut.mutate({ mbti: v });
+        }}
+      />
+      <ChipPickerSheet
+        open={picker === 'intents'}
+        onClose={() => setPicker(null)}
+        title={t('profile.intents.label')}
+        multi
+        options={INTENT_OPTIONS.map((id) => ({ id, label: t(`profile.intents.${id}`) }))}
+        selected={intents}
+        onChange={(next) => {
+          setIntents(next);
+          saveMut.mutate({ intents: next });
+        }}
+      />
       <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.profile80')} />
       {photoViewer.node}
     </SafeAreaView>
   );
+}
+
+/** Competitor-style edit row: label left, value + chevron right (GGGG-3). */
+function FieldRow({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 14,
+        gap: 12,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Text style={{ fontSize: 15, color: theme.colors.text }}>{label}</Text>
+      <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, color: theme.colors.muted }} numberOfLines={1}>
+        {value}
+      </Text>
+      <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.6} />
+    </Pressable>
+  );
+}
+
+function RowDivider() {
+  const theme = useTheme();
+  return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.line, marginHorizontal: 14 }} />;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {

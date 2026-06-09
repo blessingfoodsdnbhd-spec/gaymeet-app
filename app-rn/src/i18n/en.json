@@ -702,6 +702,8 @@
       "nickname": "Nickname",
       "bio": "Bio",
       "addPhotosHint": "Add photos to your profile",
+    "aboutYou": "About you",
+    "notSet": "Not set",
     "bioPlaceholder": "A line or two about you",
       "age": "Age",
       "dob": "Date of birth",

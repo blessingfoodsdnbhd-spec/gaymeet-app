@@ -105,6 +105,10 @@
       "notifications": "알림",
       "language": "언어",
       "account": "계정"
+    },
+    "edit": {
+      "aboutYou": "내 정보",
+      "notSet": "미설정"
     }
   }
 }

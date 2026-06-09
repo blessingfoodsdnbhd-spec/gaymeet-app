@@ -105,6 +105,10 @@
       "notifications": "通知",
       "language": "言語",
       "account": "アカウント"
+    },
+    "edit": {
+      "aboutYou": "あなたについて",
+      "notSet": "未設定"
     }
   }
 }
