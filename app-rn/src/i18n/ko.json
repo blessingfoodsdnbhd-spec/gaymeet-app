@@ -893,7 +893,11 @@
     "incognitoBrowsingHint": "프리미엄 전용 — 당신이 본 프로필의 ‘방문자’에 표시되지 않습니다",
     "premiumBadge": "프리미엄",
     "blocklist": "차단한 사용자",
-    "updateFailed": "업데이트 실패"
+    "updateFailed": "업데이트 실패",
+    "hidePopularity": {
+      "label": "인기 숨기기",
+      "subtitle": "다른 사람이 내 🔥 인기 점수를 볼 수 없어요"
+    }
   },
   "presence": {
     "online": "온라인",

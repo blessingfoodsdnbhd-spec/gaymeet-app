@@ -44,6 +44,12 @@ function presenceFields(u) {
   };
 }
 
+// 人气 / popularity, null when a Premium user hid it (SSSS).
+function popularityOf(u) {
+  if (u.preferences?.hidePopularity && isPremiumActive(u)) return null;
+  return (u.totalLikesReceived || 0) + (u.followersCount || 0);
+}
+
 function computeShared(myTags, otherTags) {
   const set = new Set(myTags || []);
   return (otherTags || []).filter((t) => set.has(t));
@@ -183,7 +189,7 @@ router.get('/cards', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
-      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      popularity: popularityOf(u),
       ...presenceFields(u),
     }));
     ok(res, cards);
@@ -299,7 +305,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
-      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      popularity: popularityOf(u),
       ...presenceFields(u),
     }));
     ok(res, cards);
@@ -480,7 +486,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
-      popularity: (u.totalLikesReceived || 0) + (u.followersCount || 0),
+      popularity: popularityOf(u),
       ...presenceFields(u),
     }));
 

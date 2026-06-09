@@ -38,6 +38,9 @@ export function PrivacySettings() {
   const [hideOnline, setHideOnline] = useState(
     user ? !!user.preferences?.hideOnlineStatus : false,
   );
+  const [hidePopularity, setHidePopularity] = useState(
+    user ? !!user.preferences?.hidePopularity : false,
+  );
   const [incognito, setIncognito] = useState(!!user?.incognitoBrowsing);
   // toPublicJSON already folds vipLevel into isPremium.
   const isPremium = !!user?.isPremium;
@@ -106,6 +109,16 @@ export function PrivacySettings() {
       reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
+  const flipHidePopularity = async (v: boolean) => {
+    setHidePopularity(v);
+    try {
+      const updated = await setPrivacy({ hidePopularity: v });
+      setUser(updated);
+    } catch (e) {
+      setHidePopularity(!v);
+      reportFailure(e, t('privacySettings.updateFailed'));
+    }
+  };
   const flipIncognito = async (v: boolean) => {
     setIncognito(v);
     try {
@@ -142,6 +155,18 @@ export function PrivacySettings() {
             value={isPremium ? hideOnline : false}
             onValueChange={flipHideOnline}
             hint={t('privacySettings.hideOnlineStatusHint')}
+            disabled={!isPremium}
+            badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
+          />
+        </Pressable>
+        <Divider />
+        {/* Premium-only — hide 人气 / popularity from other viewers (SSSS). */}
+        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+          <ToggleRow
+            label={t('privacySettings.hidePopularity.label')}
+            value={isPremium ? hidePopularity : false}
+            onValueChange={flipHidePopularity}
+            hint={t('privacySettings.hidePopularity.subtitle')}
             disabled={!isPremium}
             badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
           />

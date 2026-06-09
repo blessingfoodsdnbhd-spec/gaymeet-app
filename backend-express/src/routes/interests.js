@@ -137,6 +137,16 @@ router.patch('/privacy', auth, async (req, res, next) => {
       }
       update['preferences.hideOnlineStatus'] = req.body.hideOnlineStatus;
     }
+    if (typeof req.body.hidePopularity === 'boolean') {
+      // Hiding 人气 is a Premium perk (SSSS). Turning it OFF is always allowed.
+      if (req.body.hidePopularity === true) {
+        const { isPremiumActive } = require('../utils/premium');
+        if (!isPremiumActive(req.user)) {
+          return err(res, 'hidePopularity requires Premium', 402);
+        }
+      }
+      update['preferences.hidePopularity'] = req.body.hidePopularity;
+    }
     const user = await User.findByIdAndUpdate(req.user._id, update, { new: true });
     ok(res, user.toPublicJSON());
   } catch (e) {

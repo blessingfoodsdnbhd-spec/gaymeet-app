@@ -6,6 +6,7 @@ const preferencesSchema = new mongoose.Schema(
   {
     hideDistance: { type: Boolean, default: false },
     hideOnlineStatus: { type: Boolean, default: false },
+    hidePopularity: { type: Boolean, default: false },
     hideFromNearby: { type: Boolean, default: false },
     stealthMode: { type: Boolean, default: false },
     stealthOption: {
@@ -324,7 +325,7 @@ const SELF_ONLY_FIELDS = [
 // Preference keys safe to show to other users (display hints only). The full
 // preferences object also holds virtualLat/Lng (teleport) + stealth internals,
 // which must never reach another user — so non-self viewers get this subset.
-const PUBLIC_PREFERENCE_FIELDS = ['hideDistance', 'hideOnlineStatus'];
+const PUBLIC_PREFERENCE_FIELDS = ['hideDistance', 'hideOnlineStatus', 'hidePopularity'];
 
 // Documentation-only: the fields the allowlist deliberately excludes for
 // EVERYONE. Kept so reviewers can see the intent at a glance and so the
@@ -437,6 +438,12 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
   if (!self && src.preferences?.hideOnlineStatus && obj.isPremium) {
     obj.lastActiveAt = null;
     obj.isOnline = false;
+  }
+
+  // Hide 人气 / popularity from OTHER viewers when a Premium user opted in
+  // (SSSS). Self always sees their own real number; free/lapsed users can't hide.
+  if (!self && src.preferences?.hidePopularity && obj.isPremium) {
+    obj.popularity = null;
   }
 
   // Expire timed stealth (only meaningful in the self preferences object).

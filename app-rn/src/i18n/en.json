@@ -791,6 +791,7 @@
     "enNative": "English"
   },
   "privacySettings": {
+    "hidePopularity": {"label": "Hide popularity", "subtitle": "Others won't see your 🔥 popularity score"},
     "title": "Privacy",
     "showInNearby": "Show me in Nearby",
     "showInNearbyHint": "When off, you won't appear in other people's Nearby grid",

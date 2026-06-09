@@ -893,7 +893,11 @@
     "incognitoBrowsingHint": "プレミアム限定 — 閲覧したプロフィールの「訪問者」に表示されません",
     "premiumBadge": "プレミアム",
     "blocklist": "ブロックしたユーザー",
-    "updateFailed": "更新に失敗しました"
+    "updateFailed": "更新に失敗しました",
+    "hidePopularity": {
+      "label": "人気を非表示",
+      "subtitle": "他の人にあなたの🔥人気スコアが見えなくなります"
+    }
   },
   "presence": {
     "online": "オンライン",

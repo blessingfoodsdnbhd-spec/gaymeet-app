@@ -177,7 +177,7 @@ router.patch('/me', auth, async (req, res, next) => {
 router.patch('/settings', auth, async (req, res, next) => {
   try {
     const prefFields = [
-      'hideDistance', 'hideOnlineStatus', 'hideFromNearby',
+      'hideDistance', 'hideOnlineStatus', 'hidePopularity', 'hideFromNearby',
       'stealthMode', 'stealthOption', 'stealthUntil',
     ];
     const prefUpdate = {};
