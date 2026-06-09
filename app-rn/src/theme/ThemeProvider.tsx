@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { colors, typography, spacing, radius, shadows, layout, motion } from './tokens';
+import { colors, typography, spacing, radius, shadows, layout, motion, iconSize } from './tokens';
 
 export type Theme = {
   colors: typeof colors;
@@ -9,9 +9,10 @@ export type Theme = {
   shadows: typeof shadows;
   layout: typeof layout;
   motion: typeof motion;
+  iconSize: typeof iconSize;
 };
 
-const defaultTheme: Theme = { colors, typography, spacing, radius, shadows, layout, motion };
+const defaultTheme: Theme = { colors, typography, spacing, radius, shadows, layout, motion, iconSize };
 
 const ThemeContext = createContext<Theme>(defaultTheme);
 

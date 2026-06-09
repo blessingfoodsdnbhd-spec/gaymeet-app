@@ -35,6 +35,15 @@ export const colors = {
   like: '#3CC479',
   nope: '#E8607C',
 
+  // semantic aliases — PREFER these in new code (stable names, fixed meaning).
+  // They intentionally resolve to the same hexes as the older functional keys.
+  secondary: '#8B5CD8', // = brandPurple
+  success: '#3CC479', // = online
+  error: '#E14B5C', // = danger
+  warning: '#F0A23C',
+  info: '#4F8FE8', // = brandBlue
+  textMuted: '#8E8DA0', // = muted
+
   // chat
   bubbleMeBg: '#E25CAE',
   bubbleMeText: '#FFFFFF',
@@ -75,12 +84,14 @@ export const typography = {
     displayLg: 64,
     h1: 26,
     h2: 28,
+    h3: 18, // section / sheet headings
     cardName: 22,
     body: 15,
     bodySm: 14,
     caption: 13,
     captionSm: 12,
     eyebrow: 12,
+    label: 11, // ALL-CAPS micro labels / badges
   },
   weight: {
     regular: '400' as const,
@@ -104,6 +115,7 @@ export const spacing = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
+  huge: 48,
   // common compounds
   cardPadding: 18,
   fieldPaddingV: 14,
@@ -151,6 +163,15 @@ export const shadows = {
     shadowRadius: 18,
     elevation: 6,
   },
+};
+
+/** Canonical lucide-icon sizes. Use instead of hardcoding `size={18}` etc. */
+export const iconSize = {
+  xs: 14, // inline w/ caption text
+  s: 16, // dense rows, chips
+  m: 20, // default action / list icon
+  l: 24, // primary header actions
+  xl: 28, // hero / empty-state glyphs
 };
 
 export const layout = {

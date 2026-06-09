@@ -45,7 +45,15 @@ export function EmptyState({
       )}
       {!!retryLabel && onRetry && (
         <Pressable onPress={onRetry} hitSlop={8} style={{ marginTop: 18 }}>
-          <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '700' }}>{retryLabel}</Text>
+          <Text
+            style={{
+              color: theme.colors.primary,
+              fontSize: theme.typography.size.bodySm,
+              fontWeight: theme.typography.weight.bold,
+            }}
+          >
+            {retryLabel}
+          </Text>
         </Pressable>
       )}
     </View>
