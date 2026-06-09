@@ -34,6 +34,18 @@ export const blockUser = (userId: string) =>
 export const unblockUser = (userId: string) =>
   unwrap<{}>(api.delete(`/users/${userId}/block`));
 
+export interface BlockedUser {
+  id: string;
+  nickname: string;
+  avatarUrl: string | null;
+  isOfficial?: boolean;
+  isVerified?: boolean;
+}
+
+/** List the users the current account has blocked. */
+export const getBlockedUsers = () =>
+  api.get('/users/me/blocked').then((r) => ((r.data?.data ?? r.data)?.blocked ?? []) as BlockedUser[]);
+
 /** Block + log a report. Server auto-blocks on report (see backend blocks.js). */
 export const reportUser = (userId: string, reason: ReportReason, detail?: string) =>
   unwrap<{}>(api.post(`/users/${userId}/report`, { reason, detail }));

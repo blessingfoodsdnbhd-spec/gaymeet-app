@@ -16,6 +16,7 @@ import { MapPickerScreen } from '../screens/discover/MapPickerScreen';
 import { MomentLikersScreen } from '../screens/moments/MomentLikersScreen';
 import { MatchesListScreen } from '../screens/profile/MatchesListScreen';
 import { PrivacySettings } from '../screens/profile/settings/PrivacySettings';
+import { BlockedListScreen } from '../screens/profile/settings/BlockedListScreen';
 import { NotificationSettings } from '../screens/profile/settings/NotificationSettings';
 import { LanguageSettings } from '../screens/profile/settings/LanguageSettings';
 import { AccountSettings } from '../screens/profile/settings/AccountSettings';
@@ -95,6 +96,7 @@ export function RootNavigator() {
           <Stack.Screen name="MomentLikers" component={MomentLikersScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MatchesList" component={MatchesListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="PrivacySettings" component={PrivacySettings} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="BlockedList" component={BlockedListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="LanguageSettings" component={LanguageSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AccountSettings" component={AccountSettings} options={{ animation: 'slide_from_right' }} />

@@ -119,6 +119,12 @@
   "verified": {
     "tooltip": "Verified official account"
   },
+  "blocked": {
+    "title": "Blocked Users",
+    "emptyTitle": "No blocked users",
+    "emptySubtitle": "People you block won't be able to see or message you.",
+    "unblock": "Unblock"
+  },
   "welcome": {
     "tagline": "Meet people who love the same things.",
     "continueApple": "Continue with Apple",

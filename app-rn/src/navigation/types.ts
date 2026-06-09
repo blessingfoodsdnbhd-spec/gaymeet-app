@@ -33,6 +33,7 @@ export type RootStackParamList = {
   MapPicker: undefined;
   MatchesList: undefined;
   PrivacySettings: undefined;
+  BlockedList: undefined;
   NotificationSettings: undefined;
   LanguageSettings: undefined;
   AccountSettings: undefined;

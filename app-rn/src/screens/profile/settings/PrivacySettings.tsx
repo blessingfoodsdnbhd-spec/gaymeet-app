@@ -138,7 +138,7 @@ export function PrivacySettings() {
           onPress={() => (isPremium ? nav.navigate('MapPicker') : setUpsellOpen(true))}
         />
         <Divider />
-        <LinkRow label={t('privacySettings.blocklist')} />
+        <LinkRow label={t('privacySettings.blocklist')} onPress={() => nav.navigate('BlockedList')} />
       </SettingsCard>
       <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.privacy')} />
     </SettingsShell>

@@ -119,6 +119,12 @@
   "verified": {
     "tooltip": "已验证的官方账号"
   },
+  "blocked": {
+    "title": "已屏蔽用户",
+    "emptyTitle": "没有已屏蔽的用户",
+    "emptySubtitle": "被你屏蔽的人将无法看到你或给你发消息。",
+    "unblock": "取消屏蔽"
+  },
   "welcome": {
     "tagline": "和你喜欢同一件事的人相遇。",
     "continueApple": "用 Apple 继续",

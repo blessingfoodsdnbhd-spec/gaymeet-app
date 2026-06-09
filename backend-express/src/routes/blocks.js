@@ -63,6 +63,29 @@ router.delete('/:id/block', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/users/me/blocked — list the users I've blocked ──────────────────
+// Two-segment path, so it never collides with the single-segment `/:id/...`
+// routes. Returns light cards (id + name + avatar) for a management list.
+router.get('/me/blocked', auth, async (req, res, next) => {
+  try {
+    const me = await User.findById(req.user._id)
+      .populate({ path: 'blockedUsers', select: 'nickname avatarUrl photos isOfficial isVerified' })
+      .lean();
+    const blocked = (me?.blockedUsers || [])
+      .filter(Boolean)
+      .map((u) => ({
+        id: String(u._id),
+        nickname: u.nickname,
+        avatarUrl: u.avatarUrl || (u.photos && u.photos[0]) || null,
+        isOfficial: !!u.isOfficial,
+        isVerified: !!u.isVerified,
+      }));
+    ok(res, { blocked });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/users/:id/report ────────────────────────────────────────────────
 router.post('/:id/report', auth, async (req, res, next) => {
   try {
