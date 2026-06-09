@@ -30,11 +30,16 @@ export function MapPickerScreen() {
   const startLat = prefs?.virtualLat ?? 3.139;
   const startLng = prefs?.virtualLng ?? 101.6869;
 
-  const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(
-    prefs?.virtualLat != null && prefs?.virtualLng != null
-      ? { lat: prefs.virtualLat, lng: prefs.virtualLng }
-      : null,
-  );
+  // Default to the start position so the visible marker is ALWAYS saveable —
+  // even if Leaflet never loads (inline-HTML scripts over an about:blank origin
+  // are flaky in iOS WKWebView) and a map tap never fires onMessage. Before
+  // this, `picked` stayed null until a tap registered, so Save sat disabled,
+  // the teleport POST was never sent, virtualLat/Lng stayed null, and the 📍
+  // indicator never appeared. Tapping or dragging the pin still updates this.
+  const [picked, setPicked] = useState<{ lat: number; lng: number }>({
+    lat: startLat,
+    lng: startLng,
+  });
   const [busy, setBusy] = useState(false);
 
   const html = useMemo(
@@ -58,7 +63,7 @@ export function MapPickerScreen() {
   );
 
   const onSave = async () => {
-    if (!picked || busy) return;
+    if (busy) return;
     setBusy(true);
     try {
       let label = '';
@@ -127,11 +132,11 @@ export function MapPickerScreen() {
         <Text style={{ flex: 1, marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {t('virtualLocation.title')}
         </Text>
-        <Pressable onPress={onSave} disabled={!picked || busy} hitSlop={8}>
+        <Pressable onPress={onSave} disabled={busy} hitSlop={8}>
           {busy ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : (
-            <Text style={{ color: picked ? theme.colors.primary : theme.colors.muted, fontSize: 15, fontWeight: '600' }}>
+            <Text style={{ color: theme.colors.primary, fontSize: 15, fontWeight: '600' }}>
               {t('common.save')}
             </Text>
           )}
@@ -145,7 +150,10 @@ export function MapPickerScreen() {
       <WebView
         ref={webRef}
         originWhitelist={['*']}
-        source={{ html }}
+        // Give the inline HTML a real https base origin so Leaflet's CDN
+        // <script>/<link> load reliably (an about:blank origin gets blocked on
+        // iOS WKWebView, leaving a dead grey map).
+        source={{ html, baseUrl: 'https://unpkg.com/' }}
         style={{ flex: 1 }}
         onMessage={(e) => {
           try {
