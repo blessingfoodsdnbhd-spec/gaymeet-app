@@ -264,39 +264,42 @@ export function MapPickerScreen() {
         ))}
       </ScrollView>
 
-      <Text style={[styles.hint, { color: theme.colors.muted }]}>
-        {t('virtualLocation.mapHint')}
-      </Text>
+      {/* Map is the primary content — fills all remaining space (TTTT). The
+          "use real location" reset is a floating overlay top-right instead of a
+          bottom footer, and the old "tap the map" hint is gone (the pin makes
+          it obvious). */}
+      <View style={{ flex: 1 }}>
+        <WebView
+          ref={webRef}
+          originWhitelist={['*']}
+          // Give the inline HTML a real https base origin so Leaflet's CDN
+          // <script>/<link> load reliably (an about:blank origin gets blocked on
+          // iOS WKWebView, leaving a dead grey map).
+          source={{ html, baseUrl: 'https://unpkg.com/' }}
+          style={{ flex: 1 }}
+          onMessage={(e) => {
+            try {
+              const { lat, lng } = JSON.parse(e.nativeEvent.data);
+              if (typeof lat === 'number' && typeof lng === 'number') setPicked({ lat, lng });
+            } catch {
+              // ignore malformed messages
+            }
+          }}
+        />
 
-      <WebView
-        ref={webRef}
-        originWhitelist={['*']}
-        // Give the inline HTML a real https base origin so Leaflet's CDN
-        // <script>/<link> load reliably (an about:blank origin gets blocked on
-        // iOS WKWebView, leaving a dead grey map).
-        source={{ html, baseUrl: 'https://unpkg.com/' }}
-        style={{ flex: 1 }}
-        onMessage={(e) => {
-          try {
-            const { lat, lng } = JSON.parse(e.nativeEvent.data);
-            if (typeof lat === 'number' && typeof lng === 'number') setPicked({ lat, lng });
-          } catch {
-            // ignore malformed messages
-          }
-        }}
-      />
-
-      {/* Free users get the revert link only when they actually have a virtual
-          location set (they can't have set one, but premium-lapsed users might). */}
-      {(isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
-        <View style={[styles.footer, { borderTopColor: theme.colors.line }]}>
-          <Pressable onPress={onClear} disabled={busy} hitSlop={6}>
-            <Text style={{ color: theme.colors.danger ?? '#D14B4B', fontSize: 14, fontWeight: '600' }}>
-              {t('virtualLocation.revert')}
+        {/* Reset-to-GPS overlay — only when a virtual location is (or could be) set. */}
+        {(isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
+          <Pressable
+            onPress={onClear}
+            disabled={busy}
+            style={[styles.mapOverlayBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}
+          >
+            <Text style={{ color: theme.colors.danger ?? '#D14B4B', fontSize: 12.5, fontWeight: '700' }}>
+              📍 {t('virtualLocation.revert')}
             </Text>
           </Pressable>
-        </View>
-      )}
+        )}
+      </View>
 
       <UpgradePremiumSheet
         open={upsellOpen}
@@ -315,12 +318,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  hint: {
-    fontSize: 12.5,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    textAlign: 'center',
-  },
   searchWrap: { paddingHorizontal: 16, paddingTop: 10, zIndex: 10 },
   searchBox: {
     flexDirection: 'row',
@@ -338,16 +335,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultRow: { paddingHorizontal: 12, paddingVertical: 10 },
-  chipRow: { gap: 8, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' },
+  chipRow: { gap: 8, paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' },
   cityChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
   },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  // Floating reset-to-GPS button over the map (TTTT).
+  mapOverlayBtn: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    // Sits above the WebView (elevation for Android, shadow for iOS).
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
 });
