@@ -200,7 +200,14 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
             />
           }
           count={moment.likeCount}
-          onPress={() => onToggleLike(moment)}
+          // LLLL — likes are one-way from the feed: tap ❤️ to like; once liked,
+          // tapping the heart (like the count) opens the likers list instead of
+          // un-liking. The DELETE /like route still exists for future use.
+          onPress={() =>
+            moment.isLiked
+              ? (nav as any).navigate('MomentLikers', { momentId: moment._id })
+              : onToggleLike(moment)
+          }
           onCountPress={() => (nav as any).navigate('MomentLikers', { momentId: moment._id })}
           highlighted={moment.isLiked}
         />
