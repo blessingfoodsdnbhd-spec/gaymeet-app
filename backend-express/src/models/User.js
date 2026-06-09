@@ -163,7 +163,7 @@ const userSchema = new mongoose.Schema(
 
     // App UI language the client last synced (from i18n). Used to localize
     // server-sent push notifications. null → fall back to English templates.
-    preferredLanguage: { type: String, enum: ['en', 'zh', null], default: null },
+    preferredLanguage: { type: String, enum: ['en', 'zh', 'ko', 'ja', null], default: null },
 
     // Energy / Level system
     level: { type: Number, default: 1 },

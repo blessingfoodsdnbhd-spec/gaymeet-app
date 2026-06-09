@@ -51,6 +51,8 @@ router.post('/:id/follow', auth, async (req, res, next) => {
         i18n: {
           en: { title: `${who} is following you`, body: 'Tap to view their profile' },
           zh: { title: `${who} 关注了你`, body: '点击查看TA的主页' },
+          ko: { title: `${who}님이 회원님을 팔로우합니다`, body: '탭하여 프로필을 보세요' },
+          ja: { title: `${who}があなたをフォローしました`, body: 'タップしてプロフィールを見る' },
         },
       }).catch(() => {});
 

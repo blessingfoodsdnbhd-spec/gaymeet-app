@@ -31,6 +31,8 @@ async function grantStreakReward(user, milestone) {
     i18n: {
       zh: { title: '🔥 连续登录奖励', body: `你已连续登录 ${milestone} 天,获得 ${days} 天会员!` },
       en: { title: '🔥 Login streak reward', body: `${milestone}-day streak! You earned ${days} days of Premium.` },
+      ko: { title: '🔥 연속 출석 보상', body: `${milestone}일 연속 출석으로 프리미엄 ${days}일을 받았어요!` },
+      ja: { title: '🔥 連続ログイン報酬', body: `${milestone}日連続ログインでプレミアム${days}日を獲得しました！` },
     },
   }).catch(() => {});
 }

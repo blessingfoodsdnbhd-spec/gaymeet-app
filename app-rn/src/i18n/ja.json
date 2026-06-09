@@ -28,12 +28,33 @@
     "appleFailedTitle": "ログイン失敗",
     "appleFailedRetry": "もう一度お試しください",
     "appleErrorTitle": "Appleサインインに失敗",
-    "googleErrorTitle": "Googleサインイン"
+    "googleErrorTitle": "Googleサインイン",
+    "appleNoCredential": "Appleが有効な認証情報を返しませんでした。もう一度お試しください"
   },
   "onboarding": {
     "skip": "スキップ",
     "next": "次へ",
-    "done": "はじめる"
+    "done": "はじめる",
+    "1": {
+      "title": "コンテスト — バッジを獲得",
+      "subtitle": "作品を出品すると上位3名が永久「ハイライト」バッジを獲得。"
+    },
+    "2": {
+      "title": "ワールド広場 — 世界とチャット",
+      "subtitle": "15か国のルームで世界中の人とリアルタイムにチャット。"
+    },
+    "3": {
+      "title": "近く — 興味でつながる",
+      "subtitle": "周りの人を見つけ、共通の興味でつながろう。"
+    },
+    "4": {
+      "title": "音声イントロ — 5秒で伝える",
+      "subtitle": "1〜5秒の音声イントロを録音して雰囲気を伝えよう。"
+    },
+    "5": {
+      "title": "Meyouへようこそ",
+      "subtitle": "プロフィールを完成させて出会いを始めましょう。"
+    }
   },
   "email": {
     "title": "メールアドレスは？",
@@ -86,15 +107,105 @@
   "discover": {
     "modeCards": "おすすめ",
     "modeNearby": "近く",
-    "modeLikedMe": "気になる相手"
+    "modeLikedMe": "気になる相手",
+    "sharedInterests": "共通の興味 {{n}}個",
+    "emptyTitle": "今日はここまで",
+    "emptySubtitle": "気の合う人をすべて見ました。\nまた明日来てください 🍵",
+    "redo": "もう一度見る",
+    "filters": {
+      "title": "フィルター",
+      "distance": "距離",
+      "interests": "興味",
+      "unlimited": "すべて",
+      "interestsCount": "{{n}}個選択",
+      "reset": "リセット",
+      "apply": "適用"
+    },
+    "premiumTitle": "プレミアム限定",
+    "premiumBody": "マッチしていない人へのメッセージはプレミアム機能です。\n\n月額 RM {{monthly}}\n年額 RM {{annual}}\n（年額は約2か月分お得）",
+    "premiumOk": "OK",
+    "openFailedTitle": "開けませんでした",
+    "openFailedFallback": "後でお試しください",
+    "swipeFailed": "操作に失敗しました",
+    "searching": {
+      "title": "あなたのために検索中",
+      "subtitle": "近くの新しい友達を探しています…",
+      "found": "新しい友達を{{n}}人見つけました",
+      "failed": "検索に失敗しました"
+    },
+    "networkError": "ネットワークエラー、後でお試しください",
+    "loadNearbyFailed": "近くを読み込めませんでした",
+    "introVoiceToggle": "🔊 イントロ音声"
   },
   "moments": {
     "compose": {
-      "ephemeral": "24時間後に消える"
+      "ephemeral": "24時間後に消える",
+      "tag": "友達をタグ",
+      "addPhoto": "写真を追加",
+      "location": "位置を追加",
+      "taggedCount": "{{n}}人タグ",
+      "currentLocation": "現在地",
+      "removeLocation": "位置を削除",
+      "noFriends": "タグできる友達がまだいません",
+      "locationPermTitle": "位置情報の許可が必要です",
+      "locationPermBody": "位置情報をオンにして場所をタグ付けしましょう。",
+      "locationFailed": "位置情報を取得できませんでした"
+    },
+    "viewOnMap": "マップで見る",
+    "likers": {
+      "title": "いいね",
+      "empty": "まだいいねがありません"
+    },
+    "filters": {
+      "all": "すべて",
+      "friends": "フォロー中",
+      "nearby": "近く",
+      "interest": "興味"
+    },
+    "empty": "まだモーメントがありません",
+    "emptyByFilter": {
+      "all": "まだモーメントがありません — 最初に投稿しましょう",
+      "friends": "フォロー・マッチした人のモーメントがまだありません — 発見で人を探しましょう",
+      "nearby": "近くにモーメントがまだありません — 範囲を広げるか後で確認してください",
+      "interest": "一致するモーメントがありません — プロフィール→興味で興味を選ぶとフィードを合わせます"
+    },
+    "loadFailed": "読み込めませんでした",
+    "cameraPermTitle": "カメラの許可が必要です",
+    "cameraPermBody": "設定でMeyouのカメラアクセスを許可してください。",
+    "publishFailed": "投稿に失敗しました",
+    "composer": {
+      "headerTitle": "新しいモーメント",
+      "publish": "公開",
+      "publishCta": "モーメントを投稿",
+      "contentPlaceholder": "何かをシェア...",
+      "sendFailed": "送信に失敗しました",
+      "photoPermTitle": "写真の許可が必要です",
+      "photoPermBody": "設定でMeyouの写真アクセスを許可してください。",
+      "addPhotoTitle": "写真を追加",
+      "takePhoto": "写真を撮る",
+      "chooseFromLibrary": "ライブラリから選択",
+      "cancel": "キャンセル"
+    },
+    "comments": {
+      "title": "コメント",
+      "empty": "まだコメントがありません",
+      "placeholder": "何か話しましょう…",
+      "loadFailed": "コメントを読み込めませんでした",
+      "sendFailed": "送信に失敗しました"
+    },
+    "delete": {
+      "title": "このモーメントを削除しますか？",
+      "body": "元に戻せません。",
+      "action": "削除",
+      "failed": "削除に失敗しました"
     }
   },
   "languageSettings": {
-    "title": "言語"
+    "title": "言語",
+    "zh": "中国語",
+    "en": "英語",
+    "zhNative": "中文",
+    "enNative": "English"
   },
   "profile": {
     "streak": "🔥 {{n}}日連続ログイン",
@@ -104,11 +215,1000 @@
       "privacy": "プライバシー",
       "notifications": "通知",
       "language": "言語",
-      "account": "アカウント"
+      "account": "アカウント",
+      "premiumActive": "有効",
+      "premiumUpgrade": "アップグレード",
+      "languageValueZh": "中国語",
+      "languageValueEn": "英語",
+      "photoRequests": "写真リクエスト",
+      "adminReports": "通報管理",
+      "adminStats": "データ分析",
+      "announcementAdmin": "お知らせ管理"
     },
     "edit": {
       "aboutYou": "あなたについて",
-      "notSet": "未設定"
+      "notSet": "未設定",
+      "title": "プロフィール編集",
+      "changeAvatar": "アバターを変更",
+      "nickname": "ニックネーム",
+      "bio": "自己紹介",
+      "addPhotosHint": "プロフィールに写真を追加",
+      "bioPlaceholder": "あなたについて一言二言",
+      "age": "年齢",
+      "dob": "生年月日",
+      "dobHint": "YYYY-MM-DD",
+      "height": "身長 (cm)",
+      "weight": "体重 (kg)",
+      "bodyType": "体型",
+      "bodyTypes": {
+        "average": "普通",
+        "fit": "引き締まった",
+        "chubby": "ぽっちゃり",
+        "slim": "スリム"
+      },
+      "city": "都市",
+      "cityPlaceholder": "どの都市にいますか？",
+      "saveFailed": "保存に失敗しました",
+      "photoPermTitle": "写真の許可が必要です",
+      "photoPermBody": "設定でMeyouの写真アクセスを許可してください。",
+      "uploadFailed": "アップロードに失敗しました"
+    },
+    "completion": {
+      "title": "プロフィール完成度 {{n}}%",
+      "subtitle": "あと{{n}}個完成でさらに表示が増えます",
+      "items": {
+        "photos": "プロフィール写真を追加",
+        "voice": "音声イントロを録音",
+        "interests": "興味を3つ以上選ぶ",
+        "demographic": "基本情報を入力（年齢・MBTI・ステータス…）",
+        "prompts": "質問に答える",
+        "bio": "短い自己紹介を書く"
+      }
+    },
+    "stats": {
+      "matches": "マッチ",
+      "friends": "フォロー中",
+      "moments": "モーメント",
+      "likes": "いいね",
+      "viewers": "訪問者",
+      "privatePhotos": "非公開"
+    },
+    "editProfile": "プロフィール編集",
+    "publicPhotos": "公開写真",
+    "publicPhotosLimit": "公開写真 · {{count}} / 5",
+    "privatePhotos": "非公開写真 🔒",
+    "privatePhotosLimit": "非公開写真 🔒 · {{count}} / 5",
+    "privatePhotosHint": "承認した人だけが見られます。",
+    "revokeAllAccess": "全アクセスを取り消す · {{n}}人",
+    "revokeAllConfirmTitle": "全アクセスを取り消しますか？",
+    "revokeAllConfirmBody": "承認済みの{{n}}人全員が再申請する必要があります。",
+    "revokeAllAction": "取り消す",
+    "revoked": "アクセスを取り消しました",
+    "photoUploadFailed": "写真をアップロードできませんでした",
+    "photoDeleteFailed": "写真を削除できませんでした",
+    "deletePhotoTitle": "この写真を削除しますか？",
+    "deletePhotoAction": "削除",
+    "photoActions": "写真オプション",
+    "setAsAvatar": "アバターに設定",
+    "relationshipStatus": {
+      "label": "交際ステータス",
+      "single": "独身",
+      "inRelationship": "交際中",
+      "married": "既婚",
+      "openRelationship": "オープンな関係",
+      "polyamorous": "ポリアモリー"
+    },
+    "mbti": {
+      "label": "MBTI"
+    },
+    "intents": {
+      "label": "探しているもの",
+      "friends": "友達",
+      "chat": "チャット",
+      "serious": "真剣な交際",
+      "activity": "遊ぶ",
+      "language": "語学交換"
+    },
+    "interestsTitle": "興味",
+    "interestsEmpty": "まだ興味がありません",
+    "interestsManage": "+ 管理",
+    "mobileGames": {
+      "label": "プレイ中のゲーム",
+      "placeholder": "ゲーム名を入力…",
+      "add": "追加"
+    },
+    "voiceIntro": {
+      "label": "音声イントロ",
+      "record": "1〜5秒のイントロを録音",
+      "tapToStart": "タップして1〜30秒のイントロを録音",
+      "tooShort": "1秒以上録音してください",
+      "recording": "録音中…",
+      "save": "保存",
+      "delete": "削除",
+      "micPermTitle": "マイクが必要です",
+      "micPermBody": "音声イントロを録音するにはマイクのアクセスを許可してください。",
+      "recordFailed": "録音できませんでした",
+      "saveFailedTitle": "保存できませんでした"
+    },
+    "personasTitle": "トピックペルソナ",
+    "personasEmpty": "まだ参加したトピックがありません",
+    "promptsTitle": "プロンプト",
+    "promptsEmpty": "質問に答えてみんなに知ってもらおう",
+    "promptsAdd": "+ 質問を追加",
+    "tagsEdit": {
+      "title": "興味",
+      "subtitle": "少なくとも{{n}}個選んでください — 共通の興味の人におすすめします。",
+      "saveWithCount": "保存 · {{n}}",
+      "saveFailed": "保存に失敗しました"
+    },
+    "promptsEdit": {
+      "title": "プロンプト",
+      "answerPlaceholder": "答えを書く…",
+      "askedSection": "聞かれたい質問",
+      "saveFailed": "保存に失敗しました",
+      "save": "保存",
+      "suggestions": {
+        "thisWeek": "今週一緒にやる人を探しています",
+        "albumOnRepeat": "最近リピートしているアルバム",
+        "idealWeekend": "理想の週末の朝",
+        "movieToTalk": "先週話したかった映画",
+        "playingThisMonth": "今月プレイしているもの",
+        "recommendBook": "本をおすすめして",
+        "recentObsession": "最近ハマっていること",
+        "proudOf": "私が誇りに思うこと",
+        "lookingForType": "出会いたい人",
+        "describeMe": "一言で表す私の性格",
+        "wantToDo": "一番やりたいこと",
+        "stickWithHobby": "続けている趣味",
+        "weekendSpot": "週末によく行く場所",
+        "sundayRecharge": "日曜の充電方法",
+        "recentBook": "最近読んだ良い本",
+        "favMovie": "一番好きな映画",
+        "mustListen": "必ず聴く曲",
+        "dreamTrip": "行きたい旅行先",
+        "believeIn": "私が信じること",
+        "afraidOf": "私が怖いもの",
+        "idealLife": "私の理想の暮らし",
+        "greenFlag": "私が好きな人の特徴",
+        "weirdHabit": "私の変な癖",
+        "secretSkill": "私の隠れたスキル",
+        "ifTimeTravel": "タイムトラベルできたら…",
+        "twoTruths": "二つの真実と一つの嘘",
+        "cantLiveWithout": "なくてはならないもの",
+        "makesMeLaugh": "いつも私を笑わせるもの",
+        "comfortFood": "私のソウルフード",
+        "bucketList": "バケットリストの一つ"
+      }
+    },
+    "matchesList": {
+      "empty": "まだマッチがありません — 発見へ",
+      "matchedAt": "マッチ · {{date}}"
+    },
+    "friendsList": {
+      "empty": "まだ誰もフォローしていません"
+    }
+  },
+  "empty": {
+    "viewers": {
+      "subtitle": "プロフィールを共有して注目を集めましょう。",
+      "cta": "プロフィールを共有"
+    },
+    "votes": {
+      "subtitle": "コンテストを始めて人を招待しましょう。"
+    },
+    "notes": {
+      "subtitle": "近くの誰かにメモを書いてみましょう。",
+      "cta": "人を探す"
+    },
+    "friends": {
+      "title": "まだ誰もフォローしていません",
+      "subtitle": "広場や発見で人と出会いましょう。",
+      "cta": "広場へ",
+      "cta2": "発見"
+    },
+    "matches": {
+      "title": "まだマッチがありません",
+      "subtitle": "発見で相手のプロフィールの「マッチ」を押してみましょう。",
+      "cta": "発見へ",
+      "cta2": "広場"
+    },
+    "moments": {
+      "cta": "モーメントを投稿"
+    },
+    "discoverEnd": {
+      "cta": "広場でチャット"
+    },
+    "chats": {
+      "subtitle": "広場で新しい人と出会いましょう。",
+      "cta": "広場へ"
+    }
+  },
+  "invite": {
+    "title": "友達を招待",
+    "reward": "二人とも30日プレミアム",
+    "cardTitle": "友達を招待 — 双方+30日プレミアム",
+    "heroTitle": "友達を招待すると二人ともお得",
+    "myCode": "自分の招待コード",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "share": "共有",
+    "shareImage": "画像で共有",
+    "stats": "{{n}}人招待 · プレミアム{{days}}日獲得",
+    "recent": "最近の招待",
+    "haveCode": "招待コードをお持ちですか？",
+    "optionalField": "招待コード（任意）",
+    "codePlaceholder": "招待コード",
+    "shareText": "{{name}}があなたをMeyouに招待 — コード{{code}}で登録すると二人とも30日プレミアム · {{link}}",
+    "redeemTitle": "コードを引き換える",
+    "redeemHint": "友達の招待コードを入力。二人とも30日プレミアムをもらえます。",
+    "redeemCta": "引き換える",
+    "successTitle": "プレミアム解放 🎉",
+    "success": "30日プレミアムを獲得！友達も30日獲得しました。",
+    "invalidCode": "無効な招待コードです。",
+    "cantUseSelf": "自分の招待コードは使えません。",
+    "alreadyRedeemed": "すでに招待コードを使用済みです。",
+    "card": {
+      "invitedBy": "{{name}}があなたをMeyouに招待しました"
+    }
+  },
+  "sort": {
+    "matchTime": "マッチ日時",
+    "receivedTime": "受信",
+    "followTime": "フォロー",
+    "viewedTime": "閲覧",
+    "distance": "距離",
+    "age": "年齢",
+    "active": "アクティブ"
+  },
+  "system": {
+    "match": {
+      "created": "これでMeyou ✨ あいさつしよう 👋"
+    }
+  },
+  "announcement": {
+    "dontShowAgain": "今後表示しない",
+    "close": "閉じる"
+  },
+  "topics": {
+    "tab": "トピック",
+    "loading": "読み込み中…",
+    "loadFailed": "読み込めませんでした",
+    "emptyList": "このトピックにはまだペルソナがいません",
+    "about": "紹介",
+    "joined": "参加済み",
+    "join": "トピックに参加",
+    "leave": "トピックを離れる",
+    "personaNickname": "このトピックでの表示名",
+    "personaNicknameHint": "このトピックのみで使われます",
+    "uploadPhotos": "写真 {{count}}/{{max}}枚アップロード",
+    "requestUnlock": "他のトピックを見るリクエスト",
+    "editYourPhotos": "写真を編集",
+    "requestConfirmTitle": "{{name}}に他のトピックの共有をお願いしますか？",
+    "requestConfirmBody": "相手に通知されます。承認されると全トピックのペルソナとメインプロフィールが見られます。",
+    "send": "リクエストを送る",
+    "requestSent": "リクエストを送りました",
+    "requestFailed": "リクエストを送れませんでした",
+    "requestLimitTitle": "本日の上限に達しました",
+    "requestLimitBody": "無料ユーザーは1日3回まで。プレミアムは無制限。",
+    "alreadyApproved": "すでにこの人の全トピックを見られます",
+    "approve": "承認",
+    "reject": "拒否",
+    "revoke": "アクセスを取り消す",
+    "premiumLimit": "無料ユーザーは2トピック、プレミアムは8トピックに参加できます。",
+    "otherTopicsHeader": "この人の他の一面",
+    "noOtherTopics": "まだ他のトピックに参加していません",
+    "personaNicknamePlaceholder": "例：眼鏡の人",
+    "photoCapTitle": "写真上限に達しました",
+    "photoCapBody": "ペルソナごとに最大{{max}}枚。",
+    "personaLimitTitle": "トピック上限に達しました",
+    "saveFailed": "保存できませんでした",
+    "deleteFailed": "トピックを離れられませんでした",
+    "deleteConfirmTitle": "このトピックを離れますか？",
+    "deleteConfirmBody": "このトピックにペルソナが表示されなくなります。後で再参加できます。",
+    "allJoined": "すべてのトピックに参加済み",
+    "inboxLink": "解除リクエスト",
+    "inboxTitle": "解除リクエスト",
+    "inboxEmpty": "保留中のリクエストはありません",
+    "wantsToSeeOtherTopics": "あなたの他のトピックを見たがっています",
+    "unknownUser": "誰か",
+    "approveFailed": "承認できませんでした",
+    "rejectFailed": "拒否できませんでした",
+    "upgrade": "プレミアムにアップグレード",
+    "joinThisTopic": "このトピックに参加",
+    "youBadge": "自分",
+    "editNickname": "ニックネームを編集"
+  },
+  "auth": {
+    "sessionExpired": "セッションの有効期限が切れました — 再度ログインしてください"
+  },
+  "adminReports": {
+    "title": "通報管理",
+    "empty": "未対応の通報はありません 🎉",
+    "resolve": "対応済みにする",
+    "noReason": "（理由なし）",
+    "kind": {
+      "worldChat": "広場",
+      "vote": "投票"
+    }
+  },
+  "adminStats": {
+    "title": "データ分析",
+    "loadFailed": "統計を読み込めませんでした",
+    "totalUsers": "総ユーザー",
+    "dau": "DAU",
+    "mau": "MAU",
+    "signupsToday": "本日登録",
+    "signups7d": "7日登録",
+    "signups30d": "30日登録",
+    "premium": "プレミアム",
+    "moments24h": "24時間モーメント",
+    "totalMoments": "モーメント総数",
+    "totalVotes": "投票イベント",
+    "totalMatches": "マッチ"
+  },
+  "tags": {
+    "title": "何に興味がありますか？",
+    "subtitle": "3つ以上選んでください · 気の合う人とつなぎます",
+    "stepLabel": "ステップ 2 / 2",
+    "ctaPickMore": "{{n}}個選択 · あと{{more}}個",
+    "ctaReady": "{{n}}個選択 · 準備OK！",
+    "enter": "Meyouを始める",
+    "saveFailed": "保存に失敗しました"
+  },
+  "worldChat": {
+    "title": "広場",
+    "online": "{{n}}人オンライン",
+    "rooms": {
+      "title": "広場",
+      "sectionGlobal": "グローバルルーム",
+      "search": "国を検索",
+      "noResults": "該当なし",
+      "general": "一般ルーム",
+      "generalDesc": "この地域の公開ラウンジ",
+      "sectionMine": "作成したルーム",
+      "sectionPublic": "公開ルーム",
+      "sectionJoined": "参加中",
+      "memberCount": "メンバー{{n}}人",
+      "membersN": "メンバー · {{n}}",
+      "closed": "クローズ",
+      "create": "ルームを作成",
+      "createTitle": "ルームを作成",
+      "createCta": "作成",
+      "createFailed": "ルームを作成できませんでした",
+      "joinFailed": "参加できませんでした",
+      "empty": "まだルームがありません — 最初のルームを作りましょう",
+      "inCountry": "{{country}}で作成中",
+      "fieldTitle": "名前",
+      "fieldTitlePh": "ルーム名を付けてください",
+      "fieldDesc": "紹介",
+      "fieldDescPh": "どんなルーム？（任意）",
+      "private": "非公開ルーム",
+      "privateHint": "参加にはパスワードが必要です",
+      "password": "パスワード",
+      "passwordPh": "参加パスワードを設定",
+      "passwordChangePh": "変更するには新しいパスワードを入力（空欄で維持）",
+      "passwordRequired": "先にパスワードを設定してください",
+      "settings": "ルーム設定",
+      "save": "保存",
+      "saved": "保存しました",
+      "saveFailed": "保存できませんでした",
+      "invite": "招待",
+      "inviteFriends": "友達を招待",
+      "inviteCta": "招待 ({{n}})",
+      "invited": "友達{{n}}人を招待しました",
+      "noFriends": "招待できる友達がいません",
+      "kick": "退出させる",
+      "kickConfirmTitle": "メンバーを退出させますか？",
+      "kickConfirmBody": "{{name}}がこのルームから退出させられます。",
+      "closeRoom": "ルームを閉じる",
+      "closeConfirmTitle": "このルームを閉じますか？",
+      "closeConfirmBody": "新しいメッセージは送れませんが、履歴は残ります。",
+      "closedNotice": "このルームは閉じられています — 新しいメッセージは送れません。",
+      "deleteRoom": "ルームを削除",
+      "deleteConfirmTitle": "このルームを削除しますか？",
+      "deleteConfirmBody": "ルームとすべてのメッセージが完全に削除されます。",
+      "leave": "ルームを退出",
+      "viewMembers": "メンバーを見る",
+      "leaveConfirmTitle": "このルームを退出しますか？",
+      "leaveConfirmBody": "このルームのメンバーではなくなります。",
+      "roomDeleted": "このルームは削除されました。",
+      "kicked": "このルームから退出させられました。"
+    },
+    "empty": "最初にあいさつしましょう 👋",
+    "placeholder": "世界とチャット…",
+    "send": "送信",
+    "report": "通報",
+    "block": "ユーザーをブロック",
+    "dm": "個別メッセージ",
+    "delete": "削除",
+    "deleteConfirmTitle": "このメッセージを削除しますか？",
+    "deleteConfirmBody": "このメッセージが削除されます。",
+    "rateLimited": "少しゆっくり 🙏",
+    "banned": "広場での発言を禁止されています。",
+    "reportSent": "ありがとうございます — 通報を受け付けました。",
+    "sendFailed": "送信できませんでした",
+    "actionFailed": "問題が発生しました",
+    "blockConfirmTitle": "ユーザーをブロックしますか？",
+    "blockConfirmBody": "{{name}}のメッセージが今後表示されません。"
+  },
+  "votes": {
+    "listTitle": "コンテスト",
+    "createTitle": "新しいコンテスト",
+    "submitTitle": "作品を応募",
+    "carouselTitle": "コンテスト",
+    "seeAll": "すべて見る",
+    "highlightsTitle": "ハイライト",
+    "mine": "自分",
+    "createFirst": "最初のコンテストを作成",
+    "format": {
+      "single": "一発勝負",
+      "multiRound": "勝ち抜き"
+    },
+    "roundCountLabel": "ラウンド数",
+    "multiRoundHint": "期間が均等なラウンドに分かれます。各ラウンド後に下位50%が敗退し、最終ラウンドで🥇🥈🥉を決定。",
+    "roundProgress": "{{total}}ラウンド中{{current}}",
+    "roundEnding": "ラウンド終了間近…",
+    "tournamentRounds": "{{n}}ラウンドの勝ち抜き",
+    "eliminated": "敗退",
+    "eliminatedAt": "敗退（R{{n}}）",
+    "empty": "まだコンテストがありません",
+    "loadFailed": "読み込めませんでした",
+    "ended": "終了",
+    "results": "結果",
+    "ruleLabel": "投票",
+    "enter": "参加",
+    "withdraw": "応募を取り下げる",
+    "withdrawConfirmTitle": "応募を取り下げますか？",
+    "withdrawConfirmBody": "応募作品と得票が削除されます。",
+    "report": "通報",
+    "reportEntry": "応募を通報",
+    "reportConfirm": "このコンテストを運営に通報しますか？",
+    "reportSent": "ありがとうございます — 通報を受け付けました。",
+    "blockUser": "ユーザーをブロック",
+    "blockConfirmTitle": "ユーザーをブロックしますか？",
+    "blockConfirmBody": "{{name}}とその応募作品が今後表示されません。",
+    "delete": "削除",
+    "deleteConfirmTitle": "イベントを削除しますか？",
+    "deleteConfirmBody": "すべての応募と投票が完全に削除されます。元に戻せません。",
+    "actionFailed": "問題が発生しました",
+    "voteLimitReached": "本日の投票を使い切りました。",
+    "noEntries": "まだ応募がありません — 最初になりましょう！",
+    "referencePhotos": "参考",
+    "createCta": "コンテストを作成",
+    "createFailed": "コンテストを作成できませんでした",
+    "editTitle": "コンテストを編集",
+    "editActiveNote": "開催中のコンテスト — 説明・写真・リンクのみ補足できます。",
+    "updateCta": "更新",
+    "updateFailed": "更新できませんでした",
+    "updates": {
+      "section": "更新",
+      "title": "イベント更新",
+      "post": "更新を投稿",
+      "placeholder": "コンテストの最新情報をシェア…",
+      "empty": "まだ更新がありません",
+      "seeAll": "すべて見る（{{n}}）",
+      "postFailed": "投稿できませんでした",
+      "deleteConfirm": "この更新を削除しますか？"
+    },
+    "uploadFailed": "アップロードに失敗しました",
+    "maxDuration": "コンテストは最大30日まで開催できます。",
+    "invalidLink": "有効なhttp(s)リンクを入力してください。",
+    "pickPhoto": "写真を選ぶ",
+    "captionPlaceholder": "キャプションを追加（任意）…",
+    "submitCta": "応募する",
+    "entryFailed": "応募できませんでした",
+    "byCreator": "{{name}}主催",
+    "startsAt": "{{date}}開始",
+    "entriesCount": "応募{{n}}件",
+    "voteCount": "{{n}}票",
+    "share": {
+      "label": "共有",
+      "tagline": "コンテストに参加"
+    },
+    "countdown": {
+      "days": "残り{{d}}日{{h}}時間",
+      "hm": "残り{{h}}時間{{m}}分"
+    },
+    "status": {
+      "active": "開催中",
+      "pending": "予定",
+      "ended": "終了",
+      "all": "すべて"
+    },
+    "scope": {
+      "all": "すべて",
+      "nearby": "近く",
+      "following": "フォロー中"
+    },
+    "category": {
+      "all": "すべて",
+      "photography": "写真",
+      "outfit": "ファッション",
+      "food": "料理",
+      "travel": "旅行",
+      "talent": "タレント",
+      "pets": "ペット"
+    },
+    "rule": {
+      "one": "1人1票",
+      "fivePerDay": "1日5票",
+      "unlimited": "無制限（1応募1票）"
+    },
+    "field": {
+      "title": "タイトル",
+      "titlePlaceholder": "例：最高のラテアート ☕",
+      "description": "説明",
+      "descPlaceholder": "どんなコンテストですか？",
+      "category": "カテゴリー",
+      "coverPhotos": "カバー写真",
+      "referencePhotos": "参考写真（任意）",
+      "externalLink": "外部リンク（任意）",
+      "startAt": "開始",
+      "endAt": "終了",
+      "rule": "投票ルール",
+      "format": "形式"
+    }
+  },
+  "chat": {
+    "composer": {
+      "camera": "カメラ",
+      "gallery": "写真",
+      "location": "位置情報",
+      "cancel": "キャンセル",
+      "cameraPermTitle": "カメラの許可が必要です",
+      "cameraPermBody": "設定でMeyouのカメラアクセスを許可してください。",
+      "locationPermTitle": "位置情報の許可が必要です",
+      "locationPermBody": "設定でMeyouの位置情報アクセスを許可してください。",
+      "locationFailed": "位置情報を取得できませんでした"
+    },
+    "image": {
+      "expired": "写真の有効期限が切れました",
+      "failed": "送信に失敗しました",
+      "uploadFailed": "写真を送信できませんでした"
+    },
+    "location": {
+      "label": "位置情報を共有中",
+      "tapToOpen": "タップしてマップで開く",
+      "openFailed": "マップを開けませんでした",
+      "sendFailed": "位置情報を共有できませんでした"
+    },
+    "message": {
+      "edited": "（編集済み）",
+      "editTitle": "メッセージを編集",
+      "editPlaceholder": "メッセージを編集…",
+      "editFailed": "編集できませんでした",
+      "editExpired": "24時間以内のメッセージのみ編集できます",
+      "deleteConfirm": "このメッセージを削除しますか？",
+      "deleteAction": "削除",
+      "deleteFailed": "削除できませんでした",
+      "copied": "コピーしました",
+      "premiumOnly": "プレミアム機能",
+      "actions": {
+        "edit": "編集",
+        "delete": "削除",
+        "copy": "コピー",
+        "cancel": "キャンセル"
+      }
+    },
+    "reactions": {
+      "add": "リアクションを追加",
+      "who": "リアクション{{count}}件"
+    }
+  },
+  "chats": {
+    "searchPlaceholder": "検索",
+    "empty": "まだメッセージがありません — 発見で気の合う人を探しましょう",
+    "newMatchesHeader": "新しい友達 · {{n}}",
+    "sayHi": "あいさつ →",
+    "detail": {
+      "typing": "入力中…",
+      "online": "オンライン",
+      "offline": "オフライン",
+      "messagePlaceholder": "メッセージを入力…",
+      "unmatchFailed": "マッチ解除に失敗しました",
+      "you": "あなた"
+    }
+  },
+  "match": {
+    "title": "Meyou成立！",
+    "subtitle": "これで仲良しです",
+    "bothLove": "{{name}}と共通で好きなもの",
+    "sendCta": "メッセージを送る",
+    "later": "あとで",
+    "sharedSuffix": "共通"
+  },
+  "about": {
+    "section": "プロフィール",
+    "promptsSection": "Q&A",
+    "shareMessage": "Meyouで{{name}}をチェック → {{url}}",
+    "interestsCount": "興味 · {{n}}個一致",
+    "gamesPlays": "プレイ",
+    "stats": {
+      "age": "{{n}}歳"
+    },
+    "likeCta": "{{name}}にいいね",
+    "follow": "フォロー",
+    "following": "フォロー中",
+    "followFailed": "フォローできませんでした",
+    "unfollowConfirm": "この人のフォローを解除しますか？",
+    "unfollowAction": "フォロー解除",
+    "like": "いいね",
+    "liked": "いいね済み",
+    "becomeMatch": "マッチする",
+    "matched": "マッチ済み",
+    "message": "メッセージ",
+    "messageFailed": "チャットを開けませんでした",
+    "playingIntro": "イントロ再生中"
+  },
+  "userDetail": {
+    "aboutSection": "紹介",
+    "interestsSection": "興味",
+    "loadFailed": "プロフィールを読み込めませんでした",
+    "sendMessage": "メッセージを送る",
+    "sendMessagePremiumOnly": "プレミアム機能",
+    "lockedPhotosCount": "🔒 ロックされた写真{{n}}枚",
+    "requestToView": "閲覧をリクエスト",
+    "requestSent": "リクエスト送信済み · 保留中",
+    "requestApproved": "タップして見る",
+    "requestRejected": "リクエスト拒否 · タップで再申請",
+    "requestRevoked": "以前アクセス権あり · 再申請",
+    "requestSentToast": "リクエストを送りました",
+    "requestFailed": "リクエストを送れませんでした"
+  },
+  "nearby": {
+    "peopleCount": "{{n}}人が近くに",
+    "footnote": "近く表示を許可した人のみ表示"
+  },
+  "virtualLocation": {
+    "title": "仮想位置",
+    "subtitle": "プレミアム — 別の都市にいるように近くを閲覧。",
+    "off": "オフ",
+    "revert": "実際の位置を使う",
+    "indicator": "仮想: {{city}}",
+    "active": "オン",
+    "mapHint": "マップをタップして仮想位置を設定",
+    "premiumOnly": "プレミアム機能",
+    "failed": "位置を更新できませんでした"
+  },
+  "friends": {
+    "tabFollowing": "フォロー中",
+    "tabFollowers": "フォロワー",
+    "followBack": "フォローバック"
+  },
+  "privacySettings": {
+    "title": "プライバシー",
+    "showInNearby": "近くに自分を表示",
+    "showInNearbyHint": "オフにすると他人の近くグリッドに表示されません",
+    "showDistance": "距離を表示",
+    "showDistanceHint": "オフにすると都市のみ表示され、距離（km）は表示されません",
+    "hideOnlineStatus": "オンライン状態を非表示",
+    "hideOnlineStatusHint": "プレミアム限定 — オンラインや最終アクティブを他人に見せません",
+    "incognitoBrowsing": "シークレットで閲覧",
+    "incognitoBrowsingHint": "プレミアム限定 — 閲覧したプロフィールの「訪問者」に表示されません",
+    "premiumBadge": "プレミアム",
+    "blocklist": "ブロックしたユーザー",
+    "updateFailed": "更新に失敗しました"
+  },
+  "presence": {
+    "online": "オンライン",
+    "minsAgo": "{{n}}分前にアクティブ",
+    "hoursAgo": "{{n}}時間前にアクティブ",
+    "daysAgo": "{{n}}日前にアクティブ"
+  },
+  "notifications": {
+    "title": "通知",
+    "follow": {
+      "title": "誰かがあなたをフォローし始めました",
+      "body": "タップしてプロフィールを見る"
+    },
+    "viewers": {
+      "title": "プロフィール閲覧",
+      "body": "本日{{count}}人があなたのプロフィールを見ました"
+    },
+    "wants": {
+      "title": "新しい好意",
+      "body": "本日{{count}}人があなたを知りたがっています"
+    },
+    "empty": "まだ通知がありません",
+    "markAllRead": "すべて既読"
+  },
+  "notificationSettings": {
+    "title": "通知",
+    "systemPushLabel": "システムプッシュ",
+    "openSystemSettings": "システム設定を開く",
+    "hint": "通知はiOSで管理されます。すべてのMeyouプッシュを止めるには 設定→通知→Meyou でオフにしてください。",
+    "statusGranted": "オン",
+    "statusDenied": "オフ",
+    "statusUndetermined": "未設定",
+    "statusUnknown": "不明",
+    "prefs": {
+      "importantSection": "重要",
+      "important": "マッチ・メモ・ルーム招待",
+      "importantHint": "常にオン — 見逃したくない瞬間です。",
+      "moreSection": "その他の通知",
+      "votes": "コンテスト更新",
+      "follow": "新しいフォロワー",
+      "viewers": "1日のプロフィール訪問者",
+      "wants": "あなたを知りたい人",
+      "digest": "本日の人気コンテスト",
+      "comeback": "再来訪リマインダー",
+      "quietSection": "おやすみ時間",
+      "quietHours": "おやすみ時間",
+      "quietHoursHint": "この時間帯（UTC）はプッシュを保留します。通知センターには表示されます。",
+      "from": "開始",
+      "to": "終了"
+    }
+  },
+  "accountSettings": {
+    "title": "アカウントとセキュリティ",
+    "emailLabel": "メール",
+    "signOut": "ログアウト",
+    "exportData": "データをダウンロード",
+    "exporting": "準備中…",
+    "exportFailed": "データを準備できませんでした。もう一度お試しください。",
+    "deleteAccount": "アカウント削除",
+    "deleteConfirmWarning": "元に戻せません。すべてのデータが完全に削除されます。",
+    "deleteConfirmPrompt": "確認のためメールアドレスを入力",
+    "deleteConfirmButton": "削除を確定",
+    "deleting": "削除中…",
+    "signOutConfirmTitle": "ログアウト",
+    "signOutConfirmBody": "本当にログアウトしますか？",
+    "signOutButton": "ログアウト",
+    "deleteStep1Title": "アカウント削除",
+    "deleteStep1Body": "すべてのチャット・モーメント・マッチが完全に削除されます。元に戻せません。",
+    "deleteStep1Continue": "続ける",
+    "deleteStep2Title": "もう一度確認",
+    "deleteStep2Body": "最終確認 — アカウントとすべてのデータが直ちに削除されます。",
+    "deleteStep2Confirm": "完全に削除",
+    "deleteFailed": "削除に失敗しました"
+  },
+  "safetyMenu": {
+    "report": "通報",
+    "block": "ブロック",
+    "unmatch": "マッチ解除",
+    "cancel": "キャンセル",
+    "blockConfirmTitle": "{{name}}をブロックしますか？",
+    "blockConfirmBody": "お互いに表示されなくなり、チャットとマッチが削除されます。",
+    "blockAction": "ブロック",
+    "blockFailed": "ブロックに失敗しました",
+    "unmatchConfirmTitle": "{{name}}とのマッチを解除しますか？",
+    "unmatchConfirmBody": "チャットが削除され、復元できません。",
+    "unmatchAction": "マッチ解除"
+  },
+  "photoRequests": {
+    "title": "写真リクエスト",
+    "pendingHeader": "{{n}}件保留中",
+    "approvedHeader": "承認済み · {{n}}人",
+    "approve": "承認",
+    "deny": "拒否",
+    "approveFailed": "承認できませんでした",
+    "denyFailed": "拒否できませんでした",
+    "empty": "まだリクエストがありません",
+    "tapAvatarHint": "アバターをタップしてプロフィールを先に確認できます。",
+    "loadFailed": "リクエストを読み込めませんでした",
+    "revokeAll": "すべて取り消す"
+  },
+  "likedMe": {
+    "title": "あなたにいいねした人",
+    "empty": "まだ誰もいません",
+    "upgradeCta": "誰かを見るにはアップグレード",
+    "loadFailed": "読み込めませんでした"
+  },
+  "viewers": {
+    "title": "あなたを見た人",
+    "empty": "まだ誰もいません",
+    "upgradeCta": "誰が見たか知るにはアップグレード",
+    "loadFailed": "読み込めませんでした"
+  },
+  "notes": {
+    "title": "メモ",
+    "entrySubtitle": "匿名メモ",
+    "unreadSubtitle": "新着メモ{{n}}件",
+    "tabInbox": "受信",
+    "tabSent": "送信",
+    "loadFailed": "読み込めませんでした",
+    "emptyInbox": "まだメモがありません",
+    "emptySent": "送ったメモはありません",
+    "replied": "返信済み",
+    "toRecipient": "{{name}}へ",
+    "anonymousHint": "匿名で送信",
+    "anonymousSender": "匿名",
+    "composePlaceholder": "匿名メモを書く…",
+    "replyPlaceholder": "匿名で返信…",
+    "remaining": "本日 残り{{n}}/{{total}}",
+    "send": "送信",
+    "sendReply": "返信を送る",
+    "sentTitle": "メモを送信しました",
+    "sentBody": "メモが匿名で届けられました。",
+    "sendFailed": "送信できませんでした",
+    "replyFailed": "返信できませんでした",
+    "actionFailed": "問題が発生しました",
+    "quotaTitle": "本日の上限に達しました",
+    "quotaUpsell": "無料会員は1日1件のメモを送れます。アップグレードで最大5件。",
+    "quotaReachedPremium": "本日のメモ{{n}}件をすべて送信しました。明日またお試しください。",
+    "quotaReachedInline": "本日の上限に達しました。",
+    "upgrade": "アップグレード",
+    "detailTitle": "メモ",
+    "yourReply": "あなたの返信",
+    "alreadyReplied": "このメモには返信済みです。",
+    "replyDisclaimer": "返信すると送信者に名前が表示されます。",
+    "sentLabel": "送信したメモ",
+    "repliedLabel": "返信済み",
+    "share": {
+      "label": "共有",
+      "cardTag": "Meyouの匿名メモ",
+      "cardFooter": "@meyou.uk",
+      "cardReceived": "Meyouで受信"
+    },
+    "delete": "削除",
+    "deleteConfirmTitle": "メモを削除しますか？",
+    "deleteConfirmBody": "このメモが受信箱から削除されます。",
+    "block": "ブロック",
+    "blockConfirmTitle": "送信者をブロックしますか？",
+    "blockConfirmBody": "この人からのメモを今後受け取りません。相手には通知されません。"
+  },
+  "boost": {
+    "button": "ブースト",
+    "activeFor": "ブースト中 · {{time}}",
+    "activated": "30分間ブーストが有効になりました",
+    "confirmTitle": "ブーストを有効にしますか？",
+    "confirmBody": "30分間、10倍の人にカードが表示されます。",
+    "confirmCta": "有効にする",
+    "alreadyActive": "すでにブースト中です",
+    "activateFailed": "ブーストを有効にできませんでした",
+    "premiumTitle": "ブーストはプレミアム機能",
+    "premiumBody": "ブーストでマッチを増やそう — アップグレードで解放。"
+  },
+  "report": {
+    "title": "{{name}}を通報",
+    "subtitle": "この人を通報する理由は？送信後に確認し、ユーザーは自動でブロックされます。",
+    "noteLabel": "メモ（任意）",
+    "notePlaceholder": "何があったか…",
+    "submit": "通報する",
+    "submittedTitle": "受け付けました",
+    "submittedBody": "まもなく確認します。このユーザーは自動でブロックされました。",
+    "submittedOk": "OK",
+    "submitFailed": "送信に失敗しました",
+    "reasons": {
+      "inappropriate_photos": "不適切な写真",
+      "harassment": "ハラスメント",
+      "spam": "スパム",
+      "fake_profile": "偽プロフィール",
+      "underage": "未成年",
+      "other": "その他"
+    }
+  },
+  "premium": {
+    "heroTagline": "コミュニティ活動のためにMeyouプレミアムを解放",
+    "active": "プレミアム会員です",
+    "expiresAt": "有効期限: {{date}}",
+    "benefitsSection": "特典",
+    "cancelPolicy": "設定でいつでも解約できます。長期契約なし。",
+    "upsell": {
+      "title": "Meyouプレミアム",
+      "cta": "プレミアムを見る",
+      "later": "あとで",
+      "viewers": "誰があなたのプロフィールを見たか正確に確認。",
+      "likes": "あなたを知りたい人をすべて見ましょう。",
+      "privacy": "オンライン状態を隠してシークレットで閲覧。",
+      "profile80": "プロフィールが素敵 — プレミアムで3倍の表示を。"
+    },
+    "testimonials": {
+      "section": "会員の声",
+      "disclaimer": "*匿名化したサンプルです。",
+      "1": {
+        "name": "小美 · 25 · クアラルンプール",
+        "quote": "Meyouで写真仲間にたくさん出会えました — コンテストがクセになる！"
+      },
+      "2": {
+        "name": "Jay · 28 · シンガポール",
+        "quote": "広場のルームはプレッシャーなく人と出会えて最高です。"
+      },
+      "3": {
+        "name": "阿哲 · 23 · 台北",
+        "quote": "音声イントロがいい — 人の雰囲気が本当に伝わります。"
+      },
+      "4": {
+        "name": "Nina · 26 · 香港",
+        "quote": "プレミアムのプロフィール訪問者＋シークレットは100%の価値あり。"
+      }
+    },
+    "benefits": {
+      "hideOnline": "オンライン状態を非表示",
+      "incognito": "シークレットで閲覧",
+      "profileViewers": "プロフィール訪問者を見る",
+      "readReceipts": "チャットの既読表示",
+      "discoveryFilters": "好みで発見をフィルター",
+      "priorityListing": "コミュニティフィードで優先表示"
+    },
+    "plansSection": "プランを選択",
+    "perYear": "年",
+    "perMonth": "月",
+    "saveTwoMonths": "2か月分お得",
+    "monthlyEquivalent": "≈ 月 RM {{n}}",
+    "disclaimer": "購入確定時にApple IDまたはGoogleアカウントに課金されます。現在の期間終了の24時間以上前に自動更新をオフにしない限り、サブスクリプションは自動更新されます。現在の期間終了の24時間以内に表示価格で更新料金が請求されます。サブスクリプションの管理は 設定→Apple ID／Google→サブスクリプション で行えます。",
+    "termsOfUse": "利用規約",
+    "privacyPolicy": "プライバシーポリシー",
+    "subscription": {
+      "title": "Meyouプレミアム",
+      "monthly": "月額",
+      "annual": "年額",
+      "autoRenewTerms": "解約するまで自動更新されます。App StoreまたはGoogle Playのアカウント設定でいつでも解約できます。"
+    },
+    "ctaAnnual": "年額 RM {{price}}",
+    "ctaMonthly": "月額 RM {{price}}",
+    "ctaAnnualLabel": "年額 {{price}}",
+    "ctaMonthlyLabel": "月額 {{price}}",
+    "subscribeSuccessTitle": "登録完了！",
+    "subscribeSuccessBody": "プレミアムへようこそ！",
+    "subscribeFailedTitle": "サブスクリプション失敗",
+    "subscribeFailedBody": "サブスクリプションに失敗しました。もう一度お試しください。",
+    "restore": "購入を復元",
+    "restoreSuccessTitle": "プレミアムを復元しました",
+    "restoreSuccessBody": "サブスクリプションを見つけて再有効化しました。",
+    "restoreNothingTitle": "復元する項目がありません",
+    "restoreNothingBody": "このApple IDで有効なサブスクリプションが見つかりませんでした。",
+    "restoreFailedTitle": "復元に失敗しました"
+  },
+  "iapError": {
+    "iosOnly": "プレミアムは現在iOSのみ対応です",
+    "moduleMissing": "課金モジュールが未インストールです。EAS devビルドが必要です",
+    "initFailed": "課金の初期化に失敗: {{detail}}",
+    "fetchFailed": "プランを読み込めませんでした: {{detail}}",
+    "skuMissing": "App Storeでこのプランが見つかりません — SKUがまだ有効でない可能性があります",
+    "purchaseFailed": "購入に失敗: {{detail}}",
+    "receiptMissing": "App Storeのレシートを取得できませんでした",
+    "restoreFailed": "復元に失敗: {{detail}}"
+  },
+  "googleSignIn": {
+    "notReadyTitle": "Googleサインインが有効になっていません",
+    "notReadyBody": "管理者がまだOAuth認証情報を設定していません。メールまたはAppleをご利用いただくか、後でお試しください。",
+    "noIdToken": "Googleが認証情報を返しませんでした。OAuthクライアントのBundle IDがcom.meetupnearby.appか確認して再試行してください。",
+    "loginFailedWithCode": "ログイン失敗（{{code}}）",
+    "loginFailed": "ログインに失敗しました。もう一度お試しください"
+  },
+  "time": {
+    "justNow": "たった今",
+    "minAgo": "{{n}}分前",
+    "hrAgo": "{{n}}時間前",
+    "dayAgo": "{{n}}日前"
+  },
+  "messageBanner": {
+    "newMessage": "新着メッセージ"
+  },
+  "admin": {
+    "error": "エラー",
+    "ann": {
+      "title": "お知らせ管理",
+      "newTitle": "新しいお知らせ",
+      "image": "画像",
+      "pickImage": "画像を選択",
+      "camera": "写真を撮る",
+      "gallery": "ギャラリーから選択",
+      "changeImage": "画像を変更",
+      "imageUrl": "画像URL",
+      "imageUrlRequired": "先に画像を追加してください",
+      "ctaUrl": "リンクURL（任意）",
+      "ctaTitle": "タイトル（任意）",
+      "ctaTitlePh": "内部ラベル",
+      "startsAt": "開始日時（任意）",
+      "endsAt": "終了日時（任意）",
+      "notSet": "未設定（常時表示）",
+      "done": "完了",
+      "preview": "プレビュー",
+      "published": "お知らせを公開しました",
+      "dateHint": "空欄で常時表示。",
+      "publish": "公開",
+      "existing": "既存のお知らせ",
+      "empty": "お知らせはまだありません。",
+      "loadFailed": "読み込み失敗。タップで再試行。",
+      "active": "有効",
+      "inactive": "非表示",
+      "untitled": "（無題）",
+      "noLink": "リンクなし",
+      "deleteTitle": "お知らせを削除しますか？",
+      "deleteBody": "ユーザーから非表示になります。後で再度有効にできます。",
+      "delete": "削除"
     }
   }
 }

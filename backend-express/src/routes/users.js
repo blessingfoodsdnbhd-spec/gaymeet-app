@@ -121,7 +121,7 @@ router.patch('/me', auth, async (req, res, next) => {
     // (incl. region variants) is ignored so push localization stays predictable.
     if (updates.preferredLanguage !== undefined) {
       const lang = String(updates.preferredLanguage || '').slice(0, 2).toLowerCase();
-      if (lang === 'zh' || lang === 'en') updates.preferredLanguage = lang;
+      if (['zh', 'en', 'ko', 'ja'].includes(lang)) updates.preferredLanguage = lang;
       else delete updates.preferredLanguage;
     }
 

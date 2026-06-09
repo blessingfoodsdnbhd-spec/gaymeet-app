@@ -81,7 +81,7 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
       try {
         const User = require('../models/User');
         const u = await User.findById(userId).select('preferredLanguage').lean();
-        if (u && (u.preferredLanguage === 'zh' || u.preferredLanguage === 'en')) {
+        if (u && ['en', 'zh', 'ko', 'ja'].includes(u.preferredLanguage)) {
           lang = u.preferredLanguage;
         }
       } catch (_) {}
