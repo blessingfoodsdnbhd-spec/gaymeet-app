@@ -25,6 +25,7 @@ export type RootStackParamList = {
   ChatDetail: { chatId: string };
   // Profile sub-pages — presented as pushes over MainTabs.
   EditProfile: undefined;
+  Search: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

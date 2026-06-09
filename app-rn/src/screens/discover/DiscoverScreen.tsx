@@ -316,7 +316,11 @@ export function DiscoverScreen() {
         title={t('tabs.discover')}
         right={
           <>
-            <IconButton onPress={runSearch}>
+            {/* SEARCH1 — the header magnifier now opens unified search
+                (users / votes / rooms). The "find new nearby friends" radar
+                (runSearch / searchNewFriends) is kept for re-use as a
+                pull-to-refresh; see follow-up note in the SEARCH1 commit. */}
+            <IconButton onPress={() => nav.navigate('Search')}>
               <Search size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
             {/* 🔊 介绍声音 — when on, opening a profile auto-plays their voice intro. */}

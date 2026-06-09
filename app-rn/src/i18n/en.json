@@ -129,6 +129,7 @@
     "title": "Edit Profile",
     "done": "Done"
   },
+  "search": {"placeholder": "Search users, votes, rooms", "hintTitle": "Search Meyou", "hintSubtitle": "Find people, vote events, and chat rooms.", "empty": "No results for “{{q}}”", "tabs": {"users": "Users", "votes": "Votes", "rooms": "Rooms"}},
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",

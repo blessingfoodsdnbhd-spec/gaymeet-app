@@ -120,6 +120,7 @@ app.use('/api/promotions', promotionsRoutes);
 app.use('/api/users', boostRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/shouts', shoutsRoutes);
+app.use('/api/search', require('./routes/search')); // GET / unified search (SEARCH1)
 app.use('/api/popular', popularRoutes);
 app.use('/api/moments', momentsRoutes);
 app.use('/api/gifts', giftsRoutes);

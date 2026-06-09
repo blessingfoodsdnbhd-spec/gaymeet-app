@@ -129,6 +129,7 @@
     "title": "编辑资料",
     "done": "完成"
   },
+  "search": {"placeholder": "搜索用户、投票、房间", "hintTitle": "搜索 Meyou", "hintSubtitle": "查找用户、投票活动和聊天室。", "empty": "没有找到“{{q}}”", "tabs": {"users": "用户", "votes": "投票", "rooms": "房间"}},
   "blocked": {
     "title": "已屏蔽用户",
     "emptyTitle": "没有已屏蔽的用户",
