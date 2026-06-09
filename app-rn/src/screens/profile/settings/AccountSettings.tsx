@@ -9,8 +9,10 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useAuth } from '../../../store/auth';
-import { deleteAccount } from '../../../api/me';
+import { deleteAccount, exportAccountData } from '../../../api/me';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { Sheet } from '../../../components/Sheet';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
@@ -21,6 +23,7 @@ export function AccountSettings() {
   const user = useAuth((s) => s.user);
   const signOut = useAuth((s) => s.signOut);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');
 
@@ -65,6 +68,30 @@ export function AccountSettings() {
     }
   };
 
+  // GDPR — fetch the full JSON export, write it to a cache file, and hand it to
+  // the OS share sheet so the user can save / email / AirDrop their own data.
+  const doExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const data = await exportAccountData();
+      const json = JSON.stringify(data, null, 2);
+      const uri = `${FileSystem.cacheDirectory}meyou-data-export.json`;
+      await FileSystem.writeAsStringAsync(uri, json, { encoding: FileSystem.EncodingType.UTF8 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/json',
+          dialogTitle: t('accountSettings.exportData'),
+          UTI: 'public.json',
+        });
+      }
+    } catch {
+      Alert.alert(t('accountSettings.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <SettingsShell title={t('accountSettings.title')}>
       {/* Email + delete grouped: the destructive action lives directly under
@@ -76,6 +103,13 @@ export function AccountSettings() {
           label={deleting ? t('accountSettings.deleting') : t('accountSettings.deleteAccount')}
           destructive
           onPress={openDelete}
+        />
+      </SettingsCard>
+
+      <SettingsCard flat style={{ paddingVertical: 4 }}>
+        <LinkRow
+          label={exporting ? t('accountSettings.exporting') : t('accountSettings.exportData')}
+          onPress={doExport}
         />
       </SettingsCard>
 

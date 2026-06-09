@@ -202,6 +202,12 @@ export const getUserById = (userId: string) =>
 export const deleteAccount = () =>
   unwrap<{ success: true; message: string }>(api.delete('/account'));
 
+/** GDPR — fetch a full JSON export of everything the account owns
+ * (profile, matches, messages, moments, comments, swipes, follows, gifts,
+ * payments). Returned raw for the client to write to a file + share. */
+export const exportAccountData = () =>
+  api.get('/account/export').then((r) => r.data?.data ?? r.data);
+
 /** Inbound likes — users who swiped LIKE/SUPER_LIKE on me. Backend gates
  *  on Premium: non-premium gets blurred placeholder rows (nickname '??',
  *  no avatar) so the count is still visible but identities are not. */
