@@ -217,6 +217,7 @@
       "deleteConfirmTitle": "删除聊天室?",
       "deleteConfirmBody": "聊天室和所有消息将被永久删除。",
       "leave": "退出聊天室",
+      "viewMembers": "查看成员",
       "leaveConfirmTitle": "退出聊天室?",
       "leaveConfirmBody": "你将不再是此聊天室的成员。",
       "roomDeleted": "此聊天室已被删除。",

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { X, UserPlus, Crown, ChevronLeft, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { Sheet } from '../../components/Sheet';
@@ -46,10 +47,11 @@ export function RoomSettingsSheet({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<any>();
   const { height: screenH } = useWindowDimensions();
   const scrollMaxH = Math.round(screenH * 0.52);
 
-  const [tab, setTab] = React.useState<'main' | 'invite'>('main');
+  const [tab, setTab] = React.useState<'main' | 'invite' | 'members'>('main');
   const [title, setTitle] = React.useState(room.title);
   const [description, setDescription] = React.useState(room.description);
   const [isPrivate, setIsPrivate] = React.useState(room.isPrivate);
@@ -72,7 +74,7 @@ export function RoomSettingsSheet({
   const membersQ = useQuery({
     queryKey: ['worldChat', 'roomMembers', room.id],
     queryFn: () => getRoomMembers(room.id),
-    enabled: open && room.isCreator && tab === 'main',
+    enabled: open && ((room.isCreator && tab === 'main') || tab === 'members'),
     select: (d) => d.members,
   });
   const friendsQ = useQuery({
@@ -200,11 +202,56 @@ export function RoomSettingsSheet({
       },
     ]);
 
-  // Non-creator member: just leave.
+  // Read-only member list — reachable by any member via "View members". Creators
+  // see kick controls in the main settings; here it's view + tap → profile.
+  if (tab === 'members') {
+    const list = membersQ.data ?? [];
+    return (
+      <Sheet open={open} onClose={onClose} maxHeight="78%">
+        <View style={styles.sheetHeader}>
+          <Pressable onPress={() => setTab('main')} hitSlop={8}>
+            <ChevronLeft size={24} color={theme.colors.text} />
+          </Pressable>
+          <Text style={[styles.sheetTitle, { color: theme.colors.text, marginBottom: 0, flex: 1 }]}>
+            {t('worldChat.rooms.membersN', { n: room.memberCount })}
+          </Text>
+        </View>
+        {membersQ.isLoading ? (
+          <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
+        ) : (
+          <ScrollView style={{ maxHeight: scrollMaxH }}>
+            {list.map((m) => (
+              <Pressable
+                key={m.id}
+                onPress={() => {
+                  onClose();
+                  nav.navigate('UserDetail', { userId: m.id });
+                }}
+                style={[styles.memberRow, { borderColor: theme.colors.line }]}
+              >
+                <Avatar name={m.displayName} uri={m.avatarUrl} size={38} />
+                <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
+                  {m.displayName}
+                </Text>
+                {m.isCreator && <Crown size={15} color={theme.colors.primary} strokeWidth={2} />}
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+      </Sheet>
+    );
+  }
+
+  // Non-creator member: view members + leave.
   if (!room.isCreator) {
     return (
       <Sheet open={open} onClose={onClose} maxHeight="40%">
         <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{room.title}</Text>
+        <Pressable onPress={() => setTab('members')} style={[styles.actionRow, { borderColor: theme.colors.line }]}>
+          <Text style={{ fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
+            👥 {t('worldChat.rooms.viewMembers')}
+          </Text>
+        </Pressable>
         <Pressable onPress={onLeave} style={[styles.actionRow, { borderColor: theme.colors.line }]}>
           <Text style={{ fontSize: 15, color: theme.colors.danger ?? '#E5484D', fontWeight: '700' }}>
             {t('worldChat.rooms.leave')}

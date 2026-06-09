@@ -217,6 +217,7 @@
       "deleteConfirmTitle": "Delete this room?",
       "deleteConfirmBody": "The room and all its messages will be permanently deleted.",
       "leave": "Leave room",
+      "viewMembers": "View members",
       "leaveConfirmTitle": "Leave this room?",
       "leaveConfirmBody": "You'll no longer be a member of this room.",
       "roomDeleted": "This room was deleted.",
