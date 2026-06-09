@@ -243,10 +243,14 @@ export function MapPickerScreen() {
         )}
       </View>
 
-      {/* Quick city chips. */}
+      {/* Quick city chips. A bare horizontal ScrollView in a flex column
+          stretches vertically to fill the column (eating the map's space) —
+          flexGrow:0 + a bounded height keep it to one row so the map gets the
+          rest (UUUU; TTTT's flex:1 was correct but this ScrollView starved it). */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.chipScroll}
         contentContainerStyle={styles.chipRow}
         keyboardShouldPersistTaps="handled"
       >
@@ -335,6 +339,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultRow: { paddingHorizontal: 12, paddingVertical: 10 },
+  // flexGrow:0 stops the horizontal ScrollView from expanding vertically; the
+  // maxHeight is a belt-and-suspenders bound for Android (UUUU).
+  chipScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
   chipRow: { gap: 8, paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' },
   cityChip: {
     paddingHorizontal: 14,
