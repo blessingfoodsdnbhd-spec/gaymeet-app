@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { VerifiedBadge } from '../../components/NameWithBadge';
+import { PopularityBadge } from '../../components/PopularityBadge';
 import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
@@ -270,6 +271,7 @@ export function UserDetailScreen() {
                 })()}
               </Text>
               {(user as any).isOfficial && <VerifiedBadge size={16} />}
+              <PopularityBadge value={(user as any).popularity} size="md" />
             </View>
             {user.countryCode && (
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>

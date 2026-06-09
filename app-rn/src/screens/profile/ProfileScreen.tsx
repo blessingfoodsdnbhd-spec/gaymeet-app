@@ -33,6 +33,7 @@ import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { NameWithBadge } from '../../components/NameWithBadge';
+import { PopularityBadge } from '../../components/PopularityBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
@@ -177,6 +178,11 @@ export function ProfileScreen() {
             <Text style={{ marginTop: 6, fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>
               {t('profile.streak', { n: user.streak!.current })}
             </Text>
+          )}
+          {((user as any).popularity ?? 0) >= 1 && (
+            <View style={{ marginTop: 6 }}>
+              <PopularityBadge value={(user as any).popularity} size="md" />
+            </View>
           )}
           {!official && <View style={{ height: 12 }} />}
           <Pressable

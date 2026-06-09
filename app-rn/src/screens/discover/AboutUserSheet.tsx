@@ -48,6 +48,7 @@ import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
+import { PopularityBadge } from '../../components/PopularityBadge';
 
 interface Props {
   open: boolean;
@@ -424,6 +425,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               </Text>
               {(user as any).isOfficial && <VerifiedBadge size={16} />}
               <FollowBadge status={user.followStatus} size={18} />
+              <PopularityBadge value={(user as any).popularity} />
               {/* Voice intro — always tappable; auto-plays once on open when the
                   Nearby "介绍声音" toggle is on. Not for own profile. */}
               {!isSelf && !!user.voiceIntroUrl && (
