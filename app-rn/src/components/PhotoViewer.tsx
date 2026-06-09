@@ -169,6 +169,14 @@ function ZoomablePage({
             style={{ width, height }}
             contentFit="contain"
             cachePolicy="memory-disk"
+            // MMMM — decode at native resolution. Without this, expo-image's
+            // default downscaling serves the tiny bitmap the feed grid already
+            // decoded under this SAME url (the full-res original is on disk, but
+            // the in-memory decode is grid-sized) → the photo looks blocky
+            // ("格子") and visibly re-renders as it re-decodes. Full-res decode
+            // also keeps pinch-zoom sharp instead of upscaling a small bitmap.
+            allowDownscaling={false}
+            priority="high"
           />
         </Animated.View>
       </View>
