@@ -149,6 +149,8 @@
       "location": "위치 추가",
       "taggedCount": "{{n}}명 태그됨",
       "chooseOnMap": "지도에서 선택",
+      "searchPlace": "장소 검색...",
+      "tapPinToSelect": "핀을 눌러 장소를 선택하세요",
       "currentLocation": "현재 위치",
       "removeLocation": "위치 제거",
       "noFriends": "아직 태그할 친구가 없어요",
