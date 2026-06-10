@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "49",
+      "buildNumber": "50",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 39,
+      "versionCode": 40,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/logo.png",
