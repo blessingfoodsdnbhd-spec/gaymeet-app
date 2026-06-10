@@ -280,12 +280,6 @@
     "highlightsTitle": "Highlights",
     "mine": "Mine",
     "createFirst": "Create the first one",
-    "format": {
-      "single": "Single round",
-      "multiRound": "Elimination"
-    },
-    "roundCountLabel": "Number of rounds",
-    "multiRoundHint": "The time window is split into equal rounds. After each round the bottom 50% are eliminated; the final round decides 🥇🥈🥉.",
     "roundProgress": "Round {{current}} of {{total}}",
     "roundEnding": "Round ending…",
     "tournamentRounds": "{{n}}-round elimination",
@@ -317,7 +311,7 @@
     "createCta": "Create contest",
     "createFailed": "Couldn't create contest",
     "editTitle": "Edit contest",
-    "editActiveNote": "Live contest — you can only supplement the description, photos, and link.",
+    "editActiveNote": "Live contest — you can only update the description.",
     "updateCta": "Update",
     "updateFailed": "Couldn't update",
     "updates": {
@@ -331,12 +325,11 @@
       "deleteConfirm": "Delete this update?"
     },
     "uploadFailed": "Upload failed",
-    "maxDuration": "A contest can run up to 30 days.",
-    "invalidLink": "Enter a valid http(s) link.",
     "pickPhoto": "Pick a photo",
     "captionPlaceholder": "Add a caption (optional)…",
     "submitCta": "Submit entry",
     "submitYourEntry": "Your entry photo",
+    "fixedDurationLabel": "15-day event",
     "entryPhotoRequired": "Your entry photo is required",
     "newEntriesBadge": "🆕 {{count}} new",
     "infoLabel": "Contest details",
@@ -383,14 +376,7 @@
       "titlePlaceholder": "e.g. Best latte art ☕",
       "description": "Description",
       "descPlaceholder": "What's this contest about?",
-      "category": "Category",
-      "coverPhotos": "Cover photos",
-      "referencePhotos": "Reference photos (optional)",
-      "externalLink": "External link (optional)",
-      "startAt": "Starts",
-      "endAt": "Ends",
-      "rule": "Voting rule",
-      "format": "Format"
+      "category": "Category"
     }
   },
   "discover": {

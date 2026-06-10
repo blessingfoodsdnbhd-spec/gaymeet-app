@@ -19,6 +19,9 @@ const DESC_MAX = 500;
 const CAPTION_MAX = 200;
 const MAX_PHOTOS = 5;
 const MAX_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+// Contests now run a fixed 15-day window, server-controlled (the create form no
+// longer has start/end pickers). endAt = startAt + 15d, overriding any client value.
+const EVENT_DURATION_MS = 15 * 24 * 60 * 60 * 1000;
 const CATEGORIES = ['photography', 'outfit', 'food', 'travel', 'talent', 'pets'];
 const MODES = ['one', 'fivePerDay', 'unlimited'];
 // Max entries attached per event in the feed carousel. Bounds payload/work
@@ -33,23 +36,6 @@ function startOfToday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-/** Evenly split [startAt, endAt] into `count` sequential elimination rounds. */
-function buildRounds(startAt, endAt, count, advanceMode, advanceValue) {
-  const span = (endAt.getTime() - startAt.getTime()) / count;
-  const rounds = [];
-  for (let i = 0; i < count; i++) {
-    rounds.push({
-      index: i,
-      startAt: new Date(startAt.getTime() + span * i),
-      endAt: new Date(startAt.getTime() + span * (i + 1)),
-      advanceMode,
-      advanceValue,
-    });
-  }
-  rounds[count - 1].endAt = new Date(endAt); // exact end
-  return rounds;
 }
 
 /** Effective status between 60s close sweeps (denormalized status can lag). */
@@ -295,58 +281,38 @@ router.post('/', auth, async (req, res, next) => {
     const title = String(b.title ?? '').trim();
     if (!title) return err(res, 'Title is required');
     if (title.length > TITLE_MAX) return err(res, `Title too long (max ${TITLE_MAX})`);
+    const description = String(b.description ?? '').trim();
+    if (!description) return err(res, 'Description is required');
     if (!CATEGORIES.includes(b.category)) return err(res, 'Invalid category');
-    const coverPhotos = Array.isArray(b.coverPhotos) ? b.coverPhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS) : [];
-    if (coverPhotos.length === 0) return err(res, 'At least one cover photo is required');
-    const referencePhotos = Array.isArray(b.referencePhotos)
-      ? b.referencePhotos.filter(isHttpUrl).slice(0, MAX_PHOTOS)
-      : [];
-    if (b.externalLink && !isHttpUrl(b.externalLink)) return err(res, 'Invalid external link');
-    const mode = MODES.includes(b.rules?.mode) ? b.rules.mode : 'one';
 
     // The initiator is now a contestant: creating a contest requires the
-    // creator's own entry photo, auto-added as VoteEntry #1 below.
+    // creator's own entry photo, auto-added as VoteEntry #1 below. That entry
+    // photo also seeds the dynamic cover (top-ranked entry's photo) — there are
+    // no separate cover/reference photos, caption, external link, or format.
     const entryPhotoUrl = String(b.entryPhotoUrl ?? '');
     if (!isHttpUrl(entryPhotoUrl)) return err(res, 'Your entry photo is required');
-    const entryCaption = String(b.entryCaption ?? '').slice(0, CAPTION_MAX);
 
-    const startAt = new Date(b.startAt);
-    const endAt = new Date(b.endAt);
-    if (isNaN(startAt) || isNaN(endAt)) return err(res, 'Invalid dates');
-    if (endAt <= startAt) return err(res, 'End must be after start');
-    if (endAt - startAt > MAX_DURATION_MS) return err(res, 'Max duration is 30 days');
-
-    const now = new Date();
-    const status = now >= startAt ? (now >= endAt ? 'ended' : 'active') : 'pending';
-
-    // Multi-round (淘汰赛): build N evenly-split elimination rounds. We derive
-    // rounds from a count + advance rule (simpler client) rather than a per-round
-    // date form; the schema still stores full per-round dates for flexibility.
-    const type = b.type === 'multiRound' ? 'multiRound' : 'single';
-    let rounds = [];
-    if (type === 'multiRound') {
-      const count = Math.min(Math.max(parseInt(b.roundCount, 10) || 0, 2), 5);
-      if (count < 2) return err(res, 'Multi-round needs 2–5 rounds');
-      const advanceMode = ['percent', 'fixed'].includes(b.advanceMode) ? b.advanceMode : 'percent';
-      const advanceValue = Number(b.advanceValue) > 0 ? Number(b.advanceValue) : 50;
-      rounds = buildRounds(startAt, endAt, count, advanceMode, advanceValue);
-    }
+    // Fixed 15-day window, server-controlled (client time pickers removed). The
+    // contest starts now and is active immediately.
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + EVENT_DURATION_MS);
 
     const ev = await VoteEvent.create({
       creatorId: req.user._id,
       title,
-      description: String(b.description ?? '').slice(0, DESC_MAX),
+      description: description.slice(0, DESC_MAX),
       category: b.category,
-      coverPhotos,
-      referencePhotos,
-      externalLink: b.externalLink || null,
+      coverPhotos: [],
+      referencePhotos: [],
+      externalLink: null,
       startAt,
       endAt,
-      rules: { mode },
-      type,
-      rounds,
+      // One vote per entry, unlimited entries (不限/每个作品一票) — no rule UI.
+      rules: { mode: 'unlimited' },
+      type: 'single',
+      rounds: [],
       currentRoundIndex: 0,
-      status,
+      status: 'active',
       entryCount: 1, // initiator's auto-entry, created below
       location: req.user.location ?? undefined,
     });
@@ -357,7 +323,7 @@ router.post('/', auth, async (req, res, next) => {
       eventId: ev._id,
       submitterId: req.user._id,
       photoUrl: entryPhotoUrl,
-      caption: entryCaption,
+      caption: '',
     });
 
     created(res, serializeEvent(ev, req.user));

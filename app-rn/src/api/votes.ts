@@ -106,24 +106,17 @@ export const listVoteEvents = (params: ListVotesParams = {}) =>
 export const getVoteEvent = (id: string) =>
   unwrap<VoteEventDetail>(api.get(`/votes/${id}`));
 
+// Simplified create form: category + title + description + the initiator's own
+// entry photo. Cover/reference photos, external link, start/end dates, vote-rule
+// and format are all server-defaults now (15-day window, single round, one vote
+// per entry) and no longer client-supplied. The patch (edit) path reuses this
+// shape via Partial — only title/description/category are editable.
 export interface CreateVotePayload {
   title: string;
-  description?: string;
+  description: string;
   category: VoteCategory;
-  coverPhotos: string[];
-  referencePhotos?: string[];
-  externalLink?: string | null;
-  startAt: string;
-  endAt: string;
-  rules: { mode: VoteMode };
-  /** Initiator-as-contestant: the creator's own entry photo (required) + caption. */
+  /** Initiator-as-contestant: the creator's own entry photo (required). */
   entryPhotoUrl: string;
-  entryCaption?: string;
-  /** 'multiRound' splits [startAt,endAt] into roundCount elimination rounds. */
-  type?: VoteType;
-  roundCount?: number;
-  advanceMode?: 'percent' | 'fixed';
-  advanceValue?: number;
 }
 export const createVoteEvent = (payload: CreateVotePayload) =>
   unwrap<VoteEventSummary>(api.post('/votes', payload));

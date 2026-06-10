@@ -659,12 +659,6 @@
     "highlightsTitle": "ハイライト",
     "mine": "自分",
     "createFirst": "最初のコンテストを作成",
-    "format": {
-      "single": "一発勝負",
-      "multiRound": "勝ち抜き"
-    },
-    "roundCountLabel": "ラウンド数",
-    "multiRoundHint": "期間が均等なラウンドに分かれます。各ラウンド後に下位50%が敗退し、最終ラウンドで🥇🥈🥉を決定。",
     "roundProgress": "{{total}}ラウンド中{{current}}",
     "roundEnding": "ラウンド終了間近…",
     "tournamentRounds": "{{n}}ラウンドの勝ち抜き",
@@ -696,7 +690,7 @@
     "createCta": "コンテストを作成",
     "createFailed": "コンテストを作成できませんでした",
     "editTitle": "コンテストを編集",
-    "editActiveNote": "開催中のコンテスト — 説明・写真・リンクのみ補足できます。",
+    "editActiveNote": "開催中のコンテスト — 説明のみ編集できます。",
     "updateCta": "更新",
     "updateFailed": "更新できませんでした",
     "updates": {
@@ -710,12 +704,11 @@
       "deleteConfirm": "この更新を削除しますか？"
     },
     "uploadFailed": "アップロードに失敗しました",
-    "maxDuration": "コンテストは最大30日まで開催できます。",
-    "invalidLink": "有効なhttp(s)リンクを入力してください。",
     "pickPhoto": "写真を選ぶ",
     "captionPlaceholder": "キャプションを追加（任意）…",
     "submitCta": "応募する",
     "submitYourEntry": "あなたの作品写真",
+    "fixedDurationLabel": "15日間のイベント",
     "entryPhotoRequired": "作品写真が必要です",
     "newEntriesBadge": "🆕 新着{{count}}件",
     "infoLabel": "コンテスト詳細",
@@ -762,14 +755,7 @@
       "titlePlaceholder": "例：最高のラテアート ☕",
       "description": "説明",
       "descPlaceholder": "どんなコンテストですか？",
-      "category": "カテゴリー",
-      "coverPhotos": "カバー写真",
-      "referencePhotos": "参考写真（任意）",
-      "externalLink": "外部リンク（任意）",
-      "startAt": "開始",
-      "endAt": "終了",
-      "rule": "投票ルール",
-      "format": "形式"
+      "category": "カテゴリー"
     }
   },
   "chat": {

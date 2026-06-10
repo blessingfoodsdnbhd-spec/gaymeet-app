@@ -659,12 +659,6 @@
     "highlightsTitle": "하이라이트",
     "mine": "내 것",
     "createFirst": "첫 번째 콘테스트를 만들어보세요",
-    "format": {
-      "single": "단판",
-      "multiRound": "토너먼트"
-    },
-    "roundCountLabel": "라운드 수",
-    "multiRoundHint": "기간이 동일한 라운드로 나뉘어요. 각 라운드 후 하위 50%가 탈락하고 최종 라운드에서 🥇🥈🥉를 결정합니다.",
     "roundProgress": "{{total}} 중 {{current}} 라운드",
     "roundEnding": "라운드 종료 중…",
     "tournamentRounds": "{{n}}라운드 토너먼트",
@@ -696,7 +690,7 @@
     "createCta": "콘테스트 만들기",
     "createFailed": "콘테스트를 만들 수 없습니다",
     "editTitle": "콘테스트 편집",
-    "editActiveNote": "진행 중인 콘테스트 — 설명, 사진, 링크만 보충할 수 있어요.",
+    "editActiveNote": "진행 중인 콘테스트 — 설명만 수정할 수 있어요.",
     "updateCta": "업데이트",
     "updateFailed": "업데이트할 수 없습니다",
     "updates": {
@@ -710,12 +704,11 @@
       "deleteConfirm": "이 업데이트를 삭제할까요?"
     },
     "uploadFailed": "업로드 실패",
-    "maxDuration": "콘테스트는 최대 30일까지 진행할 수 있어요.",
-    "invalidLink": "유효한 http(s) 링크를 입력하세요.",
     "pickPhoto": "사진 선택",
     "captionPlaceholder": "캡션 추가 (선택)…",
     "submitCta": "출품 제출",
     "submitYourEntry": "내 출품작 사진",
+    "fixedDurationLabel": "15일 행사",
     "entryPhotoRequired": "출품작 사진이 필요합니다",
     "newEntriesBadge": "🆕 새 작품 {{count}}개",
     "infoLabel": "콘테스트 정보",
@@ -762,14 +755,7 @@
       "titlePlaceholder": "예: 최고의 라떼 아트 ☕",
       "description": "설명",
       "descPlaceholder": "이 콘테스트는 어떤 콘테스트인가요?",
-      "category": "카테고리",
-      "coverPhotos": "커버 사진",
-      "referencePhotos": "참고 사진 (선택)",
-      "externalLink": "외부 링크 (선택)",
-      "startAt": "시작",
-      "endAt": "종료",
-      "rule": "투표 규칙",
-      "format": "형식"
+      "category": "카테고리"
     }
   },
   "chat": {

@@ -134,8 +134,11 @@ export function VoteEventCard({
           </View>
         </View>
         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.78)']} style={styles.bottomGradient}>
-          <Text numberOfLines={2} style={styles.title}>{event.title}</Text>
-          <Text style={styles.countdown}>⏳ {countdown}</Text>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={2} style={styles.title}>{event.title}</Text>
+            {!!event.description && <Text numberOfLines={2} style={styles.description}>{event.description}</Text>}
+            <Text style={styles.countdown}>⏳ {countdown}</Text>
+          </View>
         </LinearGradient>
       </Pressable>
     );
@@ -176,6 +179,7 @@ export function VoteEventCard({
             {index === 0 ? (
               <>
                 <Text numberOfLines={2} style={styles.title}>{event.title}</Text>
+                {!!event.description && <Text numberOfLines={2} style={styles.description}>{event.description}</Text>}
                 <Text style={styles.countdown}>⏳ {countdown}</Text>
               </>
             ) : (
@@ -265,7 +269,8 @@ const styles = StyleSheet.create({
   dots: { position: 'absolute', top: 14, alignSelf: 'center', flexDirection: 'row', gap: 5 },
   dot: { height: 6, borderRadius: 3 },
   bottomGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-end' },
-  title: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', letterSpacing: -0.3 },
+  title: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.3 },
+  description: { color: 'rgba(255,255,255,0.86)', fontSize: 14, fontWeight: '400', marginTop: 4, lineHeight: 19 },
   countdown: { color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '700', marginTop: 6 },
   submitter: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
