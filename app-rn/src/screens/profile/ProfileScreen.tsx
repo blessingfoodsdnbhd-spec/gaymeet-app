@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BadgeCheck,
@@ -374,7 +375,7 @@ export function ProfileScreen() {
         </Card>
 
         <Text style={{ textAlign: 'center', marginTop: 32, color: theme.colors.muted, fontSize: 11.5 }}>
-          Meyou · v2.0.0
+          Meyou · v{Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '2.0'} ({Constants.nativeBuildVersion ?? '—'})
         </Text>
       </ScrollView>
 
