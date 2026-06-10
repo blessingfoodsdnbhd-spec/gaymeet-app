@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, MoreHorizontal, Send, X } from 'lucide-react-native';
+import { ChevronLeft, Crown, MoreHorizontal, Send, StickyNote, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -43,6 +43,7 @@ import {
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { SendNoteSheet } from '../discover/SendNoteSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'UserDetail'>;
@@ -71,6 +72,10 @@ export function UserDetailScreen() {
   const carouselH = Math.round(screenH * 0.5);
   const [page, setPage] = React.useState(0);
   const introVoice = useDiscoverPrefs((s) => s.introVoice);
+  // 小纸条 (anonymous note) composer — hidden on your own profile.
+  const [noteOpen, setNoteOpen] = React.useState(false);
+  const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
+  const isSelf = !!myId && myId === String(userId);
 
   const userQ = useQuery({
     queryKey: ['user', userId],
@@ -253,6 +258,17 @@ export function UserDetailScreen() {
               </View>
             )}
 
+            {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet. */}
+            {!isSelf && (
+              <Pressable
+                onPress={() => setNoteOpen(true)}
+                hitSlop={8}
+                style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
+              >
+                <StickyNote size={18} color="#FFFFFF" strokeWidth={2} />
+              </Pressable>
+            )}
+
             <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
               <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
@@ -406,6 +422,11 @@ export function UserDetailScreen() {
         </ScrollView>
       )}
       {photoViewer.node}
+      <SendNoteSheet
+        open={noteOpen}
+        recipient={user ? { id: userId, nickname: user.nickname, avatarUrl: user.avatarUrl } : null}
+        onClose={() => setNoteOpen(false)}
+      />
     </SafeAreaView>
   );
 }
