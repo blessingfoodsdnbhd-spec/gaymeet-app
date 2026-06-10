@@ -1,11 +1,28 @@
 const router = require('express').Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { auth } = require('../middleware/auth');
+const { uploadDir } = require('../middleware/upload');
+const r2 = require('../services/r2Service');
 const { ok, err } = require('../utils/respond');
 const Match = require('../models/Match');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { sendPushToUser } = require('../utils/push');
+
+// Chat voice-message upload — memory storage, audio only, ≤5 MB (≈60s m4a).
+// expo-av records m4a, reported as audio/* or video/mp4 on some platforms.
+const voiceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const m = (file.mimetype || '').toLowerCase();
+    if (m.startsWith('audio/') || m === 'video/mp4') return cb(null, true);
+    cb(new Error('Only audio files are allowed'));
+  },
+});
 
 function formatDist(meters) {
   if (meters == null) return null;
@@ -164,14 +181,33 @@ router.post('/open/:userId', auth, async (req, res, next) => {
   }
 });
 
+// ── POST /api/conversations/voice-upload ──────────────────────────────────────
+// Upload a chat voice clip → returns { mediaUrl }. Two-step like images: the
+// client then POSTs /:matchId/send with { type:'voice', mediaUrl, duration }.
+router.post('/voice-upload', auth, voiceUpload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return err(res, 'No file uploaded', 400);
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.m4a';
+    const key = `voice-msg-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    let url = await r2.uploadFile(req.file.buffer, key, req.file.mimetype);
+    if (!url) {
+      await fs.promises.writeFile(path.join(uploadDir, key), req.file.buffer);
+      url = `${req.protocol}://${req.get('host')}/uploads/${key}`;
+    }
+    ok(res, { mediaUrl: url });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/conversations/:matchId/send ─────────────────────────────────────
 // HTTP fallback for sending a message (used when socket is disconnected).
 // Also emits via Socket.io so the receiver gets real-time delivery if online.
 router.post('/:matchId/send', auth, async (req, res, next) => {
   try {
-    const { content, type = 'text', mediaUrl, location } = req.body;
+    const { content, type = 'text', mediaUrl, location, duration } = req.body;
 
-    const ALLOWED = ['text', 'sticker', 'image', 'location'];
+    const ALLOWED = ['text', 'sticker', 'image', 'location', 'voice'];
     const msgType = ALLOWED.includes(type) ? type : 'text';
 
     // Per-type validation. Each branch returns 400 with a precise reason
@@ -182,6 +218,13 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     } else if (msgType === 'image') {
       if (!mediaUrl || !String(mediaUrl).trim()) {
         return err(res, 'mediaUrl required for image', 400);
+      }
+    } else if (msgType === 'voice') {
+      if (!mediaUrl || !String(mediaUrl).trim()) {
+        return err(res, 'mediaUrl required for voice', 400);
+      }
+      if (typeof duration !== 'number' || duration < 300 || duration > 120000) {
+        return err(res, 'duration (ms) required for voice', 400);
       }
     } else if (msgType === 'location') {
       if (
@@ -215,6 +258,10 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       // "Photo expired" placeholder; real B2 delete happens via the
       // admin cleanup endpoint after a further 7-day grace.
       messageData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
+    if (msgType === 'voice') {
+      messageData.mediaUrl = String(mediaUrl).trim();
+      messageData.duration = Math.round(duration);
     }
     if (msgType === 'location') {
       messageData.location = {
@@ -251,6 +298,7 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       type: message.type,
       mediaUrl: message.mediaUrl || null,
       mediaType: message.mediaType || null,
+      duration: message.duration || null,
       location: message.location
         ? {
             lat: message.location.lat,

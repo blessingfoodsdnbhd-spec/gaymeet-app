@@ -24,6 +24,7 @@ import {
   Flag,
   Image as ImageIcon,
   MapPin,
+  Mic,
   MoreHorizontal,
   Plus,
   Send,
@@ -54,6 +55,8 @@ import {
   sendMessage,
   sendImageMessage,
   sendLocationMessage,
+  uploadChatVoice,
+  sendVoiceMessage,
   toggleReaction,
   markConversationRead,
   type Message,
@@ -61,6 +64,8 @@ import {
 } from '../../api/chats';
 import { uploadFile } from '../../api/upload';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
+import { VoicePlayButton } from '../../components/VoicePlayButton';
+import { ChatVoiceRecorderSheet } from './ChatVoiceRecorderSheet';
 import {
   on as wsOn,
   emit as wsEmit,
@@ -172,6 +177,7 @@ export function ChatDetailScreen() {
   const [showStickers, setShowStickers] = useState(false);
   // +-button action sheet (camera / gallery / location)
   const [composerActionsOpen, setComposerActionsOpen] = useState(false);
+  const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
   // Long-press action sheet target message (null = closed)
   const [actionsFor, setActionsFor] = useState<Message | null>(null);
   // "+" full emoji picker target, and who-reacted modal target ({msg, emoji}).
@@ -497,6 +503,58 @@ export function ChatDetailScreen() {
         );
         const detail = e?.response?.data?.error || e?.message || '';
         Alert.alert(t('chat.image.uploadFailed'), detail);
+      }
+    },
+    [matchId, me, queryClient, t],
+  );
+
+  const sendVoiceFromUri = useCallback(
+    async (uri: string, durationMs: number) => {
+      const pendingId = `tmp-voice-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const optimistic: Message = {
+        id: pendingId,
+        pendingId,
+        matchId,
+        senderId: me?.id ?? 'me',
+        content: '',
+        type: 'voice',
+        mediaUrl: uri,
+        duration: durationMs,
+        createdAt: new Date().toISOString(),
+        status: 'sending',
+      };
+      queryClient.setQueryData<Message[]>(
+        ['chats', 'messages', matchId],
+        (prev) => [...(prev ?? []), optimistic],
+      );
+      try {
+        const { mediaUrl } = await uploadChatVoice(uri);
+        const real = await sendVoiceMessage(matchId, mediaUrl, durationMs);
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) => {
+            const arr = prev ?? [];
+            const wsAlreadyHasIt = arr.some(
+              (m) => m.id === real.id && m.pendingId !== pendingId,
+            );
+            if (wsAlreadyHasIt) {
+              return arr.filter((m) => m.pendingId !== pendingId);
+            }
+            return arr.map((m) =>
+              m.pendingId === pendingId ? { ...real, status: 'sent' } : m,
+            );
+          },
+        );
+      } catch (e: any) {
+        queryClient.setQueryData<Message[]>(
+          ['chats', 'messages', matchId],
+          (prev) =>
+            (prev ?? []).map((m) =>
+              m.pendingId === pendingId ? { ...m, status: 'failed' } : m,
+            ),
+        );
+        const detail = e?.response?.data?.error || e?.message || '';
+        Alert.alert(t('chat.voice.sendFailed'), detail);
       }
     },
     [matchId, me, queryClient, t],
@@ -949,6 +1007,47 @@ export function ChatDetailScreen() {
                   // Pressable would have its long-press swallowed by the inner one.
                   <LocationBubble msg={msg} from={mine ? 'me' : 'them'} onLongPress={onLongPress} />
                 );
+              } else if (msg.type === 'voice') {
+                const secs = Math.max(1, Math.round((msg.duration ?? 0) / 1000));
+                bubble = (
+                  <Pressable onLongPress={onLongPress} delayLongPress={350}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                        backgroundColor: mine ? theme.colors.primary : theme.colors.surface2,
+                        borderRadius: 20,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        opacity: failed ? 0.6 : 1,
+                      }}
+                    >
+                      <VoicePlayButton
+                        url={msg.mediaUrl ?? ''}
+                        size={22}
+                        color={mine ? '#FFFFFF' : theme.colors.primaryDeep}
+                      />
+                      {/* simple static waveform glyph */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                        {[10, 18, 13, 22, 15, 9, 17, 12].map((h, i) => (
+                          <View
+                            key={i}
+                            style={{
+                              width: 3,
+                              height: h,
+                              borderRadius: 2,
+                              backgroundColor: mine ? 'rgba(255,255,255,0.85)' : theme.colors.muted,
+                            }}
+                          />
+                        ))}
+                      </View>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: mine ? '#FFFFFF' : theme.colors.text2 }}>
+                        {secs}s
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
               } else {
                 bubble = (
                   <Pressable onLongPress={onLongPress} delayLongPress={350}>
@@ -1162,11 +1261,25 @@ export function ChatDetailScreen() {
           }}
         />
         <ActionRow
+          icon={<Mic size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+          label={t('chat.composer.recordVoice')}
+          onPress={() => {
+            setComposerActionsOpen(false);
+            setVoiceRecorderOpen(true);
+          }}
+        />
+        <ActionRow
           label={t('chat.composer.cancel')}
           centered
           onPress={() => setComposerActionsOpen(false)}
         />
       </Sheet>
+
+      <ChatVoiceRecorderSheet
+        open={voiceRecorderOpen}
+        onClose={() => setVoiceRecorderOpen(false)}
+        onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+      />
 
       {/* Long-press action sheet for an individual message */}
       <Sheet
@@ -1229,15 +1342,17 @@ export function ChatDetailScreen() {
                 }}
               />
             )}
-            <ActionRow
-              icon={<Copy size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-              label={t('chat.message.actions.copy')}
-              onPress={() => {
-                const m = actionsFor;
-                setActionsFor(null);
-                onCopyMessage(m);
-              }}
-            />
+            {actionsFor.type !== 'voice' && (
+              <ActionRow
+                icon={<Copy size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('chat.message.actions.copy')}
+                onPress={() => {
+                  const m = actionsFor;
+                  setActionsFor(null);
+                  onCopyMessage(m);
+                }}
+              />
+            )}
             {actionsAvailable.canDelete && (
               <ActionRow
                 icon={<Trash2 size={20} color="#D14B4B" strokeWidth={1.8} />}

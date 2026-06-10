@@ -761,7 +761,8 @@
       "cameraPermBody": "설정에서 Meyou의 카메라 접근을 허용하세요.",
       "locationPermTitle": "위치 권한 필요",
       "locationPermBody": "설정에서 Meyou의 위치 접근을 허용하세요.",
-      "locationFailed": "위치를 가져올 수 없습니다"
+      "locationFailed": "위치를 가져올 수 없습니다",
+      "recordVoice": "음성"
     },
     "image": {
       "expired": "사진이 만료되었습니다",
@@ -800,6 +801,14 @@
     "photoConfirm": {
       "captionPlaceholder": "설명 추가…",
       "send": "보내기"
+    },
+    "voice": {
+      "title": "음성 메시지",
+      "tapToStart": "탭하여 녹음",
+      "recording": "녹음 중…",
+      "tooShort": "조금 더 길게",
+      "send": "보내기",
+      "sendFailed": "음성 메시지를 보내지 못했습니다"
     }
   },
   "chats": {

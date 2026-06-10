@@ -8,7 +8,7 @@ export interface Message {
   senderId: string;
   /** Empty string for image/location messages (no caption v1). */
   content: string;
-  type: 'text' | 'sticker' | 'image' | 'location';
+  type: 'text' | 'sticker' | 'image' | 'location' | 'voice';
   createdAt: string;
   readBy?: string[];
   /** System message (match greeting) — rendered centered, no bubble. */
@@ -22,6 +22,8 @@ export interface Message {
   // hold a local file:// URI from the image picker.
   mediaUrl?: string | null;
   mediaType?: 'image' | 'gif' | null;
+  /** Voice-message clip length in milliseconds (rendered in the bubble). */
+  duration?: number | null;
   /** Server-side flag set when the 30-day TTL has passed AND/OR the
    *  admin cleanup pass has nullified mediaUrl. Client renders an
    *  "Photo expired" placeholder. */
@@ -93,6 +95,28 @@ export const sendMessage = (matchId: string, content: string, type: 'text' | 'st
 export const sendImageMessage = (matchId: string, mediaUrl: string) =>
   unwrap<Message>(
     api.post(`/conversations/${matchId}/send`, { type: 'image', mediaUrl }),
+  );
+
+/** Upload a chat voice clip (file:// uri) → returns the stored audio URL.
+ *  Mirrors the image flow: upload first, then sendVoiceMessage with the URL. */
+export const uploadChatVoice = (uri: string) => {
+  const ext = (uri.split('?')[0].split('.').pop() || 'm4a').toLowerCase();
+  const fd = new FormData();
+  fd.append('file', { uri, name: `voice.${ext}`, type: `audio/${ext === 'm4a' ? 'm4a' : ext}` } as any);
+  return unwrap<{ mediaUrl: string }>(
+    api.post('/conversations/voice-upload', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      transformRequest: (d) => d,
+      timeout: 60_000,
+    }) as any,
+  );
+};
+
+/** Voice message — caller uploads via uploadChatVoice() first, passes the URL
+ *  and the clip duration in milliseconds. */
+export const sendVoiceMessage = (matchId: string, mediaUrl: string, duration: number) =>
+  unwrap<Message>(
+    api.post(`/conversations/${matchId}/send`, { type: 'voice', mediaUrl, duration }),
   );
 
 /** Location message — lat/lng required, label is the reverse-geocode

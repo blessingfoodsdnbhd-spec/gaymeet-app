@@ -474,6 +474,7 @@
   },
   "chat": {
     "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
+    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message"},
     "composer": {
       "camera": "Camera",
       "gallery": "Photo",
@@ -483,7 +484,8 @@
       "cameraPermBody": "Allow Meyou to access the camera in Settings.",
       "locationPermTitle": "Location permission required",
       "locationPermBody": "Allow Meyou to access your location in Settings.",
-      "locationFailed": "Couldn't get your location"
+      "locationFailed": "Couldn't get your location",
+      "recordVoice": "Voice"
     },
     "image": {
       "expired": "Photo expired",

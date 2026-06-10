@@ -18,7 +18,7 @@ const messageSchema = new mongoose.Schema(
     content: { type: String, maxlength: 2000 },
     type: {
       type: String,
-      enum: ['text', 'sticker', 'image', 'location'],
+      enum: ['text', 'sticker', 'image', 'location', 'voice'],
       default: 'text',
     },
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -30,6 +30,10 @@ const messageSchema = new mongoose.Schema(
     // when sticker-style animated images get their own pipeline.
     mediaUrl: { type: String, default: null },
     mediaType: { type: String, enum: ['image', 'gif', null], default: null },
+    // Voice messages: mediaUrl points to the B2 audio URL; duration is the
+    // clip length in milliseconds (rendered in the bubble next to the play
+    // button). null for non-voice messages.
+    duration: { type: Number, default: null },
     // Location messages. lat/lng required at the route layer; label is
     // an optional reverse-geocode string ("Bukit Bintang, KL" etc).
     location: {
@@ -97,6 +101,8 @@ Message.previewOf = function previewOf(msg) {
       return '📷 Photo';
     case 'location':
       return '📍 Location';
+    case 'voice':
+      return '🎙️ Voice message';
     case 'text':
     case 'sticker':
     default:

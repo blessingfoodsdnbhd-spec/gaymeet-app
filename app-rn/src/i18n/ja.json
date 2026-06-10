@@ -761,7 +761,8 @@
       "cameraPermBody": "設定でMeyouのカメラアクセスを許可してください。",
       "locationPermTitle": "位置情報の許可が必要です",
       "locationPermBody": "設定でMeyouの位置情報アクセスを許可してください。",
-      "locationFailed": "位置情報を取得できませんでした"
+      "locationFailed": "位置情報を取得できませんでした",
+      "recordVoice": "音声"
     },
     "image": {
       "expired": "写真の有効期限が切れました",
@@ -800,6 +801,14 @@
     "photoConfirm": {
       "captionPlaceholder": "キャプションを追加…",
       "send": "送信"
+    },
+    "voice": {
+      "title": "ボイスメッセージ",
+      "tapToStart": "タップして録音",
+      "recording": "録音中…",
+      "tooShort": "もう少し長く",
+      "send": "送信",
+      "sendFailed": "ボイスメッセージを送信できませんでした"
     }
   },
   "chats": {
