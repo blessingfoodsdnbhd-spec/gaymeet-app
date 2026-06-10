@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const VoteEvent = require('../models/VoteEvent');
 const VoteEntry = require('../models/VoteEntry');
 const Vote = require('../models/Vote');
+const VoteReadState = require('../models/VoteReadState');
 const UserHighlight = require('../models/UserHighlight');
 const VoteReport = require('../models/VoteReport');
 const VoteEventUpdate = require('../models/VoteEventUpdate');
@@ -20,6 +21,10 @@ const MAX_PHOTOS = 5;
 const MAX_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const CATEGORIES = ['photography', 'outfit', 'food', 'travel', 'talent', 'pets'];
 const MODES = ['one', 'fivePerDay', 'unlimited'];
+// Max entries attached per event in the feed carousel. Bounds payload/work
+// across a page of ≤50 events (≤600 entry docs); deeper browsing uses the
+// detail screen. Surfaced as a `log` line when any event is truncated.
+const FEED_ENTRIES_CAP = 12;
 
 function isHttpUrl(s) {
   return typeof s === 'string' && /^https?:\/\/.+/i.test(s);
@@ -85,6 +90,99 @@ function serializeEvent(ev, creator) {
     topEntries: (ev.topEntries ?? []).map((t) => ({ entryId: t.entryId?.toString?.() ?? null, rank: t.rank })),
     createdAt: new Date(ev.createdAt).toISOString(),
   };
+}
+
+// Attach a per-event entry CAROUSEL + the viewer's read progress to a page of
+// serialized feed events. Batches every DB read (entries, my votes, read state)
+// so the feed stays O(1) round trips regardless of page size. Mutates `events`
+// in place, adding { entries[], cover, myProgress } to each. Resilient to events
+// with zero entries (legacy / pre-backfill) → entries:[], cover from coverPhotos.
+async function attachFeedEntries(events, viewerId) {
+  if (!events.length) return;
+  const ids = events.map((e) => new mongoose.Types.ObjectId(e.id));
+
+  const [allEntries, myVoteEntryIds, readStates] = await Promise.all([
+    VoteEntry.find({ eventId: { $in: ids } })
+      .sort({ voteCount: -1, createdAt: 1 }) // ranked leaderboard order
+      .populate('submitterId', 'nickname avatarUrl')
+      .lean(),
+    Vote.find({ voterId: viewerId, eventId: { $in: ids } }).distinct('entryId'),
+    VoteReadState.find({ userId: viewerId, voteEventId: { $in: ids } }).lean(),
+  ]);
+
+  const votedSet = new Set(myVoteEntryIds.map((id) => id.toString()));
+  const readByEvent = new Map(readStates.map((r) => [r.voteEventId.toString(), r]));
+  const byEvent = new Map();
+  for (const e of allEntries) {
+    if (!e.submitterId) continue; // skip entries whose submitter was deleted
+    const k = e.eventId.toString();
+    (byEvent.get(k) || byEvent.set(k, []).get(k)).push(e);
+  }
+
+  let truncated = 0;
+  for (const ev of events) {
+    const ranked = byEvent.get(ev.id) || []; // already voteCount-desc, createdAt-asc
+    if (!ranked.length) {
+      ev.entries = [];
+      ev.cover = ev.coverPhotos?.[0] ?? null;
+      ev.myProgress = { lastSeenEntryId: null, lastSeenIndex: 0, unseenCount: 0 };
+      continue;
+    }
+    const read = readByEvent.get(ev.id);
+    const lastSeenAt = read?.lastSeenAt ? new Date(read.lastSeenAt) : null;
+    const lastSeenIndex = read?.lastSeenIndex ?? 0;
+    const rankOf = new Map(ranked.map((e, i) => [e._id.toString(), i + 1]));
+
+    // Carousel order: top1·top2·top3, then NEW (created after lastSeenAt, newest
+    // first), then RESUME (remaining ranked from the last-seen position, wrapping
+    // to fill). Set-deduped so a top-3 entry never repeats later. Capped.
+    const seen = new Set();
+    const order = [];
+    const tagFor = (entry, tag) => {
+      const k = entry._id.toString();
+      if (seen.has(k)) return;
+      seen.add(k);
+      order.push({ entry, tag });
+    };
+    ['top1', 'top2', 'top3'].forEach((tag, i) => ranked[i] && tagFor(ranked[i], tag));
+    if (lastSeenAt) {
+      ranked
+        .filter((e) => new Date(e.createdAt) > lastSeenAt)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .forEach((e) => tagFor(e, 'new'));
+    }
+    const start = Math.min(Math.max(lastSeenIndex, 0), ranked.length);
+    for (let i = start; i < ranked.length; i++) tagFor(ranked[i], 'resume');
+    for (let i = 0; i < ranked.length; i++) tagFor(ranked[i], 'resume');
+
+    if (order.length > FEED_ENTRIES_CAP) truncated++;
+    const capped = order.slice(0, FEED_ENTRIES_CAP);
+
+    ev.entries = capped.map(({ entry, tag }) => ({
+      entryId: entry._id.toString(),
+      photoUrl: entry.photoUrl,
+      submitter: {
+        id: entry.submitterId._id.toString(),
+        displayName: entry.submitterId.nickname,
+        avatarUrl: entry.submitterId.avatarUrl ?? null,
+      },
+      voteCount: entry.voteCount ?? 0,
+      votedByMe: votedSet.has(entry._id.toString()),
+      rank: rankOf.get(entry._id.toString()),
+      tag,
+    }));
+    ev.cover = ev.entries[0]?.photoUrl ?? ev.coverPhotos?.[0] ?? null; // dynamic top-1 cover
+    ev.myProgress = {
+      lastSeenEntryId: read?.lastSeenEntryId ? read.lastSeenEntryId.toString() : null,
+      lastSeenIndex,
+      unseenCount: lastSeenAt
+        ? ranked.filter((e) => new Date(e.createdAt) > lastSeenAt).length
+        : ranked.length, // never opened → every entry is unseen
+    };
+  }
+  if (truncated) {
+    console.log(`[votes feed] capped entries at ${FEED_ENTRIES_CAP} for ${truncated} event(s)`);
+  }
 }
 
 // ── Background close sweep ────────────────────────────────────────────────────
@@ -206,6 +304,12 @@ router.post('/', auth, async (req, res, next) => {
     if (b.externalLink && !isHttpUrl(b.externalLink)) return err(res, 'Invalid external link');
     const mode = MODES.includes(b.rules?.mode) ? b.rules.mode : 'one';
 
+    // The initiator is now a contestant: creating a contest requires the
+    // creator's own entry photo, auto-added as VoteEntry #1 below.
+    const entryPhotoUrl = String(b.entryPhotoUrl ?? '');
+    if (!isHttpUrl(entryPhotoUrl)) return err(res, 'Your entry photo is required');
+    const entryCaption = String(b.entryCaption ?? '').slice(0, CAPTION_MAX);
+
     const startAt = new Date(b.startAt);
     const endAt = new Date(b.endAt);
     if (isNaN(startAt) || isNaN(endAt)) return err(res, 'Invalid dates');
@@ -243,8 +347,19 @@ router.post('/', auth, async (req, res, next) => {
       rounds,
       currentRoundIndex: 0,
       status,
+      entryCount: 1, // initiator's auto-entry, created below
       location: req.user.location ?? undefined,
     });
+
+    // Initiator IS contestant: auto-create the creator's entry (they start as
+    // the sole entry → rank #1; they still can't vote for their own entry).
+    await VoteEntry.create({
+      eventId: ev._id,
+      submitterId: req.user._id,
+      photoUrl: entryPhotoUrl,
+      caption: entryCaption,
+    });
+
     created(res, serializeEvent(ev, req.user));
   } catch (e) {
     next(e);
@@ -341,6 +456,7 @@ router.delete('/:id', auth, async (req, res, next) => {
       VoteEventUpdate.deleteMany({ eventId: ev._id }),
       VoteReport.deleteMany({ eventId: ev._id }),
       UserHighlight.deleteMany({ eventId: ev._id }),
+      VoteReadState.deleteMany({ voteEventId: ev._id }),
     ]);
     res.status(204).end();
   } catch (e) {
@@ -379,6 +495,7 @@ router.get('/', auth, async (req, res, next) => {
     // 'active' sorts before 'ended'/'pending' alphabetically — good enough; the
     // client mainly requests status=active for the carousel anyway.
     const events = rows.map((ev) => serializeEvent(ev, ev.creatorId));
+    await attachFeedEntries(events, req.user._id); // adds entries[]/cover/myProgress per event
     ok(res, { events });
   } catch (e) {
     next(e);
@@ -561,6 +678,28 @@ router.delete('/:id/entries/:entryId/vote', auth, async (req, res, next) => {
   }
 });
 
+// ── POST /api/votes/:id/progress  (carousel read state) ───────────────────────
+// The client debounces this as the viewer swipes the feed carousel; we record
+// the last-seen entry/index so the next feed fetch can resume and compute the
+// "🆕 N new entries" badge. Upsert keeps it one doc per (user, event).
+router.post('/:id/progress', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const entryId =
+      req.body?.entryId && mongoose.isValidObjectId(req.body.entryId) ? req.body.entryId : null;
+    const index = Math.max(0, parseInt(req.body?.index, 10) || 0);
+    await VoteReadState.updateOne(
+      { userId: req.user._id, voteEventId: req.params.id },
+      { $set: { lastSeenEntryId: entryId, lastSeenIndex: index, lastSeenAt: new Date() } },
+      { upsert: true },
+    );
+    ok(res, { ok: true });
+  } catch (e) {
+    if (e && e.code === 11000) return ok(res, { ok: true }); // concurrent upsert race — benign
+    next(e);
+  }
+});
+
 // ── GET /api/votes/users/:userId/highlights  (public) ─────────────────────────
 router.get('/users/:userId/highlights', auth, async (req, res, next) => {
   try {
@@ -691,6 +830,7 @@ router.delete('/admin/:id', requireAdminAuth, async (req, res, next) => {
       VoteEvent.deleteOne({ _id: req.params.id }),
       VoteEntry.deleteMany({ eventId: req.params.id }),
       Vote.deleteMany({ eventId: req.params.id }),
+      VoteReadState.deleteMany({ voteEventId: req.params.id }),
     ]);
     ok(res, { ok: true });
   } catch (e) {

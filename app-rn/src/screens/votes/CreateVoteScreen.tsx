@@ -108,6 +108,9 @@ export function CreateVoteScreen() {
   const [category, setCategory] = React.useState<VoteCategory | null>(null);
   const [cover, setCover] = React.useState<string[]>([]);
   const [refs, setRefs] = React.useState<string[]>([]);
+  // Initiator-as-contestant: the creator's own entry (required on create only).
+  const [entryPhoto, setEntryPhoto] = React.useState<string | null>(null);
+  const [entryCaption, setEntryCaption] = React.useState('');
   const [externalLink, setExternalLink] = React.useState('');
   const [mode, setMode] = React.useState<VoteMode>('one');
   const [type, setType] = React.useState<'single' | 'multiRound'>('single');
@@ -115,7 +118,7 @@ export function CreateVoteScreen() {
   const now = new Date();
   const [startAt, setStartAt] = React.useState<Date | null>(now);
   const [endAt, setEndAt] = React.useState<Date | null>(new Date(now.getTime() + 7 * 24 * 3600 * 1000));
-  const [uploading, setUploading] = React.useState<'cover' | 'ref' | null>(null);
+  const [uploading, setUploading] = React.useState<'cover' | 'ref' | 'entry' | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [prefilled, setPrefilled] = React.useState(false);
 
@@ -137,7 +140,7 @@ export function CreateVoteScreen() {
     setPrefilled(true);
   }, [editQ.data, prefilled]);
 
-  const pick = async (which: 'cover' | 'ref') => {
+  const pick = async (which: 'cover' | 'ref' | 'entry') => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') return;
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: Platform.OS === 'android', quality: 0.85 });
@@ -146,7 +149,8 @@ export function CreateVoteScreen() {
     try {
       const url = await uploadFile(res.assets[0].uri);
       if (which === 'cover') setCover((p) => [...p, url]);
-      else setRefs((p) => [...p, url]);
+      else if (which === 'ref') setRefs((p) => [...p, url]);
+      else setEntryPhoto(url);
     } catch (e: any) {
       Alert.alert(t('votes.uploadFailed'), e?.message ?? '');
     } finally {
@@ -158,6 +162,7 @@ export function CreateVoteScreen() {
     title.trim().length > 0 &&
     !!category &&
     cover.length > 0 &&
+    (isEdit || !!entryPhoto) && // creator's own entry required when creating
     startAt &&
     endAt &&
     endAt > startAt;
@@ -210,6 +215,8 @@ export function CreateVoteScreen() {
         startAt: startAt!.toISOString(),
         endAt: endAt!.toISOString(),
         rules: { mode },
+        entryPhotoUrl: entryPhoto!,
+        entryCaption: entryCaption.trim() || undefined,
         type,
         roundCount: type === 'multiRound' ? roundCount : undefined,
         advanceMode: 'percent',
@@ -314,6 +321,47 @@ export function CreateVoteScreen() {
 
         <Label>{t('votes.field.coverPhotos')}</Label>
         <PhotoRow photos={cover} onAdd={() => pick('cover')} onRemove={(u) => setCover((p) => p.filter((x) => x !== u))} busy={uploading === 'cover'} />
+
+        {/* Initiator's own entry — the creator is a contestant too (create only). */}
+        {!isEdit && (
+          <>
+            <Label>{t('votes.submitYourEntry')}</Label>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+              <Pressable
+                onPress={() => pick('entry')}
+                disabled={uploading === 'entry'}
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderStyle: entryPhoto ? 'solid' : 'dashed',
+                  borderColor: theme.colors.line,
+                  backgroundColor: theme.colors.surface,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {entryPhoto ? (
+                  <ExpoImage source={{ uri: entryPhoto }} style={{ width: 96, height: 96 }} contentFit="cover" />
+                ) : uploading === 'entry' ? (
+                  <ActivityIndicator color={theme.colors.muted} />
+                ) : (
+                  <Plus size={22} color={theme.colors.muted} />
+                )}
+              </Pressable>
+              <TextInput
+                value={entryCaption}
+                onChangeText={(v) => setEntryCaption(v.slice(0, 200))}
+                placeholder={t('votes.captionPlaceholder')}
+                placeholderTextColor={theme.colors.muted}
+                multiline
+                style={[input, { flex: 1, minHeight: 96, textAlignVertical: 'top' }]}
+              />
+            </View>
+          </>
+        )}
 
         <Label>{t('votes.field.referencePhotos')}</Label>
         <PhotoRow photos={refs} onAdd={() => pick('ref')} onRemove={(u) => setRefs((p) => p.filter((x) => x !== u))} busy={uploading === 'ref'} />

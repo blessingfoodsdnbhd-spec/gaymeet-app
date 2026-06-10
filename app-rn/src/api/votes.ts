@@ -14,6 +14,24 @@ export interface VoteRound {
   advanceValue: number;
 }
 
+/** A ranked entry attached to a feed event for the swipeable card carousel. */
+export interface FeedVoteEntry {
+  entryId: string;
+  photoUrl: string;
+  submitter: { id: string; displayName: string; avatarUrl: string | null };
+  voteCount: number;
+  votedByMe: boolean;
+  rank: number;
+  tag: 'top1' | 'top2' | 'top3' | 'new' | 'resume';
+}
+
+/** Per-user read progress for an event's carousel (resume + new-entries badge). */
+export interface VoteProgress {
+  lastSeenEntryId: string | null;
+  lastSeenIndex: number;
+  unseenCount: number;
+}
+
 export interface VoteEventSummary {
   id: string;
   creatorId: string;
@@ -35,6 +53,10 @@ export interface VoteEventSummary {
   voteCount: number;
   topEntries: { entryId: string | null; rank: number }[];
   createdAt: string;
+  // Attached by GET /votes (feed) only — absent on the detail event payload.
+  entries?: FeedVoteEntry[];
+  cover?: string | null;
+  myProgress?: VoteProgress;
 }
 
 export interface VoteEntry {
@@ -94,6 +116,9 @@ export interface CreateVotePayload {
   startAt: string;
   endAt: string;
   rules: { mode: VoteMode };
+  /** Initiator-as-contestant: the creator's own entry photo (required) + caption. */
+  entryPhotoUrl: string;
+  entryCaption?: string;
   /** 'multiRound' splits [startAt,endAt] into roundCount elimination rounds. */
   type?: VoteType;
   roundCount?: number;
@@ -114,6 +139,10 @@ export const submitVoteEntry = (id: string, body: { photoUrl: string; caption?: 
 
 export const withdrawVoteEntry = (id: string) =>
   unwrap<{ ok: true }>(api.delete(`/votes/${id}/entries/me`));
+
+/** Record the viewer's last-seen carousel position (debounced on swipe). */
+export const saveVoteProgress = (id: string, entryId: string, index: number) =>
+  unwrap<{ ok: true }>(api.post(`/votes/${id}/progress`, { entryId, index }));
 
 export const castVote = (id: string, entryId: string) =>
   unwrap<{ ok: true }>(api.post(`/votes/${id}/entries/${entryId}/vote`));
