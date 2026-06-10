@@ -1117,6 +1117,7 @@ export function ChatDetailScreen() {
           onSend={onSend}
           onPickPhotoFromLibrary={pickGallery}
           onTakePhoto={pickCamera}
+          onVoiceRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
           onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
           onOpenStickers={() => setShowStickers((s) => !s)}
           placeholder={t('chats.detail.messagePlaceholder')}

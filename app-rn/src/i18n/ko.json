@@ -815,7 +815,10 @@
       "recording": "녹음 중…",
       "tooShort": "조금 더 길게",
       "send": "보내기",
-      "sendFailed": "음성 메시지를 보내지 못했습니다"
+      "sendFailed": "음성 메시지를 보내지 못했습니다",
+      "slideToCancel": "밀어서 취소",
+      "locked": "잠김",
+      "tapToDelete": "탭하여 삭제"
     },
     "icebreakers": {
       "header": "👋 먼저 인사를 건네보세요!",

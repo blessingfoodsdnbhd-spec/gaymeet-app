@@ -27,11 +27,14 @@ import { ChatComposer } from '../../components/ChatComposer';
 import { Sheet } from '../../components/Sheet';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { PhotoViewer } from '../../components/PhotoViewer';
+import { VoicePlayButton } from '../../components/VoicePlayButton';
+import { ChatVoiceRecorderSheet } from '../chats/ChatVoiceRecorderSheet';
 import { useAuth } from '../../store/auth';
 import {
   getRecentWorldChat,
   sendWorldChat,
   sendWorldChatPhoto,
+  sendWorldChatVoice,
   reportWorldChat,
   deleteWorldChatMessage,
   getChatRoom,
@@ -39,7 +42,7 @@ import {
 } from '../../api/worldChat';
 import { uploadFile } from '../../api/upload';
 import { blockUser } from '../../api/safety';
-import { openConversation } from '../../api/chats';
+import { openConversation, uploadChatVoice } from '../../api/chats';
 import { on as wsOn, emit as wsEmit } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
@@ -111,6 +114,9 @@ export function WorldChatScreen() {
   const [pendingPhoto, setPendingPhoto] = React.useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
   const [viewerPhoto, setViewerPhoto] = React.useState<string | null>(null);
+  // Voice send (hold-to-record in the composer, sheet recorder as fallback).
+  const [voiceRecorderOpen, setVoiceRecorderOpen] = React.useState(false);
+  const [sendingVoice, setSendingVoice] = React.useState(false);
   // Quoted reply target + transient highlight after jumping to a message.
   const [replyingTo, setReplyingTo] = React.useState<WorldChatMessage | null>(null);
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
@@ -293,6 +299,24 @@ export function WorldChatScreen() {
       sendError(e);
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  // Voice send: upload the recorded clip (reusing the generic voice-upload
+  // endpoint), then post it as a voice message. Mirrors confirmSendPhoto.
+  const sendVoiceFromUri = async (uri: string, durationMs: number) => {
+    if (sendingVoice) return;
+    const replyId = replyingTo?.messageId;
+    setSendingVoice(true);
+    try {
+      const { mediaUrl } = await uploadChatVoice(uri);
+      const msg = await sendWorldChatVoice(mediaUrl, durationMs, roomId, replyId);
+      insertMessage(msg);
+      setReplyingTo(null);
+    } catch (e: any) {
+      sendError(e);
+    } finally {
+      setSendingVoice(false);
     }
   };
 
@@ -495,9 +519,11 @@ export function WorldChatScreen() {
             onSend={onSend}
             maxLength={BODY_MAX}
             placeholder={nativePlaceholder(roomId, i18n.language)}
-            disabled={sending || uploadingPhoto}
+            disabled={sending || uploadingPhoto || sendingVoice}
             onPickPhotoFromLibrary={pickGallery}
             onTakePhoto={pickCamera}
+            onVoiceRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+            onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
             replyTo={
               replyingTo
                 ? {
@@ -505,7 +531,9 @@ export function WorldChatScreen() {
                     text:
                       replyingTo.type === 'photo'
                         ? replyingTo.caption || '📷'
-                        : replyingTo.body,
+                        : replyingTo.type === 'voice'
+                          ? '🎙️'
+                          : replyingTo.body,
                     name: t('worldChat.reply.banner', { name: replyingTo.displayName }),
                   }
                 : null
@@ -584,6 +612,13 @@ export function WorldChatScreen() {
           onClose={() => setViewerPhoto(null)}
         />
       </Modal>
+
+      {/* Voice recorder — tap-the-mic fallback (hold-to-record is inline). */}
+      <ChatVoiceRecorderSheet
+        open={voiceRecorderOpen}
+        onClose={() => setVoiceRecorderOpen(false)}
+        onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+      />
     </SafeAreaView>
   );
 }
@@ -612,6 +647,8 @@ function Row({
   const loc = [countryCodeToFlag(msg.countryCode), msg.city || ''].filter(Boolean).join(' ');
   const senderLabel = loc ? `${loc} · ${msg.displayName}` : msg.displayName;
   const isPhoto = msg.type === 'photo' && !!msg.photoUrl;
+  const isVoice = msg.type === 'voice' && !!msg.voiceUrl;
+  const voiceSecs = Math.max(1, Math.round((msg.voiceDurationMs ?? 0) / 1000));
   return (
     <Pressable
       onLongPress={onLongPress}
@@ -661,7 +698,11 @@ function Row({
               {msg.replyTo.displayName}
             </Text>
             <Text numberOfLines={1} style={{ fontSize: 12.5, color: theme.colors.muted }}>
-              {msg.replyTo.type === 'photo' ? msg.replyTo.body || '📷' : msg.replyTo.body}
+              {msg.replyTo.type === 'photo'
+                ? msg.replyTo.body || '📷'
+                : msg.replyTo.type === 'voice'
+                  ? '🎙️'
+                  : msg.replyTo.body}
             </Text>
           </Pressable>
         )}
@@ -693,6 +734,44 @@ function Row({
               </View>
             )}
           </Pressable>
+        ) : isVoice ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              maxWidth: '92%',
+              backgroundColor: mine ? theme.colors.primary : theme.colors.surface2,
+              borderRadius: 20,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+            }}
+          >
+            <VoicePlayButton
+              url={msg.voiceUrl!}
+              size={22}
+              color={mine ? '#FFFFFF' : theme.colors.primaryDeep}
+            />
+            {/* simple static waveform glyph (matches private chat) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              {[10, 18, 13, 22, 15, 9, 17, 12].map((h, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 3,
+                    height: h,
+                    borderRadius: 2,
+                    backgroundColor: mine ? 'rgba(255,255,255,0.85)' : theme.colors.muted,
+                  }}
+                />
+              ))}
+            </View>
+            <Text
+              style={{ fontSize: 12, fontWeight: '600', color: mine ? '#FFFFFF' : theme.colors.text2 }}
+            >
+              {voiceSecs}s
+            </Text>
+          </View>
         ) : (
           <View
             style={{

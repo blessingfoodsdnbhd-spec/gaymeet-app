@@ -479,7 +479,7 @@
   },
   "chat": {
     "photoConfirm": {"captionPlaceholder": "添加说明…", "send": "发送"},
-    "voice": {"title": "语音消息", "tapToStart": "点击录制", "recording": "录音中…", "tooShort": "再长一点", "send": "发送", "sendFailed": "语音消息发送失败"},
+    "voice": {"title": "语音消息", "tapToStart": "点击录制", "recording": "录音中…", "tooShort": "再长一点", "send": "发送", "sendFailed": "语音消息发送失败", "slideToCancel": "滑动取消", "locked": "已锁定", "tapToDelete": "点击删除"},
     "icebreakers": {"header": "👋 来打个招呼吧！", "askInterest": "你也喜欢{{interest}}？是怎么入坑的？", "generic1": "周末有什么计划吗？", "generic2": "最近有什么好推荐吗？🎵📺", "generic3": "嗨！今天过得怎么样？"},
     "scamWarning": "注意：涉及站外联系或金钱。切勿向陌生人转账或转移到其他应用。",
     "composer": {
