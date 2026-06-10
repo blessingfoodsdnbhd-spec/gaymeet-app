@@ -59,7 +59,7 @@ export type RootStackParamList = {
   NotesInbox: undefined;
   /** A World Chat room (广场). roomId 'world' = global; a country code; or a
    *  24-hex custom ChatRoom id. `custom` flags a user-created room. */
-  WorldChatRoom: { roomId?: string; title?: string; custom?: boolean };
+  WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
   /** Room list inside one country (general + user-created rooms). */
   CountryRooms: { countryCode: string; title: string };
   /** Create a user room inside a country. */

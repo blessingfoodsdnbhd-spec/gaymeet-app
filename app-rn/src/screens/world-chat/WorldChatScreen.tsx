@@ -10,9 +10,12 @@ import {
   Platform,
   StyleSheet,
   Alert,
+  Modal,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, ChevronLeft, MoreVertical, Crown, Lock } from 'lucide-react-native';
+import { Send, ChevronLeft, MoreVertical, Crown, Lock, ImagePlus, Reply, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,15 +24,19 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Sheet } from '../../components/Sheet';
+import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
+import { PhotoViewer } from '../../components/PhotoViewer';
 import { useAuth } from '../../store/auth';
 import {
   getRecentWorldChat,
   sendWorldChat,
+  sendWorldChatPhoto,
   reportWorldChat,
   deleteWorldChatMessage,
   getChatRoom,
   type WorldChatMessage,
 } from '../../api/worldChat';
+import { uploadFile } from '../../api/upload';
 import { blockUser } from '../../api/safety';
 import { openConversation } from '../../api/chats';
 import { on as wsOn, emit as wsEmit } from '../../api/ws';
@@ -99,6 +106,16 @@ export function WorldChatScreen() {
   // stops. Set false once a page comes back smaller than the page size.
   const [hasMore, setHasMore] = React.useState(true);
   const [selected, setSelected] = React.useState<WorldChatMessage | null>(null);
+  // Photo send (mirrors ChatDetailScreen's pick → preview → upload flow).
+  const [pendingPhoto, setPendingPhoto] = React.useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
+  const [attachOpen, setAttachOpen] = React.useState(false);
+  const [viewerPhoto, setViewerPhoto] = React.useState<string | null>(null);
+  // Quoted reply target + transient highlight after jumping to a message.
+  const [replyingTo, setReplyingTo] = React.useState<WorldChatMessage | null>(null);
+  const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
+  const listRef = React.useRef<FlatList<WorldChatMessage>>(null);
+  const highlightTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const msgsQ = useQuery({
     queryKey: KEY,
@@ -193,29 +210,123 @@ export function WorldChatScreen() {
     }
   };
 
+  // Add a just-sent message optimistically; the WS echo dedupes by messageId.
+  const insertMessage = (msg: WorldChatMessage) => {
+    qc.setQueryData<Cache>(KEY, (prev) => {
+      const arr = prev?.messages ?? [];
+      if (arr.some((x) => x.messageId === msg.messageId)) return prev ?? { messages: arr };
+      return { messages: [msg, ...arr] };
+    });
+  };
+
+  const sendError = (e: any) => {
+    const status = e?.response?.status;
+    if (status === 429) Alert.alert(t('worldChat.rateLimited'));
+    else if (status === 403) Alert.alert(t('worldChat.banned'));
+    else Alert.alert(t('worldChat.sendFailed'), e?.response?.data?.error ?? '');
+  };
+
   const onSend = async () => {
     const body = draft.trim();
     if (!body || sending) return;
+    const replyMsg = replyingTo;
     setSending(true);
     setDraft('');
+    setReplyingTo(null);
     try {
-      const msg = await sendWorldChat(body, roomId);
-      // Add optimistically; the WS echo dedupes by messageId.
-      qc.setQueryData<Cache>(KEY, (prev) => {
-        const arr = prev?.messages ?? [];
-        if (arr.some((x) => x.messageId === msg.messageId)) return prev ?? { messages: arr };
-        return { messages: [msg, ...arr] };
-      });
+      const msg = await sendWorldChat(body, roomId, replyMsg?.messageId);
+      insertMessage(msg);
     } catch (e: any) {
       setDraft(body); // restore so the user doesn't lose their text
-      const status = e?.response?.status;
-      if (status === 429) Alert.alert(t('worldChat.rateLimited'));
-      else if (status === 403) Alert.alert(t('worldChat.banned'));
-      else Alert.alert(t('worldChat.sendFailed'), e?.response?.data?.error ?? '');
+      if (replyMsg) setReplyingTo(replyMsg); // restore the quote too
+      sendError(e);
     } finally {
       setSending(false);
     }
   };
+
+  // ── Photo send ────────────────────────────────────────────────────────────
+  const pickCamera = async () => {
+    setAttachOpen(false);
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('chat.composer.cameraPermTitle'), t('chat.composer.cameraPermBody'));
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: Platform.OS === 'android',
+      quality: 0.85,
+    });
+    if (res.canceled) return;
+    setPendingPhoto(res.assets[0].uri);
+  };
+
+  const pickGallery = async () => {
+    setAttachOpen(false);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: Platform.OS === 'android',
+      quality: 0.85,
+    });
+    if (res.canceled) return;
+    setPendingPhoto(res.assets[0].uri);
+  };
+
+  // Preview-modal Send: upload to B2, then post as a photo message. The modal
+  // shows its spinner via `uploadingPhoto` until the round-trip finishes.
+  const confirmSendPhoto = async (caption: string) => {
+    const uri = pendingPhoto;
+    if (!uri || uploadingPhoto) return;
+    const replyId = replyingTo?.messageId;
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadFile(uri);
+      const msg = await sendWorldChatPhoto(url, caption.trim() || undefined, roomId, replyId);
+      insertMessage(msg);
+      setPendingPhoto(null);
+      setReplyingTo(null);
+    } catch (e: any) {
+      sendError(e);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Scroll the inverted list to a message and flash it. No-op if it isn't in
+  // the currently-loaded window (older history may not be paged in yet).
+  const jumpToMessage = React.useCallback(
+    (messageId: string) => {
+      const idx = messages.findIndex((m) => m.messageId === messageId);
+      if (idx < 0) return;
+      try {
+        listRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: true });
+      } catch {
+        // best-effort; onScrollToIndexFailed handles the variable-height case
+      }
+      setHighlightedId(messageId);
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setHighlightedId(null), 1800);
+    },
+    [messages],
+  );
+
+  // Deep link from a reply push: jump to the replied message once it's loaded.
+  const scrollTarget = route.params?.scrollToMessageId;
+  React.useEffect(() => {
+    if (!scrollTarget || !messages.length) return;
+    const t = setTimeout(() => jumpToMessage(scrollTarget), 300);
+    return () => clearTimeout(t);
+  }, [scrollTarget, messages.length, jumpToMessage]);
+
+  React.useEffect(() => () => {
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+  }, []);
 
   const onReport = async (m: WorldChatMessage) => {
     setSelected(null);
@@ -325,6 +436,7 @@ export function WorldChatScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             data={messages}
             inverted
             keyExtractor={(m) => m.messageId}
@@ -333,6 +445,17 @@ export function WorldChatScreen() {
             keyboardDismissMode="interactive"
             onEndReached={hasMore ? loadOlder : undefined}
             onEndReachedThreshold={0.3}
+            onScrollToIndexFailed={(info) => {
+              // Variable row heights → scrollToIndex can miss; approximate then retry.
+              listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+              setTimeout(() => {
+                try {
+                  listRef.current?.scrollToIndex({ index: info.index, viewPosition: 0.5, animated: true });
+                } catch {
+                  /* give up silently */
+                }
+              }, 300);
+            }}
             ListFooterComponent={
               loadingOlder && hasMore ? (
                 <ActivityIndicator color={theme.colors.muted} style={{ marginVertical: 12 }} />
@@ -348,13 +471,45 @@ export function WorldChatScreen() {
                 msg={item}
                 mine={item.userId === myId}
                 isCreator={!!creatorId && item.userId === creatorId}
+                highlighted={item.messageId === highlightedId}
                 onLongPress={() => setSelected(item)}
                 onOpenUser={() =>
                   item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
                 }
+                onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
+                onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
               />
             )}
           />
+        )}
+
+        {/* Reply quote banner (above the composer) */}
+        {replyingTo && !closed && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              backgroundColor: theme.colors.surface,
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: theme.colors.line,
+            }}
+          >
+            <View style={{ width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: theme.colors.primary }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: theme.colors.primary }} numberOfLines={1}>
+                {t('worldChat.reply.banner', { name: replyingTo.displayName })}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: theme.colors.muted }} numberOfLines={1}>
+                {replyingTo.type === 'photo' ? replyingTo.caption || '📷' : replyingTo.body}
+              </Text>
+            </View>
+            <Pressable onPress={() => setReplyingTo(null)} hitSlop={8}>
+              <X size={18} color={theme.colors.muted} />
+            </Pressable>
+          </View>
         )}
 
         {/* Composer (hidden once a custom room is closed) */}
@@ -366,6 +521,15 @@ export function WorldChatScreen() {
           </View>
         ) : (
         <View style={[styles.composer, { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line }]}>
+          <Pressable
+            onPress={() => setAttachOpen(true)}
+            disabled={sending || uploadingPhoto}
+            hitSlop={6}
+            accessibilityLabel={t('worldChat.photo.label')}
+            style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ImagePlus size={24} color={theme.colors.primary} strokeWidth={2} />
+          </Pressable>
           <View
             style={{
               flex: 1,
@@ -416,11 +580,25 @@ export function WorldChatScreen() {
         {selected &&
           (selected.userId === myId ? (
             <>
+              <ActionRow
+                label={`💬 ${t('worldChat.reply.label')}`}
+                onPress={() => {
+                  setReplyingTo(selected);
+                  setSelected(null);
+                }}
+              />
               <ActionRow label={t('worldChat.delete')} danger onPress={() => onDelete(selected)} />
               <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
             </>
           ) : (
             <>
+              <ActionRow
+                label={`💬 ${t('worldChat.reply.label')}`}
+                onPress={() => {
+                  setReplyingTo(selected);
+                  setSelected(null);
+                }}
+              />
               <ActionRow label={t('worldChat.report')} onPress={() => onReport(selected)} />
               <ActionRow label={t('worldChat.block')} danger onPress={() => onBlock(selected)} />
               <ActionRow label={t('worldChat.dm')} onPress={() => onDM(selected)} />
@@ -445,6 +623,34 @@ export function WorldChatScreen() {
           }}
         />
       )}
+
+      {/* Attach: choose camera or gallery */}
+      <Sheet open={attachOpen} onClose={() => setAttachOpen(false)} maxHeight="35%">
+        <ActionRow label={t('chat.composer.camera')} onPress={pickCamera} />
+        <ActionRow label={t('chat.composer.gallery')} onPress={pickGallery} />
+        <ActionRow label={t('common.cancel')} centered onPress={() => setAttachOpen(false)} />
+      </Sheet>
+
+      {/* Preview + optional caption before sending a photo */}
+      <PhotoConfirmModal
+        uri={pendingPhoto}
+        open={pendingPhoto !== null}
+        sending={uploadingPhoto}
+        onCancel={() => {
+          if (!uploadingPhoto) setPendingPhoto(null);
+        }}
+        onSend={confirmSendPhoto}
+      />
+
+      {/* Full-screen photo viewer */}
+      <Modal visible={!!viewerPhoto} transparent animationType="fade" onRequestClose={() => setViewerPhoto(null)}>
+        <PhotoViewer
+          open={!!viewerPhoto}
+          photos={viewerPhoto ? [viewerPhoto] : []}
+          initialIndex={0}
+          onClose={() => setViewerPhoto(null)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -453,24 +659,38 @@ function Row({
   msg,
   mine,
   isCreator,
+  highlighted,
   onLongPress,
   onOpenUser,
+  onReplyJump,
+  onOpenPhoto,
 }: {
   msg: WorldChatMessage;
   mine: boolean;
   isCreator?: boolean;
+  highlighted?: boolean;
   onLongPress: () => void;
   onOpenUser: () => void;
+  onReplyJump?: () => void;
+  onOpenPhoto: () => void;
 }) {
   const theme = useTheme();
   // "🇲🇾 吉隆坡 · jacky teh" — location prefix when known, else just the name.
   const loc = [countryCodeToFlag(msg.countryCode), msg.city || ''].filter(Boolean).join(' ');
   const senderLabel = loc ? `${loc} · ${msg.displayName}` : msg.displayName;
+  const isPhoto = msg.type === 'photo' && !!msg.photoUrl;
   return (
     <Pressable
       onLongPress={onLongPress}
       delayLongPress={300}
-      style={{ flexDirection: mine ? 'row-reverse' : 'row', gap: 10, alignItems: 'flex-start' }}
+      style={{
+        flexDirection: mine ? 'row-reverse' : 'row',
+        gap: 10,
+        alignItems: 'flex-start',
+        borderRadius: 12,
+        paddingVertical: highlighted ? 4 : 0,
+        backgroundColor: highlighted ? theme.colors.primarySoft : 'transparent',
+      }}
     >
       <Pressable onPress={onOpenUser} disabled={mine}>
         <Avatar name={msg.displayName || '?'} uri={msg.avatarUrl} avatarIdx={idxFor(msg.userId)} size={40} />
@@ -488,21 +708,75 @@ function Row({
           {isCreator && <Crown size={12} color={theme.colors.primary} />}
           <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(msg.createdAt)}</Text>
         </View>
-        <View
-          style={{
-            maxWidth: '92%',
-            backgroundColor: mine ? theme.colors.primary : theme.colors.surface,
-            borderWidth: mine ? 0 : 1,
-            borderColor: theme.colors.line,
-            borderRadius: 16,
-            paddingHorizontal: 13,
-            paddingVertical: 9,
-          }}
-        >
-          <Text style={{ fontSize: 16, lineHeight: 22, color: mine ? '#FFFFFF' : theme.colors.text }}>
-            {msg.body}
-          </Text>
-        </View>
+
+        {/* Quoted reply — tap to jump to the original. Brand-color left border. */}
+        {msg.replyTo && (
+          <Pressable
+            onPress={onReplyJump}
+            style={{
+              maxWidth: '92%',
+              marginBottom: 4,
+              backgroundColor: theme.colors.surface2,
+              borderRadius: 10,
+              borderLeftWidth: 3,
+              borderLeftColor: theme.colors.primary,
+              paddingVertical: 5,
+              paddingHorizontal: 9,
+            }}
+          >
+            <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: '700', color: theme.colors.primary }}>
+              {msg.replyTo.displayName}
+            </Text>
+            <Text numberOfLines={1} style={{ fontSize: 12.5, color: theme.colors.muted }}>
+              {msg.replyTo.type === 'photo' ? msg.replyTo.body || '📷' : msg.replyTo.body}
+            </Text>
+          </Pressable>
+        )}
+
+        {isPhoto ? (
+          <Pressable onPress={onOpenPhoto} style={{ borderRadius: 14, overflow: 'hidden', maxWidth: '92%' }}>
+            <ExpoImage
+              source={{ uri: msg.photoUrl! }}
+              style={{ width: 220, height: 280, backgroundColor: theme.colors.surface2 }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={120}
+            />
+            {!!msg.caption && (
+              <View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                }}
+              >
+                <Text numberOfLines={2} style={{ color: '#FFFFFF', fontSize: 13, lineHeight: 18 }}>
+                  {msg.caption}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        ) : (
+          <View
+            style={{
+              maxWidth: '92%',
+              backgroundColor: mine ? theme.colors.primary : theme.colors.surface,
+              borderWidth: mine ? 0 : 1,
+              borderColor: theme.colors.line,
+              borderRadius: 16,
+              paddingHorizontal: 13,
+              paddingVertical: 9,
+            }}
+          >
+            <Text style={{ fontSize: 16, lineHeight: 22, color: mine ? '#FFFFFF' : theme.colors.text }}>
+              {msg.body}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );

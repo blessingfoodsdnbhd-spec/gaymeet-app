@@ -190,6 +190,14 @@
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",
+    "reply": {
+      "label": "Reply",
+      "banner": "Replying to {{name}}",
+      "notification": "{{name}} replied to you: {{snippet}}"
+    },
+    "photo": {
+      "label": "Send Photo"
+    },
     "rooms": {
       "title": "Plaza",
       "sectionGlobal": "Global rooms",
@@ -854,6 +862,7 @@
       "moreSection": "More notifications",
       "votes": "Contest updates",
       "follow": "New followers",
+      "worldChatReply": "Replies in World Chat",
       "viewers": "Daily profile viewers",
       "wants": "People who want to know you",
       "digest": "Daily hot contests",

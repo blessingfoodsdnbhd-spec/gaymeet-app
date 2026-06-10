@@ -568,6 +568,14 @@
   "worldChat": {
     "title": "広場",
     "online": "{{n}}人オンライン",
+    "reply": {
+      "label": "返信",
+      "banner": "{{name}}に返信",
+      "notification": "{{name}}があなたに返信しました: {{snippet}}"
+    },
+    "photo": {
+      "label": "写真を送信"
+    },
     "rooms": {
       "title": "広場",
       "sectionGlobal": "グローバルルーム",
@@ -974,6 +982,7 @@
       "moreSection": "その他の通知",
       "votes": "コンテスト更新",
       "follow": "新しいフォロワー",
+      "worldChatReply": "広場での返信",
       "viewers": "1日のプロフィール訪問者",
       "wants": "あなたを知りたい人",
       "digest": "本日の人気コンテスト",

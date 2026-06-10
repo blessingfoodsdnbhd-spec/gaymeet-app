@@ -1,5 +1,14 @@
 import { api } from './client';
 
+/** Quoted summary of the message a reply points at. */
+export interface WorldChatReplyPreview {
+  messageId: string;
+  userId: string;
+  displayName: string;
+  type?: 'text' | 'photo';
+  body: string; // one-line preview (caption / '📷' for photos)
+}
+
 /** A World Chat message. No anonymous identities — always a real user. */
 export interface WorldChatMessage {
   messageId: string;
@@ -11,6 +20,10 @@ export interface WorldChatMessage {
   countryCode?: string | null;
   city?: string | null;
   body: string;
+  type?: 'text' | 'photo';
+  photoUrl?: string | null;
+  caption?: string | null;
+  replyTo?: WorldChatReplyPreview | null;
   createdAt: string;
 }
 
@@ -37,10 +50,23 @@ export const getRecentWorldChat = (roomId = 'world', before?: string, limit = 50
     api.get('/world-chat/recent', { params: { roomId, before, limit } }),
   );
 
-/** Send a message to a room. Throws on 429 (rate limit) — inspect
+/** Send a text message to a room. Pass `replyToMessageId` to quote another
+ *  message. Throws on 429 (rate limit) — inspect
  *  `e.response.data.code === 'RATE_LIMIT'`; 403 = banned. */
-export const sendWorldChat = (body: string, roomId = 'world') =>
-  unwrap<WorldChatMessage>(api.post('/world-chat/send', { body, roomId }));
+export const sendWorldChat = (body: string, roomId = 'world', replyToMessageId?: string) =>
+  unwrap<WorldChatMessage>(api.post('/world-chat/send', { body, roomId, replyToMessageId }));
+
+/** Send a photo message (B2 URL already uploaded) with an optional caption and
+ *  optional reply target. */
+export const sendWorldChatPhoto = (
+  photoUrl: string,
+  caption?: string,
+  roomId = 'world',
+  replyToMessageId?: string,
+) =>
+  unwrap<WorldChatMessage>(
+    api.post('/world-chat/send', { type: 'photo', photoUrl, caption, roomId, replyToMessageId }),
+  );
 
 export const reportWorldChat = (messageId: string, reason?: string) =>
   api.post('/world-chat/report', { messageId, reason });

@@ -568,6 +568,14 @@
   "worldChat": {
     "title": "광장",
     "online": "{{n}}명 온라인",
+    "reply": {
+      "label": "답장",
+      "banner": "{{name}}님에게 답장",
+      "notification": "{{name}}님이 회원님에게 답장했습니다: {{snippet}}"
+    },
+    "photo": {
+      "label": "사진 보내기"
+    },
     "rooms": {
       "title": "광장",
       "sectionGlobal": "글로벌 방",
@@ -974,6 +982,7 @@
       "moreSection": "기타 알림",
       "votes": "콘테스트 업데이트",
       "follow": "새 팔로워",
+      "worldChatReply": "광장 답장",
       "viewers": "일일 프로필 방문자",
       "wants": "나를 알고 싶어하는 사람",
       "digest": "오늘의 인기 콘테스트",
