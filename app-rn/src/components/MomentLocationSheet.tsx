@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { MapPin, Navigation, X, Map } from 'lucide-react-native';
+import { MapPin, Navigation, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
@@ -29,11 +29,9 @@ interface Props {
   onClose: () => void;
   current?: MomentPlace | null;
   onPick: (place: MomentPlace | null) => void;
-  /** Open the full map picker (AAAAA). Parent handles closing + navigation. */
-  onChooseMap?: () => void;
 }
 
-export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMap }: Props) {
+export function MomentLocationSheet({ open, onClose, current, onPick }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -71,15 +69,6 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
       <Text style={[styles.title, { color: theme.colors.text }]}>
         {t('moments.compose.location')}
       </Text>
-
-      {onChooseMap ? (
-        <Pressable onPress={onChooseMap} style={[styles.row, { borderBottomColor: theme.colors.line }]}>
-          <Map size={18} color={theme.colors.primary} strokeWidth={2} />
-          <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
-            {t('moments.compose.chooseOnMap')}
-          </Text>
-        </Pressable>
-      ) : null}
 
       <Pressable onPress={useCurrent} style={[styles.row, { borderBottomColor: theme.colors.line }]}>
         <Navigation size={18} color={theme.colors.primary} strokeWidth={2} />
