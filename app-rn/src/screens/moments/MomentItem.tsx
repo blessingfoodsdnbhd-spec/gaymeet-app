@@ -307,7 +307,7 @@ function PhotoGrid({
           style={{
             width: maxWidth,
             height: 240,
-            borderRadius: 14,
+            borderRadius: 0,
           }}
           contentFit="cover"
           transition={150}
@@ -330,7 +330,7 @@ function PhotoGrid({
         <Pressable key={i} onPress={() => onPhotoPress(i)}>
           <Image
             source={{ uri: p }}
-            style={{ width: tileW, height: tileW, borderRadius: 8 }}
+            style={{ width: tileW, height: tileW, borderRadius: 0 }}
             contentFit="cover"
             transition={150}
           />
