@@ -225,7 +225,8 @@
       "adminStats": "データ分析",
       "announcementAdmin": "お知らせ管理",
       "verification": "写真認証を受ける",
-      "adminVerifications": "認証審査"
+      "adminVerifications": "認証審査",
+      "myData": "マイデータ 📊"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1275,5 +1276,22 @@
     "reject": "却下",
     "rejectConfirmTitle": "認証を却下しますか？",
     "rejectConfirmBody": "ユーザーは再提出が必要になります。"
+  },
+  "myData": {
+    "title": "マイデータ",
+    "streak": "連続ログイン",
+    "streakCurrent": "現在",
+    "streakLongest": "最長",
+    "views": "プロフィール訪問",
+    "viewsUnique": "訪問者数",
+    "last7d": "過去7日",
+    "last30d": "過去30日",
+    "likes": "もらったいいね",
+    "likesTotal": "合計",
+    "popularity": "人気",
+    "popularityScore": "スコア",
+    "popularityRank": "ランク",
+    "topPct": "上位{{pct}}%",
+    "upsell": "プレミアムで7/30日のトレンドと人気ランクを解除"
   }
 }

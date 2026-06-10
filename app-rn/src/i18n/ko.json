@@ -225,7 +225,8 @@
       "adminStats": "데이터 분석",
       "announcementAdmin": "공지 관리",
       "verification": "사진 인증 받기",
-      "adminVerifications": "인증 심사"
+      "adminVerifications": "인증 심사",
+      "myData": "내 데이터 📊"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1275,5 +1276,22 @@
     "reject": "거절",
     "rejectConfirmTitle": "인증을 거절할까요?",
     "rejectConfirmBody": "사용자가 다시 제출해야 합니다."
+  },
+  "myData": {
+    "title": "내 데이터",
+    "streak": "연속 로그인",
+    "streakCurrent": "현재",
+    "streakLongest": "최장",
+    "views": "프로필 방문",
+    "viewsUnique": "방문자 수",
+    "last7d": "최근 7일",
+    "last30d": "최근 30일",
+    "likes": "받은 좋아요",
+    "likesTotal": "총합",
+    "popularity": "인기",
+    "popularityScore": "점수",
+    "popularityRank": "순위",
+    "topPct": "상위 {{pct}}%",
+    "upsell": "프리미엄으로 7/30일 추세와 인기 순위를 확인하세요"
   }
 }

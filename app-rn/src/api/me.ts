@@ -174,6 +174,17 @@ export interface MyStats {
 }
 export const getMyStats = () => unwrap<MyStats>(api.get('/me/stats'));
 
+/** Per-user analytics ("我的数据"). Windowed fields + percentile are null for
+ *  non-Premium users (premium=false) — the client shows an upsell for those. */
+export interface MyAnalytics {
+  premium: boolean;
+  profileViews: { uniqueViewers: number; last7d: number | null; last30d: number | null };
+  likesReceived: { total: number; last7d: number | null; last30d: number | null };
+  popularity: { score: number; percentileRank: number | null };
+  streak: { current: number; longest: number };
+}
+export const getMyAnalytics = () => unwrap<MyAnalytics>(api.get('/me/analytics'));
+
 /** A user as returned by /api/users/:id/following — slim profile shape
  *  with the relationship flags needed to render a list row. */
 export interface FollowedUser {

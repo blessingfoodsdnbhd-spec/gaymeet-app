@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BadgeCheck,
+  BarChart3,
   Bell,
   ChevronRight,
   Crown,
@@ -321,6 +322,12 @@ export function ProfileScreen() {
             icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.account')}
             onPress={() => nav.navigate('AccountSettings')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={<BarChart3 size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.myData')}
+            onPress={() => nav.navigate('MyAnalytics')}
           />
           <Divider />
           <SettingsRow

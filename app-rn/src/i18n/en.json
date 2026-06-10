@@ -134,6 +134,7 @@
   "adminStats": {"title": "Analytics", "loadFailed": "Couldn't load stats", "totalUsers": "Total users", "dau": "DAU", "mau": "MAU", "signupsToday": "Signups today", "signups7d": "Signups 7d", "signups30d": "Signups 30d", "premium": "Premium", "moments24h": "Moments 24h", "totalMoments": "Total moments", "totalVotes": "Vote events", "totalMatches": "Matches"},
   "verification": {"title": "Photo verification", "intro": "Record a quick selfie doing the pose below so we can confirm you're a real person. Once approved you'll earn a green verified badge.", "poseLabel": "Your pose", "recordSelfie": "Record selfie", "recordVideo": "Record video", "recordVideoPremium": "Record video (Premium)", "submit": "Submit for review", "submitting": "Submitting…", "submitFailed": "Couldn't submit", "retake": "Retake", "videoReady": "Video ready to submit", "permTitle": "Camera access needed", "permBody": "Enable camera access to record your verification.", "pendingTitle": "Under review", "pendingBody": "We're reviewing your submission. This usually takes under 24 hours.", "approvedTitle": "You're verified!", "approvedBody": "Your profile now shows the green verified badge.", "rejectedTitle": "Verification wasn't approved", "verified": "Verified"},
   "adminVerifications": {"title": "Verifications", "empty": "No pending verifications 🎉", "photo": "Photo", "video": "Video", "poseLabel": "Pose", "approve": "Approve", "reject": "Reject", "rejectConfirmTitle": "Reject verification?", "rejectConfirmBody": "The user will need to submit again."},
+  "myData": {"title": "My Data", "streak": "Login streak", "streakCurrent": "Current", "streakLongest": "Longest", "views": "Profile views", "viewsUnique": "Unique viewers", "last7d": "Last 7 days", "last30d": "Last 30 days", "likes": "Likes received", "likesTotal": "Total", "popularity": "Popularity", "popularityScore": "Score", "popularityRank": "Rank", "topPct": "Top {{pct}}%", "upsell": "Unlock 7/30-day trends + popularity rank with Premium"},
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",
@@ -709,7 +710,8 @@
         "adminStats": "Analytics",
         "announcementAdmin": "Announcement manager",
         "verification": "Get verified",
-        "adminVerifications": "Verifications"
+        "adminVerifications": "Verifications",
+        "myData": "My Data 📊"
     },
     "edit": {
       "title": "Edit profile",

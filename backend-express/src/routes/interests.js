@@ -202,6 +202,73 @@ router.get('/stats', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/me/analytics ─────────────────────────────────────────────────────
+// Per-user analytics ("我的数据"). Basic totals are free; the time-windowed
+// breakdown + popularity percentile are Premium-only (null'd for free users so
+// the client can render an upsell). Profile views come from ProfileView (TTL
+// 30d, deduped per viewer) — there is no all-time total, so "uniqueViewers" is
+// the current distinct-viewer count.
+router.get('/analytics', auth, async (req, res, next) => {
+  try {
+    const uid = req.user._id;
+    const Swipe = require('../models/Swipe');
+    const ProfileView = require('../models/ProfileView');
+    const { isPremiumActive } = require('../utils/premium');
+    const premium = isPremiumActive(req.user);
+
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const d7 = new Date(now - 7 * DAY);
+    const d30 = new Date(now - 30 * DAY);
+    const likeDirs = { $in: ['like', 'super_like'] };
+    const myPopularity =
+      (req.user.totalLikesReceived || 0) + (req.user.followersCount || 0);
+
+    const tasks = [
+      ProfileView.countDocuments({ viewedId: uid }),
+      Swipe.countDocuments({ toUser: uid, direction: likeDirs }),
+    ];
+    if (premium) {
+      tasks.push(
+        ProfileView.countDocuments({ viewedId: uid, viewedAt: { $gte: d7 } }),
+        ProfileView.countDocuments({ viewedId: uid, viewedAt: { $gte: d30 } }),
+        Swipe.countDocuments({ toUser: uid, direction: likeDirs, createdAt: { $gte: d7 } }),
+        Swipe.countDocuments({ toUser: uid, direction: likeDirs, createdAt: { $gte: d30 } }),
+        // Popularity percentile — % of users this user's score exceeds. popularity
+        // is a computed sum (not a stored field), so compare via $expr.
+        User.countDocuments({
+          $expr: { $lt: [{ $add: ['$totalLikesReceived', '$followersCount'] }, myPopularity] },
+        }),
+        User.countDocuments({}),
+      );
+    }
+    const r = await Promise.all(tasks);
+
+    const payload = {
+      premium,
+      profileViews: { uniqueViewers: r[0], last7d: null, last30d: null },
+      likesReceived: { total: r[1], last7d: null, last30d: null },
+      popularity: { score: myPopularity, percentileRank: null },
+      streak: {
+        current: req.user.streak?.current || 0,
+        longest: req.user.streak?.longest || 0,
+      },
+    };
+    if (premium) {
+      payload.profileViews.last7d = r[2];
+      payload.profileViews.last30d = r[3];
+      payload.likesReceived.last7d = r[4];
+      payload.likesReceived.last30d = r[5];
+      const lower = r[6];
+      const total = r[7] || 1;
+      payload.popularity.percentileRank = Math.max(1, Math.round((lower / total) * 100));
+    }
+    ok(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/me/pricing ───────────────────────────────────────────────────────
 // Premium subscription tiers (Meyou 密友 v2 — single SKU, billed in MYR).
 // Public — same numbers for everyone, no auth needed.
