@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useSafetyMenu } from '../store/safetyMenu';
 import { useTheme } from '../theme/ThemeProvider';
-import { blockUser } from '../api/safety';
+import { blockUser, invalidateAfterBlock } from '../api/safety';
 
 /**
  * Android Safety menu sheet — replaces the broken Alert.alert(title, undefined,
@@ -55,6 +55,7 @@ export function SafetyMenuSheet() {
           onPress: async () => {
             try {
               await blockUser(userId);
+              invalidateAfterBlock();
               onBlocked?.();
             } catch (e: any) {
               const status = e?.response?.status;

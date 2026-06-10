@@ -11,6 +11,7 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { sendPushToUser } = require('../utils/push');
+const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
 
 // Chat voice-message upload — memory storage, audio only, ≤5 MB (≈60s m4a).
 // expo-av records m4a, reported as audio/* or video/mp4 on some platforms.
@@ -70,6 +71,7 @@ router.get('/', auth, async (req, res, next) => {
       .lean();
 
     const myCoords = req.user.location?.coordinates;
+    const blocked = await blockedIdSet(req.user);
 
     const result = matches
       .map((m) => {
@@ -79,8 +81,10 @@ router.get('/', auth, async (req, res, next) => {
           (u) => u._id.toString() !== req.user._id.toString()
         );
 
-        // Skip conversations where the other user no longer exists
+        // Skip conversations where the other user no longer exists, or is in a
+        // mutual block with the viewer (hide the whole thread from the inbox).
         if (!other) return null;
+        if (blocked.has(other._id.toString())) return null;
 
         const unread = m.unreadCounts?.[req.user._id.toString()] || 0;
 
@@ -144,6 +148,11 @@ router.post('/open/:userId', auth, async (req, res, next) => {
 
     if (senderId === targetUserId) {
       return err(res, 'Cannot open a conversation with yourself', 400);
+    }
+
+    // Mutual block: can't open a thread with someone in a block with you.
+    if (await isBlockedBetween(req.user, targetUserId)) {
+      return res.status(403).json({ error: 'User unavailable', code: 'BLOCKED' });
     }
 
     const receiver = await User.findById(targetUserId).select('_id nickname');

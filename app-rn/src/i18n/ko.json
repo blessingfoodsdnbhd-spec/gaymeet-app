@@ -875,6 +875,7 @@
     "aboutSection": "소개",
     "interestsSection": "관심사",
     "loadFailed": "프로필을 불러올 수 없습니다",
+    "userUnavailable": "이용할 수 없는 사용자",
     "sendMessage": "메시지 보내기",
     "sendMessagePremiumOnly": "프리미엄 기능",
     "lockedPhotosCount": "🔒 잠긴 사진 {{n}}장",

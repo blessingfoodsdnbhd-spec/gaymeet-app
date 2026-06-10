@@ -4,6 +4,7 @@ const { ok, err } = require('../utils/respond');
 const DirectMessage = require('../models/DirectMessage');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
+const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
 
 const COST_FREE = 20;
 const COST_PREMIUM = 10;
@@ -16,6 +17,12 @@ router.post('/send', auth, async (req, res, next) => {
     if (content.length > 200) return err(res, 'Content too long (max 200 chars)', 400);
 
     const sender = req.user;
+
+    // Mutual block: refuse BEFORE any coin math so blocked sends never cost.
+    if (await isBlockedBetween(sender, receiverId)) {
+      return res.status(403).json({ error: 'User unavailable', code: 'BLOCKED' });
+    }
+
     const cost = isPremiumActive(sender) ? COST_PREMIUM : COST_FREE;
 
     if (sender.coins < cost) {
@@ -49,17 +56,20 @@ router.post('/send', auth, async (req, res, next) => {
 // ── GET /api/dm/inbox ─────────────────────────────────────────────────────────
 router.get('/inbox', auth, async (req, res, next) => {
   try {
+    const blocked = await blockedIdSet(req.user);
     const messages = await DirectMessage.find({ receiver: req.user._id })
       .sort({ createdAt: -1 })
       .populate('sender', 'nickname avatarUrl isVerified isPremium')
       .lean();
 
-    // Blur content for unaccepted messages
-    const result = messages.map((m) => ({
-      ...m,
-      content: m.isAccepted ? m.content : m.content.replace(/./g, '●'),
-      blurred: !m.isAccepted,
-    }));
+    // Blur content for unaccepted messages; hide messages from blocked senders.
+    const result = messages
+      .filter((m) => !(m.sender && blocked.has(String(m.sender._id))))
+      .map((m) => ({
+        ...m,
+        content: m.isAccepted ? m.content : m.content.replace(/./g, '●'),
+        blurred: !m.isAccepted,
+      }));
 
     ok(res, result);
   } catch (e) {
@@ -70,11 +80,12 @@ router.get('/inbox', auth, async (req, res, next) => {
 // ── GET /api/dm/sent ──────────────────────────────────────────────────────────
 router.get('/sent', auth, async (req, res, next) => {
   try {
+    const blocked = await blockedIdSet(req.user);
     const messages = await DirectMessage.find({ sender: req.user._id })
       .sort({ createdAt: -1 })
       .populate('receiver', 'nickname avatarUrl isVerified isPremium')
       .lean();
-    ok(res, messages);
+    ok(res, messages.filter((m) => !(m.receiver && blocked.has(String(m.receiver._id)))));
   } catch (e) {
     next(e);
   }

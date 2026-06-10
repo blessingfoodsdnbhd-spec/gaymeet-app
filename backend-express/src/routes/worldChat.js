@@ -11,6 +11,7 @@ const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { blockedIdSet } = require('../utils/blocking');
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -556,7 +557,9 @@ router.get('/recent', auth, async (req, res, next) => {
     }
 
     const bannedIds = await WorldChatBan.find().distinct('userId');
-    const blocked = (req.user.blockedUsers || []).map((id) => id.toString());
+    // Symmetric (mutual) block — hide messages from anyone the viewer blocked OR
+    // who blocked them.
+    const blocked = await blockedIdSet(req.user);
     const excludeSet = new Set([...bannedIds.map((id) => id.toString()), ...blocked]);
     const excludeIds = [...excludeSet].map((id) => new mongoose.Types.ObjectId(id));
 

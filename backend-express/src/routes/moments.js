@@ -7,6 +7,7 @@ const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
+const { blockedIdSet } = require('../utils/blocking');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
 const MOMENTS_NEARBY_KM = 50;
@@ -105,7 +106,11 @@ router.get('/', auth, async (req, res, next) => {
     const notExpired = {
       $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }],
     };
-    const moments = await Moment.find({ $and: [filter, notExpired] })
+    // Mutual block: never surface moments authored by a blocked user (covers
+    // every feed variant, including the single-user `?userId=` view).
+    const blockedArr = [...(await blockedIdSet(req.user))];
+    const notBlocked = { user: { $nin: blockedArr } };
+    const moments = await Moment.find({ $and: [filter, notExpired, notBlocked] })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -148,6 +153,12 @@ router.get('/:id', auth, async (req, res, next) => {
       .lean();
 
     if (!moment) return err(res, 'Moment not found', 404);
+
+    // Mutual block: a blocked author's moment is "not found" to the viewer.
+    const blocked = await blockedIdSet(req.user);
+    if (moment.user && blocked.has(String(moment.user._id ?? moment.user))) {
+      return err(res, 'Moment not found', 404);
+    }
 
     const comments = await MomentComment.find({ moment: moment._id })
       .sort({ createdAt: 1 })

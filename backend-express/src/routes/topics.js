@@ -21,6 +21,7 @@ const TopicUnlock = require('../models/TopicUnlock');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { blockedIdSet } = require('../utils/blocking');
 
 const PAGE_DEFAULT = 24;
 const PAGE_MAX = 60;
@@ -32,16 +33,9 @@ const PAGE_MAX = 60;
 // "isSelf" flag so they can confirm their upload actually went
 // through (user feedback: "I uploaded a photo but the topic looks
 // empty" — that was because we were filtering self out).
-async function getBlockedIds(me) {
-  const usersWhoBlockedMe = await User.find(
-    { blockedUsers: me._id },
-    { _id: 1 },
-  ).lean();
-  return new Set([
-    ...(me.blockedUsers || []).map((id) => id.toString()),
-    ...usersWhoBlockedMe.map((u) => u._id.toString()),
-  ]);
-}
+// Thin wrapper over the shared symmetric helper (utils/blocking.js) — kept as a
+// named local so the call sites below read the same as before.
+const getBlockedIds = (me) => blockedIdSet(me);
 
 // ── GET /api/topics ────────────────────────────────────────────────────────
 // Active topics, ordered. The client uses this to build the topic-tab

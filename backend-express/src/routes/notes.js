@@ -6,6 +6,7 @@ const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
 const { notify } = require('../services/notificationService');
+const { isBlockedBetween } = require('../utils/blocking');
 
 const BODY_MAX = 200;
 const QUOTA_FREE = 1;
@@ -34,12 +35,17 @@ router.post('/', auth, async (req, res, next) => {
     if (!body) return err(res, 'Note is empty');
     if (body.length > BODY_MAX) return err(res, `Note too long (max ${BODY_MAX})`);
 
-    // Block check — recipient may have blocked this (hidden) sender earlier.
-    const blocked = await NoteBlock.exists({
+    // Block check — recipient may have blocked this (hidden) sender via the
+    // note-specific NoteBlock, OR either party may have blocked the other via
+    // the app-wide user block. Both stop delivery (same opaque error — never
+    // confirm the block to the anonymous sender).
+    const noteBlocked = await NoteBlock.exists({
       blockerUserId: recipientId,
       blockedUserId: req.user._id,
     });
-    if (blocked) return err(res, 'Note could not be delivered', 403);
+    if (noteBlocked || (await isBlockedBetween(req.user, recipientId))) {
+      return err(res, 'Note could not be delivered', 403);
+    }
 
     const premium = isPremiumActive(req.user);
     const limit = premium ? QUOTA_PREMIUM : QUOTA_FREE;

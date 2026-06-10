@@ -4,6 +4,7 @@ const { ok } = require('../utils/respond');
 const User = require('../models/User');
 const VoteEvent = require('../models/VoteEvent');
 const ChatRoom = require('../models/ChatRoom');
+const { blockedIdArray } = require('../utils/blocking');
 
 // Escape user input before building a RegExp so "." / "*" etc. are literal and
 // a crafted query can't ReDoS or match unexpectedly.
@@ -23,7 +24,8 @@ router.get('/', auth, async (req, res, next) => {
 
     const rx = new RegExp(escapeRegex(q), 'i');
     const meId = req.user._id;
-    const blocked = (req.user.blockedUsers || []).map(String);
+    // Symmetric (mutual) block — hide anyone the viewer blocked OR who blocked them.
+    const blocked = await blockedIdArray(req.user);
 
     const wantUsers = type === 'all' || type === 'users';
     const wantVotes = type === 'all' || type === 'votes';

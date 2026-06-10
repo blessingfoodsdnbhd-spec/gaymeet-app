@@ -13,6 +13,7 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { notify, coalesceOk } = require('../services/notificationService');
+const { blockedIdSet } = require('../utils/blocking');
 
 const TITLE_MAX = 80;
 const DESC_MAX = 500;
@@ -83,8 +84,9 @@ function serializeEvent(ev, creator) {
 // so the feed stays O(1) round trips regardless of page size. Mutates `events`
 // in place, adding { entries[], cover, myProgress } to each. Resilient to events
 // with zero entries (legacy / pre-backfill) → entries:[], cover from coverPhotos.
-async function attachFeedEntries(events, viewerId) {
+async function attachFeedEntries(events, viewerId, blockedSet) {
   if (!events.length) return;
+  const blocked = blockedSet || new Set();
   const ids = events.map((e) => new mongoose.Types.ObjectId(e.id));
 
   const [allEntries, myVoteEntryIds, readStates] = await Promise.all([
@@ -101,6 +103,7 @@ async function attachFeedEntries(events, viewerId) {
   const byEvent = new Map();
   for (const e of allEntries) {
     if (!e.submitterId) continue; // skip entries whose submitter was deleted
+    if (blocked.has(e.submitterId._id.toString())) continue; // mutual block: hide their entry
     const k = e.eventId.toString();
     (byEvent.get(k) || byEvent.set(k, []).get(k)).push(e);
   }
@@ -441,15 +444,24 @@ router.get('/', auth, async (req, res, next) => {
     if (category && CATEGORIES.includes(category)) q.category = category;
     if (before && mongoose.isValidObjectId(before)) q._id = { $lt: new mongoose.Types.ObjectId(before) };
 
+    // Mutual block: hide contests created by — and entries submitted by — anyone
+    // in a block with the viewer. Resolved once; the `$nin` is composed into
+    // each scope's creatorId clause below so a scope filter can't drop it.
+    const blockedSet = await blockedIdSet(req.user);
+    const blockedArr = [...blockedSet];
+
     if (scope === 'mine') {
-      q.creatorId = req.user._id;
+      q.creatorId = req.user._id; // your own contests — self can't be blocked
     } else if (scope === 'following') {
       const ids = await Follow.find({ follower: req.user._id }).distinct('following');
-      q.creatorId = { $in: ids };
-    } else if (scope === 'nearby') {
-      const coords = req.user.location?.coordinates;
-      if (coords && (coords[0] || coords[1])) {
-        q.location = { $near: { $geometry: { type: 'Point', coordinates: coords }, $maxDistance: 100000 } };
+      q.creatorId = blockedArr.length ? { $in: ids, $nin: blockedArr } : { $in: ids };
+    } else {
+      if (blockedArr.length) q.creatorId = { $nin: blockedArr };
+      if (scope === 'nearby') {
+        const coords = req.user.location?.coordinates;
+        if (coords && (coords[0] || coords[1])) {
+          q.location = { $near: { $geometry: { type: 'Point', coordinates: coords }, $maxDistance: 100000 } };
+        }
       }
     }
 
@@ -461,7 +473,7 @@ router.get('/', auth, async (req, res, next) => {
     // 'active' sorts before 'ended'/'pending' alphabetically — good enough; the
     // client mainly requests status=active for the carousel anyway.
     const events = rows.map((ev) => serializeEvent(ev, ev.creatorId));
-    await attachFeedEntries(events, req.user._id); // adds entries[]/cover/myProgress per event
+    await attachFeedEntries(events, req.user._id, blockedSet); // adds entries[]/cover/myProgress per event
     ok(res, { events });
   } catch (e) {
     next(e);
@@ -474,6 +486,12 @@ router.get('/:id', auth, async (req, res, next) => {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
     const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl isOfficial').lean();
     if (!ev) return err(res, 'Not found', 404);
+
+    // Mutual block: a blocked creator's contest is "not found"; blocked
+    // submitters' entries are filtered out below.
+    const blockedSet = await blockedIdSet(req.user);
+    const creatorIdStr = ev.creatorId?._id?.toString() ?? ev.creatorId?.toString();
+    if (blockedSet.has(creatorIdStr)) return err(res, 'Not found', 404);
 
     const entriesRaw = await VoteEntry.find({ eventId: ev._id })
       .sort({ voteCount: -1, createdAt: 1 })
@@ -496,7 +514,7 @@ router.get('/:id', auth, async (req, res, next) => {
       isCreator: ev.creatorId?._id?.toString() === req.user._id.toString(),
       myEntryId: myEntry ? myEntry._id.toString() : null,
       entries: entries
-        .filter((e) => e.submitterId)
+        .filter((e) => e.submitterId && !blockedSet.has(e.submitterId._id.toString()))
         .map((e) => ({
           id: e._id.toString(),
           submitter: {

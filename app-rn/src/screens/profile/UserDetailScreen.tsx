@@ -99,6 +99,9 @@ export function UserDetailScreen() {
       nav,
       // Coming from outside a chat context — no unmatch action.
       includeUnmatch: false,
+      // Surface invalidation is centralized in showSafetyMenu; here we just
+      // leave the now-blocked profile (the next fetch would 404 BLOCKED anyway).
+      onBlocked: () => nav.goBack(),
     });
   };
 
@@ -182,7 +185,13 @@ export function UserDetailScreen() {
 
       {userQ.isError && (
         <View style={styles.center}>
-          <Text style={{ color: theme.colors.muted }}>{t('userDetail.loadFailed')}</Text>
+          <Text style={{ color: theme.colors.muted }}>
+            {/* 403/404 → the user is blocked or gone: show "用户不可用".
+                Other errors (network/5xx) keep the generic load-failed copy. */}
+            {[403, 404].includes((userQ.error as any)?.response?.status)
+              ? t('userDetail.userUnavailable')
+              : t('userDetail.loadFailed')}
+          </Text>
         </View>
       )}
 
