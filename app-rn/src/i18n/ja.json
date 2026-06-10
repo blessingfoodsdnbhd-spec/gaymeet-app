@@ -1125,6 +1125,7 @@
     }
   },
   "premium": {
+    "badge": "Premium",
     "heroTagline": "コミュニティ活動のためにMeyouプレミアムを解放",
     "active": "プレミアム会員です",
     "expiresAt": "有効期限: {{date}}",
