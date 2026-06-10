@@ -411,7 +411,11 @@
     },
     "networkError": "Network error, try later",
     "loadNearbyFailed": "Couldn't load Nearby",
-    "introVoiceToggle": "🔊 Intro Voice"
+    "introVoiceToggle": "🔊 Intro Voice",
+    "viewGrid": "Grid",
+    "viewMap": "Map",
+    "mapLocating": "Locating you…",
+    "mapApproxNote": "Approximate positions — exact locations are never shown"
   },
   "moments": {
     "compose": {

@@ -135,7 +135,11 @@
     },
     "networkError": "ネットワークエラー、後でお試しください",
     "loadNearbyFailed": "近くを読み込めませんでした",
-    "introVoiceToggle": "🔊 イントロ音声"
+    "introVoiceToggle": "🔊 イントロ音声",
+    "viewGrid": "グリッド",
+    "viewMap": "地図",
+    "mapLocating": "現在地を取得中…",
+    "mapApproxNote": "おおよその位置です — 正確な位置は表示されません"
   },
   "moments": {
     "compose": {

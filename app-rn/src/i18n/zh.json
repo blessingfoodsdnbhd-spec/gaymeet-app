@@ -411,7 +411,11 @@
     },
     "networkError": "网络出错,稍后重试",
     "loadNearbyFailed": "无法加载附近",
-    "introVoiceToggle": "🔊 介绍声音"
+    "introVoiceToggle": "🔊 介绍声音",
+    "viewGrid": "网格",
+    "viewMap": "地图",
+    "mapLocating": "正在定位…",
+    "mapApproxNote": "位置为近似显示——绝不显示精确位置"
   },
   "moments": {
     "compose": {
