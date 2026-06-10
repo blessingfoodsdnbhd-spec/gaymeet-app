@@ -12,18 +12,13 @@ import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BadgeCheck,
-  BarChart3,
   Bell,
   ChevronRight,
   Crown,
   Gift,
-  Globe,
-  Lock,
-  Megaphone,
   Mic,
   Pencil,
   Settings as SettingsIcon,
-  ShieldCheck,
   Share2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -50,7 +45,6 @@ import { useAuth } from '../../store/auth';
 import { getMyStats, getViewers } from '../../api/me';
 import { getApprovedCount } from '../../api/privatePhotos';
 import { getUnreadCount } from '../../api/notifications';
-import { fetchIsAdmin } from '../../api/admin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -68,7 +62,7 @@ type AnyNav = NativeStackNavigationProp<any>;
  */
 export function ProfileScreen() {
   const theme = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigation<AnyNav>();
   const { width } = useWindowDimensions();
   const user = useAuth((s) => s.user);
@@ -115,13 +109,6 @@ export function ProfileScreen() {
     enabled: !!user,
     staleTime: 30_000,
   });
-  const isAdminQ = useQuery({
-    queryKey: ['me', 'isAdmin'],
-    queryFn: fetchIsAdmin,
-    staleTime: 60 * 60_000,
-    enabled: !!user,
-  });
-  const isAdmin = isAdminQ.data === true;
 
   if (!user) return null;
 
@@ -157,7 +144,7 @@ export function ProfileScreen() {
             <IconButton onPress={() => shareProfile(user.id, user.nickname, t)}>
               <Share2 size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
-            <IconButton onPress={() => nav.navigate('AccountSettings')}>
+            <IconButton onPress={() => nav.navigate('Settings')}>
               <SettingsIcon size={18} color={theme.colors.text} strokeWidth={1.6} />
             </IconButton>
           </>
@@ -302,37 +289,6 @@ export function ProfileScreen() {
           />
           <Divider />
           <SettingsRow
-            icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.privacy')}
-            onPress={() => nav.navigate('PrivacySettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<Bell size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.notifications')}
-            onPress={() => nav.navigate('NotificationSettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<Globe size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.language')}
-            detail={i18n.language.startsWith('zh') ? t('profile.rows.languageValueZh') : t('profile.rows.languageValueEn')}
-            onPress={() => nav.navigate('LanguageSettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.account')}
-            onPress={() => nav.navigate('AccountSettings')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={<BarChart3 size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.myData')}
-            onPress={() => nav.navigate('MyAnalytics')}
-          />
-          <Divider />
-          <SettingsRow
             icon={<Gift size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.giftPremium')}
             onPress={() => nav.navigate('PremiumGift')}
@@ -344,34 +300,6 @@ export function ProfileScreen() {
             detail={photoVerified ? t('verification.verified') : undefined}
             onPress={() => nav.navigate('Verification')}
           />
-          {isAdmin && (
-            <>
-              <Divider />
-              <SettingsRow
-                icon={<BadgeCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('profile.rows.adminVerifications')}
-                onPress={() => nav.navigate('AdminVerifications')}
-              />
-              <Divider />
-              <SettingsRow
-                icon={<Megaphone size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('profile.rows.announcementAdmin')}
-                onPress={() => nav.navigate('AnnouncementAdmin')}
-              />
-              <Divider />
-              <SettingsRow
-                icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('profile.rows.adminReports')}
-                onPress={() => nav.navigate('AdminReports')}
-              />
-              <Divider />
-              <SettingsRow
-                icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('profile.rows.adminStats')}
-                onPress={() => nav.navigate('AdminStats')}
-              />
-            </>
-          )}
         </Card>
 
         <Text style={{ textAlign: 'center', marginTop: 32, color: theme.colors.muted, fontSize: 11.5 }}>

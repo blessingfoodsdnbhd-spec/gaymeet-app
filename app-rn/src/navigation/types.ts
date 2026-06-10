@@ -41,6 +41,7 @@ export type RootStackParamList = {
    *  location; `moment` returns the picked place to the composer (AAAAA). */
   MapPicker: { mode?: 'virtual' | 'moment' } | undefined;
   MatchesList: undefined;
+  Settings: undefined;
   PrivacySettings: undefined;
   BlockedList: undefined;
   NotificationSettings: undefined;
