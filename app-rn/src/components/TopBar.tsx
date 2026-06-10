@@ -18,12 +18,15 @@ export function TopBar({ title, subtitle, left, right, center }: Props) {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.topbarH,
+        // Title-only headers (no left button) sit flush at 16 to align with
+        // page content/chip rows; back-button headers keep the 20pt inset.
+        paddingLeft: left ? theme.spacing.topbarH : 16,
+        paddingRight: theme.spacing.topbarH,
         paddingVertical: theme.spacing.topbarV,
       }}
     >
-      <View style={{ minWidth: 38 }}>{left}</View>
-      <View style={{ flex: 1, alignItems: center ? 'center' : 'flex-start', paddingLeft: center ? 0 : 4 }}>
+      <View style={{ minWidth: left ? 38 : 0 }}>{left}</View>
+      <View style={{ flex: 1, alignItems: center ? 'center' : 'flex-start', paddingLeft: center || !left ? 0 : 4 }}>
         {center
           ? center
           : (title || subtitle) && (
