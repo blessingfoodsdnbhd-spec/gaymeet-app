@@ -190,6 +190,14 @@
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",
+    "reply": {
+      "label": "回复",
+      "banner": "回复 {{name}}",
+      "notification": "{{name}} 回复了你：{{snippet}}"
+    },
+    "photo": {
+      "label": "发送照片"
+    },
     "rooms": {
       "title": "广场",
       "sectionGlobal": "全球房间",
@@ -859,6 +867,7 @@
       "moreSection": "更多通知",
       "votes": "投票活动提醒",
       "follow": "新的关注",
+      "worldChatReply": "广场回复",
       "viewers": "每日 profile 访客",
       "wants": "想认识你的人",
       "digest": "每日热门活动",

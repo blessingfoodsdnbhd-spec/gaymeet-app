@@ -11,7 +11,15 @@ const worldChatMessageSchema = new mongoose.Schema(
     // 'world' (default/global) or a country code (MY/CN/KR/…). Existing
     // messages default to 'world' for backward compatibility.
     roomId: { type: String, default: 'world' },
-    body: { type: String, required: true, maxlength: 500 },
+    // Text body. Empty for photo messages (validated per-type in the route).
+    body: { type: String, default: '', maxlength: 500 },
+    // Message kind. Legacy docs without the field are treated as 'text'.
+    type: { type: String, enum: ['text', 'photo'], default: 'text' },
+    // Photo messages: B2 public URL + optional caption.
+    photoUrl: { type: String, default: null },
+    caption: { type: String, default: null, maxlength: 500 },
+    // Optional quoted reply → the original message in the same room.
+    replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorldChatMessage', default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

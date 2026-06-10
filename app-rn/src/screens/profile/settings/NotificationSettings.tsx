@@ -12,6 +12,7 @@ import { getNotificationPrefs, updateNotificationPrefs } from '../../../api/noti
 const GROUPS: { key: string; types: string[] }[] = [
   { key: 'votes', types: ['vote_first_vote', 'vote_ending_24h', 'vote_ending_1h', 'vote_ended', 'vote_result'] },
   { key: 'follow', types: ['follow'] },
+  { key: 'worldChatReply', types: ['world_chat_reply'] },
   { key: 'viewers', types: ['viewers_digest'] },
   { key: 'wants', types: ['wants_you_digest'] },
   { key: 'digest', types: ['daily_digest'] },

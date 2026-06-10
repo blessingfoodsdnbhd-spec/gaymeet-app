@@ -92,12 +92,29 @@ function broadcast(event, payload, roomId) {
   }
 }
 
+// A one-line preview of a message for reply quotes + push bodies. Photos
+// fall back to their caption, else a camera glyph.
+function summarize(m) {
+  if (!m) return '';
+  if ((m.type || 'text') === 'photo') return (m.caption && m.caption.trim()) || '📷';
+  return m.body || '';
+}
+
 // ── POST /api/world-chat/send ─────────────────────────────────────────────────
 router.post('/send', auth, async (req, res, next) => {
   try {
+    const isPhoto = req.body?.type === 'photo';
     const body = String(req.body?.body ?? '').trim();
-    if (!body) return err(res, 'Message is empty');
-    if (body.length > BODY_MAX) return err(res, `Message too long (max ${BODY_MAX})`);
+    const caption = String(req.body?.caption ?? '').trim();
+    const photoUrl = String(req.body?.photoUrl ?? '').trim();
+
+    if (isPhoto) {
+      if (!photoUrl) return err(res, 'photoUrl required for photo');
+      if (caption.length > BODY_MAX) return err(res, `Caption too long (max ${BODY_MAX})`);
+    } else {
+      if (!body) return err(res, 'Message is empty');
+      if (body.length > BODY_MAX) return err(res, `Message too long (max ${BODY_MAX})`);
+    }
 
     const rid = req.body?.roomId;
     const custom = isCustomRoomId(rid);
@@ -114,7 +131,9 @@ router.post('/send', auth, async (req, res, next) => {
       if (!room.memberIds.some((m) => sameId(m, req.user._id))) return err(res, 'Join the room first', 403);
     }
 
-    if (BLOCKLIST.test(body)) return err(res, 'Message blocked by content filter', 422);
+    // Content filter applies to the visible text (body for text, caption for photo).
+    const filterTarget = isPhoto ? caption : body;
+    if (filterTarget && BLOCKLIST.test(filterTarget)) return err(res, 'Message blocked by content filter', 422);
 
     const uid = req.user._id.toString();
     const now = Date.now();
@@ -124,7 +143,33 @@ router.post('/send', auth, async (req, res, next) => {
     }
     lastSent.set(uid, now);
 
-    const msg = await WorldChatMessage.create({ userId: req.user._id, roomId, body });
+    // Resolve an optional reply target — must be a real message (we quote its
+    // sender + a snippet, and notify them). Ignored silently if it's gone.
+    let replyDoc = null;
+    const replyId = req.body?.replyToMessageId;
+    if (replyId && mongoose.isValidObjectId(replyId)) {
+      replyDoc = await WorldChatMessage.findById(replyId).populate('userId', 'nickname').lean();
+    }
+    const replyTo =
+      replyDoc && replyDoc.userId
+        ? {
+            messageId: replyDoc._id.toString(),
+            userId: replyDoc.userId._id.toString(),
+            displayName: replyDoc.userId.nickname,
+            type: replyDoc.type || 'text',
+            body: summarize(replyDoc),
+          }
+        : null;
+
+    const msg = await WorldChatMessage.create({
+      userId: req.user._id,
+      roomId,
+      type: isPhoto ? 'photo' : 'text',
+      body: isPhoto ? '' : body,
+      photoUrl: isPhoto ? photoUrl : null,
+      caption: isPhoto ? caption || null : null,
+      replyToMessageId: replyTo ? replyDoc._id : null,
+    });
 
     // Keep the room list sortable + show activity.
     if (custom) {
@@ -141,10 +186,37 @@ router.post('/send', auth, async (req, res, next) => {
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
+      type: msg.type,
+      photoUrl: msg.photoUrl ?? null,
+      caption: msg.caption ?? null,
+      replyTo,
       createdAt: msg.createdAt.toISOString(),
     };
     broadcast('world-chat:receive', payload, roomId);
     created(res, payload);
+
+    // Push the original sender when someone replies to them (not on self-reply).
+    // notify() respects per-user opt-out (world_chat_reply isn't high-priority).
+    if (replyTo && replyTo.userId !== uid) {
+      const name = req.user.nickname || '';
+      const snippet = summarize(msg).slice(0, 80);
+      notify(replyTo.userId, 'world_chat_reply', {
+        i18n: {
+          en: { title: name, body: `Replied to you: ${snippet}` },
+          zh: { title: name, body: `回复了你：${snippet}` },
+          ko: { title: name, body: `회원님에게 답장했습니다: ${snippet}` },
+          ja: { title: name, body: `あなたに返信しました: ${snippet}` },
+        },
+        data: {
+          roomId,
+          custom: custom ? '1' : '0',
+          messageId: msg._id.toString(),
+          fromUserId: uid,
+          fromUserName: name,
+          fromUserAvatarUrl: req.user.avatarUrl || '',
+        },
+      }).catch(() => {});
+    }
   } catch (e) {
     next(e);
   }
@@ -501,21 +573,39 @@ router.get('/recent', auth, async (req, res, next) => {
       .sort({ _id: -1 })
       .limit(limit)
       .populate('userId', 'nickname avatarUrl countryCode city isOfficial')
+      .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
 
     const messages = rows
       .filter((m) => m.userId) // populate -> null if the user was deleted
-      .map((m) => ({
-        messageId: m._id.toString(),
-        userId: m.userId._id.toString(),
-        displayName: m.userId.nickname,
-        avatarUrl: m.userId.avatarUrl ?? null,
-        isOfficial: m.userId.isOfficial ?? false,
-        countryCode: m.userId.countryCode ?? null,
-        city: m.userId.city ?? null,
-        body: m.body,
-        createdAt: m.createdAt.toISOString(),
-      }));
+      .map((m) => {
+        const r = m.replyToMessageId;
+        const replyTo =
+          r && r.userId
+            ? {
+                messageId: r._id.toString(),
+                userId: r.userId._id.toString(),
+                displayName: r.userId.nickname,
+                type: r.type || 'text',
+                body: summarize(r),
+              }
+            : null;
+        return {
+          messageId: m._id.toString(),
+          userId: m.userId._id.toString(),
+          displayName: m.userId.nickname,
+          avatarUrl: m.userId.avatarUrl ?? null,
+          isOfficial: m.userId.isOfficial ?? false,
+          countryCode: m.userId.countryCode ?? null,
+          city: m.userId.city ?? null,
+          body: m.body,
+          type: m.type || 'text',
+          photoUrl: m.photoUrl ?? null,
+          caption: m.caption ?? null,
+          replyTo,
+          createdAt: m.createdAt.toISOString(),
+        };
+      });
 
     ok(res, { messages });
   } catch (e) {

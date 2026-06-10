@@ -72,6 +72,18 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!roomId) return safeNavigate('Main');
       return safeNavigate('WorldChatRoom', { roomId, custom: true });
     }
+    case 'world_chat_reply': {
+      // Someone replied to your World Chat message → open the room and scroll
+      // to the reply. `custom` ('1'/'0') flags a user-created room.
+      const roomId = data.roomId ? String(data.roomId) : null;
+      if (!roomId) return safeNavigate('Main');
+      const scrollToMessageId = data.messageId ? String(data.messageId) : undefined;
+      return safeNavigate('WorldChatRoom', {
+        roomId,
+        custom: String(data.custom ?? '') === '1',
+        scrollToMessageId,
+      });
+    }
     case 'viewers_digest': {
       return safeNavigate('Viewers');
     }
