@@ -85,7 +85,7 @@ function isConfigured() {
  *                                   type: 'message'|'match'|'comment'|'like'|'follow'
  *                                   matchId, momentId, fromUserId
  */
-async function sendPushToUser(userId, { title, body, data = {} } = {}) {
+async function sendPushToUser(userId, { title, body, data = {}, collapseKey } = {}) {
   if (!isConfigured()) return;
   if (!userId) return;
 
@@ -113,7 +113,11 @@ async function sendPushToUser(userId, { title, body, data = {} } = {}) {
       data: stringData,
       android: {
         priority: 'high',
+        // Group/replace: a repeated summary push with the same collapseKey
+        // updates the existing notification slot instead of stacking (item 9).
+        ...(collapseKey ? { collapseKey } : {}),
         notification: {
+          ...(collapseKey ? { tag: collapseKey } : {}),
           // Keep in sync with utils/push.ts setNotificationChannelAsync.
           // Channel sound is immutable after first creation; bumping the
           // ID was the only way to roll the custom sound out to existing
@@ -127,8 +131,10 @@ async function sendPushToUser(userId, { title, body, data = {} } = {}) {
         },
       },
       apns: {
+        ...(collapseKey ? { headers: { 'apns-collapse-id': collapseKey } } : {}),
         payload: {
           aps: {
+            ...(collapseKey ? { 'thread-id': collapseKey } : {}),
             // iOS expects the filename with extension. `notification_sound
             // .caf` is bundled in the .ipa main bundle by the Expo plugin
             // withCustomNotificationSound.js at prebuild time.

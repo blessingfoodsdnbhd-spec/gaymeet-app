@@ -62,7 +62,7 @@ setInterval(() => {
  *
  * @returns the created Notification doc, or null if the user disabled this type.
  */
-async function notify(userId, type, { title = '', body = '', data = {}, push = true, i18n } = {}) {
+async function notify(userId, type, { title = '', body = '', data = {}, push = true, i18n, coalesce } = {}) {
   if (!userId) return null;
   try {
     const high = HIGH_PRIORITY.has(type);
@@ -71,20 +71,17 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
       return null; // user opted out — don't persist or push
     }
 
-    // Localize from the recipient's app language when the caller supplies an
-    // `i18n` bundle: { en: { title, body }, zh: { title, body } }. We only hit
-    // the DB for the language when i18n is provided (every other notify() keeps
-    // its literal strings + zero extra queries). Falls back to en, then to the
-    // literal title/body.
-    if (i18n) {
-      let lang = 'en';
+    // Resolve the recipient's app language once if any localization is needed
+    // (an i18n bundle for the individual notification, or a coalesced summary).
+    let lang = 'en';
+    if (i18n || coalesce?.summaryI18n) {
       try {
         const User = require('../models/User');
         const u = await User.findById(userId).select('preferredLanguage').lean();
-        if (u && ['en', 'zh', 'ko', 'ja'].includes(u.preferredLanguage)) {
-          lang = u.preferredLanguage;
-        }
+        if (u && ['en', 'zh', 'ko', 'ja'].includes(u.preferredLanguage)) lang = u.preferredLanguage;
       } catch (_) {}
+    }
+    if (i18n) {
       const tpl = i18n[lang] || i18n.en || {};
       if (tpl.title != null) title = tpl.title;
       if (tpl.body != null) body = tpl.body;
@@ -94,10 +91,33 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
     if (push) {
       const quiet = !high && inQuietHours(pref);
       if (!quiet) {
+        let pushTitle = title;
+        let pushBody = body;
+        let collapseKey;
+        // Coalesce the PUSH (not the inbox): when ≥2 of this type landed within
+        // the window, send ONE grouped summary ("3 people are following you")
+        // with a stable collapseKey so it replaces the prior push on-device.
+        // The individual rows are still persisted, so the inbox keeps avatars.
+        if (coalesce?.summaryI18n) {
+          const windowMs = coalesce.windowMs || 60 * 60 * 1000;
+          let n = 1;
+          try {
+            n = await Notification.countDocuments({
+              userId, type, createdAt: { $gte: new Date(Date.now() - windowMs) },
+            });
+          } catch (_) {}
+          if (n >= 2) {
+            const s = coalesce.summaryI18n[lang] || coalesce.summaryI18n.en || {};
+            if (s.title) pushTitle = String(s.title).replace('{{count}}', String(n));
+            if (s.body) pushBody = String(s.body).replace('{{count}}', String(n));
+            collapseKey = `${type}:${userId}`;
+          }
+        }
         sendPushToUser(userId, {
-          title,
-          body,
+          title: pushTitle,
+          body: pushBody,
           data: { ...data, type, notifId: doc._id.toString() },
+          collapseKey,
         }).catch(() => {});
       }
     }

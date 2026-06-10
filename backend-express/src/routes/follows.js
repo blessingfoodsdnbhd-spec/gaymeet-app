@@ -54,6 +54,17 @@ router.post('/:id/follow', auth, async (req, res, next) => {
           ko: { title: `${who}님이 회원님을 팔로우합니다`, body: '탭하여 프로필을 보세요' },
           ja: { title: `${who}があなたをフォローしました`, body: 'タップしてプロフィールを見る' },
         },
+        // Coalesce the push when several people follow within an hour (item 9):
+        // one "N people are following you" instead of N separate buzzes.
+        coalesce: {
+          windowMs: 60 * 60 * 1000,
+          summaryI18n: {
+            en: { title: '{{count}} people are following you', body: 'Tap to see who' },
+            zh: { title: '{{count}} 人关注了你', body: '点击查看是谁' },
+            ko: { title: '{{count}}명이 회원님을 팔로우합니다', body: '탭하여 확인하세요' },
+            ja: { title: '{{count}}人があなたをフォローしました', body: 'タップして確認' },
+          },
+        },
       }).catch(() => {});
 
       return ok(res, { following: true });
