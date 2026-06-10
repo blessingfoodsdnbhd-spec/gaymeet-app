@@ -22,8 +22,6 @@ import {
   Copy,
   Edit2,
   Flag,
-  Image as ImageIcon,
-  MapPin,
   Mic,
   MoreHorizontal,
   Plus,
@@ -33,7 +31,6 @@ import {
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 
@@ -54,7 +51,6 @@ import {
   getMessages,
   sendMessage,
   sendImageMessage,
-  sendLocationMessage,
   uploadChatVoice,
   sendVoiceMessage,
   toggleReaction,
@@ -177,7 +173,6 @@ export function ChatDetailScreen() {
   const [composing, setComposing] = useState('');
   const [showStickers, setShowStickers] = useState(false);
   // +-button action sheet (camera / gallery / location)
-  const [composerActionsOpen, setComposerActionsOpen] = useState(false);
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
   // Long-press action sheet target message (null = closed)
   const [actionsFor, setActionsFor] = useState<Message | null>(null);
@@ -615,91 +610,6 @@ export function ChatDetailScreen() {
     [pendingPhoto, sendImageFromUri, sendMut],
   );
 
-  const shareLocation = useCallback(async () => {
-    const perm = await Location.requestForegroundPermissionsAsync();
-    if (perm.status !== 'granted') {
-      Alert.alert(
-        t('chat.composer.locationPermTitle'),
-        t('chat.composer.locationPermBody'),
-      );
-      return;
-    }
-    let lat: number;
-    let lng: number;
-    try {
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      lat = pos.coords.latitude;
-      lng = pos.coords.longitude;
-    } catch {
-      Alert.alert(t('chat.composer.locationFailed'));
-      return;
-    }
-    let label: string | null = null;
-    try {
-      const places = await Location.reverseGeocodeAsync({
-        latitude: lat,
-        longitude: lng,
-      });
-      const p = places?.[0];
-      if (p) {
-        label =
-          [p.name, p.street, p.city, p.region]
-            .filter((s): s is string => !!s && s.trim().length > 0)
-            .slice(0, 3)
-            .join(', ')
-            .slice(0, 200) || null;
-      }
-    } catch {
-      // reverse geocode is optional — proceed with lat/lng fallback
-    }
-
-    const pendingId = `tmp-loc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const optimistic: Message = {
-      id: pendingId,
-      pendingId,
-      matchId,
-      senderId: me?.id ?? 'me',
-      content: '',
-      type: 'location',
-      location: { lat, lng, label },
-      createdAt: new Date().toISOString(),
-      status: 'sending',
-    };
-    queryClient.setQueryData<Message[]>(
-      ['chats', 'messages', matchId],
-      (prev) => [...(prev ?? []), optimistic],
-    );
-    try {
-      const real = await sendLocationMessage(matchId, lat, lng, label);
-      queryClient.setQueryData<Message[]>(
-        ['chats', 'messages', matchId],
-        (prev) => {
-          const arr = prev ?? [];
-          const wsAlreadyHasIt = arr.some(
-            (m) => m.id === real.id && m.pendingId !== pendingId,
-          );
-          if (wsAlreadyHasIt) {
-            return arr.filter((m) => m.pendingId !== pendingId);
-          }
-          return arr.map((m) =>
-            m.pendingId === pendingId ? { ...real, status: 'sent' } : m,
-          );
-        },
-      );
-    } catch (e: any) {
-      queryClient.setQueryData<Message[]>(
-        ['chats', 'messages', matchId],
-        (prev) =>
-          (prev ?? []).map((m) =>
-            m.pendingId === pendingId ? { ...m, status: 'failed' } : m,
-          ),
-      );
-      const detail = e?.response?.data?.error || e?.message || '';
-      Alert.alert(t('chat.location.sendFailed'), detail);
-    }
-  }, [matchId, me, queryClient, t]);
 
   // Edit / delete mutations for Phase 2f. Both gated by Premium server-side;
   // the long-press action sheet hides options the caller doesn't meet, but
@@ -1210,9 +1120,9 @@ export function ChatDetailScreen() {
             { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
           ]}
         >
-          {/* + attachment button, left of pill */}
+          {/* + button → pick from photo library (routes through PhotoConfirmModal) */}
           <Pressable
-            onPress={() => setComposerActionsOpen(true)}
+            onPress={pickGallery}
             hitSlop={8}
             style={{
               width: 44,
@@ -1314,51 +1224,6 @@ export function ChatDetailScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-
-      {/* +-button action sheet: Camera / Gallery / Location */}
-      <Sheet
-        open={composerActionsOpen}
-        onClose={() => setComposerActionsOpen(false)}
-        maxHeight="40%"
-      >
-        <ActionRow
-          icon={<Camera size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-          label={t('chat.composer.camera')}
-          onPress={() => {
-            setComposerActionsOpen(false);
-            pickCamera();
-          }}
-        />
-        <ActionRow
-          icon={<ImageIcon size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-          label={t('chat.composer.gallery')}
-          onPress={() => {
-            setComposerActionsOpen(false);
-            pickGallery();
-          }}
-        />
-        <ActionRow
-          icon={<MapPin size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-          label={t('chat.composer.location')}
-          onPress={() => {
-            setComposerActionsOpen(false);
-            shareLocation();
-          }}
-        />
-        <ActionRow
-          icon={<Mic size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-          label={t('chat.composer.recordVoice')}
-          onPress={() => {
-            setComposerActionsOpen(false);
-            setVoiceRecorderOpen(true);
-          }}
-        />
-        <ActionRow
-          label={t('chat.composer.cancel')}
-          centered
-          onPress={() => setComposerActionsOpen(false)}
-        />
-      </Sheet>
 
       <ChatVoiceRecorderSheet
         open={voiceRecorderOpen}
