@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  BadgeCheck,
   Bell,
   ChevronRight,
   Crown,
@@ -125,7 +126,8 @@ export function ProfileScreen() {
   const photos = user.photos ?? [];
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
-  const official = !!(user as any).isOfficial || !!(user as any).isVerified;
+  const official = !!(user as any).isOfficial;
+  const photoVerified = !!(user as any).isVerified;
 
   // GGGG — large 3-column photo grid. Tile = (screen − h-padding − 2 gaps) / 3.
   const GAP = 8;
@@ -170,6 +172,7 @@ export function ProfileScreen() {
           <NameWithBadge
             name={user.nickname}
             official={official}
+            verified={photoVerified}
             badgeSize={18}
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
             containerStyle={{ marginTop: 12 }}
@@ -319,8 +322,21 @@ export function ProfileScreen() {
             label={t('profile.rows.account')}
             onPress={() => nav.navigate('AccountSettings')}
           />
+          <Divider />
+          <SettingsRow
+            icon={<BadgeCheck size={18} color={theme.colors.success} strokeWidth={1.8} />}
+            label={t('profile.rows.verification')}
+            detail={photoVerified ? t('verification.verified') : undefined}
+            onPress={() => nav.navigate('Verification')}
+          />
           {isAdmin && (
             <>
+              <Divider />
+              <SettingsRow
+                icon={<BadgeCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.adminVerifications')}
+                onPress={() => nav.navigate('AdminVerifications')}
+              />
               <Divider />
               <SettingsRow
                 icon={<Megaphone size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}

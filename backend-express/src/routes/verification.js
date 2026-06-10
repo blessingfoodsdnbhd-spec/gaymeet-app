@@ -1,9 +1,14 @@
 const router = require('express').Router();
 const { auth } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const { uploadMedia } = require('../middleware/upload');
 const { ok, err } = require('../utils/respond');
 const Verification = require('../models/Verification');
 const User = require('../models/User');
+
+// When true, submissions self-approve after a short delay (demo / staging).
+// Default OFF → submissions sit as 'pending' for an admin to review in the
+// AdminVerifications dashboard (the v1 manual-review flow).
+const AUTO_APPROVE = process.env.VERIFICATION_AUTO_APPROVE === 'true';
 
 const POSES = [
   '请用右手比V✌️',
@@ -25,14 +30,21 @@ router.get('/status', auth, async (req, res, next) => {
   try {
     const record = await Verification.findOne({ user: req.user._id }).lean();
     if (!record) return ok(res, { status: 'none' });
-    ok(res, { status: record.status, pose: record.pose, createdAt: record.createdAt });
+    ok(res, {
+      status: record.status,
+      pose: record.pose,
+      verificationType: record.verificationType,
+      rejectedReason: record.rejectedReason || null,
+      createdAt: record.createdAt,
+      reviewedAt: record.reviewedAt,
+    });
   } catch (e) {
     next(e);
   }
 });
 
 // ── POST /api/verification/submit ─────────────────────────────────────────────
-router.post('/submit', auth, upload.single('selfie'), async (req, res, next) => {
+router.post('/submit', auth, uploadMedia.single('selfie'), async (req, res, next) => {
   try {
     if (!req.file) return err(res, 'No selfie uploaded', 400);
 
@@ -55,21 +67,24 @@ router.post('/submit', auth, upload.single('selfie'), async (req, res, next) => 
       { upsert: true, new: true }
     );
 
-    // Auto-approve after 3 seconds (MVP simulation)
-    setTimeout(async () => {
-      try {
-        await Verification.findByIdAndUpdate(record._id, {
-          status: 'approved',
-          reviewedAt: new Date(),
-        });
-        await User.findByIdAndUpdate(req.user._id, {
-          isVerified: true,
-          verifiedAt: new Date(),
-        });
-      } catch (autoErr) {
-        console.error('Auto-approve error:', autoErr);
-      }
-    }, 3000);
+    // Demo/staging only: self-approve. In production this stays pending for
+    // an admin to review (see AdminVerifications).
+    if (AUTO_APPROVE) {
+      setTimeout(async () => {
+        try {
+          await Verification.findByIdAndUpdate(record._id, {
+            status: 'approved',
+            reviewedAt: new Date(),
+          });
+          await User.findByIdAndUpdate(req.user._id, {
+            isVerified: true,
+            verifiedAt: new Date(),
+          });
+        } catch (autoErr) {
+          console.error('Auto-approve error:', autoErr);
+        }
+      }, 3000);
+    }
 
     ok(res, { status: 'pending', pose: record.pose });
   } catch (e) {
@@ -96,7 +111,7 @@ router.get('/phrase', auth, (req, res) => {
 router.post(
   '/submit-video',
   auth,
-  upload.single('video'),
+  uploadMedia.single('video'),
   async (req, res, next) => {
     try {
       if (!req.file) return err(res, 'No video uploaded', 400);
@@ -128,22 +143,23 @@ router.post(
         { upsert: true, new: true }
       );
 
-      // Auto-approve after 5 seconds for video
-      setTimeout(async () => {
-        try {
-          await Verification.findByIdAndUpdate(record._id, {
-            status: 'approved',
-            reviewedAt: new Date(),
-          });
-          await User.findByIdAndUpdate(req.user._id, {
-            isVerified: true,
-            isVideoVerified: true,
-            verifiedAt: new Date(),
-          });
-        } catch (autoErr) {
-          console.error('Video auto-approve error:', autoErr);
-        }
-      }, 5000);
+      if (AUTO_APPROVE) {
+        setTimeout(async () => {
+          try {
+            await Verification.findByIdAndUpdate(record._id, {
+              status: 'approved',
+              reviewedAt: new Date(),
+            });
+            await User.findByIdAndUpdate(req.user._id, {
+              isVerified: true,
+              isVideoVerified: true,
+              verifiedAt: new Date(),
+            });
+          } catch (autoErr) {
+            console.error('Video auto-approve error:', autoErr);
+          }
+        }, 5000);
+      }
 
       ok(res, { status: 'pending', verificationType: 'video' });
     } catch (e) {

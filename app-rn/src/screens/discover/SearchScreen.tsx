@@ -60,7 +60,8 @@ export function SearchScreen() {
           <Avatar uri={item.avatarUrl} name={item.nickname} avatarIdx={idxFor(item.id)} size={44} />
           <NameWithBadge
             name={item.nickname}
-            official={item.isOfficial || item.isVerified}
+            official={item.isOfficial}
+            verified={item.isVerified}
             textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
             containerStyle={{ flex: 1 }}
           />

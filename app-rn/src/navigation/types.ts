@@ -28,6 +28,8 @@ export type RootStackParamList = {
   Search: undefined;
   AdminReports: undefined;
   AdminStats: undefined;
+  AdminVerifications: undefined;
+  Verification: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

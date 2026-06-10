@@ -61,6 +61,8 @@ export interface User {
   /** ISO timestamp of last activity. null when a Premium user hides presence. */
   lastActiveAt?: string | null;
   isVerified?: boolean;
+  /** Stronger video-pose verification (Premium). Implies isVerified. */
+  isVideoVerified?: boolean;
   isOfficial?: boolean;
   isPremium?: boolean;
   premiumExpiresAt?: string | null;

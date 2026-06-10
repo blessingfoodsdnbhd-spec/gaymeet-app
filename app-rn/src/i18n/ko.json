@@ -223,7 +223,9 @@
       "photoRequests": "사진 요청",
       "adminReports": "신고 관리",
       "adminStats": "데이터 분석",
-      "announcementAdmin": "공지 관리"
+      "announcementAdmin": "공지 관리",
+      "verification": "사진 인증 받기",
+      "adminVerifications": "인증 심사"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1225,5 +1227,37 @@
       "deleteBody": "사용자에게 숨겨집니다. 나중에 다시 켤 수 있습니다.",
       "delete": "삭제"
     }
+  },
+  "verification": {
+    "title": "사진 인증",
+    "intro": "아래 동작을 따라 셀카를 촬영해 실제 사용자임을 확인해 주세요. 승인되면 녹색 인증 배지를 받습니다.",
+    "poseLabel": "동작",
+    "recordSelfie": "셀카 촬영",
+    "recordVideo": "영상 촬영",
+    "recordVideoPremium": "영상 촬영 (프리미엄)",
+    "submit": "심사 요청",
+    "submitting": "제출 중…",
+    "submitFailed": "제출하지 못했습니다",
+    "retake": "다시 촬영",
+    "videoReady": "영상 준비 완료",
+    "permTitle": "카메라 권한 필요",
+    "permBody": "인증을 촬영하려면 카메라 접근을 허용해 주세요.",
+    "pendingTitle": "심사 중",
+    "pendingBody": "제출하신 내용을 심사 중입니다. 보통 24시간 이내에 완료됩니다.",
+    "approvedTitle": "인증 완료!",
+    "approvedBody": "이제 프로필에 녹색 인증 배지가 표시됩니다.",
+    "rejectedTitle": "인증이 승인되지 않았습니다",
+    "verified": "인증됨"
+  },
+  "adminVerifications": {
+    "title": "인증 심사",
+    "empty": "대기 중인 인증이 없습니다 🎉",
+    "photo": "사진",
+    "video": "영상",
+    "poseLabel": "동작",
+    "approve": "승인",
+    "reject": "거절",
+    "rejectConfirmTitle": "인증을 거절할까요?",
+    "rejectConfirmBody": "사용자가 다시 제출해야 합니다."
   }
 }

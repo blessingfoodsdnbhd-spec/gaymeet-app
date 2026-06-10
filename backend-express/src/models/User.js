@@ -151,8 +151,11 @@ const userSchema = new mongoose.Schema(
     // Sticker packs owned
     ownedStickerPacks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StickerPack' }],
 
-    // Verification (real-person check)
+    // Verification (real-person check). isVerified = photo/selfie verified;
+    // isVideoVerified = the stronger video-pose check (Premium). Both render a
+    // green "photo verified" seal client-side, distinct from the blue isOfficial.
     isVerified: { type: Boolean, default: false },
+    isVideoVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
     // Official Meyou account (bot / support). Grants the verified badge + the
     // right to use reserved names. Set manually in the DB; never user-settable.
@@ -301,7 +304,7 @@ const PUBLIC_USER_FIELDS = [
   'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode', 'location',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
-  'isVerified', 'verifiedAt', 'isOfficial', 'vipLevel', 'vipExpiresAt',
+  'isVerified', 'isVideoVerified', 'verifiedAt', 'isOfficial', 'vipLevel', 'vipExpiresAt',
   'level', 'currentExp', 'popularityScore',
   'lookingFor', 'role', 'zodiac', 'mbti', 'bloodType', 'kinks',
   'relationshipStatus', 'intents',

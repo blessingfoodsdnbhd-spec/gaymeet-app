@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
@@ -270,7 +270,11 @@ export function UserDetailScreen() {
                   return ` · ${a}${z ? ` ${z.emoji}` : ''}`;
                 })()}
               </Text>
-              {(user as any).isOfficial && <VerifiedBadge size={16} />}
+              {(user as any).isOfficial ? (
+                <VerifiedBadge size={16} />
+              ) : (user as any).isVerified ? (
+                <PhotoVerifiedBadge size={16} />
+              ) : null}
               <PopularityBadge value={(user as any).popularity} size="md" />
             </View>
             {user.countryCode && (

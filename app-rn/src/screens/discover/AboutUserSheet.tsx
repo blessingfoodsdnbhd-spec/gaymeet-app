@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Sheet } from '../../components/Sheet';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
@@ -423,7 +423,11 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                   return a != null ? ` · ${a}` : '';
                 })()}
               </Text>
-              {(user as any).isOfficial && <VerifiedBadge size={16} />}
+              {(user as any).isOfficial ? (
+                <VerifiedBadge size={16} />
+              ) : (user as any).isVerified ? (
+                <PhotoVerifiedBadge size={16} />
+              ) : null}
               <FollowBadge status={user.followStatus} size={18} />
               <PopularityBadge value={(user as any).popularity} />
               {/* Voice intro — always tappable; auto-plays once on open when the

@@ -151,6 +151,7 @@ app.use('/api/announcements', announcementsRoutes); // GET /current
 app.use('/api/admin', adminAnnouncementsRoutes); // POST/GET/PATCH/DELETE /announcements (X-Admin-Token)
 app.use('/api/admin', require('./routes/admin-reports')); // GET /reports, POST /reports/:kind/:id/resolve (REPORT1)
 app.use('/api/admin', require('./routes/admin-stats')); // GET /stats (STATS1)
+app.use('/api/admin', require('./routes/admin-verifications')); // GET /verifications, POST /verifications/:id/approve|reject (VERIFY1)
 app.use('/api/topics', topicsRoutes); // GET /, GET /:slug/personas, GET /:slug/personas/:userId
 app.use('/api/me/topic-personas', meTopicPersonasRoutes); // GET/POST/PATCH/DELETE
 app.use('/api/topic-unlocks', topicUnlocksRoutes); // request/approve/reject/revoke/incoming/outgoing/approved

@@ -223,7 +223,9 @@
       "photoRequests": "写真リクエスト",
       "adminReports": "通報管理",
       "adminStats": "データ分析",
-      "announcementAdmin": "お知らせ管理"
+      "announcementAdmin": "お知らせ管理",
+      "verification": "写真認証を受ける",
+      "adminVerifications": "認証審査"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1225,5 +1227,37 @@
       "deleteBody": "ユーザーから非表示になります。後で再度有効にできます。",
       "delete": "削除"
     }
+  },
+  "verification": {
+    "title": "写真認証",
+    "intro": "下のポーズで自撮りを撮影し、本人であることを確認します。承認されると緑の認証バッジが付きます。",
+    "poseLabel": "ポーズ",
+    "recordSelfie": "自撮りを撮影",
+    "recordVideo": "動画を撮影",
+    "recordVideoPremium": "動画を撮影（プレミアム）",
+    "submit": "審査に送信",
+    "submitting": "送信中…",
+    "submitFailed": "送信できませんでした",
+    "retake": "撮り直す",
+    "videoReady": "動画の準備ができました",
+    "permTitle": "カメラへのアクセスが必要です",
+    "permBody": "認証を撮影するにはカメラへのアクセスを許可してください。",
+    "pendingTitle": "審査中",
+    "pendingBody": "提出内容を審査しています。通常24時間以内に完了します。",
+    "approvedTitle": "認証されました！",
+    "approvedBody": "プロフィールに緑の認証バッジが表示されます。",
+    "rejectedTitle": "認証が承認されませんでした",
+    "verified": "認証済み"
+  },
+  "adminVerifications": {
+    "title": "認証審査",
+    "empty": "保留中の認証はありません 🎉",
+    "photo": "写真",
+    "video": "動画",
+    "poseLabel": "ポーズ",
+    "approve": "承認",
+    "reject": "却下",
+    "rejectConfirmTitle": "認証を却下しますか？",
+    "rejectConfirmBody": "ユーザーは再提出が必要になります。"
   }
 }

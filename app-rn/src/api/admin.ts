@@ -152,3 +152,31 @@ export async function getAdminStats(): Promise<AdminStats> {
   const r = await api.get('/admin/stats');
   return unwrap<AdminStats>(r.data);
 }
+
+// ── Photo/video verification review (VERIFY1) ────────────────────────────────
+
+export interface AdminVerification {
+  id: string;
+  userId: string | null;
+  nickname: string;
+  avatarUrl?: string | null;
+  pose: string;
+  verificationType: 'photo' | 'video';
+  selfieUrl?: string | null;
+  videoUrl?: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export async function getAdminVerifications(): Promise<{ verifications: AdminVerification[]; count: number }> {
+  const r = await api.get('/admin/verifications');
+  return unwrap<{ verifications: AdminVerification[]; count: number }>(r.data);
+}
+
+export async function approveVerification(id: string): Promise<void> {
+  await api.post(`/admin/verifications/${id}/approve`);
+}
+
+export async function rejectVerification(id: string, reason?: string): Promise<void> {
+  await api.post(`/admin/verifications/${id}/reject`, reason ? { reason } : {});
+}
