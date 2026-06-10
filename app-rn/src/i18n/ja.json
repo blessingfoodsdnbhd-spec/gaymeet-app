@@ -537,7 +537,8 @@
     "kind": {
       "worldChat": "広場",
       "vote": "投票",
-      "scamMessage": "詐欺?"
+      "scamMessage": "詐欺?",
+      "nsfwImage": "画像?"
     }
   },
   "adminStats": {

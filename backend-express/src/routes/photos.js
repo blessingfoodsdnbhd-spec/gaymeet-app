@@ -49,6 +49,21 @@ router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) =
 
     const url = await storePhoto(req.file, req);
 
+    // NSFW heuristic (item 10) — non-blocking: flag suspicious images for admin
+    // review without delaying or rejecting the upload.
+    (async () => {
+      try {
+        const { checkImage } = require('../utils/imageModeration');
+        const { flagged, score } = await checkImage(req.file.buffer);
+        if (flagged) {
+          const FlaggedImage = require('../models/FlaggedImage');
+          await FlaggedImage.create({ user: req.user._id, url, context: 'photo', score });
+        }
+      } catch (_) {
+        /* moderation must never break uploads */
+      }
+    })();
+
     if (asPrimary) {
       // Avatar-change semantics: new photo becomes photos[0] (the avatar)
       // and any pre-existing copy of this URL is removed.

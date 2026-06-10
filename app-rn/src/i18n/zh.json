@@ -130,7 +130,7 @@
     "done": "完成"
   },
   "search": {"placeholder": "搜索用户、投票、房间", "hintTitle": "搜索 Meyou", "hintSubtitle": "查找用户、投票活动和聊天室。", "empty": "没有找到“{{q}}”", "tabs": {"users": "用户", "votes": "投票", "rooms": "房间"}},
-  "adminReports": {"title": "举报管理", "empty": "没有待处理举报 🎉", "resolve": "已处理", "noReason": "(未填写原因)", "kind": {"worldChat": "广场", "vote": "投票", "scamMessage": "可疑"}},
+  "adminReports": {"title": "举报管理", "empty": "没有待处理举报 🎉", "resolve": "已处理", "noReason": "(未填写原因)", "kind": {"worldChat": "广场", "vote": "投票", "scamMessage": "可疑", "nsfwImage": "可疑图"}},
   "adminStats": {"title": "数据分析", "loadFailed": "加载失败", "totalUsers": "总用户", "dau": "日活", "mau": "月活", "signupsToday": "今日注册", "signups7d": "7日注册", "signups30d": "30日注册", "premium": "会员", "moments24h": "24h动态", "totalMoments": "动态总数", "totalVotes": "投票活动", "totalMatches": "同频数"},
   "verification": {"title": "照片认证", "intro": "按下方动作录制一段自拍，确认你是真人。通过后将获得绿色认证标识。", "poseLabel": "你的动作", "recordSelfie": "录制自拍", "recordVideo": "录制视频", "recordVideoPremium": "录制视频（会员）", "submit": "提交审核", "submitting": "提交中…", "submitFailed": "提交失败", "retake": "重拍", "videoReady": "视频已就绪", "permTitle": "需要相机权限", "permBody": "请开启相机权限以录制认证。", "pendingTitle": "审核中", "pendingBody": "我们正在审核你的提交，通常不超过 24 小时。", "approvedTitle": "认证成功！", "approvedBody": "你的资料现已显示绿色认证标识。", "rejectedTitle": "认证未通过", "verified": "已认证"},
   "adminVerifications": {"title": "认证审核", "empty": "没有待审核的认证 🎉", "photo": "照片", "video": "视频", "poseLabel": "动作", "approve": "通过", "reject": "驳回", "rejectConfirmTitle": "驳回认证？", "rejectConfirmBody": "用户需要重新提交。"},

@@ -537,7 +537,8 @@
     "kind": {
       "worldChat": "광장",
       "vote": "투표",
-      "scamMessage": "사기?"
+      "scamMessage": "사기?",
+      "nsfwImage": "이미지?"
     }
   },
   "adminStats": {

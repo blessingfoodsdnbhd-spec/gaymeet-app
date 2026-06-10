@@ -7,13 +7,14 @@ const { ok, err } = require('../utils/respond');
 const WorldChatReport = require('../models/WorldChatReport');
 const VoteReport = require('../models/VoteReport');
 const Message = require('../models/Message');
+const FlaggedImage = require('../models/FlaggedImage');
 
 router.use(requireAdminAuth);
 
 // ── GET /api/admin/reports — all unresolved reports, newest first ─────────────
 router.get('/reports', async (_req, res, next) => {
   try {
-    const [chat, vote, scam] = await Promise.all([
+    const [chat, vote, scam, images] = await Promise.all([
       WorldChatReport.find({ handled: false })
         .populate('reporterId', 'nickname')
         .populate('reportedUserId', 'nickname')
@@ -28,6 +29,12 @@ router.get('/reports', async (_req, res, next) => {
       // Soft-flagged scam/phishing DMs awaiting review (item 11).
       Message.find({ flagged: true, flagHandled: false })
         .populate('senderId', 'nickname')
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean(),
+      // NSFW-heuristic flagged images awaiting review (item 10).
+      FlaggedImage.find({ handled: false })
+        .populate('user', 'nickname')
         .sort({ createdAt: -1 })
         .limit(200)
         .lean(),
@@ -58,6 +65,14 @@ router.get('/reports', async (_req, res, next) => {
         target: m.senderId?.nickname || '(user)',
         createdAt: m.createdAt,
       })),
+      ...images.map((im) => ({
+        id: String(im._id),
+        kind: 'nsfwImage',
+        reason: `skin ${Math.round((im.score || 0) * 100)}% — ${im.url}`,
+        reporter: '(auto)',
+        target: im.user?.nickname || '(user)',
+        createdAt: im.createdAt,
+      })),
     ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     ok(res, { reports, count: reports.length });
@@ -76,6 +91,11 @@ router.post('/reports/:kind/:id/resolve', async (req, res, next) => {
         { new: true },
       );
       if (!m) return err(res, 'Message not found', 404);
+      return ok(res, { success: true });
+    }
+    if (req.params.kind === 'nsfwImage') {
+      const im = await FlaggedImage.findByIdAndUpdate(req.params.id, { handled: true }, { new: true });
+      if (!im) return err(res, 'Image not found', 404);
       return ok(res, { success: true });
     }
     const Model = req.params.kind === 'vote' ? VoteReport : WorldChatReport;
