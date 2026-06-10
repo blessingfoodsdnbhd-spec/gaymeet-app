@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
@@ -137,6 +138,19 @@ export function ProfileScreen() {
   const tile = Math.floor((width - theme.spacing.xl * 2 - GAP * 2) / 3);
 
   const goEdit = () => nav.navigate('EditProfile');
+
+  // Version label. `nativeBuildVersion` is the runtime build number, but it can
+  // be null in some build contexts — fall back to the bundled app.json values
+  // (iOS buildNumber / Android versionCode) so we never render a bare dash.
+  const appVersion =
+    Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '2.0';
+  const fallbackBuild =
+    Platform.OS === 'ios'
+      ? Constants.expoConfig?.ios?.buildNumber
+      : Constants.expoConfig?.android?.versionCode;
+  const buildNumber =
+    Constants.nativeBuildVersion ??
+    (fallbackBuild != null ? String(fallbackBuild) : '—');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
@@ -375,7 +389,7 @@ export function ProfileScreen() {
         </Card>
 
         <Text style={{ textAlign: 'center', marginTop: 32, color: theme.colors.muted, fontSize: 11.5 }}>
-          Meyou · v{Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '2.0'} ({Constants.nativeBuildVersion ?? '—'})
+          Meyou · v{appVersion} ({buildNumber})
         </Text>
       </ScrollView>
 
