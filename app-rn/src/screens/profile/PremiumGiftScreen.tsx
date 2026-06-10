@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Gift, Lock } from 'lucide-react-native';
+import { ChevronLeft, Gift } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
-import { getFollowing, giftPremium, type FollowedUser } from '../../api/me';
+import { getFollowing, giftPremium, getGiftQuota, type FollowedUser } from '../../api/me';
 
 /** Gift 7 days of Premium to a friend (item 8). Pick from your follows. */
 export function PremiumGiftScreen() {
@@ -20,7 +20,7 @@ export function PremiumGiftScreen() {
   const c = theme.colors;
   const me = useAuth((s) => s.user);
   const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
-  const isPremium = !!me?.isPremium;
+  const qc = useQueryClient();
 
   const followingQ = useQuery({
     queryKey: ['users', 'following', myId],
@@ -28,24 +28,32 @@ export function PremiumGiftScreen() {
     enabled: !!myId,
   });
 
+  // Monthly quota header: "今月剩余 X / N 次" (N = 5 Premium / 1 free).
+  const quotaQ = useQuery({ queryKey: ['premiumGift', 'quota'], queryFn: getGiftQuota });
+  const quota = quotaQ.data;
+  const remaining = quota?.remaining ?? 0;
+  const total = quota?.total ?? 0;
+  const outOfGifts = !!quota && remaining <= 0;
+
   const giftMut = useMutation({
     mutationFn: (recipientId: string) => giftPremium(recipientId),
-    onSuccess: (r) => Alert.alert(t('premiumGift.sentTitle'), t('premiumGift.sentBody', { days: r.days })),
+    onSuccess: (r) => {
+      Alert.alert(t('premiumGift.sentTitle'), t('premiumGift.sentBody', { days: r.days }));
+      // Decrement the quota header + flip the recipient's row to "已送过".
+      qc.invalidateQueries({ queryKey: ['premiumGift', 'quota'] });
+      qc.invalidateQueries({ queryKey: ['users', 'following', myId] });
+    },
     onError: (e: any) => {
-      const code = e?.response?.status;
+      const code = e?.response?.data?.code;
       const msg =
-        code === 402 ? t('premiumGift.needPremium')
-        : code === 429 ? t('premiumGift.rateLimited')
+        code === 'MONTHLY_QUOTA_EXCEEDED' ? t('premiumGift.rateLimited')
+        : code === 'RECIPIENT_ALREADY_GIFTED' ? t('premiumGift.alreadyGifted')
         : e?.response?.data?.error || t('premiumGift.failed');
       Alert.alert(t('premiumGift.failed'), msg);
     },
   });
 
   const confirm = (u: FollowedUser) => {
-    if (!isPremium) {
-      nav.navigate('Premium');
-      return;
-    }
     Alert.alert(
       t('premiumGift.confirmTitle', { name: u.nickname }),
       t('premiumGift.confirmBody'),
@@ -67,14 +75,13 @@ export function PremiumGiftScreen() {
         <Text style={[styles.title, { color: c.text }]}>{t('premiumGift.title')}</Text>
       </View>
 
-      {!isPremium && (
-        <Pressable
-          onPress={() => nav.navigate('Premium')}
-          style={({ pressed }) => [styles.banner, { backgroundColor: c.primarySoft, opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Lock size={16} color={c.primaryDeep} strokeWidth={2} />
-          <Text style={{ flex: 1, fontSize: 13, color: c.primaryDeep, fontWeight: '600' }}>{t('premiumGift.needPremium')}</Text>
-        </Pressable>
+      {quota && (
+        <View style={[styles.quota, { borderBottomColor: c.line }]}>
+          <Gift size={16} color={outOfGifts ? c.muted : c.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: outOfGifts ? c.muted : c.text }}>
+            {t('premiumGift.monthlyQuota', { remaining, total })}
+          </Text>
+        </View>
       )}
 
       {followingQ.isLoading ? (
@@ -92,14 +99,27 @@ export function PremiumGiftScreen() {
               <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: c.text }} numberOfLines={1}>
                 {item.nickname}
               </Text>
-              <Pressable
-                onPress={() => confirm(item)}
-                disabled={giftMut.isPending}
-                style={({ pressed }) => [styles.giftBtn, { backgroundColor: c.primary, opacity: pressed || giftMut.isPending ? 0.7 : 1 }]}
-              >
-                <Gift size={15} color="#FFFFFF" strokeWidth={2} />
-                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>{t('premiumGift.send')}</Text>
-              </Pressable>
+              {item.isPremiumEffective ? (
+                <View style={[styles.badge, { backgroundColor: c.surface2 }]}>
+                  <Text style={[styles.badgeText, { color: c.muted }]}>{t('premiumGift.alreadyPremium')}</Text>
+                </View>
+              ) : item.alreadyGifted ? (
+                <View style={[styles.badge, { backgroundColor: c.surface2 }]}>
+                  <Text style={[styles.badgeText, { color: c.muted }]}>{t('premiumGift.alreadyGifted')}</Text>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => confirm(item)}
+                  disabled={giftMut.isPending || outOfGifts}
+                  style={({ pressed }) => [
+                    styles.giftBtn,
+                    { backgroundColor: c.primary, opacity: pressed || giftMut.isPending || outOfGifts ? 0.4 : 1 },
+                  ]}
+                >
+                  <Gift size={15} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>{t('premiumGift.send')}</Text>
+                </Pressable>
+              )}
             </View>
           )}
         />
@@ -112,7 +132,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { fontSize: 16, fontWeight: '600' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 16, marginBottom: 0, borderRadius: 12, padding: 12 },
+  quota: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, padding: 10 },
   giftBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+  badge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
+  badgeText: { fontSize: 12.5, fontWeight: '700' },
 });

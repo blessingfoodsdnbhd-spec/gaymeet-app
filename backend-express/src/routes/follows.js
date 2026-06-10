@@ -5,6 +5,8 @@ const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { notify } = require('../services/notificationService');
+const { isPremiumActive } = require('../utils/premium');
+const PremiumGift = require('../models/PremiumGift');
 
 // ── POST /api/users/:id/follow — toggle follow / unfollow ─────────────────────
 router.post('/:id/follow', auth, async (req, res, next) => {
@@ -118,7 +120,10 @@ router.get('/:id/following', auth, async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('following', 'nickname avatarUrl isOnline level isPremium isVerified dob lastActiveAt location')
+      .populate(
+        'following',
+        'nickname avatarUrl isOnline level isPremium isVerified dob lastActiveAt location vipLevel vipExpiresAt premiumExpiresAt',
+      )
       .lean();
 
     const ids = follows.map((f) => f.following._id);
@@ -128,18 +133,33 @@ router.get('/:id/following', auth, async (req, res, next) => {
     }).lean();
     const followingSet = new Set(myFollows.map((f) => f.following.toString()));
 
+    // Which of these users I (the viewer) have already gifted Premium to —
+    // lifetime, per (gifter, recipient). Drives the per-row "已送过" state.
+    const myGifts = await PremiumGift.find({ gifter: req.user._id, recipient: { $in: ids } })
+      .select('recipient')
+      .lean();
+    const giftedSet = new Set(myGifts.map((g) => g.recipient.toString()));
+
     const { haversineMeters } = require('../utils/geo');
     const myCoords = req.user.location?.coordinates;
     ok(
       res,
-      follows.map((f) => ({
-        ...f.following,
-        dob: f.following.dob ? new Date(f.following.dob).toISOString() : null,
-        lastActiveAt: f.following.lastActiveAt ? new Date(f.following.lastActiveAt).toISOString() : null,
-        distanceM: haversineMeters(myCoords, f.following.location?.coordinates),
-        isFollowing: followingSet.has(f.following._id.toString()),
-        isSelf: f.following._id.toString() === req.user._id.toString(),
-      }))
+      follows.map((f) => {
+        const u = f.following;
+        // Strip the internal premium-expiry fields from the response; expose a
+        // single computed effective flag instead (matches User.toPublicJSON).
+        const { vipLevel, vipExpiresAt, premiumExpiresAt, ...rest } = u;
+        return {
+          ...rest,
+          dob: u.dob ? new Date(u.dob).toISOString() : null,
+          lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
+          distanceM: haversineMeters(myCoords, u.location?.coordinates),
+          isFollowing: followingSet.has(u._id.toString()),
+          isSelf: u._id.toString() === req.user._id.toString(),
+          isPremiumEffective: isPremiumActive(u),
+          alreadyGifted: giftedSet.has(u._id.toString()),
+        };
+      })
     );
   } catch (e) {
     next(e);
