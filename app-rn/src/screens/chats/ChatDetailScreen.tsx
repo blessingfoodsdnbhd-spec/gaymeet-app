@@ -1210,22 +1210,31 @@ export function ChatDetailScreen() {
             { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
           ]}
         >
-          <Pressable onPress={() => setComposerActionsOpen(true)} hitSlop={8}>
-            <Plus size={24} color={theme.colors.muted} strokeWidth={1.6} />
+          {/* + attachment button, left of pill */}
+          <Pressable
+            onPress={() => setComposerActionsOpen(true)}
+            hitSlop={8}
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Plus size={26} color={theme.colors.muted} strokeWidth={1.6} />
           </Pressable>
-          <Pressable onPress={() => setShowStickers((s) => !s)} hitSlop={8}>
-            <Smile size={24} color={theme.colors.muted} strokeWidth={1.6} />
-          </Pressable>
+          {/* Rounded pill: TextInput + emoji on right edge (WhatsApp-style) */}
           <View
             style={{
               flex: 1,
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.surface2,
               borderRadius: 24,
               borderWidth: 1,
               borderColor: theme.colors.line,
-              paddingHorizontal: 14,
+              paddingLeft: 14,
+              paddingRight: 6,
               minHeight: 40,
             }}
           >
@@ -1243,22 +1252,66 @@ export function ChatDetailScreen() {
                 maxHeight: 120,
               }}
             />
+            <Pressable
+              onPress={() => setShowStickers((s) => !s)}
+              hitSlop={8}
+              style={{
+                width: 36,
+                height: 36,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Smile size={24} color={theme.colors.muted} strokeWidth={1.6} />
+            </Pressable>
           </View>
+          {/* Right side: empty → camera + mic; typing → send arrow (WhatsApp swap) */}
           {composing.trim() ? (
             <Pressable
               onPress={onSend}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: theme.colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Send size={18} color="#FFFFFF" strokeWidth={2} />
+              <Send size={20} color="#FFFFFF" strokeWidth={2} />
             </Pressable>
-          ) : null}
+          ) : (
+            <>
+              <Pressable
+                onPress={pickCamera}
+                hitSlop={8}
+                style={{
+                  width: 44,
+                  height: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Camera size={24} color={theme.colors.muted} strokeWidth={1.6} />
+              </Pressable>
+              <Pressable
+                onPress={() => setVoiceRecorderOpen(true)}
+                hitSlop={8}
+                style={{
+                  width: 44,
+                  height: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Mic
+                  size={24}
+                  color={voiceRecorderOpen ? theme.colors.error : theme.colors.muted}
+                  strokeWidth={1.6}
+                />
+              </Pressable>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
 
