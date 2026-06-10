@@ -31,6 +31,7 @@ export type RootStackParamList = {
   AdminVerifications: undefined;
   Verification: undefined;
   MyAnalytics: undefined;
+  PremiumGift: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

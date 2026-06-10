@@ -27,6 +27,7 @@ import { AdminStatsScreen } from '../screens/admin/AdminStatsScreen';
 import { AdminVerificationsScreen } from '../screens/admin/AdminVerificationsScreen';
 import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { MyAnalyticsScreen } from '../screens/profile/MyAnalyticsScreen';
+import { PremiumGiftScreen } from '../screens/profile/PremiumGiftScreen';
 import { CommentsScreen } from '../screens/moments/CommentsScreen';
 import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
@@ -208,6 +209,7 @@ export function RootNavigator() {
           <Stack.Screen name="AdminVerifications" component={AdminVerificationsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="Verification" component={VerificationScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MyAnalytics" component={MyAnalyticsScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="PremiumGift" component={PremiumGiftScreen} options={{ animation: 'slide_from_right' }} />
         </>
       )}
     </Stack.Navigator>

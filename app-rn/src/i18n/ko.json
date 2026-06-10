@@ -230,7 +230,8 @@
       "announcementAdmin": "공지 관리",
       "verification": "사진 인증 받기",
       "adminVerifications": "인증 심사",
-      "myData": "내 데이터 📊"
+      "myData": "내 데이터 📊",
+      "giftPremium": "프리미엄 선물하기 🎁"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1301,5 +1302,18 @@
     "popularityRank": "순위",
     "topPct": "상위 {{pct}}%",
     "upsell": "프리미엄으로 7/30일 추세와 인기 순위를 확인하세요"
+  },
+  "premiumGift": {
+    "title": "프리미엄 선물",
+    "send": "선물",
+    "confirmTitle": "{{name}}님에게 프리미엄을 선물할까요?",
+    "confirmBody": "7일간의 프리미엄을 받게 됩니다.",
+    "sentTitle": "선물 완료 🎁",
+    "sentBody": "{{days}}일의 프리미엄을 받았습니다!",
+    "needPremium": "프리미엄 선물은 프리미엄 기능입니다 — 탭하여 업그레이드",
+    "rateLimited": "선물 한도에 도달했습니다. 나중에 다시 시도하세요.",
+    "failed": "선물을 보내지 못했습니다",
+    "emptyTitle": "아직 친구가 없습니다",
+    "emptySubtitle": "사람을 팔로우하면 프리미엄을 선물할 수 있습니다."
   }
 }

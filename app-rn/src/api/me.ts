@@ -188,6 +188,13 @@ export interface MyAnalytics {
 }
 export const getMyAnalytics = () => unwrap<MyAnalytics>(api.get('/me/analytics'));
 
+/** Gift 7 days of Premium to a followed user (item 8). Sender must be Premium
+ *  (backend 402); rate-limited per-day + per-recipient (backend 429). */
+export const giftPremium = (recipientId: string) =>
+  unwrap<{ success: true; days: number; recipientPremiumExpiresAt: string }>(
+    api.post('/premium/gift', { recipientId }),
+  );
+
 /** A user as returned by /api/users/:id/following — slim profile shape
  *  with the relationship flags needed to render a list row. */
 export interface FollowedUser {

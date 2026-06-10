@@ -230,7 +230,8 @@
       "announcementAdmin": "お知らせ管理",
       "verification": "写真認証を受ける",
       "adminVerifications": "認証審査",
-      "myData": "マイデータ 📊"
+      "myData": "マイデータ 📊",
+      "giftPremium": "プレミアムを贈る 🎁"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1301,5 +1302,18 @@
     "popularityRank": "ランク",
     "topPct": "上位{{pct}}%",
     "upsell": "プレミアムで7/30日のトレンドと人気ランクを解除"
+  },
+  "premiumGift": {
+    "title": "プレミアムを贈る",
+    "send": "贈る",
+    "confirmTitle": "{{name}}さんにプレミアムを贈りますか？",
+    "confirmBody": "7日間のプレミアムが付与されます。",
+    "sentTitle": "送信しました 🎁",
+    "sentBody": "{{days}}日間のプレミアムを受け取りました！",
+    "needPremium": "プレミアムを贈るにはプレミアムが必要です — タップしてアップグレード",
+    "rateLimited": "贈呈の上限に達しました。後でもう一度お試しください。",
+    "failed": "贈呈できませんでした",
+    "emptyTitle": "まだ友達がいません",
+    "emptySubtitle": "フォローするとプレミアムを贈れます。"
   }
 }

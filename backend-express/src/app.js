@@ -172,6 +172,7 @@ app.use('/api/me', interestsRoutes);
 app.use('/api/discover', discoverV2Routes);
 app.use('/api/subscriptions', subscriptionsV2Routes);
 app.use('/api/subscriptions', subscriptionsGoogleRoutes);
+app.use('/api/premium', require('./routes/premium-gift')); // POST /gift (item 8)
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

@@ -15,6 +15,7 @@ import {
   Bell,
   ChevronRight,
   Crown,
+  Gift,
   Globe,
   Lock,
   Megaphone,
@@ -328,6 +329,12 @@ export function ProfileScreen() {
             icon={<BarChart3 size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.myData')}
             onPress={() => nav.navigate('MyAnalytics')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={<Gift size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.giftPremium')}
+            onPress={() => nav.navigate('PremiumGift')}
           />
           <Divider />
           <SettingsRow
