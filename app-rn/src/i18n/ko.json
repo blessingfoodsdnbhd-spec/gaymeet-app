@@ -809,6 +809,13 @@
       "tooShort": "조금 더 길게",
       "send": "보내기",
       "sendFailed": "음성 메시지를 보내지 못했습니다"
+    },
+    "icebreakers": {
+      "header": "👋 먼저 인사를 건네보세요!",
+      "askInterest": "{{interest}} 좋아하시는군요 — 어떻게 시작하셨어요?",
+      "generic1": "주말에 계획 있으세요?",
+      "generic2": "요즘 추천할 만한 거 있어요? 🎵📺",
+      "generic3": "안녕하세요! 오늘 하루 어떠세요?"
     }
   },
   "chats": {

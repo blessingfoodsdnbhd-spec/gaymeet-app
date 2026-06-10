@@ -66,6 +66,7 @@ import { uploadFile } from '../../api/upload';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { ChatVoiceRecorderSheet } from './ChatVoiceRecorderSheet';
+import { IcebreakerCard } from './IcebreakerCard';
 import {
   on as wsOn,
   emit as wsEmit,
@@ -236,6 +237,12 @@ export function ChatDetailScreen() {
     queryFn: () => getMessages(otherId!),
     enabled: !!otherId,
   });
+
+  // Show conversation starters (ICE1) on an empty chat: messages loaded, none
+  // of them real (non-system), the user hasn't started typing, sticker tray closed.
+  const hasRealMessages = (msgsQ.data ?? []).some((m) => !m.isSystem);
+  const showIcebreakers =
+    !msgsQ.isLoading && msgsQ.isSuccess && !hasRealMessages && !composing.trim() && !showStickers;
 
   // Subscribe to WS events for this match (message + typing).
   // wsOn is async (it awaits the socket connect), so the unsubscribe
@@ -1169,6 +1176,11 @@ export function ChatDetailScreen() {
               </Pressable>
             ))}
           </View>
+        )}
+
+        {/* Conversation starters (ICE1) — only on an empty chat. */}
+        {showIcebreakers && otherId && (
+          <IcebreakerCard otherUserId={otherId} onPick={(text) => onComposeChange(text)} />
         )}
 
         {/* Composer */}

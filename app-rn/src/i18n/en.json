@@ -475,6 +475,7 @@
   "chat": {
     "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
     "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message"},
+    "icebreakers": {"header": "👋 Break the ice — say hello!", "askInterest": "You're into {{interest}} too — how did you get started?", "generic1": "Any plans this weekend?", "generic2": "Got any good recommendations lately? 🎵📺", "generic3": "Hey! How's your day going?"},
     "composer": {
       "camera": "Camera",
       "gallery": "Photo",
