@@ -1317,6 +1317,9 @@
     "rateLimited": "贈呈の上限に達しました。後でもう一度お試しください。",
     "failed": "贈呈できませんでした",
     "emptyTitle": "まだ友達がいません",
-    "emptySubtitle": "フォローするとプレミアムを贈れます。"
+    "emptySubtitle": "フォローするとプレミアムを贈れます。",
+    "monthlyQuota": "今月の残り {{remaining}} / {{total}} 回",
+    "alreadyPremium": "すでにPremium会員",
+    "alreadyGifted": "贈呈済み"
   }
 }

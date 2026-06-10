@@ -1317,6 +1317,9 @@
     "rateLimited": "선물 한도에 도달했습니다. 나중에 다시 시도하세요.",
     "failed": "선물을 보내지 못했습니다",
     "emptyTitle": "아직 친구가 없습니다",
-    "emptySubtitle": "사람을 팔로우하면 프리미엄을 선물할 수 있습니다."
+    "emptySubtitle": "사람을 팔로우하면 프리미엄을 선물할 수 있습니다.",
+    "monthlyQuota": "이번 달 남은 {{remaining}} / {{total}} 회",
+    "alreadyPremium": "이미 Premium 회원",
+    "alreadyGifted": "이미 선물함"
   }
 }

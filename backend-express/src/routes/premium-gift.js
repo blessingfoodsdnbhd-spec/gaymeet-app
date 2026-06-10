@@ -1,6 +1,7 @@
-// Premium gifting (item 8). A Premium user gifts 7 days of Premium to another
-// user. Rate-limited to deter free-Premium farming: sender must be Premium,
-// max 3 gifts/day, and one gift per recipient per 30 days.
+// Premium gifting (item 8 / GIFT1). A user gifts 7 days of Premium to another
+// user. Quotas (overhauled): a gifter may send a limited number of gifts per
+// CALENDAR MONTH — 5 if they are effectively Premium, 1 if free — and may gift
+// any given recipient at most ONCE EVER (lifetime, per gifter→recipient pair).
 const router = require('express').Router();
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
@@ -10,15 +11,36 @@ const User = require('../models/User');
 const PremiumGift = require('../models/PremiumGift');
 
 const GIFT_DAYS = 7;
-const DAILY_CAP = 3;
-const RECIPIENT_COOLDOWN_DAYS = 30;
+const PREMIUM_MONTHLY_CAP = 5;
+const FREE_MONTHLY_CAP = 1;
+const DAY = 24 * 60 * 60 * 1000;
+
+// Start of the current calendar month, UTC (matches the quota display).
+function startOfMonthUTC(d = new Date()) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+// A gifter's monthly cap depends on their effective Premium status.
+const monthlyCapFor = (user) => (isPremiumActive(user) ? PREMIUM_MONTHLY_CAP : FREE_MONTHLY_CAP);
+
+// ── GET /api/premium/gift/quota ───────────────────────────────────────────────
+// Drives the "今月剩余 X / N 次" header. `total` is 5 for Premium, 1 for free.
+router.get('/gift/quota', auth, async (req, res, next) => {
+  try {
+    const total = monthlyCapFor(req.user);
+    const used = await PremiumGift.countDocuments({
+      gifter: req.user._id,
+      createdAt: { $gte: startOfMonthUTC() },
+    });
+    ok(res, { used, total, remaining: Math.max(0, total - used), isPremium: isPremiumActive(req.user) });
+  } catch (e) {
+    next(e);
+  }
+});
 
 // ── POST /api/premium/gift  { recipientId } ───────────────────────────────────
 router.post('/gift', auth, async (req, res, next) => {
   try {
-    if (!isPremiumActive(req.user)) {
-      return err(res, 'Gifting Premium requires Premium', 402);
-    }
     const recipientId = String(req.body.recipientId || '');
     if (!recipientId) return err(res, 'recipientId required', 400);
     if (recipientId === req.user._id.toString()) {
@@ -28,29 +50,24 @@ router.post('/gift', auth, async (req, res, next) => {
     const recipient = await User.findById(recipientId);
     if (!recipient) return err(res, 'Recipient not found', 404);
 
-    const now = Date.now();
-    const DAY = 24 * 60 * 60 * 1000;
-
-    // Sender daily cap.
-    const sentToday = await PremiumGift.countDocuments({
+    // Monthly cap (5 Premium / 1 free).
+    const cap = monthlyCapFor(req.user);
+    const usedThisMonth = await PremiumGift.countDocuments({
       gifter: req.user._id,
-      createdAt: { $gte: new Date(now - DAY) },
+      createdAt: { $gte: startOfMonthUTC() },
     });
-    if (sentToday >= DAILY_CAP) {
-      return err(res, 'Daily gift limit reached', 429);
+    if (usedThisMonth >= cap) {
+      return res.status(429).json({ error: 'Monthly gift limit reached', code: 'MONTHLY_QUOTA_EXCEEDED' });
     }
 
-    // Per-recipient cooldown.
-    const recent = await PremiumGift.findOne({
-      gifter: req.user._id,
-      recipient: recipientId,
-      createdAt: { $gte: new Date(now - RECIPIENT_COOLDOWN_DAYS * DAY) },
-    });
-    if (recent) {
-      return err(res, 'Already gifted this person recently', 429);
+    // Lifetime: a gifter may gift any recipient at most once, ever.
+    const already = await PremiumGift.exists({ gifter: req.user._id, recipient: recipientId });
+    if (already) {
+      return res.status(409).json({ error: 'You have already gifted this person', code: 'RECIPIENT_ALREADY_GIFTED' });
     }
 
     // Grant: extend from the later of (now, existing expiry) so it stacks.
+    const now = Date.now();
     const current = recipient.premiumExpiresAt ? new Date(recipient.premiumExpiresAt) : null;
     const base = current && current.getTime() > now ? current.getTime() : now;
     const newExpiry = new Date(base + GIFT_DAYS * DAY);

@@ -188,12 +188,23 @@ export interface MyAnalytics {
 }
 export const getMyAnalytics = () => unwrap<MyAnalytics>(api.get('/me/analytics'));
 
-/** Gift 7 days of Premium to a followed user (item 8). Sender must be Premium
- *  (backend 402); rate-limited per-day + per-recipient (backend 429). */
+/** Gift 7 days of Premium to a followed user (item 8 / GIFT1). Quotas: 5/month
+ *  if Premium, 1/month if free (429 `MONTHLY_QUOTA_EXCEEDED`); each recipient
+ *  may be gifted at most once ever (409 `RECIPIENT_ALREADY_GIFTED`). */
 export const giftPremium = (recipientId: string) =>
   unwrap<{ success: true; days: number; recipientPremiumExpiresAt: string }>(
     api.post('/premium/gift', { recipientId }),
   );
+
+/** Remaining premium-gift quota for the current calendar month. `total` is 5
+ *  for effective-Premium users, 1 for free. Drives the quota header. */
+export interface GiftQuota {
+  used: number;
+  total: number;
+  remaining: number;
+  isPremium: boolean;
+}
+export const getGiftQuota = () => unwrap<GiftQuota>(api.get('/premium/gift/quota'));
 
 /** A user as returned by /api/users/:id/following — slim profile shape
  *  with the relationship flags needed to render a list row. */
@@ -203,6 +214,11 @@ export interface FollowedUser {
   avatarUrl?: string | null;
   isOnline?: boolean;
   isPremium?: boolean;
+  /** Server-computed effective Premium (expiry + vip aware). Prefer this over
+   *  the raw `isPremium` field for gating UI. */
+  isPremiumEffective?: boolean;
+  /** True if I (the viewer) have already gifted this user Premium (lifetime). */
+  alreadyGifted?: boolean;
   isVerified?: boolean;
   isOfficial?: boolean;
   isFollowing?: boolean;
