@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { castVote, retractVote, saveVoteProgress, type VoteEventSummary, type FeedVoteEntry } from '../../api/votes';
-import { categoryEmoji, medalFor, timeRemaining } from './voteHelpers';
+import { categoryEmoji, timeRemaining } from './voteHelpers';
+import { RankMedal } from '../../components/RankMedal';
 
 const RATIO = 5 / 4; // 4:5 portrait — IG/Pinterest-style impact
 const MIN_H = 380;
@@ -155,7 +156,7 @@ export function VoteEventCard({
         {/* Medal for podium ranks — every page */}
         {item.rank <= 3 && (
           <View style={styles.medal}>
-            <Text style={{ fontSize: 20 }}>{medalFor(item.rank)}</Text>
+            <RankMedal rank={item.rank} size={30} />
           </View>
         )}
 
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   topLeft: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6, flexWrap: 'wrap', maxWidth: '70%' },
   topRight: { position: 'absolute', top: 12, right: 12 },
   topRightRow: { position: 'absolute', top: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  medal: { position: 'absolute', top: 12, left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center' },
+  medal: { position: 'absolute', top: 10, left: 10, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

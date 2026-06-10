@@ -32,8 +32,9 @@ import {
   reportVoteEntry,
   type VoteEntry,
 } from '../../api/votes';
-import { categoryEmoji, medalFor, timeRemaining } from './voteHelpers';
+import { categoryEmoji, timeRemaining } from './voteHelpers';
 import { EntryDetailModal } from './EntryDetailModal';
+import { RankMedal } from '../../components/RankMedal';
 import { VoteShareCard, CARD_SIZE } from './VoteShareCard';
 import { VerifiedBadge } from '../../components/NameWithBadge';
 import { shareVoteCard } from '../../utils/shareVoteCard';
@@ -404,7 +405,7 @@ export function VoteDetailScreen() {
                     style={{ flex: 1, alignItems: 'center' }}
                   >
                     <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" />
-                    <Text style={{ fontSize: 22, marginTop: 4 }}>{medalFor(rank)}</Text>
+                    <View style={{ marginTop: 4 }}><RankMedal rank={rank} size={26} /></View>
                     <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: theme.colors.text }}>{entry!.submitter.displayName}</Text>
                     <Text style={{ fontSize: 11, color: theme.colors.muted }}>{t('votes.voteCount', { n: entry!.voteCount })}</Text>
                   </Pressable>
@@ -440,7 +441,9 @@ export function VoteDetailScreen() {
                     <View style={{ opacity: eliminated ? 0.5 : 1 }}>
                       <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={64} />
                       {winnerRank ? (
-                        <Text style={{ position: 'absolute', top: -8, right: -4, fontSize: 22 }}>{medalFor(winnerRank)}</Text>
+                        <View style={{ position: 'absolute', top: -8, right: -4 }}>
+                          <RankMedal rank={winnerRank} size={22} />
+                        </View>
                       ) : null}
                       {eliminated && (
                         <View style={{ position: 'absolute', bottom: -2, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.72)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999 }}>

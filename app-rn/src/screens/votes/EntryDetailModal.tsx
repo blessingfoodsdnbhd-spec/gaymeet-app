@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { PhotoViewer } from '../../components/PhotoViewer';
-import { medalFor } from './voteHelpers';
+import { RankMedal } from '../../components/RankMedal';
 import type { VoteEntry } from '../../api/votes';
 
 /**
@@ -85,8 +85,8 @@ export function EntryDetailModal({
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 6 }}
           >
             <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={28} />
+            {winnerRank ? <RankMedal rank={winnerRank} size={16} /> : null}
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
-              {winnerRank ? `${medalFor(winnerRank)} ` : ''}
               {entry.submitter.displayName}
             </Text>
             {eliminated && (
