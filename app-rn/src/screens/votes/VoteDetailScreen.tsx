@@ -239,7 +239,7 @@ export function VoteDetailScreen() {
             onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
           >
             {ev.coverPhotos.map((url, i) => (
-              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" />
+              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
             ))}
           </ScrollView>
           {ev.coverPhotos.length > 1 && (
@@ -403,7 +403,7 @@ export function VoteDetailScreen() {
                     onPress={() => nav.navigate('UserDetail', { userId: entry!.submitter.id })}
                     style={{ flex: 1, alignItems: 'center' }}
                   >
-                    <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" />
+                    <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
                     <Text style={{ fontSize: 22, marginTop: 4 }}>{medalFor(rank)}</Text>
                     <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: theme.colors.text }}>{entry!.submitter.displayName}</Text>
                     <Text style={{ fontSize: 11, color: theme.colors.muted }}>{t('votes.voteCount', { n: entry!.voteCount })}</Text>
