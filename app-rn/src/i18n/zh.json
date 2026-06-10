@@ -425,6 +425,7 @@
       "addPhoto": "添加照片",
       "location": "添加位置",
       "taggedCount": "{{n}} 人",
+      "chooseOnMap": "在地图上选择",
       "currentLocation": "我的当前位置",
       "removeLocation": "移除位置",
       "noFriends": "还没有可标记的朋友",

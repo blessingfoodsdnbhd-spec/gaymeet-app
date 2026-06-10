@@ -37,7 +37,9 @@ export type RootStackParamList = {
   MyMoments: undefined;
   FriendsList: undefined;
   MomentLikers: { momentId: string };
-  MapPicker: undefined;
+  /** Full-screen map picker. Default `virtual` edits the Premium virtual
+   *  location; `moment` returns the picked place to the composer (AAAAA). */
+  MapPicker: { mode?: 'virtual' | 'moment' } | undefined;
   MatchesList: undefined;
   PrivacySettings: undefined;
   BlockedList: undefined;

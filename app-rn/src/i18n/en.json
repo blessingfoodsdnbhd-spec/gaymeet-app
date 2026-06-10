@@ -425,6 +425,7 @@
       "addPhoto": "Add photo",
       "location": "Add Location",
       "taggedCount": "{{n}} tagged",
+      "chooseOnMap": "Choose on Map",
       "currentLocation": "My current location",
       "removeLocation": "Remove location",
       "noFriends": "No friends to tag yet",

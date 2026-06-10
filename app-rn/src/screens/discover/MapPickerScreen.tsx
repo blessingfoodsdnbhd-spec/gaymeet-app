@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { ChevronLeft, Search, Crown } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -23,6 +23,8 @@ import { useAuth } from '../../store/auth';
 import { setVirtualLocation, clearVirtualLocation } from '../../api/me';
 import { useNominatimSearch } from '../../utils/useNominatimSearch';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
+import { resolveMomentLocation } from '../../utils/momentLocationBridge';
+import type { RootStackParamList } from '../../navigation/types';
 
 // Popular cities for Asian + Western markets (NNNN quick-jump chips).
 const CITY_PRESETS: { flag: string; name: string; lat: number; lng: number }[] = [
@@ -50,6 +52,10 @@ export function MapPickerScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<any>();
+  const route = useRoute<RouteProp<RootStackParamList, 'MapPicker'>>();
+  // 'moment' mode returns the picked place to the composer (no virtual-location
+  // write, and Save is not Premium-gated — anyone can tag a moment's location).
+  const momentMode = route.params?.mode === 'moment';
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
   const queryClient = useQueryClient();
@@ -84,6 +90,7 @@ export function MapPickerScreen() {
   // toPublicJSON folds vipLevel into isPremium. Free users can browse/search the
   // map but can't Save — the Save button upsells instead (QQQQ).
   const isPremium = !!(user as any)?.isPremium;
+  const canSave = momentMode || isPremium;
   const [query, setQuery] = useState('');
   const { results, loading: searching } = useNominatimSearch(query);
 
@@ -131,6 +138,17 @@ export function MapPickerScreen() {
         label = [g?.city || g?.subregion, g?.region].filter(Boolean).join(', ');
       } catch {
         // label is optional — the indicator keys off coords, not the label
+      }
+      // Moment mode: hand the place back to the composer and return — no
+      // virtual-location write.
+      if (momentMode) {
+        resolveMomentLocation({
+          lat: picked.lat,
+          lng: picked.lng,
+          label: label || `${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)}`,
+        });
+        nav.goBack();
+        return;
       }
       await setVirtualLocation(picked.lat, picked.lng, label);
       if (user) {
@@ -190,12 +208,12 @@ export function MapPickerScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ flex: 1, marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-          {t('virtualLocation.title')}
+          {momentMode ? t('moments.compose.location') : t('virtualLocation.title')}
         </Text>
-        <Pressable onPress={isPremium ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={8}>
+        <Pressable onPress={canSave ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={8}>
           {busy ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
-          ) : isPremium ? (
+          ) : canSave ? (
             <Text style={{ color: theme.colors.primary, fontSize: 15, fontWeight: '600' }}>
               {t('common.save')}
             </Text>
@@ -291,8 +309,8 @@ export function MapPickerScreen() {
           }}
         />
 
-        {/* Reset-to-GPS overlay — only when a virtual location is (or could be) set. */}
-        {(isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
+        {/* Reset-to-GPS overlay — virtual-location only; hidden in moment mode. */}
+        {!momentMode && (isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
           <Pressable
             onPress={onClear}
             disabled={busy}
