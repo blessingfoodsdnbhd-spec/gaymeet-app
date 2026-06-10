@@ -130,3 +130,41 @@ Cards use `l` (16); sheets `xxl` (28) top corners; chips/buttons `pill`.
 3. Content padding `spacing.xl` (20) horizontal.
 4. Empty/error → `<EmptyState>`. Loading → centered `ActivityIndicator color={primary}`.
 5. All sizes/colors from `theme.*` — zero magic numbers.
+
+---
+
+# Crash reporting (Sentry)
+
+Client crash reporting is **scaffolded but dormant** — a complete no-op until a
+DSN is supplied, so current builds are unaffected. Code: `app-rn/src/lib/sentry.ts`
+(`initSentry()` / `captureException()`), wired through
+`app-rn/src/components/ErrorBoundary.tsx` and `app-rn/src/App.tsx`.
+
+It activates only when ALL hold: a DSN is present, not `__DEV__`, and
+`@sentry/react-native` is installed. To **enable** (needs a new EAS build — native
+module):
+1. `cd app-rn && npx expo install @sentry/react-native`
+2. In `app-rn/app.json`: set `expo.extra.sentryDsn = "<your DSN>"` and add the
+   `"@sentry/react-native/expo"` plugin to `expo.plugins`.
+   - Get the DSN from Sentry → Project → Settings → Client Keys (DSN).
+   - Prefer an EAS build secret / env read via `expo.extra` over hardcoding a DSN.
+3. Rebuild (EAS). Verify with a forced `captureException(new Error('test'))`.
+
+No backend Sentry yet; backend errors log to Render stdout.
+
+# Performance & bundle audit
+
+- **Metro `inlineRequires` is ON** (`app-rn/metro.config.js`) — modules evaluate
+  lazily on first use, improving cold-start TTI. If a module misbehaves due to
+  import-time side effects, import it eagerly at the entrypoint rather than
+  disabling the flag.
+- **Bundle visualizer**: `cd app-rn && npx react-native-bundle-visualizer`
+  (fetched on demand via npx — intentionally NOT a pinned devDependency to avoid
+  lockfile churn). Opens a treemap; look for oversized/duplicated deps.
+- **Images**: remote images use `expo-image` (disk+memory cache); chat images go
+  through `app-rn/src/utils/imageCache.ts`. Prefer `expo-image` over RN `Image`
+  for any new remote image so it shares the cache.
+- **Heavy/rare screens** (admin dashboards, MapPicker, MyAnalytics): keep imports
+  leaf-only so `inlineRequires` can defer them. If a future screen pulls a large
+  dep, lazy-load with `React.lazy` + `Suspense` (screens use **named** exports —
+  `lazy(() => import('./X').then(m => ({ default: m.XScreen })))`).
