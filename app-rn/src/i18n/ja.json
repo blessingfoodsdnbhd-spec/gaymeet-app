@@ -148,6 +148,7 @@
       "addPhoto": "写真を追加",
       "location": "位置を追加",
       "taggedCount": "{{n}}人タグ",
+      "chooseOnMap": "地図で選択",
       "currentLocation": "現在地",
       "removeLocation": "位置を削除",
       "noFriends": "タグできる友達がまだいません",

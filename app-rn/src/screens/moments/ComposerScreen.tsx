@@ -23,6 +23,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSheet';
 import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
+import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
 import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
 
@@ -350,6 +351,11 @@ export function ComposerScreen() {
         onClose={() => setLocOpen(false)}
         current={place}
         onPick={setPlace}
+        onChooseMap={() => {
+          setLocOpen(false);
+          setMomentLocationHandler(setPlace);
+          (nav as any).navigate('MapPicker', { mode: 'moment' });
+        }}
       />
     </SafeAreaView>
   );
