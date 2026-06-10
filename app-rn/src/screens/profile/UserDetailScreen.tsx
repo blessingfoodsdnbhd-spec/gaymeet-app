@@ -221,6 +221,11 @@ export function UserDetailScreen() {
                       style={StyleSheet.absoluteFill}
                       contentFit="cover"
                       cachePolicy="memory-disk"
+                      // VVVVV/MMMM — full-res decode. This gallery url is also
+                      // rendered small elsewhere (discover/nearby grids); without
+                      // this the large carousel reuses that grid-sized decode → 格子.
+                      allowDownscaling={false}
+                      priority="high"
                     />
                   </Pressable>
                 ))}

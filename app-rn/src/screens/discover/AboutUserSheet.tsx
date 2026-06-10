@@ -357,6 +357,10 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                       style={StyleSheet.absoluteFill}
                       contentFit="cover"
                       cachePolicy="memory-disk"
+                      // VVVVV/MMMM — full-res decode so the large carousel never
+                      // reuses the grid-sized decode of this same url (→ 格子).
+                      allowDownscaling={false}
+                      priority="high"
                     />
                   </Pressable>
                 ))}
