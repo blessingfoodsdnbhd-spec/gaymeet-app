@@ -15,7 +15,6 @@ import { EmptyState } from '../../components/EmptyState';
 
 import { CardStack, type CardStackHandle } from './CardStack';
 import { NearbyGrid } from './NearbyGrid';
-import { NearbyMapView } from './NearbyMapView';
 import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
@@ -554,7 +553,6 @@ function NearbyBody({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const [view, setView] = useState<'grid' | 'map'>('grid');
   if (nearbyQ.isLoading) {
     return (
       <View style={styles.centerFill}>
@@ -573,30 +571,8 @@ function NearbyBody({
   const users = nearbyQ.data ?? [];
   return (
     <View style={{ flex: 1 }}>
-      {/* Grid / Map segmented toggle */}
-      <View style={{ flexDirection: 'row', alignSelf: 'center', marginVertical: 8, backgroundColor: theme.colors.surface2, borderRadius: 999, padding: 3 }}>
-        {(['grid', 'map'] as const).map((v) => (
-          <Pressable
-            key={v}
-            onPress={() => setView(v)}
-            style={{
-              paddingHorizontal: 18,
-              paddingVertical: 6,
-              borderRadius: 999,
-              backgroundColor: view === v ? theme.colors.surface : 'transparent',
-            }}
-          >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: view === v ? theme.colors.text : theme.colors.muted }}>
-              {t(v === 'grid' ? 'discover.viewGrid' : 'discover.viewMap')}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      {view === 'grid' ? (
-        <NearbyGrid users={users} onOpen={onOpen} />
-      ) : (
-        <NearbyMapView users={users} onOpenUser={onOpen} />
-      )}
+      {/* DDDDD — map view removed; 附近 is grid-only now. */}
+      <NearbyGrid users={users} onOpen={onOpen} />
     </View>
   );
 }
