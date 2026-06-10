@@ -536,7 +536,8 @@
     "noReason": "(사유 없음)",
     "kind": {
       "worldChat": "광장",
-      "vote": "투표"
+      "vote": "투표",
+      "scamMessage": "사기?"
     }
   },
   "adminStats": {
@@ -822,7 +823,8 @@
       "generic1": "주말에 계획 있으세요?",
       "generic2": "요즘 추천할 만한 거 있어요? 🎵📺",
       "generic3": "안녕하세요! 오늘 하루 어떠세요?"
-    }
+    },
+    "scamWarning": "주의: 외부 연락처나 금전을 언급합니다. 낯선 사람에게 송금하거나 다른 앱으로 이동하지 마세요."
   },
   "chats": {
     "searchPlaceholder": "검색",

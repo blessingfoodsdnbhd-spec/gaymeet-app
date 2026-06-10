@@ -24,6 +24,8 @@ export interface Message {
   mediaType?: 'image' | 'gif' | null;
   /** Voice-message clip length in milliseconds (rendered in the bubble). */
   duration?: number | null;
+  /** Soft scam/phishing flag (item 11) — recipient sees a caution banner. */
+  flagged?: boolean;
   /** Server-side flag set when the 30-day TTL has passed AND/OR the
    *  admin cleanup pass has nullified mediaUrl. Client renders an
    *  "Photo expired" placeholder. */

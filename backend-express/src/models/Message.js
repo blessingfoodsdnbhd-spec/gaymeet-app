@@ -54,6 +54,12 @@ const messageSchema = new mongoose.Schema(
     // (Premium-gated; see routes/conversations.js PATCH).
     edited: { type: Boolean, default: false },
     editedAt: { type: Date, default: null },
+    // Soft scam/phishing flag (item 11). Set when the body matches risky
+    // patterns (off-platform contact, money/crypto). Non-blocking: the message
+    // still sends, the client shows a caution banner, and admins can review.
+    flagged: { type: Boolean, default: false },
+    flagReason: { type: String, default: null },
+    flagHandled: { type: Boolean, default: false },
     // Emoji reactions (WhatsApp/iMessage-style). Map of emoji glyph → array of
     // userId strings who reacted with it, e.g. { "❤️": ["u1","u2"], "😂": ["u3"] }.
     // Left undefined (not an empty Map) for messages with no reactions so the

@@ -250,6 +250,15 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       readBy: [req.user._id],
     };
     if (content?.trim()) messageData.content = content.trim();
+    // Soft scam/phishing scan on text (item 11) — flag, never block.
+    if (msgType === 'text' && messageData.content) {
+      const { scanScam } = require('../utils/contentSafety');
+      const scan = scanScam(messageData.content);
+      if (scan.flagged) {
+        messageData.flagged = true;
+        messageData.flagReason = scan.reason;
+      }
+    }
     if (msgType === 'image') {
       messageData.mediaUrl = String(mediaUrl).trim();
       messageData.mediaType = 'image';
@@ -299,6 +308,7 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
       mediaUrl: message.mediaUrl || null,
       mediaType: message.mediaType || null,
       duration: message.duration || null,
+      flagged: message.flagged || false,
       location: message.location
         ? {
             lat: message.location.lat,

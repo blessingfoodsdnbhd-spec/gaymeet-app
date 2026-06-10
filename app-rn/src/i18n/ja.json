@@ -536,7 +536,8 @@
     "noReason": "（理由なし）",
     "kind": {
       "worldChat": "広場",
-      "vote": "投票"
+      "vote": "投票",
+      "scamMessage": "詐欺?"
     }
   },
   "adminStats": {
@@ -822,7 +823,8 @@
       "generic1": "週末は何か予定ありますか？",
       "generic2": "最近おすすめのものはありますか？🎵📺",
       "generic3": "こんにちは！今日はどんな一日ですか？"
-    }
+    },
+    "scamWarning": "注意：外部連絡先や金銭に言及しています。見知らぬ相手に送金や別アプリへの移動はしないでください。"
   },
   "chats": {
     "searchPlaceholder": "検索",

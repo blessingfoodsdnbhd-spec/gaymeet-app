@@ -1074,6 +1074,26 @@ export function ChatDetailScreen() {
                   }}
                 >
                   {bubble}
+                  {!mine && msg.flagged && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        marginTop: 4,
+                        maxWidth: '80%',
+                        backgroundColor: theme.colors.warning + '22',
+                        borderRadius: 10,
+                        paddingHorizontal: 9,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <Flag size={13} color={theme.colors.warning} strokeWidth={2} />
+                      <Text style={{ flex: 1, fontSize: 11.5, color: theme.colors.text2, lineHeight: 16 }}>
+                        {t('chat.scamWarning')}
+                      </Text>
+                    </View>
+                  )}
                   {msg.reactions && Object.keys(msg.reactions).length > 0 && (
                     <View
                       style={{
