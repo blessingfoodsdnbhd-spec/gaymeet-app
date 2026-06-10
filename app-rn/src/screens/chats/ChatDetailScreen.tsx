@@ -859,6 +859,18 @@ export function ChatDetailScreen() {
           <FlatList
             data={invItems}
             inverted
+            // Keep the chat CONTENT from jumping. Without this, every new row —
+            // a message either side sends, the optimistic→real swap, a WS echo —
+            // is prepended to the inverted data and shoves whatever the user was
+            // reading. maintainVisibleContentPosition pins the on-screen rows in
+            // place when content is inserted; autoscrollToTopThreshold lets the
+            // list still follow new messages when the user is already pinned to
+            // the bottom (within 10px of the newest), i.e. normal chat behaviour,
+            // while leaving them undisturbed when scrolled up reading history.
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 10,
+            }}
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
             renderItem={({ item }) => {
