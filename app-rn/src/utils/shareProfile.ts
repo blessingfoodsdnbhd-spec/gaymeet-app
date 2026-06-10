@@ -15,9 +15,11 @@ export async function shareProfile(userId: string, name: string, t: TFunction) {
   if (!userId) return;
   const url = profileUrl(userId);
   try {
+    // Link lives in `message` only. Passing `url` too makes iOS hand both the
+    // body and the URL attachment to the share target (e.g. WhatsApp pastes
+    // both), duplicating the link. Android ignores `url` anyway.
     await Share.share({
       message: t('about.shareMessage', { name: name || '', url }),
-      url, // iOS shows this as the link attachment; Android uses message only
     });
   } catch {
     // User cancelled or share failed — nothing to do.
