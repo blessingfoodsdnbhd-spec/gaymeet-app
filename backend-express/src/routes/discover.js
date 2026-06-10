@@ -36,8 +36,23 @@ function formatDistance(meters) {
 // viewers when they've opted in. The aggregation paths bypass toPublicJSON, so
 // we re-apply the same gating here — otherwise the AboutUserSheet (fed from
 // these cards) would still leak "X 分钟前活跃".
+// Ghost-mode fake "last active" — must match User.js ghostLastActive so a
+// user's idle time reads consistently whether the card came from an aggregation
+// (here) or toPublicJSON.
+function ghostLastActive(idStr) {
+  let h = 0;
+  for (let i = 0; i < idStr.length; i++) h = (h * 31 + idStr.charCodeAt(i)) >>> 0;
+  const hours = 1 + (h % 71);
+  const mins = (h >>> 5) % 60;
+  return new Date(Date.now() - (hours * 60 + mins) * 60 * 1000);
+}
+
 function presenceFields(u) {
-  const hidden = !!u.preferences?.hideOnlineStatus && isPremiumActive(u);
+  const premium = isPremiumActive(u);
+  if (u.preferences?.ghostMode && premium) {
+    return { lastActiveAt: ghostLastActive(String(u._id || '')), isOnline: false };
+  }
+  const hidden = !!u.preferences?.hideOnlineStatus && premium;
   return {
     lastActiveAt: hidden ? null : u.lastActiveAt,
     isOnline: hidden ? false : u.isOnline,

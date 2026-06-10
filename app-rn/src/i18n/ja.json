@@ -921,6 +921,10 @@
     "hidePopularity": {
       "label": "人気を非表示",
       "subtitle": "他の人にあなたの🔥人気スコアが見えなくなります"
+    },
+    "ghostMode": {
+      "label": "ゴーストモード 👻",
+      "subtitle": "オフライン表示になり「最終ログイン」が数時間前と表示されます"
     }
   },
   "presence": {

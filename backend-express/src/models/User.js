@@ -7,6 +7,10 @@ const preferencesSchema = new mongoose.Schema(
     hideDistance: { type: Boolean, default: false },
     hideOnlineStatus: { type: Boolean, default: false },
     hidePopularity: { type: Boolean, default: false },
+    // Ghost mode (Premium): stronger than hideOnlineStatus — instead of nulling
+    // presence, it ALSO fakes a plausibly-stale lastActiveAt so the user reads
+    // as "AFK" (last seen hours/days ago) rather than simply hidden.
+    ghostMode: { type: Boolean, default: false },
     hideFromNearby: { type: Boolean, default: false },
     stealthMode: { type: Boolean, default: false },
     stealthOption: {
@@ -328,7 +332,19 @@ const SELF_ONLY_FIELDS = [
 // Preference keys safe to show to other users (display hints only). The full
 // preferences object also holds virtualLat/Lng (teleport) + stealth internals,
 // which must never reach another user — so non-self viewers get this subset.
+// NOTE: ghostMode is intentionally NOT here — exposing the flag would defeat it.
 const PUBLIC_PREFERENCE_FIELDS = ['hideDistance', 'hideOnlineStatus', 'hidePopularity'];
+
+// Ghost-mode fake "last active": a deterministic, plausibly-stale timestamp
+// (1–72h ago) derived from the user id, so it's stable per user across views
+// instead of jittering each request.
+function ghostLastActive(idStr) {
+  let h = 0;
+  for (let i = 0; i < idStr.length; i++) h = (h * 31 + idStr.charCodeAt(i)) >>> 0;
+  const hours = 1 + (h % 71); // 1..71h
+  const mins = (h >>> 5) % 60;
+  return new Date(Date.now() - (hours * 60 + mins) * 60 * 1000);
+}
 
 // Documentation-only: the fields the allowlist deliberately excludes for
 // EVERYONE. Kept so reviewers can see the intent at a glance and so the
@@ -441,6 +457,13 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
   if (!self && src.preferences?.hideOnlineStatus && obj.isPremium) {
     obj.lastActiveAt = null;
     obj.isOnline = false;
+  }
+
+  // Ghost mode (Premium): appear AFK rather than simply hidden. isOnline false +
+  // a deterministic, plausibly-stale lastActiveAt (1–72h ago, stable per user).
+  if (!self && src.preferences?.ghostMode && obj.isPremium) {
+    obj.isOnline = false;
+    obj.lastActiveAt = ghostLastActive(String(src._id || obj.id || ''));
   }
 
   // Hide 人气 / popularity from OTHER viewers when a Premium user opted in

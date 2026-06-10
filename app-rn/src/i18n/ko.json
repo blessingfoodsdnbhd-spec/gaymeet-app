@@ -921,6 +921,10 @@
     "hidePopularity": {
       "label": "인기 숨기기",
       "subtitle": "다른 사람이 내 🔥 인기 점수를 볼 수 없어요"
+    },
+    "ghostMode": {
+      "label": "고스트 모드 👻",
+      "subtitle": "오프라인으로 표시되고 '마지막 접속'이 몇 시간 전으로 표시됩니다"
     }
   },
   "presence": {

@@ -803,6 +803,7 @@
   },
   "privacySettings": {
     "hidePopularity": {"label": "Hide popularity", "subtitle": "Others won't see your 🔥 popularity score"},
+    "ghostMode": {"label": "Ghost mode 👻", "subtitle": "Appear offline & 'last seen' hours ago — fully invisible"},
     "title": "Privacy",
     "showInNearby": "Show me in Nearby",
     "showInNearbyHint": "When off, you won't appear in other people's Nearby grid",

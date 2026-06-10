@@ -79,6 +79,7 @@ export interface User {
     hideDistance?: boolean;
     hideOnlineStatus?: boolean;
     hidePopularity?: boolean;
+    ghostMode?: boolean;
     hideFromNearby?: boolean;
     stealthMode?: boolean;
     /** Premium virtual location ("location spoofing"). Coords drive whether it's
@@ -150,6 +151,8 @@ export const setPrivacy = (patch: {
   hideOnlineStatus?: boolean;
   /** Premium-only (SSSS); backend returns 402 if a non-Premium user sets true. */
   hidePopularity?: boolean;
+  /** Premium-only ghost mode; backend returns 402 if a non-Premium user sets true. */
+  ghostMode?: boolean;
 }) => unwrap<User>(api.patch('/me/privacy', patch));
 
 export const updateLocation = (latitude: number, longitude: number) =>

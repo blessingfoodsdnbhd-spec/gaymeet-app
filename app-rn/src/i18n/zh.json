@@ -803,6 +803,7 @@
   },
   "privacySettings": {
     "hidePopularity": {"label": "隐藏人气", "subtitle": "其他人看不到你的 🔥 人气分数"},
+    "ghostMode": {"label": "完全隐身 👻", "subtitle": "显示为离线，“最近活跃”显示为数小时前——完全隐身"},
     "title": "隐私",
     "showInNearby": "在「附近」显示我",
     "showInNearbyHint": "关闭后,你不会出现在其他人的「附近」网格中",

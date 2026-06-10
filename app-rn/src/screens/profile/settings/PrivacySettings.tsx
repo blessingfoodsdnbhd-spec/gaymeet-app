@@ -41,6 +41,9 @@ export function PrivacySettings() {
   const [hidePopularity, setHidePopularity] = useState(
     user ? !!user.preferences?.hidePopularity : false,
   );
+  const [ghostMode, setGhostMode] = useState(
+    user ? !!user.preferences?.ghostMode : false,
+  );
   const [incognito, setIncognito] = useState(!!user?.incognitoBrowsing);
   // toPublicJSON already folds vipLevel into isPremium.
   const isPremium = !!user?.isPremium;
@@ -119,6 +122,16 @@ export function PrivacySettings() {
       reportFailure(e, t('privacySettings.updateFailed'));
     }
   };
+  const flipGhostMode = async (v: boolean) => {
+    setGhostMode(v);
+    try {
+      const updated = await setPrivacy({ ghostMode: v });
+      setUser(updated);
+    } catch (e) {
+      setGhostMode(!v);
+      reportFailure(e, t('privacySettings.updateFailed'));
+    }
+  };
   const flipIncognito = async (v: boolean) => {
     setIncognito(v);
     try {
@@ -155,6 +168,18 @@ export function PrivacySettings() {
             value={isPremium ? hideOnline : false}
             onValueChange={flipHideOnline}
             hint={t('privacySettings.hideOnlineStatusHint')}
+            disabled={!isPremium}
+            badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
+          />
+        </Pressable>
+        <Divider />
+        {/* Premium-only — ghost mode (item 6): appear AFK rather than online. */}
+        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+          <ToggleRow
+            label={t('privacySettings.ghostMode.label')}
+            value={isPremium ? ghostMode : false}
+            onValueChange={flipGhostMode}
+            hint={t('privacySettings.ghostMode.subtitle')}
             disabled={!isPremium}
             badge={isPremium ? undefined : t('privacySettings.premiumBadge')}
           />

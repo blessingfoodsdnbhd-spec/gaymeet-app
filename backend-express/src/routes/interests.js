@@ -147,6 +147,16 @@ router.patch('/privacy', auth, async (req, res, next) => {
       }
       update['preferences.hidePopularity'] = req.body.hidePopularity;
     }
+    if (typeof req.body.ghostMode === 'boolean') {
+      // Ghost mode is a Premium perk (item 6). Turning it OFF is always allowed.
+      if (req.body.ghostMode === true) {
+        const { isPremiumActive } = require('../utils/premium');
+        if (!isPremiumActive(req.user)) {
+          return err(res, 'ghostMode requires Premium', 402);
+        }
+      }
+      update['preferences.ghostMode'] = req.body.ghostMode;
+    }
     const user = await User.findByIdAndUpdate(req.user._id, update, { new: true });
     ok(res, user.toPublicJSON());
   } catch (e) {
