@@ -916,6 +916,7 @@
   },
   "likedMe": {
     "title": "Who Liked You",
+    "count": "{{n}} liked you",
     "empty": "No one yet",
     "upgradeCta": "Upgrade to see who they are",
     "loadFailed": "Couldn't load"

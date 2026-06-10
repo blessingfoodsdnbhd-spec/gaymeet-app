@@ -91,7 +91,7 @@ export function LikedMeGrid() {
           </Text>
         </Pressable>
       )}
-      <NearbyGrid users={users} onOpen={onOpen} countLabel={String(count)} />
+      <NearbyGrid users={users} onOpen={onOpen} countLabel={t('likedMe.count', { n: count })} />
       <UpgradePremiumSheet open={upsellOpen} onClose={() => setUpsellOpen(false)} reason={t('premium.upsell.likes')} />
     </View>
   );

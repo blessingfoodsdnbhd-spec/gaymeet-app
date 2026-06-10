@@ -1036,6 +1036,7 @@
   },
   "likedMe": {
     "title": "나를 좋아한 사람",
+    "count": "{{n}}명이 좋아함",
     "empty": "아직 아무도 없어요",
     "upgradeCta": "누구인지 보려면 업그레이드",
     "loadFailed": "불러올 수 없습니다"
