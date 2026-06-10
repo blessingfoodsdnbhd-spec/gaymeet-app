@@ -1005,7 +1005,6 @@
     }
   },
   "premium": {
-    "badge": "Premium",
     "heroTagline": "Unlock Meyou Premium for community engagement",
     "active": "You're a Premium member",
     "expiresAt": "Expires: {{date}}",

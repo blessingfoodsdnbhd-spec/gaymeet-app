@@ -193,7 +193,7 @@ export function ProfileScreen() {
           )}
           {(user as any).isPremium && (
             <View style={{ marginTop: 6 }}>
-              <PremiumBadge isPremium size="md" />
+              <PremiumBadge isPremium size={20} />
             </View>
           )}
           {!official && <View style={{ height: 12 }} />}

@@ -1125,7 +1125,6 @@
     }
   },
   "premium": {
-    "badge": "Premium",
     "heroTagline": "커뮤니티 활동을 위한 Meyou 프리미엄을 잠금 해제하세요",
     "active": "프리미엄 회원입니다",
     "expiresAt": "만료: {{date}}",

@@ -1005,7 +1005,6 @@
     }
   },
   "premium": {
-    "badge": "Premium",
     "heroTagline": "解锁 Meyou 会员,畅享社区功能",
     "active": "你已是 Premium 会员",
     "expiresAt": "到期: {{date}}",
