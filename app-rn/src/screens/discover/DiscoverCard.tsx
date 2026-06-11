@@ -217,8 +217,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   hero: {
-    flex: 1.2,
-    minHeight: 0,
+    // FIXED proportion of the card — never derived from the info section's
+    // height. Previously `flex: 1.2` let the photo absorb whatever space was
+    // left after the (variable-height) info block, so a profile with no bio
+    // got a ~70%-tall photo and one with a bio + 4 tags got ~45%. Swiping
+    // between them made the photo visibly jump/flash size. A fixed 62% keeps
+    // every card's photo identical regardless of how much info sits below.
+    height: '62%',
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -275,7 +281,9 @@ const styles = StyleSheet.create({
   stampLike: { transform: [{ rotate: '-12deg' }] },
   stampNope: { transform: [{ rotate: '12deg' }] },
   stampText: { fontSize: 22, fontWeight: '800', letterSpacing: 1.5 },
-  info: { padding: 18, gap: 10 },
+  // flex: 1 → fills the remaining ~38% below the fixed-height photo. Content
+  // is top-anchored; any surplus shows as surface beneath the tags.
+  info: { flex: 1, padding: 18, gap: 10 },
   name: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
   bio: { fontSize: 14, lineHeight: 22 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
