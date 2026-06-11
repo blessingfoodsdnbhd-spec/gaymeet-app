@@ -41,9 +41,13 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 }
 
 export interface WorldChatRoom {
-  id: string; // 'world' | 'MY' | 'CN' | …
+  id: string; // 'world' | 'MY' | 'topic:late-night' | 'interest:food' | …
   flag: string;
   label: { en: string; zh: string; native: string };
+  /** 'topic' = 🔥 hot topic room, 'country' = country room, 'interest' = 🎮 channel. */
+  kind?: 'topic' | 'country' | 'interest';
+  /** Present for topic/interest rooms — resolve the name with t() for full i18n. */
+  i18nKey?: string;
   onlineCount: number;
 }
 export const getWorldChatRooms = () =>

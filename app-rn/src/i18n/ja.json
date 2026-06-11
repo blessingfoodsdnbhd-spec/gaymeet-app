@@ -583,6 +583,8 @@
   "plaza": {
     "tab": { "hot": "🔥 人気", "match": "❤️ 交流", "voice": "🎤 音声", "interest": "🎮 チャンネル", "country": "🌏 国別" },
     "switcher": { "hot": "人気のチャット", "country": "国を選ぶ" },
+    "channel": { "food": "グルメ", "photo": "写真", "games": "ゲーム", "ai": "AI", "realestate": "不動産", "pets": "ペット" },
+    "topic": { "lateNight": "深夜トーク", "singles": "シングル交流", "aiDiscuss": "AIディスカッション" },
     "comingSoon": "近日公開",
     "notifyMe": "通知を受け取る",
     "notified": "お知らせします",

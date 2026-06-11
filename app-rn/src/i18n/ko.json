@@ -583,6 +583,8 @@
   "plaza": {
     "tab": { "hot": "🔥 인기", "match": "❤️ 대화", "voice": "🎤 음성", "interest": "🎮 채널", "country": "🌏 국가" },
     "switcher": { "hot": "인기 채팅방", "country": "국가 선택" },
+    "channel": { "food": "음식", "photo": "사진", "games": "게임", "ai": "AI", "realestate": "부동산", "pets": "반려동물" },
+    "topic": { "lateNight": "심야 수다", "singles": "싱글 만남", "aiDiscuss": "AI 토론" },
     "comingSoon": "출시 예정",
     "notifyMe": "알림 받기",
     "notified": "알려드릴게요",

@@ -8,14 +8,14 @@ const CallLog = require('../models/CallLog');
 const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
-const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { ALL_ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 
 let io;
 
 /** Live online count per World Chat room (from the socket.io adapter). */
 function getRoomCounts() {
   const counts = {};
-  for (const r of ROOMS) {
+  for (const r of ALL_ROOMS) {
     counts[r.id] = io ? io.sockets.adapter.rooms.get(socketRoom(r.id))?.size ?? 0 : 0;
   }
   return counts;
@@ -26,7 +26,7 @@ function emitRoomsState() {
   if (!io) return;
   const counts = getRoomCounts();
   io.emit('world-chat:rooms-state', { counts });
-  for (const r of ROOMS) {
+  for (const r of ALL_ROOMS) {
     io.to(socketRoom(r.id)).emit('world-chat:online-count', { roomId: r.id, count: counts[r.id] });
   }
 }

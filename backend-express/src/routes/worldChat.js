@@ -10,7 +10,7 @@ const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
-const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { ALL_ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
 
 const BODY_MAX = 500;
@@ -240,10 +240,12 @@ router.post('/send', auth, async (req, res, next) => {
 });
 
 // ── GET /api/world-chat/rooms ─────────────────────────────────────────────────
-// Available rooms + live online counts (from the socket adapter). Pass
-// `?sort=hot` for the 🔥 热门 strip: rooms ordered by live online count desc,
-// with World kept as the anchor at the front. Counts come straight from the
-// in-memory socket adapter, so no caching/DB hit is needed.
+// Available rooms (countries + 🔥 topic rooms + 🎮 interest channels) + live
+// online counts (from the socket adapter). Each room carries a `kind`
+// ('topic' | 'country' | 'interest') so the client can pin topics first in 热门
+// and populate the 兴趣 sheet. Pass `?sort=hot` for the 🔥 热门 view: topic rooms
+// stay pinned at the front, then everything else by live online count desc.
+// Counts come straight from the in-memory socket adapter — no caching/DB hit.
 router.get('/rooms', auth, async (req, res, next) => {
   try {
     let counts = {};
@@ -252,16 +254,19 @@ router.get('/rooms', auth, async (req, res, next) => {
     } catch (_) {
       // socket layer not ready
     }
-    let rooms = ROOMS.map((r) => ({
+    let rooms = ALL_ROOMS.map((r) => ({
       id: r.id,
       flag: r.flag,
-      label: { en: r.en, zh: r.zh, native: r.native },
+      label: r.label,
+      kind: r.kind,
+      ...(r.i18nKey ? { i18nKey: r.i18nKey } : {}),
       onlineCount: counts[r.id] ?? 0,
     }));
     if (req.query.sort === 'hot') {
-      rooms = rooms.sort((a, b) =>
-        a.id === 'world' ? -1 : b.id === 'world' ? 1 : b.onlineCount - a.onlineCount,
-      );
+      // Topic rooms are always first (ranked among themselves by online count);
+      // the rest follow by online count desc.
+      const rank = (r) => (r.kind === 'topic' ? 0 : 1);
+      rooms = rooms.sort((a, b) => rank(a) - rank(b) || b.onlineCount - a.onlineCount);
     }
     ok(res, { rooms });
   } catch (e) {
