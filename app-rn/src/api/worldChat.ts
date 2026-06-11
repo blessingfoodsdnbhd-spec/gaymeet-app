@@ -130,6 +130,8 @@ export interface RoomFriend {
   id: string;
   displayName: string;
   avatarUrl: string | null;
+  isOnline?: boolean;
+  lastActiveAt?: string | null;
 }
 
 export const getCountryRooms = (countryCode: string) =>

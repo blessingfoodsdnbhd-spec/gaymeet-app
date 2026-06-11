@@ -643,6 +643,8 @@
       "saved": "저장됨",
       "saveFailed": "저장할 수 없습니다",
       "invite": "초대",
+      "share": "방 공유",
+      "shareMessage": "Meyou에서 “{{name}}” 채팅에 참여하세요 → {{link}}",
       "inviteFriends": "친구 초대",
       "inviteCta": "초대 ({{n}})",
       "invited": "친구 {{n}}명 초대됨",

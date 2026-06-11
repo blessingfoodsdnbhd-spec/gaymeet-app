@@ -251,6 +251,8 @@
       "saved": "Saved",
       "saveFailed": "Couldn't save",
       "invite": "Invite",
+      "share": "Share room",
+      "shareMessage": "Join “{{name}}” chat on Meyou → {{link}}",
       "inviteFriends": "Invite friends",
       "inviteCta": "Invite ({{n}})",
       "invited": "Invited {{n}} friend(s)",

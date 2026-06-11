@@ -38,12 +38,14 @@ export function RoomSettingsSheet({
   room,
   onChanged,
   onExit,
+  initialTab = 'main',
 }: {
   open: boolean;
   onClose: () => void;
   room: ChatRoomSummary;
   onChanged: () => void;
   onExit: () => void;
+  initialTab?: 'main' | 'invite';
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -62,7 +64,7 @@ export function RoomSettingsSheet({
   // Reset local state each time the sheet (re)opens for a room.
   React.useEffect(() => {
     if (open) {
-      setTab('main');
+      setTab(initialTab);
       setTitle(room.title);
       setDescription(room.description);
       setIsPrivate(room.isPrivate);
@@ -80,7 +82,7 @@ export function RoomSettingsSheet({
   const friendsQ = useQuery({
     queryKey: ['worldChat', 'invitable', room.id],
     queryFn: () => getInvitableFriends(room.id),
-    enabled: open && room.isCreator && tab === 'invite',
+    enabled: open && tab === 'invite', // any member can invite, not just the creator
     select: (d) => d.friends,
   });
 
@@ -247,6 +249,11 @@ export function RoomSettingsSheet({
     return (
       <Sheet open={open} onClose={onClose} maxHeight="40%">
         <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{room.title}</Text>
+        <Pressable onPress={() => setTab('invite')} style={[styles.actionRow, { borderColor: theme.colors.line }]}>
+          <Text style={{ fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
+            ➕ {t('worldChat.rooms.inviteFriends')}
+          </Text>
+        </Pressable>
         <Pressable onPress={() => setTab('members')} style={[styles.actionRow, { borderColor: theme.colors.line }]}>
           <Text style={{ fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
             👥 {t('worldChat.rooms.viewMembers')}
@@ -302,7 +309,12 @@ export function RoomSettingsSheet({
                   style={[styles.memberRow, { borderColor: theme.colors.line }]}
                 >
                   <Avatar name={f.displayName} uri={f.avatarUrl} size={38} />
-                  <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>{f.displayName}</Text>
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {f.isOnline && (
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.success ?? theme.colors.online ?? '#3CC479' }} />
+                    )}
+                    <Text style={{ flexShrink: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>{f.displayName}</Text>
+                  </View>
                   <View
                     style={[
                       styles.checkbox,

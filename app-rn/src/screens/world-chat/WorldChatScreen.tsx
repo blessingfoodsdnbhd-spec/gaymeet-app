@@ -12,11 +12,12 @@ import {
   Alert,
   Modal,
   Animated,
+  Share,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -116,6 +117,21 @@ export function WorldChatScreen({
   const closed = room?.status === 'closed';
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  // Which sub-screen the settings sheet opens on ('main' = ⋮ menu, 'invite' = +).
+  const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
+
+  // Share the room via the system share sheet using the meyou.uk/r/{id} short
+  // link. Works for every room — custom, country, or the global world room.
+  const onShareRoom = React.useCallback(() => {
+    const url = `https://meyou.uk/r/${roomId}`;
+    const message = t('worldChat.rooms.shareMessage', { name: headerTitle, link: url });
+    Share.share(Platform.OS === 'ios' ? { message, url } : { message }).catch(() => {});
+  }, [roomId, headerTitle, t]);
+
+  const openInvite = React.useCallback(() => {
+    setSettingsTab('invite');
+    setSettingsOpen(true);
+  }, []);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -531,11 +547,21 @@ export function WorldChatScreen({
                 : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
             </Text>
           </View>
-          {isCustom && room && (
-            <Pressable onPress={() => setSettingsOpen(true)} hitSlop={8} style={{ marginLeft: 8 }}>
-              <MoreVertical size={22} color={theme.colors.text} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginLeft: 8 }}>
+            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')}>
+              <Share2 size={21} color={theme.colors.text} />
             </Pressable>
-          )}
+            {isCustom && room && (
+              <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')}>
+                <UserPlus size={22} color={theme.colors.text} />
+              </Pressable>
+            )}
+            {isCustom && room && (
+              <Pressable onPress={() => { setSettingsTab('main'); setSettingsOpen(true); }} hitSlop={8}>
+                <MoreVertical size={22} color={theme.colors.text} />
+              </Pressable>
+            )}
+          </View>
         </View>
       )}
 
@@ -677,6 +703,7 @@ export function WorldChatScreen({
       {isCustom && room && (
         <RoomSettingsSheet
           open={settingsOpen}
+          initialTab={settingsTab}
           onClose={() => setSettingsOpen(false)}
           room={room}
           onChanged={() => {

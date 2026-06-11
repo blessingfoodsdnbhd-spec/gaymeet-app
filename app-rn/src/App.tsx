@@ -62,6 +62,9 @@ const LINKING = {
   config: {
     screens: {
       RedeemInvite: 'invite/:code',
+      // Room share links: the meyou.uk/r/{id} landing page bounces here via
+      // meyou://room/{id} (and a future Universal Link maps the same path).
+      WorldChatRoom: 'room/:roomId',
     },
   },
 };

@@ -103,6 +103,10 @@ app.get('/delete-account', (_req, res) => res.sendFile(path.join(publicDir, 'del
 // Child safety standards page — required by the Google Play child safety
 // standards policy for social/dating apps (published CSAE standards URL).
 app.get('/child-safety', (_req, res) => res.sendFile(path.join(publicDir, 'child-safety.html')));
+// Room share-landing — meyou.uk/r/{roomId} short link. Bounces installed users
+// into the room via the meyou://room/{id} deep link; everyone else to the store.
+const { roomLanding } = require('./web/roomLanding');
+app.get('/r/:roomId', roomLanding);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ ok: true }));
