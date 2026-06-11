@@ -59,6 +59,7 @@ export function NameWithBadge({
   textStyle,
   numberOfLines,
   badgeSize = 15,
+  premiumSize,
   containerStyle,
 }: {
   name: string;
@@ -70,6 +71,9 @@ export function NameWithBadge({
   textStyle?: StyleProp<TextStyle>;
   numberOfLines?: number;
   badgeSize?: number;
+  /** Size for the Premium "M" mark. Defaults to badgeSize; pass a larger value
+      to make the M optically match the seal (it has internal letterbox space). */
+  premiumSize?: number;
   containerStyle?: StyleProp<ViewStyle>;
 }) {
   if (!official && !verified && !premium) {
@@ -86,7 +90,7 @@ export function NameWithBadge({
       </Text>
       {/* Official (blue) takes precedence; otherwise the green real-person seal. */}
       {official ? <VerifiedBadge size={badgeSize} /> : verified ? <PhotoVerifiedBadge size={badgeSize} /> : null}
-      <PremiumBadge isPremium={premium} size={badgeSize} />
+      <PremiumBadge isPremium={premium} size={premiumSize ?? badgeSize} />
     </View>
   );
 }

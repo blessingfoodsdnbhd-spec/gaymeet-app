@@ -335,7 +335,7 @@ export function UserDetailScreen() {
               ) : null}
               {/* Premium "M" mark sits next to the name (after the verified seal),
                   matching ProfileScreen — not next to the popularity chip. */}
-              <PremiumBadge isPremium={(user as any).isPremium} size={18} />
+              <PremiumBadge isPremium={(user as any).isPremium} size={22} />
               <PopularityBadge value={(user as any).popularity} size="md" />
             </View>
             {user.countryCode && (
