@@ -24,6 +24,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { ChatComposer } from '../../components/ChatComposer';
+import { SwipeToReply } from '../../components/SwipeToReply';
 import { Sheet } from '../../components/Sheet';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { PhotoViewer } from '../../components/PhotoViewer';
@@ -489,18 +490,20 @@ export function WorldChatScreen() {
               </View>
             }
             renderItem={({ item }) => (
-              <Row
-                msg={item}
-                mine={item.userId === myId}
-                isCreator={!!creatorId && item.userId === creatorId}
-                highlighted={item.messageId === highlightedId}
-                onLongPress={() => setSelected(item)}
-                onOpenUser={() =>
-                  item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
-                }
-                onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
-                onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
-              />
+              <SwipeToReply enabled={!closed} onReply={() => setReplyingTo(item)}>
+                <Row
+                  msg={item}
+                  mine={item.userId === myId}
+                  isCreator={!!creatorId && item.userId === creatorId}
+                  highlighted={item.messageId === highlightedId}
+                  onLongPress={() => setSelected(item)}
+                  onOpenUser={() =>
+                    item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
+                  }
+                  onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
+                  onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
+                />
+              </SwipeToReply>
             )}
           />
         )}

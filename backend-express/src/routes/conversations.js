@@ -291,6 +291,24 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
             : null,
       };
     }
+
+    // Swipe-to-reply quote target. Snapshot the quoted message inline so the
+    // history GET needs no join and the quote survives a later edit/delete.
+    // The target must be a real message in THIS conversation — a bad / foreign
+    // id is silently ignored (the message still sends, just un-quoted).
+    const replyId = req.body?.replyToMessageId;
+    if (replyId && /^[0-9a-fA-F]{24}$/.test(String(replyId))) {
+      const orig = await Message.findOne({ _id: replyId, matchId: match._id }).lean();
+      if (orig) {
+        messageData.replyTo = {
+          messageId: orig._id,
+          senderId: orig.senderId,
+          type: orig.type,
+          preview: Message.replyPreviewOf(orig),
+        };
+      }
+    }
+
     const message = await Message.create(messageData);
 
     const otherId = match.users
@@ -323,6 +341,14 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
             lat: message.location.lat,
             lng: message.location.lng,
             label: message.location.label || null,
+          }
+        : null,
+      replyTo: message.replyTo
+        ? {
+            id: message.replyTo.messageId?.toString() ?? null,
+            senderId: message.replyTo.senderId?.toString() ?? null,
+            type: message.replyTo.type ?? null,
+            preview: message.replyTo.preview ?? '',
           }
         : null,
       createdAt: message.createdAt.toISOString(),
@@ -411,6 +437,16 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
       // Reactions: lean() returns a Map (JSON-stringifies to {}) — normalize to
       // a plain { emoji: [userId,…] } object so the client can render pills.
       m.reactions = Message.serializeReactions(raw.reactions);
+      // Reply quote: normalize the stored ObjectIds → strings, and expose the
+      // snapshot id as `id` (the client's MessageReplyPreview shape).
+      m.replyTo = raw.replyTo
+        ? {
+            id: raw.replyTo.messageId?.toString() ?? null,
+            senderId: raw.replyTo.senderId?.toString() ?? null,
+            type: raw.replyTo.type ?? null,
+            preview: raw.replyTo.preview ?? '',
+          }
+        : null;
       if (m.type === 'image') {
         const ttl = m.expiresAt ? new Date(m.expiresAt).getTime() : null;
         if (ttl !== null && ttl < now) {

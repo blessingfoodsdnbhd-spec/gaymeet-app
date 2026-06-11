@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 
+// Denormalized snapshot of the message a reply quotes (WhatsApp-style swipe-to-
+// reply). Stored inline so the chats history GET never needs a populate/join,
+// and so the quote survives even if the original is later edited or deleted —
+// matching how messengers freeze the quoted text at reply time. senderId lets
+// the client label the quote ("You" vs the other participant) without a lookup.
+const replyToSchema = new mongoose.Schema(
+  {
+    messageId: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+    senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    type: { type: String },
+    preview: { type: String, maxlength: 200 },
+  },
+  { _id: false },
+);
+
 const messageSchema = new mongoose.Schema(
   {
     matchId: {
@@ -65,6 +80,8 @@ const messageSchema = new mongoose.Schema(
     // Left undefined (not an empty Map) for messages with no reactions so the
     // doc stays compact. Toggled via POST /:matchId/messages/:msgId/reactions.
     reactions: { type: Map, of: [String], default: undefined },
+    // Swipe-to-reply quote target. null for ordinary messages.
+    replyTo: { type: replyToSchema, default: null },
   },
   { timestamps: true }
 );
@@ -98,6 +115,28 @@ Message.serializeReactions = function serializeReactions(reactions) {
     if (arr.length) out[emoji] = arr;
   }
   return out;
+};
+
+/**
+ * One-line, language-neutral snapshot of a message for use inside a reply
+ * quote. Media collapses to a bare glyph (no English label like previewOf's
+ * "📷 Photo") so the quote reads cleanly in any locale; text/sticker keep their
+ * content, capped at the replyTo.preview maxlength.
+ */
+Message.replyPreviewOf = function replyPreviewOf(msg) {
+  if (!msg) return '';
+  switch (msg.type) {
+    case 'image':
+      return '📷';
+    case 'voice':
+      return '🎙️';
+    case 'location':
+      return '📍';
+    case 'text':
+    case 'sticker':
+    default:
+      return (msg.content || '').slice(0, 200);
+  }
 };
 
 Message.previewOf = function previewOf(msg) {
