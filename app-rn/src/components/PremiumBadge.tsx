@@ -1,7 +1,9 @@
 import React from 'react';
 import { Image } from 'expo-image';
 
-const MEYOU_MARK = require('../assets/logo.png');
+// Dedicated asset name so it doesn't collide with WelcomeScreen's logo.jpg on
+// Android (both flatten to the resource name `src_assets_logo` → mergeResources fails).
+const MEYOU_MARK = require('../assets/m-mark.png');
 
 /**
  * Premium identity badge (SSSSS) — the small Meyou "M" mark shown next to an
