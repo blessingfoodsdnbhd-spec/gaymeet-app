@@ -36,6 +36,9 @@ router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) =
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
+    // Admin photo-upload ban.
+    if (req.user.photoUploadBanned) return err(res, '你已被禁止上传照片', 403);
+
     const user = await User.findById(req.user._id);
     const raw = req.body?.primary;
     const asPrimary = !(raw === '0' || raw === 'false' || raw === false);

@@ -9,6 +9,8 @@ const VoteReport = require('../models/VoteReport');
 const UserReport = require('../models/UserReport');
 const Message = require('../models/Message');
 const FlaggedImage = require('../models/FlaggedImage');
+const { logAdminAction } = require('../services/adminAudit');
+const { notify } = require('../services/notificationService');
 
 router.use(requireAdminAuth);
 
@@ -123,6 +125,33 @@ router.post('/reports/:kind/:id/resolve', async (req, res, next) => {
         : WorldChatReport;
     const r = await Model.findByIdAndUpdate(req.params.id, { handled: true }, { new: true });
     if (!r) return err(res, 'Report not found', 404);
+
+    const reason = String(req.body?.reason || '').slice(0, 300);
+    const dismissed = req.body?.outcome === 'dismissed'; // else: action taken
+    await logAdminAction(req.user, 'report_resolve', {
+      targetUser: r.reportedUserId || null, targetType: 'report', targetId: r._id,
+      reason, meta: { kind: req.params.kind, outcome: dismissed ? 'dismissed' : 'actioned' },
+    });
+
+    // Notify both parties for user-profile reports (reporter + reported).
+    if (req.params.kind === 'user') {
+      const tail = reason ? `（${reason}）` : '';
+      if (r.reporterId) {
+        notify(r.reporterId, 'report_result', {
+          title: '举报已处理',
+          body: dismissed ? `你提交的举报已审核完毕${tail}` : `你举报的用户已被处理${tail}`,
+          data: { type: 'report_result', role: 'reporter' },
+        });
+      }
+      if (r.reportedUserId && !dismissed) {
+        notify(r.reportedUserId, 'report_result', {
+          title: '账号被处理',
+          body: `有用户对你的举报已被管理员处理${tail}`,
+          data: { type: 'report_result', role: 'reported' },
+        });
+      }
+    }
+
     ok(res, { success: true });
   } catch (e) {
     next(e);

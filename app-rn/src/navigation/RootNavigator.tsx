@@ -28,6 +28,7 @@ import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScree
 import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
 import { AdminStatsScreen } from '../screens/admin/AdminStatsScreen';
 import { AdminVerificationsScreen } from '../screens/admin/AdminVerificationsScreen';
+import { AdminUserModerationScreen } from '../screens/admin/AdminUserModerationScreen';
 import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { MyAnalyticsScreen } from '../screens/profile/MyAnalyticsScreen';
 import { PremiumGiftScreen } from '../screens/profile/PremiumGiftScreen';
@@ -247,6 +248,7 @@ export function RootNavigator() {
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminStats" component={AdminStatsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminVerifications" component={AdminVerificationsScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="AdminUserModeration" component={AdminUserModerationScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="Verification" component={VerificationScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MyAnalytics" component={MyAnalyticsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="PremiumGift" component={PremiumGiftScreen} options={{ animation: 'slide_from_right' }} />

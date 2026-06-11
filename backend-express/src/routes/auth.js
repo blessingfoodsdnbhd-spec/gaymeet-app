@@ -95,6 +95,9 @@ router.post('/login', async (req, res, next) => {
     const valid = await user.comparePassword(password);
     if (!valid) return err(res, '密码不正确', 401);
 
+    // Permanent ban — refuse to issue a session (登录拦截).
+    if (user.isBanned) return err(res, '账号已被封禁', 403);
+
     const tfa = await TwoFactorAuth.findOne({ user: user._id });
     if (tfa && tfa.isEnabled) {
       if (!twoFactorCode) {
@@ -207,6 +210,8 @@ router.post('/google', async (req, res, next) => {
       });
     }
 
+    if (user.isBanned) return err(res, '账号已被封禁', 403); // 登录拦截
+
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
     await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
@@ -253,6 +258,8 @@ router.post('/apple', async (req, res, next) => {
         referralCode: myReferralCode,
       });
     }
+
+    if (user.isBanned) return err(res, '账号已被封禁', 403); // 登录拦截
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
@@ -370,6 +377,9 @@ router.post('/verify-otp', async (req, res, next) => {
         /* ignore — sign-in proceeds without the reward */
       }
     }
+
+    // Returning banned users can't sign in even via OTP (新用户不会被封禁).
+    if (!isNewUser && user.isBanned) return err(res, '账号已被封禁', 403);
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());

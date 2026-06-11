@@ -7,6 +7,8 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
 const Verification = require('../models/Verification');
 const User = require('../models/User');
+const { logAdminAction } = require('../services/adminAudit');
+const { notify } = require('../services/notificationService');
 
 router.use(requireAdminAuth);
 
@@ -56,6 +58,15 @@ router.post('/verifications/:id/approve', async (req, res, next) => {
       verifiedAt: new Date(),
     });
 
+    await logAdminAction(req.user, 'verify_approve', {
+      targetUser: record.user, targetType: 'verification', targetId: record._id,
+    });
+    notify(record.user, 'verification_result', {
+      title: '认证已通过',
+      body: '你的照片认证已通过，已获得真人认证标识。',
+      data: { type: 'verification_result', status: 'approved' },
+    });
+
     ok(res, { success: true });
   } catch (e) {
     next(e);
@@ -78,6 +89,16 @@ router.post('/verifications/:id/reject', async (req, res, next) => {
       isVerified: false,
       isVideoVerified: false,
       verifiedAt: null,
+    });
+
+    await logAdminAction(req.user, 'verify_reject', {
+      targetUser: record.user, targetType: 'verification', targetId: record._id,
+      reason: record.rejectedReason || '',
+    });
+    notify(record.user, 'verification_result', {
+      title: '认证未通过',
+      body: record.rejectedReason ? `你的照片认证被驳回，原因：${record.rejectedReason}` : '你的照片认证被驳回，请重新提交。',
+      data: { type: 'verification_result', status: 'rejected' },
     });
 
     ok(res, { success: true });

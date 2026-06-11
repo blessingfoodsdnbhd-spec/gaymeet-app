@@ -283,6 +283,20 @@ const userSchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
     deleteScheduledAt: { type: Date, default: null },
+
+    // ── Admin moderation / ban state (admin tools) ─────────────────────────────
+    // Permanent ban: blocks login (auth middleware + login routes return 403) and
+    // freezes the account — set/cleared by admins only via /api/admin/users/:id/ban.
+    isBanned: { type: Boolean, default: false },
+    bannedAt: { type: Date, default: null },
+    banReason: { type: String, default: null },
+    bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Granular capability bans — the account stays usable but the capability is
+    // revoked. chatBanned blocks sending chat messages (read still works);
+    // photoUploadBanned blocks uploading public/private photos.
+    chatBanned: { type: Boolean, default: false },
+    photoUploadBanned: { type: Boolean, default: false },
+
     // Brute-force protection
     loginAttempts: { type: Number, default: 0 },
     lockoutUntil: { type: Date, default: null },
@@ -352,6 +366,9 @@ const SELF_ONLY_FIELDS = [
   'dailyEnergySends', 'dailyEnergySendsDate',
   'ownedStickerPacks', 'totalExpReceived', 'referralCode', 'referralCount',
   'isDeleted', 'deletedAt', 'deleteScheduledAt',
+  // Moderation state — surfaced to the OWNER only so the client can show
+  // "you can't send messages / upload photos" banners. Never shown to others.
+  'isBanned', 'banReason', 'chatBanned', 'photoUploadBanned',
   'streak', // daily-login streak (STREAK1) — shown on own profile only
 ];
 

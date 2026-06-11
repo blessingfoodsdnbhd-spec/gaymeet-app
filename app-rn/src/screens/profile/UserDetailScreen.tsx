@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, StickyNote, X } from 'lucide-react-native';
+import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, ShieldAlert, StickyNote, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -46,6 +46,7 @@ import {
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { fetchIsAdmin } from '../../api/admin';
 import { SendNoteSheet } from '../discover/SendNoteSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -84,6 +85,10 @@ export function UserDetailScreen() {
     queryFn: () => getUserById(userId),
     staleTime: 60_000,
   });
+
+  // Admin-only "..." → moderation console. Gated server-side too (requireAdminAuth).
+  const isAdminQ = useQuery({ queryKey: ['me', 'isAdmin'], queryFn: fetchIsAdmin, staleTime: 5 * 60_000 });
+  const showAdmin = isAdminQ.data === true && !isSelf && !previewMode;
 
   const user = userQ.data;
   // Top carousel photos — all public photos, falling back to the avatar.
@@ -267,6 +272,19 @@ export function UserDetailScreen() {
                 {!previewMode && (
                   <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
                     <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
+                  </Pressable>
+                )}
+
+                {/* Admin "..." → moderation console (admin viewers only). When
+                    shown, the note (58) + safety (14) buttons are always present,
+                    so this third slot sits at 102. */}
+                {showAdmin && (
+                  <Pressable
+                    onPress={() => nav.navigate('AdminUserModeration', { userId })}
+                    hitSlop={8}
+                    style={[styles.floatBtn, { top: insets.top + 8, right: 102 }]}
+                  >
+                    <ShieldAlert size={18} color="#FFFFFF" strokeWidth={2} />
                   </Pressable>
                 )}
               </>

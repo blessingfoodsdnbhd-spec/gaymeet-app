@@ -22,6 +22,13 @@ async function auth(req, res, next) {
   const user = await User.findById(payload.sub).select('-password');
   if (!user) return res.status(401).json({ error: 'User not found' });
 
+  // Permanent ban — freeze the account on every authenticated request. The
+  // client treats code:BANNED as a forced logout. Admins are never banned, so
+  // this can't lock out moderation.
+  if (user.isBanned) {
+    return res.status(403).json({ error: 'Account banned', code: 'BANNED' });
+  }
+
   req.user = user;
 
   // Throttled liveness for REST-only sessions (socket connect/disconnect also

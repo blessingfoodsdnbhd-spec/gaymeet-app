@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { EmptyState } from '../../components/EmptyState';
+import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { getAdminVerifications, approveVerification, rejectVerification, type AdminVerification } from '../../api/admin';
 import { resolveMediaUrl } from '../../api/verification';
 
@@ -18,8 +19,14 @@ export function AdminVerificationsScreen() {
   const { t } = useTranslation();
   const nav = useNavigation<any>();
   const qc = useQueryClient();
+  const photoViewer = usePhotoViewer();
 
   const q = useQuery({ queryKey: ['admin', 'verifications'], queryFn: getAdminVerifications });
+
+  // Tap username/avatar → open the user's full profile (returns here on back).
+  const openProfile = (userId: string | null) => {
+    if (userId) nav.navigate('UserDetail', { userId });
+  };
 
   const remove = (id: string) =>
     qc.setQueryData(['admin', 'verifications'], (old: any) =>
@@ -71,7 +78,12 @@ export function AdminVerificationsScreen() {
             return (
               <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                  {/* Tap the submitted photo → fullscreen pinch-to-zoom viewer. */}
+                  <Pressable
+                    onPress={() => { if (!isVideo && img) photoViewer.open([img], 0); }}
+                    disabled={isVideo || !img}
+                    style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}
+                  >
                     {isVideo ? (
                       <VideoIcon size={28} color={c.success} strokeWidth={1.8} />
                     ) : img ? (
@@ -79,16 +91,24 @@ export function AdminVerificationsScreen() {
                     ) : (
                       <Text style={{ fontSize: 11, color: c.muted }}>—</Text>
                     )}
-                  </View>
+                  </Pressable>
                   <View style={{ flex: 1, gap: 4 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: c.text }} numberOfLines={1}>{item.nickname}</Text>
+                    {/* Tap avatar + name → the user's profile. */}
+                    <Pressable
+                      onPress={() => openProfile(item.userId)}
+                      disabled={!item.userId}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    >
+                      {item.avatarUrl ? (
+                        <Image source={{ uri: resolveMediaUrl(item.avatarUrl) || undefined }} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: c.surface2 }} contentFit="cover" />
+                      ) : null}
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: item.userId ? c.primary : c.text }} numberOfLines={1}>{item.nickname}</Text>
                       <View style={[styles.kindChip, { backgroundColor: isVideo ? c.secondary : c.primarySoft }]}>
                         <Text style={{ fontSize: 10, fontWeight: '700', color: isVideo ? '#FFFFFF' : c.primaryDeep }}>
                           {isVideo ? t('adminVerifications.video') : t('adminVerifications.photo')}
                         </Text>
                       </View>
-                    </View>
+                    </Pressable>
                     <Text style={{ fontSize: 13, color: c.text2 }} numberOfLines={2}>
                       {t('adminVerifications.poseLabel')}: {item.pose}
                     </Text>
@@ -113,6 +133,7 @@ export function AdminVerificationsScreen() {
           }}
         />
       )}
+      {photoViewer.node}
     </SafeAreaView>
   );
 }
