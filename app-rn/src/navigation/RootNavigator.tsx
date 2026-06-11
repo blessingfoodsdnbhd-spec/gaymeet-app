@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { useAuth } from '../store/auth';
@@ -103,21 +104,37 @@ export function RootNavigator() {
           <Stack.Screen name="PromptsEdit" component={PromptsEditScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MyMoments" component={MyMomentsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="FriendsList" component={FriendsListScreen} options={{ animation: 'slide_from_right' }} />
-          {/* Moment mode opens the map from INSIDE the Composer modal. Pushing a
-              default card on top of a `presentation: 'modal'` screen makes iOS
-              react-native-screens group them, so dismissing the card (Save →
-              goBack) collapses the whole modal group — popping the Composer too,
-              dumping the user back to home with the location lost. Presenting it
-              as its own modal (modal-over-modal) lets goBack dismiss ONLY the map
-              and reveal the still-mounted Composer so the bridge writes the place
-              back. Virtual-location/Discover/Privacy open it from a card context,
+          {/* Moment mode opens the map from INSIDE the Composer modal.
+
+              iOS: pushing a default card on top of a `presentation: 'modal'`
+              screen makes react-native-screens group them, so dismissing the
+              card (Save → goBack) collapses the whole modal group — popping the
+              Composer too, dumping the user back to home with the location lost.
+              Presenting it as its OWN modal (modal-over-modal) lets goBack
+              dismiss ONLY the map and reveal the still-mounted Composer so the
+              bridge writes the place back (PR #185).
+
+              Android: the picker is opened from inside MomentLocationSheet,
+              which is a react-native `Modal` (a separate Dialog window). On
+              Android `fullScreenModal` maps to StackPresentation.MODAL — also a
+              Dialog — and presenting that Dialog while the Sheet's Dialog is
+              still up makes the system drop it, so the map never appears. A
+              plain card push isn't Dialog-presented, so it survives the Sheet's
+              window and is revealed when the Sheet closes; and Android never had
+              iOS's modal-group-collapse, so goBack pops ONLY the map and leaves
+              the Composer mounted for the bridge. slide_from_bottom keeps the
+              rises-over-the-Composer feel.
+
+              Virtual-location/Discover/Privacy open it from a card context,
               where the normal slide_from_right is correct. */}
           <Stack.Screen
             name="MapPicker"
             component={MapPickerScreen}
             options={({ route }) =>
               route.params?.mode === 'moment'
-                ? { presentation: 'fullScreenModal', animation: 'slide_from_bottom' }
+                ? Platform.OS === 'ios'
+                  ? { presentation: 'fullScreenModal', animation: 'slide_from_bottom' }
+                  : { animation: 'slide_from_bottom' }
                 : { animation: 'slide_from_right' }
             }
           />
