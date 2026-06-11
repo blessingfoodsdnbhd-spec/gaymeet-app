@@ -47,7 +47,7 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   LanguageSettings: undefined;
   AccountSettings: undefined;
-  Comments: { momentId: string };
+  Comments: { momentId: string; authorId?: string };
   Composer: undefined;
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string; previewMode?: boolean };

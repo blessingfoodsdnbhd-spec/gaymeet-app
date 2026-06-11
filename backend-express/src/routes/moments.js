@@ -173,12 +173,7 @@ router.get('/:id', auth, async (req, res, next) => {
         (id) => id.toString() === req.user._id.toString()
       ),
       likes: undefined,
-      comments: comments.map((c) => ({
-        ...c,
-        likeCount: c.likes.length,
-        isLiked: c.likes.some((id) => id.toString() === req.user._id.toString()),
-        likes: undefined,
-      })),
+      comments: comments.map((c) => serializeComment(c, req.user._id, moment.user)),
     });
   } catch (e) {
     next(e);
@@ -377,42 +372,97 @@ router.get('/:id/likes', auth, async (req, res, next) => {
   }
 });
 
+// FB-style comment reactions — the 6 allowed emoji (quick-tap default is 👍).
+const ALLOWED_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+
+// `reactions` is a Mongoose Map on docs and a plain object after .lean()/
+// flattenMaps — normalize both to [[emoji, userIds]] pairs.
+function reactionEntries(raw) {
+  if (!raw) return [];
+  if (raw instanceof Map) return [...raw.entries()].map(([k, v]) => [k, v || []]);
+  return Object.keys(raw).map((k) => [k, raw[k] || []]);
+}
+
+// Shape a comment for the client: reaction counts per emoji, the caller's own
+// reaction, total count, and whether the commenter is the moment's author.
+// Falls back to legacy `likes` → 👍 for comments not yet migrated.
+function serializeComment(c, uid, momentUserId) {
+  let entries = reactionEntries(c.reactions).filter(([, ids]) => ids.length);
+  if (!entries.length && Array.isArray(c.likes) && c.likes.length) {
+    entries = [['👍', c.likes]];
+  }
+  const reactions = {};
+  let reactionCount = 0;
+  let myReaction = null;
+  for (const [emoji, ids] of entries) {
+    reactions[emoji] = ids.length;
+    reactionCount += ids.length;
+    if (ids.some((id) => String(id) === String(uid))) myReaction = emoji;
+  }
+  const { likes, ...rest } = c;
+  return {
+    ...rest,
+    reactions,
+    myReaction,
+    reactionCount,
+    isAuthor: String(c.user?._id ?? c.user) === String(momentUserId),
+  };
+}
+
 // ── POST /api/moments/:id/comment ─────────────────────────────────────────────
 router.post('/:id/comment', auth, async (req, res, next) => {
   try {
-    const { content, parentCommentId } = req.body;
-    if (!content) return err(res, 'content required');
-    if (content.length > 200) return err(res, 'comment max 200 chars');
-    if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
+    const { content, parentCommentId, photoUrl } = req.body;
+    const text = (content || '').trim();
+    if (!text && !photoUrl) return err(res, 'content or photo required');
+    if (text.length > 200) return err(res, 'comment max 200 chars');
+    if (text && hasProfanity(text)) return err(res, 'Inappropriate content', 422);
 
     const moment = await Moment.findOne({ _id: req.params.id, isActive: true });
     if (!moment) return err(res, 'Moment not found', 404);
 
+    // For a reply, resolve the parent so we can notify its author.
+    let parent = null;
+    if (parentCommentId) {
+      parent = await MomentComment.findOne({ _id: parentCommentId, moment: moment._id })
+        .select('user')
+        .lean();
+    }
+
     const comment = await MomentComment.create({
       moment: moment._id,
       user: req.user._id,
-      content,
+      content: text,
+      photoUrl: photoUrl || null,
       parentComment: parentCommentId ?? null,
     });
 
     await Moment.findByIdAndUpdate(moment._id, { $inc: { commentsCount: 1 } });
 
     const populated = await comment.populate('user', 'nickname avatarUrl');
+    const me = String(req.user._id);
+    const preview = (text || '📷').slice(0, 120);
+    const notified = new Set();
 
-    // Push moment author about the new comment (skip self-comment).
-    if (String(moment.user) !== String(req.user._id)) {
+    // Reply → notify the parent comment's author.
+    if (parent && String(parent.user) !== me) {
+      notified.add(String(parent.user));
+      sendPushToUser(parent.user, {
+        title: `${populated.user?.nickname || 'Someone'} replied`,
+        body: preview,
+        data: { type: 'comment_reply', momentId: String(moment._id), commentId: String(comment._id) },
+      }).catch(() => {});
+    }
+    // Notify the moment author (skip self, and skip if already notified above).
+    if (String(moment.user) !== me && !notified.has(String(moment.user))) {
       sendPushToUser(moment.user, {
         title: `${populated.user?.nickname || 'Someone'} commented`,
-        body: content.slice(0, 120),
+        body: preview,
         data: { type: 'comment', momentId: String(moment._id) },
       }).catch(() => {});
     }
 
-    created(res, {
-      ...populated.toObject(),
-      likeCount: 0,
-      isLiked: false,
-    });
+    created(res, serializeComment(populated.toObject({ flattenMaps: true }), req.user._id, moment.user));
   } catch (e) {
     next(e);
   }
@@ -440,24 +490,94 @@ router.delete('/:id/comments/:commentId', auth, async (req, res, next) => {
 });
 
 // ── GET /api/moments/:id/comments ─────────────────────────────────────────────
+// Returns the FULL flat comment list (≤200); the client groups into threads.
+// sort: relevant (default) | newest | oldest.
 router.get('/:id/comments', auth, async (req, res, next) => {
   try {
-    const { page = 1, limit = 30 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const { sort = 'relevant' } = req.query;
+
+    const moment = await Moment.findById(req.params.id).select('user').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
 
     const comments = await MomentComment.find({ moment: req.params.id })
-      .sort({ createdAt: 1 })
-      .skip(skip)
-      .limit(parseInt(limit))
+      .sort({ createdAt: sort === 'newest' ? -1 : 1 })
+      .limit(200)
       .populate('user', 'nickname avatarUrl')
       .lean();
 
-    ok(res, comments.map((c) => ({
-      ...c,
-      likeCount: c.likes.length,
-      isLiked: c.likes.some((id) => id.toString() === req.user._id.toString()),
-      likes: undefined,
-    })));
+    let out = comments.map((c) => serializeComment(c, req.user._id, moment.user));
+    if (sort === 'relevant') {
+      // Most-reacted first; V8's stable sort keeps createdAt-asc as tiebreak.
+      out.sort((a, b) => b.reactionCount - a.reactionCount);
+    }
+    ok(res, out);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/moments/:id/comments/:commentId/reaction ────────────────────────
+// Toggle the caller's reaction. One reaction per user: a new emoji replaces the
+// previous one; re-sending the same emoji removes it (toggle-off).
+router.post('/:id/comments/:commentId/reaction', auth, async (req, res, next) => {
+  try {
+    const { emoji } = req.body;
+    if (!ALLOWED_REACTIONS.includes(emoji)) return err(res, 'invalid emoji');
+
+    const moment = await Moment.findById(req.params.id).select('user').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    const comment = await MomentComment.findOne({ _id: req.params.commentId, moment: req.params.id });
+    if (!comment) return err(res, 'Comment not found', 404);
+
+    const me = String(req.user._id);
+    const had = (comment.reactions.get(emoji) || []).some((id) => String(id) === me);
+    // Clear the user from every emoji, then set the chosen one unless toggling off.
+    for (const [em, arr] of comment.reactions.entries()) {
+      const filtered = (arr || []).filter((id) => String(id) !== me);
+      if (filtered.length) comment.reactions.set(em, filtered);
+      else comment.reactions.delete(em);
+    }
+    if (!had) comment.reactions.set(emoji, [...(comment.reactions.get(emoji) || []), req.user._id]);
+    comment.markModified('reactions');
+    await comment.save();
+
+    const populated = await comment.populate('user', 'nickname avatarUrl');
+    // Notify the comment author of a new reaction (skip self / toggle-off).
+    if (!had && String(populated.user._id) !== me) {
+      sendPushToUser(populated.user._id, {
+        title: `${req.user.nickname || 'Someone'} reacted ${emoji}`,
+        body: (comment.content || '📷').slice(0, 80),
+        data: { type: 'comment_reaction', momentId: String(req.params.id), commentId: String(comment._id) },
+      }).catch(() => {});
+    }
+
+    ok(res, serializeComment(populated.toObject({ flattenMaps: true }), req.user._id, moment.user));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/moments/:id/comments/:commentId/reaction ──────────────────────
+router.delete('/:id/comments/:commentId/reaction', auth, async (req, res, next) => {
+  try {
+    const moment = await Moment.findById(req.params.id).select('user').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    const comment = await MomentComment.findOne({ _id: req.params.commentId, moment: req.params.id });
+    if (!comment) return err(res, 'Comment not found', 404);
+
+    const me = String(req.user._id);
+    for (const [em, arr] of comment.reactions.entries()) {
+      const filtered = (arr || []).filter((id) => String(id) !== me);
+      if (filtered.length) comment.reactions.set(em, filtered);
+      else comment.reactions.delete(em);
+    }
+    comment.markModified('reactions');
+    await comment.save();
+
+    const populated = await comment.populate('user', 'nickname avatarUrl');
+    ok(res, serializeComment(populated.toObject({ flattenMaps: true }), req.user._id, moment.user));
   } catch (e) {
     next(e);
   }

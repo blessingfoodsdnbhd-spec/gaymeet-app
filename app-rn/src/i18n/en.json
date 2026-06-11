@@ -470,7 +470,28 @@
       "empty": "No comments yet",
       "placeholder": "Say something…",
       "loadFailed": "Couldn't load comments",
-      "sendFailed": "Send failed"
+      "sendFailed": "Send failed",
+      "emptyTitle": "Be the first to comment",
+      "emptySubtitle": "Share your thoughts on this moment",
+      "author": "Author",
+      "reply": "Reply",
+      "reaction": {
+        "like": "Like",
+        "love": "Love",
+        "haha": "Haha",
+        "wow": "Wow",
+        "sad": "Sad",
+        "angry": "Angry"
+      },
+      "viewReplies": "View {{n}} replies",
+      "hideReplies": "Hide replies",
+      "replyingTo": "Replying to @{{name}}",
+      "cancelReply": "Cancel reply",
+      "sort": {
+        "relevant": "Most relevant",
+        "newest": "Newest",
+        "oldest": "Oldest"
+      }
     },
     "delete": {
       "title": "Delete this moment?",
