@@ -197,6 +197,11 @@ export function VoteDetailScreen() {
 
   const tr = timeRemaining(ev.endAt);
   const entries = detail?.entries ?? [];
+  // Header gallery is derived from the entries (top-voted first) — the static
+  // coverPhotos field was dropped from the create flow (PR #119), so it's empty
+  // for new events. Legacy events with no entries fall back to coverPhotos.
+  const galleryEntries = [...entries].sort((a, b) => b.voteCount - a.voteCount);
+  const galleryPhotos = galleryEntries.length > 0 ? galleryEntries.map((e) => e.photoUrl) : ev.coverPhotos;
   const canEnter = ev.status === 'active' && !detail?.isCreator && !detail?.myEntryId;
   const topByRank = (ev.topEntries ?? [])
     .map((te) => ({ rank: te.rank, entry: entries.find((e) => e.id === te.entryId) }))
@@ -231,26 +236,38 @@ export function VoteDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
-        {/* Cover carousel */}
-        <View style={{ width, height: coverH, backgroundColor: theme.colors.surface2 }}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-          >
-            {ev.coverPhotos.map((url, i) => (
-              <ExpoImage key={i} source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
-            ))}
-          </ScrollView>
-          {ev.coverPhotos.length > 1 && (
-            <View style={styles.dots}>
-              {ev.coverPhotos.map((_, i) => (
-                <View key={i} style={[styles.dot, { backgroundColor: i === page ? '#FFF' : 'rgba(255,255,255,0.5)' }]} />
-              ))}
-            </View>
-          )}
-        </View>
+        {/* Cover carousel — entry photos (top-voted first); tap opens that entry. */}
+        {galleryPhotos.length > 0 && (
+          <View style={{ width, height: coverH, backgroundColor: theme.colors.surface2 }}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
+            >
+              {galleryPhotos.map((url, i) => {
+                const entry = galleryEntries[i];
+                const img = (
+                  <ExpoImage source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
+                );
+                return entry ? (
+                  <Pressable key={entry.id} onPress={() => setEntryViewerIndex(entries.findIndex((e) => e.id === entry.id))}>
+                    {img}
+                  </Pressable>
+                ) : (
+                  <View key={i}>{img}</View>
+                );
+              })}
+            </ScrollView>
+            {galleryPhotos.length > 1 && (
+              <View style={styles.dots}>
+                {galleryPhotos.map((_, i) => (
+                  <View key={i} style={[styles.dot, { backgroundColor: i === page ? '#FFF' : 'rgba(255,255,255,0.5)' }]} />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           {/* Status + countdown */}
@@ -508,7 +525,7 @@ export function VoteDetailScreen() {
           <VoteShareCard
             eventId={eventId}
             title={ev.title}
-            coverUrl={ev.coverPhotos[0]}
+            coverUrl={galleryPhotos[0]}
             categoryLabel={`${categoryEmoji(ev.category)} ${t(`votes.category.${ev.category}`)}`}
             countdownText={
               ev.status === 'ended'
