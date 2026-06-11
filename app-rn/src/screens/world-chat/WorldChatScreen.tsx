@@ -46,7 +46,7 @@ import {
 } from '../../api/worldChat';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { uploadFile } from '../../api/upload';
-import { blockUser } from '../../api/safety';
+import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
 import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
@@ -62,6 +62,9 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const BODY_MAX = 500;
 const PAGE_SIZE = 50; // matches getRecentWorldChat's default limit
 const MAX_SYS_MSGS = 6; // cap mIRC-style join/leave lines kept in the feed
+// Reasons offered when reporting a Plaza message — a focused subset of the
+// app-wide ReportReason set (api/safety), reusing the same report.reasons.* i18n.
+const REPORT_REASONS: ReportReason[] = ['harassment', 'spam', 'inappropriate_photos', 'other'];
 
 function idxFor(id: string) {
   let h = 0;
@@ -152,6 +155,9 @@ export function WorldChatScreen({
   // stops. Set false once a page comes back smaller than the page size.
   const [hasMore, setHasMore] = React.useState(true);
   const [selected, setSelected] = React.useState<WorldChatMessage | null>(null);
+  // Two-step report: tapping Report swaps the long-press sheet to a reason list
+  // in place (opening a SECOND Modal while this one closes races on iOS).
+  const [reportMode, setReportMode] = React.useState(false);
   // Photo send (mirrors ChatDetailScreen's pick → preview → upload flow).
   const [pendingPhoto, setPendingPhoto] = React.useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
@@ -261,6 +267,7 @@ export function WorldChatScreen({
     setReplyingTo(null);
     setHighlightedId(null);
     setSelected(null);
+    setReportMode(false);
   }, [roomId]);
 
   // mIRC-style join/leave system lines. Synthesize an ephemeral `system`
@@ -531,10 +538,11 @@ export function WorldChatScreen({
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
   }, []);
 
-  const onReport = async (m: WorldChatMessage) => {
+  const submitReport = async (m: WorldChatMessage, reason: ReportReason) => {
     setSelected(null);
+    setReportMode(false);
     try {
-      await reportWorldChat(m.messageId);
+      await reportWorldChat(m.messageId, reason);
       Alert.alert(t('worldChat.reportSent'));
     } catch {
       Alert.alert(t('worldChat.actionFailed'));
@@ -750,10 +758,50 @@ export function WorldChatScreen({
         )}
       </KeyboardAvoidingView>
 
-      {/* Long-press action sheet: own message → delete; others → report/block/DM */}
-      <Sheet open={!!selected} onClose={() => setSelected(null)} maxHeight="40%">
+      {/* Long-press action sheet: own message → delete; others → report/block/DM.
+          Report swaps THIS sheet in place to a reason list (reportMode) rather
+          than opening a second Sheet — iOS drops a Modal presented while another
+          is still mid-dismiss. */}
+      <Sheet
+        open={!!selected}
+        onClose={() => {
+          setSelected(null);
+          setReportMode(false);
+        }}
+        maxHeight={reportMode ? '55%' : '40%'}
+      >
         {selected &&
-          (selected.userId === myId ? (
+          (reportMode ? (
+            <>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: theme.colors.muted,
+                  paddingHorizontal: 8,
+                  paddingTop: 4,
+                  paddingBottom: 8,
+                }}
+              >
+                {t('report.subtitle')}
+              </Text>
+              {REPORT_REASONS.map((r) => (
+                <ActionRow
+                  key={r}
+                  label={t(`report.reasons.${r}`)}
+                  onPress={() => submitReport(selected, r)}
+                />
+              ))}
+              <ActionRow
+                label={t('common.cancel')}
+                centered
+                onPress={() => {
+                  setSelected(null);
+                  setReportMode(false);
+                }}
+              />
+            </>
+          ) : selected.userId === myId ? (
             <>
               <ActionRow
                 label={`💬 ${t('worldChat.reply.label')}`}
@@ -774,7 +822,7 @@ export function WorldChatScreen({
                   setSelected(null);
                 }}
               />
-              <ActionRow label={t('worldChat.report')} onPress={() => onReport(selected)} />
+              <ActionRow label={t('worldChat.report')} onPress={() => setReportMode(true)} />
               <ActionRow label={t('worldChat.block')} danger onPress={() => onBlock(selected)} />
               <ActionRow label={t('worldChat.dm')} onPress={() => onDM(selected)} />
               <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
@@ -927,10 +975,13 @@ function Row({
   const isPhoto = msg.type === 'photo' && !!msg.photoUrl;
   const isVoice = msg.type === 'voice' && !!msg.voiceUrl;
   const voiceSecs = Math.max(1, Math.round((msg.voiceDurationMs ?? 0) / 1000));
+  // The outer container is a plain View, NOT a Pressable. A row-spanning
+  // Pressable with onLongPress swallows taps on the photo/voice bubbles nested
+  // inside it (the same trap ChatDetailScreen documents) — that's why the photo
+  // viewer never opened and voice never played. Long-press now lives on each
+  // bubble Pressable below, exactly like the private-chat rows.
   return (
-    <Pressable
-      onLongPress={onLongPress}
-      delayLongPress={300}
+    <View
       style={{
         flexDirection: mine ? 'row-reverse' : 'row',
         gap: 10,
@@ -992,7 +1043,12 @@ function Row({
         )}
 
         {isPhoto ? (
-          <Pressable onPress={onOpenPhoto} style={{ borderRadius: 14, overflow: 'hidden', maxWidth: '92%' }}>
+          <Pressable
+            onPress={onOpenPhoto}
+            onLongPress={onLongPress}
+            delayLongPress={300}
+            style={{ borderRadius: 14, overflow: 'hidden', maxWidth: '92%' }}
+          >
             <ExpoImage
               source={{ uri: msg.photoUrl! }}
               style={{ width: 220, height: 280, backgroundColor: theme.colors.surface2 }}
@@ -1019,6 +1075,7 @@ function Row({
             )}
           </Pressable>
         ) : isVoice ? (
+          <Pressable onLongPress={onLongPress} delayLongPress={300}>
           <View
             style={{
               flexDirection: 'row',
@@ -1056,8 +1113,10 @@ function Row({
               {voiceSecs}s
             </Text>
           </View>
+          </Pressable>
         ) : (
           <>
+            <Pressable onLongPress={onLongPress} delayLongPress={300}>
             <View
               style={{
                 maxWidth: '92%',
@@ -1073,13 +1132,14 @@ function Row({
                 {msg.body}
               </Text>
             </View>
+            </Pressable>
             {autoTranslate && !mine && (
               <TranslationBlock entry={translation} collapsed={collapsed} onToggle={onToggleTranslation} />
             )}
           </>
         )}
       </View>
-    </Pressable>
+    </View>
   );
 }
 
