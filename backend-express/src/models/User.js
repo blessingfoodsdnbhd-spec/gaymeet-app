@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { computeAge, computeZodiac } = require('../utils/zodiac');
+const { computeRoleTag, roleColor } = require('../utils/roleTag');
 
 const preferencesSchema = new mongoose.Schema(
   {
@@ -474,6 +475,20 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
   if (!self && src.preferences?.hidePopularity && obj.isPremium) {
     obj.popularity = null;
   }
+
+  // Plaza role colour (Phase 3): a single tag + hex the client renders as an
+  // 8pt dot next to the name. Computed from isOfficial / Premium / level /
+  // account age — see utils/roleTag. Uses the effective isPremium computed above.
+  obj.roleTag = computeRoleTag({
+    isOfficial: obj.isOfficial,
+    isPremium: obj.isPremium,
+    premiumExpiresAt: obj.premiumExpiresAt,
+    vipLevel: obj.vipLevel,
+    vipExpiresAt: obj.vipExpiresAt,
+    level: obj.level,
+    createdAt: obj.createdAt,
+  });
+  obj.roleColor = roleColor(obj.roleTag);
 
   // Expire timed stealth (only meaningful in the self preferences object).
   if (

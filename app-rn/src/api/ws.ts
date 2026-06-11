@@ -139,11 +139,38 @@ export type WsWorldChatReceive = {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  isOfficial?: boolean;
+  roleTag?: 'admin' | 'vip' | 'veteran' | 'new' | 'normal';
   countryCode?: string | null;
   city?: string | null;
   body: string;
   createdAt: string;
 };
+
+// Plaza random matchmaking (Phase 3).
+export type WsMatchFound = {
+  sessionId: string;
+  partner: {
+    id: string;
+    nickname: string;
+    avatarUrl: string | null;
+    age?: number | null;
+    countryCode?: string | null;
+    city?: string | null;
+    roleTag?: 'admin' | 'vip' | 'veteran' | 'new' | 'normal';
+    roleColor?: string;
+    isOnline?: boolean;
+  };
+};
+export type WsMatchReceive = {
+  sessionId: string;
+  messageId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+};
+export type WsMatchTyping = { sessionId: string; fromUserId: string; typing: boolean };
+export type WsMatchEnded = { sessionId: string };
 export type WsWorldChatOnlineCount = { roomId?: string; count: number };
 export type WsWorldChatRoomsState = { counts: Record<string, number> };
 export type WsWorldChatDeleted = { messageId: string };
@@ -161,6 +188,10 @@ export interface WsEventMap {
   'world-chat:room-closed': WsWorldChatRoomClosed;
   'world-chat:room-deleted': WsWorldChatRoomDeleted;
   'world-chat:kicked': WsWorldChatKicked;
+  'match:found': WsMatchFound;
+  'match:receive': WsMatchReceive;
+  'match:typing': WsMatchTyping;
+  'match:ended': WsMatchEnded;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
   'chat:edited': WsChatEdited;

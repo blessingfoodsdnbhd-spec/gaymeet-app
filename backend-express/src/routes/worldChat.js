@@ -12,6 +12,7 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
+const { computeRoleTag, ROLE_TAG_FIELDS } = require('../utils/roleTag');
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -197,6 +198,7 @@ router.post('/send', auth, async (req, res, next) => {
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
       isOfficial: req.user.isOfficial ?? false,
+      roleTag: computeRoleTag(req.user),
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
@@ -591,7 +593,7 @@ router.get('/recent', auth, async (req, res, next) => {
     const rows = await WorldChatMessage.find(q)
       .sort({ _id: -1 })
       .limit(limit)
-      .populate('userId', 'nickname avatarUrl countryCode city isOfficial')
+      .populate('userId', `nickname avatarUrl countryCode city isOfficial ${ROLE_TAG_FIELDS}`)
       .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
 
@@ -615,6 +617,7 @@ router.get('/recent', auth, async (req, res, next) => {
           displayName: m.userId.nickname,
           avatarUrl: m.userId.avatarUrl ?? null,
           isOfficial: m.userId.isOfficial ?? false,
+          roleTag: computeRoleTag(m.userId),
           countryCode: m.userId.countryCode ?? null,
           city: m.userId.city ?? null,
           body: m.body,

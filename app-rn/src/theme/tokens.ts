@@ -44,6 +44,16 @@ export const colors = {
   info: '#4F8FE8', // = brandBlue
   textMuted: '#8E8DA0', // = muted
 
+  // Plaza role dots (Phase 3) — a single coloured dot next to a name signals
+  // the user's standing. Server sends a `roleTag`; the client maps it here.
+  roleColors: {
+    admin: '#A855F7', // 🟣 official / staff
+    vip: '#FBBF24', // 🟡 active Premium / VIP
+    veteran: '#3B82F6', // 🔵 level ≥ 10
+    new: '#22C55E', // 🟢 account < 7 days
+    normal: '#9CA3AF', // ⚪ default
+  },
+
   // chat
   bubbleMeBg: '#E25CAE',
   bubbleMeText: '#FFFFFF',

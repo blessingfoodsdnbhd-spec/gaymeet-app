@@ -1340,5 +1340,45 @@
     "monthlyQuota": "今月の残り {{remaining}} / {{total}} 回",
     "alreadyPremium": "すでにPremium会員",
     "alreadyGifted": "贈呈済み"
+  },
+  "plaza": {
+    "randomChat": {
+      "cardTitle": "ランダムチャット",
+      "cardSubtitle": "新しい出会い ❤️"
+    },
+    "match": {
+      "searching": "検索中…",
+      "searchingHint": "オンラインのメンバーとマッチング中です。",
+      "errorTitle": "接続できません",
+      "errorBody": "問題が発生しました。もう一度お試しください。",
+      "addFailed": "友達追加に失敗しました",
+      "stranger": "ストレンジャー",
+      "matchedHint": "つながりました！あいさつしよう 👋",
+      "partnerLeft": "相手がチャットから退出しました。",
+      "next": "次へ",
+      "exit": "退出",
+      "addFriend": "友達追加",
+      "added": "追加済み",
+      "placeholder": "メッセージ…"
+    },
+    "leaderboard": {
+      "cardTitle": "今日の人気",
+      "cardSubtitle": "人気の部屋とユーザー",
+      "title": "今日の人気",
+      "subtitle": "毎日リセット・5分ごとに更新",
+      "tabRooms": "部屋",
+      "tabUsers": "ユーザー",
+      "empty": "今日はまだありません。最初の一人に！",
+      "roomMeta": "{{messages}} 件 · {{speakers}} 人が発言",
+      "ticketMeta": "本日 {{n}} 票",
+      "popularMeta": "人気 {{n}}"
+    }
+  },
+  "role": {
+    "admin": "管理者",
+    "vip": "VIP",
+    "veteran": "ベテラン",
+    "new": "新規",
+    "normal": "メンバー"
   }
 }

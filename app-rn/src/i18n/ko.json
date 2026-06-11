@@ -1340,5 +1340,45 @@
     "monthlyQuota": "이번 달 남은 {{remaining}} / {{total}} 회",
     "alreadyPremium": "이미 Premium 회원",
     "alreadyGifted": "이미 선물함"
+  },
+  "plaza": {
+    "randomChat": {
+      "cardTitle": "랜덤 채팅",
+      "cardSubtitle": "새로운 사람 만나기 ❤️"
+    },
+    "match": {
+      "searching": "찾는 중…",
+      "searchingHint": "온라인 회원과 매칭하고 있어요.",
+      "errorTitle": "연결 실패",
+      "errorBody": "문제가 발생했습니다. 다시 시도해 주세요.",
+      "addFailed": "친구 추가 실패",
+      "stranger": "낯선 사람",
+      "matchedHint": "연결되었어요! 인사해 보세요 👋",
+      "partnerLeft": "상대방이 채팅을 떠났습니다.",
+      "next": "다음",
+      "exit": "나가기",
+      "addFriend": "친구 추가",
+      "added": "추가됨",
+      "placeholder": "메시지…"
+    },
+    "leaderboard": {
+      "cardTitle": "오늘의 인기",
+      "cardSubtitle": "인기 방 & 사용자",
+      "title": "오늘의 인기",
+      "subtitle": "매일 초기화 · 5분마다 업데이트",
+      "tabRooms": "방",
+      "tabUsers": "사용자",
+      "empty": "오늘은 아직 없어요. 첫 주자가 되어보세요!",
+      "roomMeta": "{{messages}}개 메시지 · {{speakers}}명 대화",
+      "ticketMeta": "오늘 {{n}}표",
+      "popularMeta": "인기 {{n}}"
+    }
+  },
+  "role": {
+    "admin": "관리자",
+    "vip": "VIP",
+    "veteran": "베테랑",
+    "new": "신규",
+    "normal": "회원"
   }
 }

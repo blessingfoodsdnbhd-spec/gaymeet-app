@@ -17,6 +17,8 @@ export interface WorldChatMessage {
   displayName: string;
   avatarUrl: string | null;
   isOfficial?: boolean;
+  /** Plaza role tag (Phase 3) → coloured dot beside the name. */
+  roleTag?: import('../components/RoleDot').RoleTag;
   countryCode?: string | null;
   city?: string | null;
   body: string;

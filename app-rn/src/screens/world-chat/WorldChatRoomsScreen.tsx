@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight } from 'lucide-react-native';
+import { Search, ChevronRight, Heart, Trophy } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -100,7 +100,28 @@ export function WorldChatRoomsScreen() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 28 }}
           ListHeaderComponent={
-            <Text style={[styles.section, { color: theme.colors.muted }]}>{t('worldChat.rooms.sectionGlobal')}</Text>
+            <View>
+              {/* Phase 3 feature cards — only when not actively searching rooms. */}
+              {!search.trim() && (
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                  <FeatureCard
+                    icon={<Heart size={22} color="#fff" fill="#fff" strokeWidth={1.6} />}
+                    bg={theme.colors.primary}
+                    title={t('plaza.randomChat.cardTitle')}
+                    subtitle={t('plaza.randomChat.cardSubtitle')}
+                    onPress={() => nav.navigate('RandomChat')}
+                  />
+                  <FeatureCard
+                    icon={<Trophy size={22} color="#fff" strokeWidth={1.8} />}
+                    bg={theme.colors.warning}
+                    title={t('plaza.leaderboard.cardTitle')}
+                    subtitle={t('plaza.leaderboard.cardSubtitle')}
+                    onPress={() => nav.navigate('PlazaLeaderboard')}
+                  />
+                </View>
+              )}
+              <Text style={[styles.section, { color: theme.colors.muted }]}>{t('worldChat.rooms.sectionGlobal')}</Text>
+            </View>
           }
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => {
@@ -134,6 +155,52 @@ export function WorldChatRoomsScreen() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function FeatureCard({
+  icon,
+  bg,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  bg: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.line,
+        borderRadius: 16,
+        padding: 14,
+        gap: 8,
+        opacity: pressed ? 0.9 : 1,
+      })}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon}
+      </View>
+      <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.text }}>{title}</Text>
+      <Text style={{ fontSize: 12, color: theme.colors.muted }}>{subtitle}</Text>
+    </Pressable>
   );
 }
 

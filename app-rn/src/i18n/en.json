@@ -1151,5 +1151,45 @@
       "deleteBody": "This hides it from users. You can re-enable it later.",
       "delete": "Delete"
     }
+  },
+  "plaza": {
+    "randomChat": {
+      "cardTitle": "Random Chat",
+      "cardSubtitle": "Meet someone new ❤️"
+    },
+    "match": {
+      "searching": "Finding someone…",
+      "searchingHint": "Hang tight — pairing you with another online member.",
+      "errorTitle": "Couldn't connect",
+      "errorBody": "Something went wrong. Try again.",
+      "addFailed": "Couldn't add friend",
+      "stranger": "Stranger",
+      "matchedHint": "You're connected! Say hi 👋",
+      "partnerLeft": "Your partner left the chat.",
+      "next": "Next",
+      "exit": "Exit",
+      "addFriend": "Add friend",
+      "added": "Added",
+      "placeholder": "Message…"
+    },
+    "leaderboard": {
+      "cardTitle": "Today's Hot",
+      "cardSubtitle": "Top rooms & people",
+      "title": "Today's Hot",
+      "subtitle": "Resets daily · updated every 5 min",
+      "tabRooms": "Rooms",
+      "tabUsers": "People",
+      "empty": "Nothing yet today — be the first!",
+      "roomMeta": "{{messages}} messages · {{speakers}} talking",
+      "ticketMeta": "{{n}} votes today",
+      "popularMeta": "{{n}} popularity"
+    }
+  },
+  "role": {
+    "admin": "Admin",
+    "vip": "VIP",
+    "veteran": "Veteran",
+    "new": "New",
+    "normal": "Member"
   }
 }

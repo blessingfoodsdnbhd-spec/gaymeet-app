@@ -1151,5 +1151,45 @@
       "deleteBody": "将对用户隐藏,稍后可重新启用。",
       "delete": "删除"
     }
+  },
+  "plaza": {
+    "randomChat": {
+      "cardTitle": "随机聊天",
+      "cardSubtitle": "遇见新朋友 ❤️"
+    },
+    "match": {
+      "searching": "正在寻找…",
+      "searchingHint": "稍候，正在为你匹配在线的小伙伴。",
+      "errorTitle": "连接失败",
+      "errorBody": "出了点问题，请重试。",
+      "addFailed": "添加好友失败",
+      "stranger": "陌生人",
+      "matchedHint": "已匹配！打个招呼吧 👋",
+      "partnerLeft": "对方已离开聊天。",
+      "next": "下一位",
+      "exit": "退出",
+      "addFriend": "加好友",
+      "added": "已添加",
+      "placeholder": "发消息…"
+    },
+    "leaderboard": {
+      "cardTitle": "今日热榜",
+      "cardSubtitle": "热门房间和用户",
+      "title": "今日热榜",
+      "subtitle": "每日重置 · 每5分钟更新",
+      "tabRooms": "房间",
+      "tabUsers": "用户",
+      "empty": "今天还没有数据，快来抢先！",
+      "roomMeta": "{{messages}} 条消息 · {{speakers}} 人发言",
+      "ticketMeta": "今日 {{n}} 票",
+      "popularMeta": "{{n}} 人气"
+    }
+  },
+  "role": {
+    "admin": "管理员",
+    "vip": "会员",
+    "veteran": "元老",
+    "new": "新人",
+    "normal": "普通"
   }
 }
