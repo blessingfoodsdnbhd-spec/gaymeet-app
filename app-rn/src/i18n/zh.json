@@ -188,6 +188,15 @@
     "chats": "消息",
     "profile": "我"
   },
+  "plaza": {
+    "worldLobby": "世界大厅",
+    "hotRooms": "🔥 热门",
+    "rooms": "聊天室",
+    "browse": "浏览房间",
+    "userJoined": "🎉 {{name}} 加入了房间",
+    "userLeft": "👋 {{name}} 离开了房间",
+    "onlineCount": "在线 {{count}} 人"
+  },
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",

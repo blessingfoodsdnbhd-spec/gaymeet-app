@@ -11,11 +11,12 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  Animated,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Menu } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,11 +51,14 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { VerifiedBadge } from '../../components/NameWithBadge';
+import { PlazaHotRoomsStrip } from '../../components/PlazaHotRoomsStrip';
+import { PlazaDrawer } from '../../components/PlazaDrawer';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 const BODY_MAX = 500;
 const PAGE_SIZE = 50; // matches getRecentWorldChat's default limit
+const MAX_SYS_MSGS = 6; // cap mIRC-style join/leave lines kept in the feed
 
 function idxFor(id: string) {
   let h = 0;
@@ -71,7 +75,7 @@ type Rt = RouteProp<RootStackParamList, 'WorldChatRoom'>;
  * report + block (long-press), admin delete/ban (backend), and real
  * names/avatars (no anonymous identities).
  */
-export function WorldChatScreen() {
+export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const nav = useNavigation<Nav>();
@@ -80,9 +84,18 @@ export function WorldChatScreen() {
   const me = useAuth((s) => s.user);
   const myId = me?.id;
 
-  const roomId = route.params?.roomId ?? 'world';
-  const roomTitle = route.params?.title ?? t('worldChat.title');
-  const isCustom = route.params?.custom ?? /^[a-f0-9]{24}$/i.test(roomId);
+  // In lobby mode (the 广场 tab) the room is switched in-place via the hot-rooms
+  // strip / drawer, so it lives in state; a pushed single-room view just reads
+  // its route params once. Default landing is the World Lobby.
+  const [activeRoom, setActiveRoom] = React.useState<{ id: string; title: string }>(() => ({
+    id: route.params?.roomId ?? 'world',
+    title: route.params?.title ?? (lobby ? t('plaza.worldLobby') : t('worldChat.title')),
+  }));
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const roomId = activeRoom.id;
+  const roomTitle = activeRoom.title;
+  // A 24-hex id is a custom (user-created) room; everything else is global/country.
+  const isCustom = /^[a-f0-9]{24}$/i.test(roomId);
   const KEY = React.useMemo(() => ['worldChat', 'recent', roomId], [roomId]);
 
   // Custom (user-created) rooms carry a title, member/online counts, privacy and
@@ -132,14 +145,55 @@ export function WorldChatScreen() {
   });
   const messages = msgsQ.data ?? []; // newest-first
 
-  // Tell the server which room we're in (broadcasts scope to it). Rejoin the
-  // default world room on leave so counts/visibility stay correct.
+  // Tell the server which room we're in (scopes broadcasts + presence to it).
+  // Switching in-place just re-emits for the new room; the server handles the
+  // leave-prev/join-next + the 🎉/👋 presence lines.
   React.useEffect(() => {
     wsEmit('world-chat:join-room', { roomId });
-    return () => {
-      wsEmit('world-chat:join-room', { roomId: 'world' });
-    };
   }, [roomId]);
+  // On unmount, fall back to the world room so counts/visibility stay correct.
+  React.useEffect(
+    () => () => {
+      wsEmit('world-chat:join-room', { roomId: 'world' });
+    },
+    [],
+  );
+
+  // mIRC-style join/leave system lines. Synthesize an ephemeral `system`
+  // message and prepend it to the feed (capped at MAX_SYS_MSGS so a busy room
+  // doesn't drown in them). Never persisted; we skip our own events.
+  React.useEffect(() => {
+    let cancelled = false;
+    let unsubs: Array<() => void> = [];
+    (async () => {
+      const handle = (kind: 'join' | 'leave') => (p: { roomId: string; userId: string; userName: string }) => {
+        if (cancelled || p.roomId !== roomId || p.userId === myId) return;
+        const sys: WorldChatMessage = {
+          messageId: `sys_${kind}_${p.userId}_${Date.now()}`,
+          userId: p.userId,
+          displayName: p.userName,
+          avatarUrl: null,
+          body: '',
+          type: 'system',
+          system: { kind, name: p.userName },
+          createdAt: new Date().toISOString(),
+        };
+        qc.setQueryData<Cache>(KEY, (prev) => {
+          const next = [sys, ...(prev?.messages ?? [])];
+          let seen = 0;
+          return { messages: next.filter((m) => (m.type === 'system' ? ++seen <= MAX_SYS_MSGS : true)) };
+        });
+      };
+      const uJoin = await wsOn('world-chat:user-joined', handle('join'));
+      const uLeft = await wsOn('world-chat:user-left', handle('leave'));
+      if (cancelled) { uJoin(); uLeft(); return; }
+      unsubs = [uJoin, uLeft];
+    })();
+    return () => {
+      cancelled = true;
+      unsubs.forEach((u) => u());
+    };
+  }, [qc, roomId, KEY, myId]);
 
   // If the initial page came back smaller than the page size, there's no older
   // history to fetch — don't let onEndReached spin.
@@ -422,9 +476,15 @@ export function WorldChatScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center' }]}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 10 }}>
-          <ChevronLeft size={26} color={theme.colors.text} />
-        </Pressable>
+        {lobby ? (
+          <Pressable onPress={() => setDrawerOpen(true)} hitSlop={8} style={{ marginRight: 10 }} accessibilityLabel={t('plaza.rooms')}>
+            <Menu size={26} color={theme.colors.text} />
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 10 }}>
+            <ChevronLeft size={26} color={theme.colors.text} />
+          </Pressable>
+        )}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             {isCustom && room?.isPrivate && <Lock size={13} color={theme.colors.muted} />}
@@ -447,6 +507,14 @@ export function WorldChatScreen() {
           </Pressable>
         )}
       </View>
+
+      {/* 🔥 热门 — quick room switcher, lobby only. */}
+      {lobby && (
+        <PlazaHotRoomsStrip
+          activeRoomId={roomId}
+          onSelect={(r) => setActiveRoom({ id: r.id, title: r.title })}
+        />
+      )}
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -489,7 +557,10 @@ export function WorldChatScreen() {
                 <Text style={{ color: theme.colors.muted }}>{t('worldChat.empty')}</Text>
               </View>
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }) =>
+              item.type === 'system' ? (
+                <SystemRow msg={item} />
+              ) : (
               <SwipeToReply enabled={!closed} onReply={() => setReplyingTo(item)}>
                 <Row
                   msg={item}
@@ -504,7 +575,8 @@ export function WorldChatScreen() {
                   onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
                 />
               </SwipeToReply>
-            )}
+              )
+            }
           />
         )}
 
@@ -622,7 +694,37 @@ export function WorldChatScreen() {
         onClose={() => setVoiceRecorderOpen(false)}
         onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
       />
+
+      {/* Room drawer (lobby only) — World Lobby + country rooms. */}
+      {lobby && (
+        <PlazaDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          activeRoomId={roomId}
+          onSelectRoom={(r) => {
+            setActiveRoom({ id: r.id, title: r.title });
+            setDrawerOpen(false);
+          }}
+        />
+      )}
     </SafeAreaView>
+  );
+}
+
+/** mIRC-style join/leave line: centered, muted, fades in. */
+function SystemRow({ msg }: { msg: WorldChatMessage }) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const opacity = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }).start();
+  }, [opacity]);
+  const name = msg.system?.name ?? msg.displayName;
+  const text = msg.system?.kind === 'leave' ? t('plaza.userLeft', { name }) : t('plaza.userJoined', { name });
+  return (
+    <Animated.View style={{ opacity, alignItems: 'center', paddingVertical: 1 }}>
+      <Text style={{ fontSize: 12, color: theme.colors.muted, textAlign: 'center' }}>{text}</Text>
+    </Animated.View>
   );
 }
 

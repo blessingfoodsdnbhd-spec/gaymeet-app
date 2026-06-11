@@ -188,6 +188,15 @@
     "chats": "Chats",
     "profile": "Me"
   },
+  "plaza": {
+    "worldLobby": "World Lobby",
+    "hotRooms": "🔥 Hot",
+    "rooms": "Rooms",
+    "browse": "Browse rooms",
+    "userJoined": "🎉 {{name}} joined",
+    "userLeft": "👋 {{name}} left",
+    "onlineCount": "{{count}} online"
+  },
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",

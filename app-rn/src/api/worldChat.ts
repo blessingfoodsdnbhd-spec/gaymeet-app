@@ -20,7 +20,10 @@ export interface WorldChatMessage {
   countryCode?: string | null;
   city?: string | null;
   body: string;
-  type?: 'text' | 'photo' | 'voice';
+  type?: 'text' | 'photo' | 'voice' | 'system';
+  /** Client-only ephemeral join/leave line (mIRC-style). Never persisted nor
+   *  returned by the server — synthesized from world-chat:user-joined/left. */
+  system?: { kind: 'join' | 'leave'; name: string };
   photoUrl?: string | null;
   caption?: string | null;
   voiceUrl?: string | null;
@@ -45,6 +48,11 @@ export interface WorldChatRoom {
 }
 export const getWorldChatRooms = () =>
   unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms'));
+
+/** 🔥 热门聊天室 — rooms ordered by live online count (World anchored first).
+ *  Powers the PlazaHotRoomsStrip; refresh on an interval for a live feel. */
+export const getHotWorldChatRooms = () =>
+  unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms', { params: { sort: 'hot' } }));
 
 /** Reverse-chronological room history (newest first). Pass `before` (a
  *  messageId) to page older. Backend strips blocked + admin-banned senders. */

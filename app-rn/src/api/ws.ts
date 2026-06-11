@@ -145,6 +145,9 @@ export type WsWorldChatReceive = {
   createdAt: string;
 };
 export type WsWorldChatOnlineCount = { roomId?: string; count: number };
+/** A user joined/left a World Chat room — rendered inline as a mIRC-style
+ *  system line. Ephemeral; not persisted. */
+export type WsWorldChatPresence = { roomId: string; userId: string; userName: string };
 export type WsWorldChatRoomsState = { counts: Record<string, number> };
 export type WsWorldChatDeleted = { messageId: string };
 export type WsWorldChatRoomClosed = { roomId: string };
@@ -156,6 +159,8 @@ export interface WsEventMap {
   'chat:receive': WsChatReceive;
   'world-chat:receive': WsWorldChatReceive;
   'world-chat:online-count': WsWorldChatOnlineCount;
+  'world-chat:user-joined': WsWorldChatPresence;
+  'world-chat:user-left': WsWorldChatPresence;
   'world-chat:rooms-state': WsWorldChatRoomsState;
   'world-chat:message-deleted': WsWorldChatDeleted;
   'world-chat:room-closed': WsWorldChatRoomClosed;

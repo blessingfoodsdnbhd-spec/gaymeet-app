@@ -46,6 +46,21 @@ function emitRoomCount(roomId) {
 const isCustomRoomId = (id) => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
 
 /**
+ * Announce a join/leave to everyone currently in a World Chat room — the
+ * mIRC-style "🎉 X joined / 👋 X left" system line. Ephemeral: not persisted,
+ * so only users present in the room at that moment see it.
+ */
+function emitPresenceEvent(kind, roomId, user) {
+  if (!io || !roomId || !user) return;
+  const event = kind === 'join' ? 'world-chat:user-joined' : 'world-chat:user-left';
+  io.to(socketRoom(roomId)).emit(event, {
+    roomId,
+    userId: (user._id || user.id || '').toString(),
+    userName: user.nickname || 'Someone',
+  });
+}
+
+/**
  * Initialise Socket.io on the given HTTP server.
  * Must be called once from server.js after connectDB().
  */
@@ -92,6 +107,7 @@ function initSocket(server) {
     // World Chat: join the default 'world' room until the client switches.
     socket.data = { ...(socket.data || {}), wcRoom: 'world' };
     socket.join(socketRoom('world'));
+    emitPresenceEvent('join', 'world', socket.user);
 
     // Notify matches that this user came online
     _notifyOnlineStatus(userId, true);
@@ -471,9 +487,13 @@ function initSocket(server) {
       const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) ? roomId : 'world';
       const prev = socket.data?.wcRoom || 'world';
       if (next !== prev) {
+        // Announce the part to the old room while we're still in it, then the
+        // join to the new room once we've entered.
+        emitPresenceEvent('leave', prev, socket.user);
         socket.leave(socketRoom(prev));
         socket.join(socketRoom(next));
         socket.data = { ...(socket.data || {}), wcRoom: next };
+        emitPresenceEvent('join', next, socket.user);
         // Custom rooms aren't in the periodic ROOMS snapshot — push their counts.
         if (isCustomRoomId(prev)) emitRoomCount(prev);
         if (isCustomRoomId(next)) emitRoomCount(next);
@@ -487,6 +507,9 @@ function initSocket(server) {
     // ── Disconnect ────────────────────────────────────────────────────────────
     socket.on('disconnect', async () => {
       console.log(`🔌 Socket disconnected: ${userId}`);
+      // Announce the part to whichever World Chat room they were in. The socket
+      // has already left its rooms, so the broadcast reaches the people staying.
+      emitPresenceEvent('leave', socket.data?.wcRoom || 'world', socket.user);
       // Only mark offline if no other sockets for this user remain
       const sockets = await io.in(`user:${userId}`).fetchSockets();
       if (sockets.length === 0) {

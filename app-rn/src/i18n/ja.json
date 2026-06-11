@@ -578,6 +578,15 @@
     "enter": "Meyouを始める",
     "saveFailed": "保存に失敗しました"
   },
+  "plaza": {
+    "worldLobby": "ワールドロビー",
+    "hotRooms": "🔥 人気",
+    "rooms": "チャットルーム",
+    "browse": "ルームを見る",
+    "userJoined": "🎉 {{name}}さんが入室しました",
+    "userLeft": "👋 {{name}}さんが退室しました",
+    "onlineCount": "{{count}}人オンライン"
+  },
   "worldChat": {
     "title": "広場",
     "online": "{{n}}人オンライン",
