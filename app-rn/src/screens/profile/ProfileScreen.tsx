@@ -180,6 +180,7 @@ export function ProfileScreen() {
             verified={photoVerified}
             premium={(user as any).isPremium}
             badgeSize={18}
+            premiumSize={22}
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
             containerStyle={{ marginTop: 12 }}
           />
