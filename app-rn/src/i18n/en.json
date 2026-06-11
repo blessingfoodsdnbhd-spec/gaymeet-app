@@ -479,7 +479,7 @@
   },
   "chat": {
     "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
-    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message"},
+    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message", "slideToCancel": "Slide to cancel", "locked": "Locked", "tapToDelete": "Tap to delete"},
     "icebreakers": {"header": "👋 Break the ice — say hello!", "askInterest": "You're into {{interest}} too — how did you get started?", "generic1": "Any plans this weekend?", "generic2": "Got any good recommendations lately? 🎵📺", "generic3": "Hey! How's your day going?"},
     "scamWarning": "Caution: mentions off-platform contact or money. Never send money or move to another app with strangers.",
     "composer": {

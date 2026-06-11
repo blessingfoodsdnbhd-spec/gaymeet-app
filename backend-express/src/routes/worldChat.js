@@ -97,6 +97,7 @@ function broadcast(event, payload, roomId) {
 function summarize(m) {
   if (!m) return '';
   if ((m.type || 'text') === 'photo') return (m.caption && m.caption.trim()) || '📷';
+  if (m.type === 'voice') return '🎙️';
   return m.body || '';
 }
 
@@ -104,13 +105,22 @@ function summarize(m) {
 router.post('/send', auth, async (req, res, next) => {
   try {
     const isPhoto = req.body?.type === 'photo';
+    const isVoice = req.body?.type === 'voice';
     const body = String(req.body?.body ?? '').trim();
     const caption = String(req.body?.caption ?? '').trim();
     const photoUrl = String(req.body?.photoUrl ?? '').trim();
+    const voiceUrl = String(req.body?.voiceUrl ?? '').trim();
+    const voiceDurationMs = Math.round(Number(req.body?.voiceDurationMs) || 0);
+    const voiceWaveform = Array.isArray(req.body?.voiceWaveform)
+      ? req.body.voiceWaveform.slice(0, 64).map((n) => Math.max(0, Math.min(1, Number(n) || 0)))
+      : undefined;
 
     if (isPhoto) {
       if (!photoUrl) return err(res, 'photoUrl required for photo');
       if (caption.length > BODY_MAX) return err(res, `Caption too long (max ${BODY_MAX})`);
+    } else if (isVoice) {
+      if (!voiceUrl) return err(res, 'voiceUrl required for voice');
+      if (voiceDurationMs < 300 || voiceDurationMs > 120000) return err(res, 'Invalid voice duration');
     } else {
       if (!body) return err(res, 'Message is empty');
       if (body.length > BODY_MAX) return err(res, `Message too long (max ${BODY_MAX})`);
@@ -164,10 +174,13 @@ router.post('/send', auth, async (req, res, next) => {
     const msg = await WorldChatMessage.create({
       userId: req.user._id,
       roomId,
-      type: isPhoto ? 'photo' : 'text',
-      body: isPhoto ? '' : body,
+      type: isPhoto ? 'photo' : isVoice ? 'voice' : 'text',
+      body: isPhoto || isVoice ? '' : body,
       photoUrl: isPhoto ? photoUrl : null,
       caption: isPhoto ? caption || null : null,
+      voiceUrl: isVoice ? voiceUrl : null,
+      voiceDurationMs: isVoice ? voiceDurationMs : null,
+      voiceWaveform: isVoice ? voiceWaveform : undefined,
       replyToMessageId: replyTo ? replyDoc._id : null,
     });
 
@@ -189,6 +202,9 @@ router.post('/send', auth, async (req, res, next) => {
       type: msg.type,
       photoUrl: msg.photoUrl ?? null,
       caption: msg.caption ?? null,
+      voiceUrl: msg.voiceUrl ?? null,
+      voiceDurationMs: msg.voiceDurationMs ?? null,
+      voiceWaveform: msg.voiceWaveform ?? null,
       replyTo,
       createdAt: msg.createdAt.toISOString(),
     };

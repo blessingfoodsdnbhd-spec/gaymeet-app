@@ -815,7 +815,10 @@
       "recording": "録音中…",
       "tooShort": "もう少し長く",
       "send": "送信",
-      "sendFailed": "ボイスメッセージを送信できませんでした"
+      "sendFailed": "ボイスメッセージを送信できませんでした",
+      "slideToCancel": "スライドでキャンセル",
+      "locked": "ロック中",
+      "tapToDelete": "タップで削除"
     },
     "icebreakers": {
       "header": "👋 まずは挨拶してみよう！",
