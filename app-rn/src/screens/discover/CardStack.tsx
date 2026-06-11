@@ -37,6 +37,12 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const top = cards[0];
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
+  // Promotion progress for the cards BEHIND the top one (0 = resting, 1 =
+  // fully shifted up one slot). This is driven ONLY by a commit (flyOff),
+  // never by the drag — so while the user is dragging the top card the
+  // behind cards stay perfectly still instead of creeping forward and
+  // snapping back (the jitter the user reported).
+  const promote = useSharedValue(0);
 
   // Prefetch upcoming cards' avatars into expo-image's disk cache so they
   // decode instantly the moment they shift into the rendered window. We
@@ -73,14 +79,28 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       onSwiped(top, liked);
       tx.value = 0;
       ty.value = 0;
+      // Snap promotion back to 0 BEFORE the new deck renders. The card that
+      // was idx=1 (animated up to ~slot-0 via promote=1) becomes the new top
+      // and switches to topStyle (scale 1.0) — match. The card that was idx=2
+      // becomes the new idx=1 and must read card1Style at its resting scale
+      // (0.96), so promote has to be 0 again by this frame.
+      promote.value = 0;
     },
-    [top, onSwiped, tx, ty],
+    [top, onSwiped, tx, ty, promote],
   );
 
   const flyOff = useCallback(
     (liked: boolean) => {
       'worklet';
       const sign = liked ? 1 : -1;
+      // Promote the behind cards into their next slots concurrently with the
+      // fly-off. This is the ONLY place promotion happens — so the behind
+      // cards grow smoothly during the commit (no "pop bigger" flash) but
+      // never move during an incomplete drag.
+      promote.value = withTiming(1, {
+        duration: FLY_DURATION,
+        easing: Easing.bezier(0.2, 0.7, 0.2, 1),
+      });
       ty.value = withTiming(ty.value * 0.5, {
         duration: FLY_DURATION,
         easing: Easing.bezier(0.2, 0.7, 0.2, 1),
@@ -93,7 +113,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
         },
       );
     },
-    [tx, ty, finalize],
+    [tx, ty, promote, finalize],
   );
 
   const pan = Gesture.Pan()
@@ -122,32 +142,34 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     ],
   }));
 
-  // Non-top card styles. Each non-top card "previews" its next position
-  // (smaller → bigger) as the top card is dragged. Without this, the
-  // moment the top card flies off + parent re-renders, the behind card
-  // SNAPS from scale 0.96 → 1.0 — the visible "pop bigger" flash the
-  // user reported. With this, the behind card has already grown to
-  // ~1.0 by the time the swipe completes, so when it becomes the new
-  // top (with topStyle at scale 1.0), there's no visual jump.
+  // Non-top card styles. These shift up one slot (smaller → bigger) driven
+  // by `promote`, which animates 0 → 1 ONLY during a commit (flyOff) — NOT
+  // during the drag. Earlier these read `tx` directly, so a behind card
+  // crept forward as you dragged the top card and then snapped back if you
+  // released without crossing the threshold — the jitter the user reported.
+  // Driving them off `promote` means:
+  //   - mid-drag (no commit): promote stays 0 → behind cards sit perfectly
+  //     still. Since these worklets no longer read `tx`, they don't even
+  //     re-run on each drag frame.
+  //   - on commit: promote runs 0 → 1 alongside the fly-off, so the behind
+  //     card has grown to its target by the time it becomes the new top
+  //     (topStyle scale 1.0) — no "pop bigger" flash.
   //
   // Math:
-  //   idx=1 (behind):     scale 0.96 → 1.00, translateY 10 → 0, opacity 1.0
+  //   idx=1 (behind):     scale 0.96 → 1.00, translateY 10 → 0
   //   idx=2 (behind 2):   scale 0.92 → 0.96, translateY 20 → 10, opacity 0.92 → 1.0
-  // Progress is |tx|/THRESHOLD clamped to [0, 1] so even an over-drag
-  // doesn't push past target. Doing both like + nope (positive +
-  // negative tx) makes the preview symmetric.
   const card1Style = useAnimatedStyle(() => {
-    const progress = Math.min(Math.abs(tx.value) / SWIPE_THRESHOLD, 1);
-    const scale = 0.96 + (1.0 - 0.96) * progress;
-    const y = 10 + (0 - 10) * progress;
+    const p = promote.value;
+    const scale = 0.96 + (1.0 - 0.96) * p;
+    const y = 10 + (0 - 10) * p;
     return { transform: [{ translateY: y }, { scale }] };
   });
 
   const card2Style = useAnimatedStyle(() => {
-    const progress = Math.min(Math.abs(tx.value) / SWIPE_THRESHOLD, 1);
-    const scale = 0.92 + (0.96 - 0.92) * progress;
-    const y = 20 + (10 - 20) * progress;
-    const opacity = 0.92 + (1.0 - 0.92) * progress;
+    const p = promote.value;
+    const scale = 0.92 + (0.96 - 0.92) * p;
+    const y = 20 + (10 - 20) * p;
+    const opacity = 0.92 + (1.0 - 0.92) * p;
     return {
       transform: [{ translateY: y }, { scale }],
       opacity,
