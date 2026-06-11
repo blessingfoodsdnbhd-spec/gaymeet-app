@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useAuth } from '../../../store/auth';
 import { deleteAccount, exportAccountData } from '../../../api/me';
+import { restoreSubscriptions } from '../../../utils/iap';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { Sheet } from '../../../components/Sheet';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
@@ -21,9 +22,11 @@ export function AccountSettings() {
   const { t } = useTranslation();
   const theme = useTheme();
   const user = useAuth((s) => s.user);
+  const setUser = useAuth((s) => s.setUser);
   const signOut = useAuth((s) => s.signOut);
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');
 
@@ -92,6 +95,29 @@ export function AccountSettings() {
     }
   };
 
+  // Restore a previously-purchased subscription from Settings. Mirrors the
+  // paywall's onRestore (PremiumScreen) so a user who reinstalled and isn't
+  // currently Premium can recover without opening the upgrade screen. Replays
+  // the native receipt / purchaseToken through the verify backend, which
+  // re-grants premium. Reuses the premium.restore* strings.
+  const doRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    try {
+      const restored = await restoreSubscriptions();
+      if (restored) {
+        setUser({ ...(user as any), ...restored });
+        Alert.alert(t('premium.restoreSuccessTitle'), t('premium.restoreSuccessBody'));
+      } else {
+        Alert.alert(t('premium.restoreNothingTitle'), t('premium.restoreNothingBody'));
+      }
+    } catch (e: any) {
+      Alert.alert(t('premium.restoreFailedTitle'), e?.message ?? '');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <SettingsShell title={t('accountSettings.title')}>
       {/* Email + delete grouped: the destructive action lives directly under
@@ -103,6 +129,13 @@ export function AccountSettings() {
           label={deleting ? t('accountSettings.deleting') : t('accountSettings.deleteAccount')}
           destructive
           onPress={openDelete}
+        />
+      </SettingsCard>
+
+      <SettingsCard flat style={{ paddingVertical: 4 }}>
+        <LinkRow
+          label={restoring ? t('accountSettings.restoring') : t('accountSettings.restorePurchases')}
+          onPress={doRestore}
         />
       </SettingsCard>
 

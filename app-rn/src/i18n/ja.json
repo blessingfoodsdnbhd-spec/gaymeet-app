@@ -997,6 +997,8 @@
     "title": "アカウントとセキュリティ",
     "emailLabel": "メール",
     "signOut": "ログアウト",
+    "restorePurchases": "購入を復元",
+    "restoring": "復元中…",
     "exportData": "データをダウンロード",
     "exporting": "準備中…",
     "exportFailed": "データを準備できませんでした。もう一度お試しください。",
