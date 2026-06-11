@@ -20,9 +20,11 @@ import {
   ImagePlus,
   Mic,
   Pencil,
+  Plus,
   Settings as SettingsIcon,
   Share2,
 } from 'lucide-react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -30,14 +32,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar, IconButton } from '../../components/TopBar';
-import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
-import { ProfilePhotoCarousel } from '../../components/ProfilePhotoCarousel';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
@@ -56,12 +56,14 @@ type AnyNav = NativeStackNavigationProp<any>;
 /**
  * Self profile (我 tab) — READ-ONLY display (EEEE). All editing moved to the
  * dedicated EditProfileScreen, reached via the "编辑资料" button. This screen
- * shows the user's avatar/name, completion bar, tappable stats, a large photo
- * preview grid, and read-only previews of bio / interests / voice, plus the
- * invite card and settings rows. Keeping it form-free makes the most-used tab
- * lighter and removes the accidental-edit taps Wei Qian flagged.
+ * leads with a full-width hero (main photo / avatar), then name + completion
+ * bar + tappable stats, a compact 3 × 2 public-photo grid, and read-only
+ * previews of bio / interests / voice, plus the invite card and settings rows.
+ * Keeping it form-free makes the most-used tab lighter and removes the
+ * accidental-edit taps Wei Qian flagged.
  *
- * UserDetailScreen handles viewing OTHER people's profiles.
+ * UserDetailScreen handles viewing OTHER people's profiles — it keeps the
+ * full-width swipeable ProfilePhotoCarousel (the stranger / self-preview view).
  */
 export function ProfileScreen() {
   const theme = useTheme();
@@ -117,6 +119,15 @@ export function ProfileScreen() {
 
   const interests = (user.interests ?? []) as InterestTagId[];
   const photos = user.photos ?? [];
+  // Hero = main photo, falling back to the avatar. Tapping opens the same
+  // fullscreen gallery the grid uses, so both start from photo 0.
+  const heroPhotos = photos.length > 0 ? photos : user.avatarUrl ? [user.avatarUrl] : [];
+  const heroUri = heroPhotos[0] ?? null;
+  // 3-column photo grid: 6 visible cells (3 × 2). Square tiles, 8px gutters.
+  const GRID_GAP = 8;
+  const GRID_SLOTS = 6;
+  const tile = Math.floor((width - theme.spacing.xl * 2 - GRID_GAP * 2) / 3);
+  const overflow = photos.length - GRID_SLOTS;
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
   const official = !!(user as any).isOfficial;
@@ -164,13 +175,37 @@ export function ProfileScreen() {
       />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, paddingBottom: 40 }}>
-        <View style={{ marginTop: 12 }}>
+        {/* Hero — main photo (or avatar) filling the screen width, breaking out
+            of the content padding for a full-bleed banner under the TopBar.
+            Replaces the old small circle avatar; tap to open fullscreen. */}
+        <Pressable
+          onPress={heroUri ? () => photoViewer.open(heroPhotos, 0) : goEdit}
+          style={{ marginHorizontal: -theme.spacing.xl }}
+        >
+          {heroUri ? (
+            <ExpoImage
+              source={{ uri: heroUri }}
+              style={{ width, height: width, backgroundColor: theme.colors.surface2 }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              // Full-res decode — same url renders small in discover/nearby grids.
+              allowDownscaling={false}
+              priority="high"
+            />
+          ) : (
+            <View style={{ width, height: width, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: theme.colors.surface2 }}>
+              <ImagePlus size={32} color={theme.colors.primary} strokeWidth={1.8} />
+              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.edit.addPhotosHint')}</Text>
+            </View>
+          )}
+        </Pressable>
+
+        <View style={{ marginTop: 16 }}>
           <ProfileCompletionCard user={user} />
         </View>
 
-        {/* Avatar + name + verified badge (read-only) + 编辑资料 button. */}
-        <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 6 }}>
-          <Avatar name={user.nickname} uri={user.avatarUrl} avatarIdx={0} size={96} shape="circle" />
+        {/* Name + verified badge (read-only) + 编辑资料 button. */}
+        <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
           <NameWithBadge
             name={user.nickname}
             official={official}
@@ -179,7 +214,6 @@ export function ProfileScreen() {
             badgeSize={18}
             premiumSize={22}
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
-            containerStyle={{ marginTop: 12 }}
           />
           {(user.streak?.current ?? 0) > 0 && (
             <Text style={{ marginTop: 6, fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>
@@ -235,33 +269,47 @@ export function ProfileScreen() {
           )}
         </View>
 
-        {/* Public photos — full-width, page-snapped carousel (read-only),
-            matching the immersive gallery strangers see on UserDetailScreen.
-            Tap a photo to view fullscreen; tap 编辑 (or the empty state) to
-            manage in EditProfileScreen. */}
+        {/* Public photos — compact 3 × 2 grid (read-only) so all 6 are visible
+            at a glance. Tap a tile to open the fullscreen swipeable gallery;
+            empty slots are "+" add-shortcuts into EditProfileScreen. With more
+            than 6 photos the last tile shows a +N badge and opens the full set. */}
         <SectionTitle>{t('profile.publicPhotosLimit', { count: photos.length })}</SectionTitle>
-        <ProfilePhotoCarousel
-          photos={photos}
-          width={width}
-          height={Math.round(width * 1.25)}
-          onPressPhoto={(p, i) => photoViewer.open(p, i)}
-          // Break out of the screen's horizontal padding for true full-bleed.
-          style={{ marginHorizontal: -theme.spacing.xl }}
-          empty={
-            <Pressable onPress={goEdit} style={{ alignItems: 'center', gap: 10, padding: 24 }}>
-              <ImagePlus size={28} color={theme.colors.primary} strokeWidth={1.8} />
-              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.edit.addPhotosHint')}</Text>
-            </Pressable>
-          }
-          overlay={
-            photos.length > 0 ? (
-              <Pressable onPress={goEdit} style={styles.photoEditBtn}>
-                <Pencil size={14} color="#FFFFFF" strokeWidth={2} />
-                <Text style={styles.photoEditText}>{t('editProfile.title')}</Text>
+        <View style={styles.grid}>
+          {Array.from({ length: GRID_SLOTS }).map((_, i) => {
+            const url = photos[i];
+            const showMore = i === GRID_SLOTS - 1 && overflow > 0;
+            if (url) {
+              return (
+                <Pressable
+                  key={`photo-${i}-${url}`}
+                  onPress={() => photoViewer.open(photos, i)}
+                  style={{ width: tile, height: tile, borderRadius: theme.radius.m, overflow: 'hidden', backgroundColor: theme.colors.surface2 }}
+                >
+                  <ExpoImage
+                    source={{ uri: url }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                  {showMore && (
+                    <View style={styles.moreOverlay}>
+                      <Text style={styles.moreText}>+{overflow}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            }
+            return (
+              <Pressable
+                key={`add-${i}`}
+                onPress={goEdit}
+                style={{ width: tile, height: tile, borderRadius: theme.radius.m, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface2, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.colors.line }}
+              >
+                <Plus size={22} color={theme.colors.muted} strokeWidth={2} />
               </Pressable>
-            ) : null
-          }
-        />
+            );
+          })}
+        </View>
 
         {/* Bio preview (read-only). */}
         <SectionTitle>{t('profile.edit.bio')}</SectionTitle>
@@ -451,19 +499,14 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   inviteCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 16, marginTop: 24 },
-  // Floating "编辑" pill on the photo carousel — keeps the manage-photos entry
-  // next to the photos themselves (bottom-right, clear of the centered dots).
-  photoEditBtn: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // "+N" badge on the last tile when there are more than 6 photos — tapping it
+  // opens the fullscreen gallery where the rest are reachable by swiping.
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
+    justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  photoEditText: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '600' },
+  moreText: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
 });
