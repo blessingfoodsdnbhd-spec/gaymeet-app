@@ -16,6 +16,7 @@ import {
   Bell,
   ChevronRight,
   Crown,
+  Eye,
   Gift,
   Mic,
   Pencil,
@@ -202,6 +203,19 @@ export function ProfileScreen() {
             <Pencil size={15} color={theme.colors.primary} strokeWidth={2} />
             <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
               {t('editProfile.title')}
+            </Text>
+          </Pressable>
+          {/* Preview own profile exactly as other users see it (stranger view). */}
+          <Pressable
+            onPress={() => nav.navigate('UserDetail', { userId: user.id, previewMode: true })}
+            style={({ pressed }) => [
+              styles.previewBtn,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Eye size={14} color={theme.colors.text2} strokeWidth={2} />
+            <Text style={{ color: theme.colors.text2, fontSize: 13, fontWeight: '600' }}>
+              {t('profile.previewMyProfile')}
             </Text>
           </Pressable>
         </View>
@@ -406,6 +420,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
+  },
+  previewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   statsRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

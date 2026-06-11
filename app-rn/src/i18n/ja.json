@@ -283,6 +283,8 @@
       "privatePhotos": "非公開"
     },
     "editProfile": "プロフィール編集",
+    "previewMyProfile": "他の人から見たプロフィール",
+    "previewBanner": "🔍 プレビュー — 他の人に見える表示です",
     "publicPhotos": "公開写真",
     "publicPhotosLimit": "公開写真 · {{count}} / 5",
     "privatePhotos": "非公開写真 🔒",
