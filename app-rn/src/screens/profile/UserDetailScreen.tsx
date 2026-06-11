@@ -20,9 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
-import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
-import { PremiumBadge } from '../../components/PremiumBadge';
 import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
@@ -294,23 +293,24 @@ export function UserDetailScreen() {
           {/* Name + age + zodiac + country, below the photo. */}
           <View style={{ paddingTop: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.name, { color: theme.colors.text, marginTop: 0 }]}>
-                {user.nickname}
-                {(() => {
+              {/* Name + age/zodiac as the badge label, then verified seal +
+                  Premium "M" — all unified through NameWithBadge so the badge
+                  order is consistent with every list row. */}
+              <NameWithBadge
+                name={`${user.nickname}${(() => {
                   const a = computeAge(user.dob) ?? user.age;
                   if (a == null) return '';
                   const z = computeZodiac(user.dob);
                   return ` · ${a}${z ? ` ${z.emoji}` : ''}`;
-                })()}
-              </Text>
-              {(user as any).isOfficial ? (
-                <VerifiedBadge size={16} />
-              ) : (user as any).isVerified ? (
-                <PhotoVerifiedBadge size={16} />
-              ) : null}
-              {/* Premium "M" mark sits next to the name (after the verified seal),
-                  matching ProfileScreen — not next to the popularity chip. */}
-              <PremiumBadge isPremium={(user as any).isPremium} size={22} />
+                })()}`}
+                official={(user as any).isOfficial}
+                verified={(user as any).isVerified}
+                premium={(user as any).isPremium}
+                textStyle={[styles.name, { color: theme.colors.text, marginTop: 0 }]}
+                numberOfLines={1}
+                badgeSize={18}
+                premiumSize={22}
+              />
               <PopularityBadge value={(user as any).popularity} size="md" />
             </View>
             {user.countryCode && (

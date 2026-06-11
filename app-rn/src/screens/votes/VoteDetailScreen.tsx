@@ -36,7 +36,7 @@ import { categoryEmoji, timeRemaining } from './voteHelpers';
 import { EntryDetailModal } from './EntryDetailModal';
 import { RankMedal } from '../../components/RankMedal';
 import { VoteShareCard, CARD_SIZE } from './VoteShareCard';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { shareVoteCard } from '../../utils/shareVoteCard';
 import { blockUser } from '../../api/safety';
 import { shortTime } from '../../utils/time';
@@ -323,8 +323,16 @@ export function VoteDetailScreen() {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}
             >
               <Avatar name={ev.creator.displayName} uri={ev.creator.avatarUrl} size={28} />
+              {/* byCreator embeds the name in the translated string, so the badges
+                  render alongside it (name="" → NameWithBadge emits just the seals). */}
               <Text style={{ fontSize: 13, color: theme.colors.text2 }}>{t('votes.byCreator', { name: ev.creator.displayName })}</Text>
-              {ev.creator.isOfficial && <VerifiedBadge size={14} />}
+              <NameWithBadge
+                name=""
+                official={ev.creator.isOfficial}
+                verified={ev.creator.isVerified}
+                premium={ev.creator.isPremium}
+                badgeSize={14}
+              />
             </Pressable>
           )}
 
@@ -423,7 +431,15 @@ export function VoteDetailScreen() {
                   >
                     <ExpoImage source={{ uri: entry!.photoUrl }} style={{ width: '100%', aspectRatio: 1, borderRadius: 12, backgroundColor: theme.colors.surface2 }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
                     <View style={{ marginTop: 4 }}><RankMedal rank={rank} size={26} /></View>
-                    <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: theme.colors.text }}>{entry!.submitter.displayName}</Text>
+                    <NameWithBadge
+                      name={entry!.submitter.displayName}
+                      official={entry!.submitter.isOfficial}
+                      verified={entry!.submitter.isVerified}
+                      premium={entry!.submitter.isPremium}
+                      textStyle={{ fontSize: 12, fontWeight: '600', color: theme.colors.text }}
+                      numberOfLines={1}
+                      badgeSize={12}
+                    />
                     <Text style={{ fontSize: 11, color: theme.colors.muted }}>{t('votes.voteCount', { n: entry!.voteCount })}</Text>
                   </Pressable>
                 ))}
@@ -477,9 +493,16 @@ export function VoteDetailScreen() {
                       />
                       <Text style={{ fontSize: 12, color: theme.colors.muted, fontWeight: '600' }}>{entry.voteCount}</Text>
                     </View>
-                    <Text numberOfLines={1} style={{ fontSize: 11, color: theme.colors.text2, marginTop: 1, maxWidth: 72 }}>
-                      {entry.submitter.displayName}
-                    </Text>
+                    <NameWithBadge
+                      name={entry.submitter.displayName}
+                      official={entry.submitter.isOfficial}
+                      verified={entry.submitter.isVerified}
+                      premium={entry.submitter.isPremium}
+                      textStyle={{ fontSize: 11, color: theme.colors.text2, marginTop: 1, maxWidth: 72 }}
+                      numberOfLines={1}
+                      badgeSize={12}
+                      containerStyle={{ marginTop: 1, maxWidth: 72 }}
+                    />
                   </Pressable>
                 );
               })}

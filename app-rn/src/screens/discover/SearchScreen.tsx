@@ -62,6 +62,7 @@ export function SearchScreen() {
             name={item.nickname}
             official={item.isOfficial}
             verified={item.isVerified}
+            premium={item.isPremium}
             textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
             containerStyle={{ flex: 1 }}
           />

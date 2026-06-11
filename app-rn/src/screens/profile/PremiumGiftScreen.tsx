@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { EmptyState } from '../../components/EmptyState';
 import { getFollowing, giftPremium, getGiftQuota, type FollowedUser } from '../../api/me';
 
@@ -125,9 +126,16 @@ export function PremiumGiftScreen() {
           renderItem={({ item }) => (
             <View style={[styles.row, { backgroundColor: c.surface, borderColor: c.line }]}>
               <Avatar uri={item.avatarUrl} name={item.nickname} size={44} />
-              <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: c.text }} numberOfLines={1}>
-                {item.nickname}
-              </Text>
+              <NameWithBadge
+                name={item.nickname}
+                official={item.isOfficial}
+                verified={item.isVerified}
+                premium={item.isPremium}
+                textStyle={{ fontSize: 15, fontWeight: '600', color: c.text }}
+                numberOfLines={1}
+                badgeSize={14}
+                containerStyle={{ flex: 1 }}
+              />
               {item.isPremiumEffective ? (
                 <View style={[styles.badge, { backgroundColor: c.surface2 }]}>
                   <Text style={[styles.badgeText, { color: c.muted }]}>{t('premiumGift.alreadyPremium')}</Text>

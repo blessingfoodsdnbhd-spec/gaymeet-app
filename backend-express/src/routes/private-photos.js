@@ -241,7 +241,7 @@ router.get('/inbox', auth, async (req, res, next) => {
       status: 'pending',
     })
       .sort({ createdAt: -1 })
-      .populate('requester', 'nickname avatarUrl level isOnline distance');
+      .populate('requester', 'nickname avatarUrl level isOnline distance isOfficial isVerified isPremium');
 
     // Drop entries where the requester was deleted (populate returns null) —
     // same defense-in-depth pattern as /users/likes. count stays consistent.

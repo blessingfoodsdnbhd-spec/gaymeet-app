@@ -43,8 +43,8 @@ router.post('/send', auth, async (req, res, next) => {
     });
 
     const populated = await dm.populate([
-      { path: 'sender', select: 'nickname avatarUrl isVerified' },
-      { path: 'receiver', select: 'nickname avatarUrl isVerified' },
+      { path: 'sender', select: 'nickname avatarUrl isVerified isOfficial isPremium' },
+      { path: 'receiver', select: 'nickname avatarUrl isVerified isOfficial isPremium' },
     ]);
 
     ok(res, populated, 201);
@@ -59,7 +59,7 @@ router.get('/inbox', auth, async (req, res, next) => {
     const blocked = await blockedIdSet(req.user);
     const messages = await DirectMessage.find({ receiver: req.user._id })
       .sort({ createdAt: -1 })
-      .populate('sender', 'nickname avatarUrl isVerified isPremium')
+      .populate('sender', 'nickname avatarUrl isVerified isPremium isOfficial')
       .lean();
 
     // Blur content for unaccepted messages; hide messages from blocked senders.
@@ -83,7 +83,7 @@ router.get('/sent', auth, async (req, res, next) => {
     const blocked = await blockedIdSet(req.user);
     const messages = await DirectMessage.find({ sender: req.user._id })
       .sort({ createdAt: -1 })
-      .populate('receiver', 'nickname avatarUrl isVerified isPremium')
+      .populate('receiver', 'nickname avatarUrl isVerified isPremium isOfficial')
       .lean();
     ok(res, messages.filter((m) => !(m.receiver && blocked.has(String(m.receiver._id)))));
   } catch (e) {

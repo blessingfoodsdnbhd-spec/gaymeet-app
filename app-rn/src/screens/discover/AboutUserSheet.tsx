@@ -19,7 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { Sheet } from '../../components/Sheet';
-import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
@@ -325,7 +325,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           />
           <SendNoteSheet
             open={noteOpen}
-            recipient={user ? { id: user.id, nickname: user.nickname, avatarUrl: user.avatarUrl } : null}
+            recipient={user ? { id: user.id, nickname: user.nickname, avatarUrl: user.avatarUrl, isOfficial: user.isOfficial, isVerified: user.isVerified, isPremium: user.isPremium } : null}
             onClose={() => setNoteOpen(false)}
           />
         </>
@@ -427,18 +427,17 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           {/* Details */}
           <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={[styles.nameBig, { color: theme.colors.text }]}>
-                {user.nickname}
-                {(() => {
+              <NameWithBadge
+                name={`${user.nickname}${(() => {
                   const a = computeAge(user.dob) ?? user.age;
                   return a != null ? ` · ${a}` : '';
-                })()}
-              </Text>
-              {(user as any).isOfficial ? (
-                <VerifiedBadge size={16} />
-              ) : (user as any).isVerified ? (
-                <PhotoVerifiedBadge size={16} />
-              ) : null}
+                })()}`}
+                official={user.isOfficial}
+                verified={user.isVerified}
+                premium={user.isPremium}
+                textStyle={[styles.nameBig, { color: theme.colors.text }]}
+                badgeSize={18}
+              />
               <FollowBadge status={user.followStatus} size={18} />
               <PopularityBadge value={(user as any).popularity} />
               {/* Voice intro — always tappable; auto-plays once on open when the

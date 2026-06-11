@@ -253,6 +253,8 @@ router.post('/send', auth, async (req, res, next) => {
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
       isOfficial: req.user.isOfficial ?? false,
+      isVerified: req.user.isVerified ?? false,
+      isPremium: isPremiumActive(req.user),
       identity: identityOf(req.user), // { tier, level } — §9.3 colors + §9.2 level
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
@@ -545,7 +547,7 @@ router.get('/rooms/:id/invitable', auth, async (req, res, next) => {
     }
     const users = await require('../models/User')
       .find({ _id: { $in: [...friendIds] } })
-      .select('nickname avatarUrl isOnline lastActiveAt')
+      .select('nickname avatarUrl isOnline lastActiveAt isOfficial isVerified isPremium premiumExpiresAt vipLevel vipExpiresAt')
       .lean();
     const friends = users
       .map((u) => ({
@@ -554,6 +556,9 @@ router.get('/rooms/:id/invitable', auth, async (req, res, next) => {
         avatarUrl: u.avatarUrl ?? null,
         isOnline: !!u.isOnline,
         lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
+        isOfficial: u.isOfficial ?? false,
+        isVerified: u.isVerified ?? false,
+        isPremium: isPremiumActive(u),
       }))
       // Online first, then most-recently-active.
       .sort((a, b) => {
@@ -570,7 +575,10 @@ router.get('/rooms/:id/invitable', auth, async (req, res, next) => {
 router.get('/rooms/:id/members', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const room = await ChatRoom.findById(req.params.id).populate('memberIds', 'nickname avatarUrl');
+    const room = await ChatRoom.findById(req.params.id).populate(
+      'memberIds',
+      'nickname avatarUrl isOfficial isVerified isPremium premiumExpiresAt vipLevel vipExpiresAt',
+    );
     if (!room) return err(res, 'Room not found', 404);
     const isMember = room.memberIds.some((m) => sameId(m, req.user._id));
     if (!isMember && !sameId(room.creatorId, req.user._id)) return err(res, 'Join the room first', 403);
@@ -579,6 +587,9 @@ router.get('/rooms/:id/members', auth, async (req, res, next) => {
         id: m._id.toString(),
         displayName: m.nickname,
         avatarUrl: m.avatarUrl ?? null,
+        isOfficial: m.isOfficial ?? false,
+        isVerified: m.isVerified ?? false,
+        isPremium: isPremiumActive(m),
         isCreator: sameId(room.creatorId, m._id),
       })),
     });
@@ -822,7 +833,7 @@ router.get('/recent', auth, async (req, res, next) => {
       .limit(limit)
       .populate(
         'userId',
-        'nickname avatarUrl countryCode city isOfficial level currentExp isPremium premiumExpiresAt vipLevel vipExpiresAt',
+        'nickname avatarUrl countryCode city isOfficial isVerified level currentExp isPremium premiumExpiresAt vipLevel vipExpiresAt',
       )
       .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
@@ -847,6 +858,8 @@ router.get('/recent', auth, async (req, res, next) => {
           displayName: m.userId.nickname,
           avatarUrl: m.userId.avatarUrl ?? null,
           isOfficial: m.userId.isOfficial ?? false,
+          isVerified: m.userId.isVerified ?? false,
+          isPremium: isPremiumActive(m.userId),
           identity: identityOf(m.userId),
           countryCode: m.userId.countryCode ?? null,
           city: m.userId.city ?? null,

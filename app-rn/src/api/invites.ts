@@ -16,7 +16,15 @@ export interface InviteCodeInfo {
 
 export interface InviteStats {
   invitedCount: number;
-  recentInvitees: { id: string; displayName: string; avatarUrl: string | null; redeemedAt: string }[];
+  recentInvitees: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+    isOfficial?: boolean;
+    isVerified?: boolean;
+    isPremium?: boolean;
+    redeemedAt: string;
+  }[];
 }
 
 /** The caller's invite code (auto-generated on first call). */

@@ -17,6 +17,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { SortChipRow } from '../../components/SortChipRow';
 import { sortList } from '../../utils/listSort';
 import { useListSortPrefs } from '../../store/listSortPrefs';
@@ -162,9 +163,14 @@ function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void
         showOnline={thread.user.isOnline}
       />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
-          {thread.user.nickname}
-        </Text>
+        <NameWithBadge
+          name={thread.user.nickname}
+          official={thread.user.isOfficial}
+          verified={thread.user.isVerified}
+          premium={thread.user.isPremium}
+          badgeSize={14}
+          textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
+        />
         {(() => {
           // Subline like discover cards: age · distance · presence.
           const age = computeAge(thread.user.dob);

@@ -9,6 +9,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { EmptyState } from '../../../components/EmptyState';
 import { Avatar } from '../../../components/Avatar';
+import { NameWithBadge } from '../../../components/NameWithBadge';
 import { Button } from '../../../components/Button';
 import { getBlockedUsers, unblockUser, type BlockedUser } from '../../../api/safety';
 
@@ -71,9 +72,16 @@ export function BlockedListScreen() {
           renderItem={({ item }) => (
             <View style={styles.row}>
               <Avatar uri={item.avatarUrl} name={item.nickname} avatarIdx={idxFor(item.id)} size={44} />
-              <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={1}>
-                {item.nickname}
-              </Text>
+              <NameWithBadge
+                name={item.nickname}
+                official={item.isOfficial}
+                verified={item.isVerified}
+                premium={item.isPremium}
+                textStyle={[styles.name, { color: theme.colors.text }]}
+                numberOfLines={1}
+                badgeSize={14}
+                containerStyle={{ flex: 1 }}
+              />
               <Button
                 label={t('blocked.unblock')}
                 variant="soft"

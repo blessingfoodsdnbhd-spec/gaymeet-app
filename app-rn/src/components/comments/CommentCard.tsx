@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../Avatar';
+import { NameWithBadge } from '../NameWithBadge';
 import { shortTime } from '../../utils/time';
 import { type Comment } from '../../api/moments';
 
@@ -53,9 +54,14 @@ export function CommentCard({
         {/* Name + author badge + time */}
         <View style={styles.nameRow}>
           <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}>
-              {comment.user.nickname}
-            </Text>
+            <NameWithBadge
+              name={comment.user.nickname}
+              official={comment.user.isOfficial}
+              verified={comment.user.isVerified}
+              premium={comment.user.isPremium}
+              textStyle={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}
+              badgeSize={14}
+            />
           </Pressable>
           {comment.isAuthor && (
             <View style={[styles.authorBadge, { backgroundColor: theme.colors.primarySoft }]}>
