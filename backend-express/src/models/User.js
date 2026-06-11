@@ -251,6 +251,10 @@ const userSchema = new mongoose.Schema(
     // Blocked / reported users
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
+    // Conversations pinned to the top of this user's inbox. Personal (not
+    // shared on the Match), capped at 2, ordered most-recently-pinned first.
+    pinnedConversations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match' }],
+
     // Follow system
     followersCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
@@ -376,7 +380,7 @@ const SENSITIVE_USER_FIELDS = [
   'googleId', 'appleId', 'appleOriginalTransactionId',
   'googleOriginalPurchaseToken', 'deviceFingerprint',
   'devices', // login IPs + refresh tokens
-  'blockedUsers', 'fcmToken', 'dailySwipes', 'dailySwipesDate',
+  'blockedUsers', 'pinnedConversations', 'fcmToken', 'dailySwipes', 'dailySwipesDate',
   'loginAttempts', 'lockoutUntil', 'referredBy', '__v',
 ];
 

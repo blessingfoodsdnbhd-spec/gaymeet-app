@@ -80,6 +80,8 @@ export interface ChatThread {
   lastMessageSystem?: boolean;
   unreadCount: number;
   source: 'match' | 'dm';
+  /** Pinned to the top of the inbox (personal, max 2). */
+  isPinned?: boolean;
 }
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -222,3 +224,32 @@ export const getMatchStatus = (otherUserId: string) =>
  *  a `match:removed` WS event. */
 export const deleteConversation = (matchId: string) =>
   unwrap<{ success: true }>(api.delete(`/conversations/${matchId}`));
+
+/** Thrown by pinConversation when the user already has 2 pins (HTTP 409). The
+ *  swipe row catches this to show the "max 2 pins" toast. */
+export class PinLimitError extends Error {
+  constructor() {
+    super('PIN_LIMIT');
+    this.name = 'PinLimitError';
+  }
+}
+
+/** Pin a conversation to the top of the inbox (personal, max 2, newest first).
+ *  Rejects with PinLimitError on a 3rd pin. */
+export const pinConversation = (matchId: string) =>
+  unwrap<{ pinned: true }>(
+    api.post(`/conversations/${matchId}/pin`),
+  ).catch((e: any) => {
+    if (e?.response?.status === 409) throw new PinLimitError();
+    throw e;
+  });
+
+/** Remove a conversation's pin. Idempotent. */
+export const unpinConversation = (matchId: string) =>
+  unwrap<{ pinned: false }>(api.delete(`/conversations/${matchId}/pin`));
+
+/** Per-user "delete conversation": clears the thread from MY inbox and hides my
+ *  history, without unmatching or affecting the other person. Reappears if they
+ *  message again. Distinct from deleteConversation (mutual unmatch). */
+export const clearConversation = (matchId: string) =>
+  unwrap<{ cleared: true }>(api.delete(`/conversations/${matchId}/history`));

@@ -861,6 +861,19 @@
       "messagePlaceholder": "说点什么…",
       "unmatchFailed": "取消同频失败",
       "you": "你"
+    },
+    "swipe": {
+      "pin": "置顶",
+      "unpin": "取消置顶",
+      "delete": "删除",
+      "pinned": "已置顶",
+      "unpinned": "已取消置顶",
+      "pinLimit": "最多只能置顶 2 个，请先取消一个",
+      "pinFailed": "操作失败，请重试",
+      "deleteTitle": "删除对话",
+      "deleteConfirm": "确定删除和 {{name}} 的对话？这会删除所有聊天记录，无法恢复。",
+      "deleted": "已删除对话",
+      "deleteFailed": "删除失败，请重试"
     }
   },
   "match": {
