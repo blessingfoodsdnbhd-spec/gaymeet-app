@@ -4,6 +4,7 @@ import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
+  type PanGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -20,7 +21,14 @@ const DISMISS_VELOCITY = 500;
 interface Props {
   open: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  /**
+   * Either a plain node (rendered below the grab handle), or a render-prop
+   * that receives a SECOND drag-to-dismiss gesture wired to the same
+   * ty/opacity shared values as the grab handle. Callers wanting a large
+   * pull-down area (e.g. AboutUserSheet's photo header) wrap that area in
+   * `<GestureDetector gesture={dragArea}>`. Plain-node callers are unaffected.
+   */
+  children: React.ReactNode | ((dragArea: PanGesture) => React.ReactNode);
   maxHeight?: number | `${number}%`;
   /**
    * Rendered as the topmost sibling INSIDE this Sheet's own Modal —
@@ -52,25 +60,44 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay }: P
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: ty.value }] }));
 
-  // Swipe-down-to-dismiss, attached to the grab handle (a strip above the
-  // content) so it never fights the inner ScrollView. Drag follows the finger
-  // and fades the backdrop; release past distance OR velocity → close, else
-  // spring back. Lives on the handle only — the universal "grabber" pattern.
+  // Swipe-down-to-dismiss. Drag follows the finger and fades the backdrop;
+  // release past distance OR velocity → close, else spring back. The worklet
+  // bodies are factored out so the grab handle AND the opt-in drag area (passed
+  // to a render-prop child) run identical logic against the SAME ty/opacity
+  // shared values. (A single Gesture instance can't attach to two detectors, so
+  // we build two — but they share these worklets.)
+  const onDragUpdate = (translationY: number) => {
+    'worklet';
+    ty.value = Math.max(0, translationY);
+    opacity.value = Math.max(0, 1 - translationY / (winH * 0.5));
+  };
+  const onDragEnd = (translationY: number, velocityY: number) => {
+    'worklet';
+    if (translationY > DISMISS_DISTANCE || velocityY > DISMISS_VELOCITY) {
+      ty.value = withTiming(winH, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 180 });
+      runOnJS(onClose)();
+    } else {
+      ty.value = withTiming(0, { duration: 200 });
+      opacity.value = withTiming(1, { duration: 180 });
+    }
+  };
+
+  // Grab handle — a strip above the content, no offset gating (nothing competes
+  // with it). The universal "grabber" pattern.
   const dragHandle = Gesture.Pan()
-    .onUpdate((e) => {
-      ty.value = Math.max(0, e.translationY);
-      opacity.value = Math.max(0, 1 - e.translationY / (winH * 0.5));
-    })
-    .onEnd((e) => {
-      if (e.translationY > DISMISS_DISTANCE || e.velocityY > DISMISS_VELOCITY) {
-        ty.value = withTiming(winH, { duration: 200 });
-        opacity.value = withTiming(0, { duration: 180 });
-        runOnJS(onClose)();
-      } else {
-        ty.value = withTiming(0, { duration: 200 });
-        opacity.value = withTiming(1, { duration: 180 });
-      }
-    });
+    .onUpdate((e) => onDragUpdate(e.translationY))
+    .onEnd((e) => onDragEnd(e.translationY, e.velocityY));
+
+  // Opt-in larger drag area for a render-prop child sitting over a horizontal
+  // pager inside a vertical ScrollView (AboutUserSheet's photo header).
+  // activeOffsetY defers to taps; the downward window + failOffsetX yield
+  // horizontal swipes to the pager. Values mirror PhotoViewer's proven config.
+  const dragArea = Gesture.Pan()
+    .activeOffsetY([-14, 14])
+    .failOffsetX([-18, 18])
+    .onUpdate((e) => onDragUpdate(e.translationY))
+    .onEnd((e) => onDragEnd(e.translationY, e.velocityY));
 
   return (
     <Modal visible={open} transparent onRequestClose={onClose} animationType="none">
@@ -111,7 +138,7 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay }: P
               />
             </View>
           </GestureDetector>
-          {children}
+          {typeof children === 'function' ? children(dragArea) : children}
         </Animated.View>
         {overlay}
       </GestureHandlerRootView>

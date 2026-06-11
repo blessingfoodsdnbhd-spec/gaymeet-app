@@ -17,6 +17,7 @@ import type { NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { Sheet } from '../../components/Sheet';
 import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
@@ -329,13 +330,17 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
         </>
       }
     >
-      {user && (
+      {(dragArea: PanGesture) => user ? (
         <View style={{ flex: 1 }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={{ maxHeight: scrollMaxH, marginHorizontal: -20, marginTop: -6 }}
         >
-          {/* Full-bleed photo carousel — paged, tap any photo to zoom. */}
+          {/* Full-bleed photo carousel — paged, tap any photo to zoom. Wrapped
+              in a GestureDetector so a downward drag here dismisses the sheet
+              (the big area users instinctively grab); activeOffsetY/failOffsetX
+              keep tap-to-zoom and horizontal paging working. */}
+          <GestureDetector gesture={dragArea}>
           <View style={{ width: screenW, height: carouselH, backgroundColor: theme.colors.surface2 }}>
             {carouselPhotos.length > 0 ? (
               <ScrollView
@@ -416,6 +421,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               </Pressable>
             )}
           </View>
+          </GestureDetector>
 
           {/* Details */}
           <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
@@ -689,7 +695,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           </View>
         )}
         </View>
-      )}
+      ) : null}
 
     </Sheet>
   );
