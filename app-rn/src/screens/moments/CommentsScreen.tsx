@@ -165,7 +165,10 @@ export function CommentsScreen() {
   const onTapAuthor = (userId: string) => (nav as any).navigate('UserDetail', { userId });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.colors.bg }}
+      edges={['top', 'bottom']}
+    >
       <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
         <Pressable onPress={() => nav.goBack()} hitSlop={8}>
           <ChevronLeft size={26} color={theme.colors.text} />
@@ -176,7 +179,12 @@ export function CommentsScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Mirror ChatDetailScreen: behavior=undefined on Android (esp. under the
+        // forced edge-to-edge of API 35) drifts the composer out of place and
+        // leaves it hidden behind the keyboard. "height" + a 0 offset lets the
+        // system adjustResize position the input correctly across phone/tablet.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
         {commentsQ.isLoading ? (
