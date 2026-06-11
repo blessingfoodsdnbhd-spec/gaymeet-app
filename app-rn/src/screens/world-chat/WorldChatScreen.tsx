@@ -624,26 +624,36 @@ export function WorldChatScreen({
                 <Text style={{ fontSize: 11, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
               )}
             </View>
-            <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-              {isCustom && room
-                ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${online ?? room.onlineCount}`
-                : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
-            </Text>
+            {/* Green dot drawn as a View, not the 🟢 emoji — Android renders that
+                emoji as a tofu box (looked like a ✕). */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success }} />
+              <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12, color: theme.colors.muted }}>
+                {isCustom && room
+                  ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · ${online ?? room.onlineCount}`
+                  : t('worldChat.online', { n: online ?? '—' })}
+              </Text>
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginLeft: 8 }}>
-            <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')}>
+          {/* Each action is an explicit 40×40 touch box, not a bare icon + hitSlop:
+              on Android a Pressable wrapping only a small SVG reports a tiny hit
+              area and taps near the screen edge miss (the buttons looked dead).
+              A laid-out box hit-tests reliably; the icon stays centered so iOS
+              looks the same. marginRight pulls the box's padding back to the edge. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, marginRight: -9 }}>
+            <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={styles.headerBtn}>
               <Users size={22} color={theme.colors.text} />
             </Pressable>
-            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')}>
+            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={styles.headerBtn}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
             {isCustom && room && (
-              <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')}>
+              <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')} style={styles.headerBtn}>
                 <UserPlus size={22} color={theme.colors.text} />
               </Pressable>
             )}
             {isCustom && room && (
-              <Pressable onPress={() => { setSettingsTab('main'); setSettingsOpen(true); }} hitSlop={8}>
+              <Pressable onPress={() => { setSettingsTab('main'); setSettingsOpen(true); }} hitSlop={8} style={styles.headerBtn}>
                 <MoreVertical size={22} color={theme.colors.text} />
               </Pressable>
             )}
@@ -1242,6 +1252,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  // Header action hit target — explicit 40×40 so Android delivers the tap (a
+  // bare icon + hitSlop was unreliable). Icon is centered, so it reads the same.
+  headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   composer: {
     flexDirection: 'row',
