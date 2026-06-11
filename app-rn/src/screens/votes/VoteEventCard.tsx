@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, FlatList, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Heart, Users, Info } from 'lucide-react-native';
+import { Heart, Users, Info, ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -186,8 +186,20 @@ export function VoteEventCard({
           <View style={{ flex: 1, marginRight: 12 }}>
             {index === 0 ? (
               <>
-                <Text numberOfLines={2} style={styles.title}>{event.title}</Text>
-                {!!event.description && <Text numberOfLines={2} style={styles.description}>{event.description}</Text>}
+                {/* Title + description open the detail (same destination as the (i)). */}
+                <Pressable
+                  onPress={onPress}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('votes.infoLabel')}
+                  style={({ pressed }) => [{ alignSelf: 'flex-start', opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <View style={styles.titleRow}>
+                    <Text numberOfLines={2} style={styles.title}>{event.title}</Text>
+                    <ChevronRight size={20} color="rgba(255,255,255,0.9)" strokeWidth={2.4} style={styles.titleChevron} />
+                  </View>
+                  {!!event.description && <Text numberOfLines={2} style={styles.description}>{event.description}</Text>}
+                </Pressable>
                 <Text style={styles.countdown}>⏳ {countdown}</Text>
               </>
             ) : (
@@ -283,7 +295,9 @@ const styles = StyleSheet.create({
   dots: { position: 'absolute', top: 14, alignSelf: 'center', flexDirection: 'row', gap: 5 },
   dot: { height: 6, borderRadius: 3 },
   bottomGradient: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-end' },
-  title: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.3 },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  titleChevron: { marginLeft: 2, marginTop: 2 },
+  title: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.3, flexShrink: 1 },
   description: { color: 'rgba(255,255,255,0.86)', fontSize: 14, fontWeight: '400', marginTop: 4, lineHeight: 19 },
   countdown: { color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '700', marginTop: 6 },
   submitter: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
