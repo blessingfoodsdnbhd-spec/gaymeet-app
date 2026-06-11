@@ -54,7 +54,14 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
   // between columns. tile = full window width / cols, DPI-adaptive.
   const gap = 1;
   const horizontalPad = 0;
-  const tileW = (width - horizontalPad * 2 - gap * (cols - 1)) / cols;
+  // Floor the tile width so `cols` tiles + the inter-column gaps always fit
+  // inside the row. The exact division gives a fractional width (e.g.
+  // (390 - 2) / 3 = 129.33); flexWrap rounds each tile up and the row overflows
+  // by a sub-pixel, wrapping the last tile to a new line — so cols=3 rendered as
+  // 2 columns with the right third blank (HHHHHH). Flooring leaves at most a few
+  // px of slack on the right (invisible at the screen edge) but guarantees the
+  // full column count packs into one row.
+  const tileW = Math.floor((width - horizontalPad * 2 - gap * (cols - 1)) / cols);
   const tileH = tileW; // square
 
   return (
