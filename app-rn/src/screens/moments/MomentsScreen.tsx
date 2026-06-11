@@ -10,7 +10,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -18,9 +17,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useTheme } from '../../theme/ThemeProvider';
-import { TopBar, IconButton } from '../../components/TopBar';
+import { TopBar } from '../../components/TopBar';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { CreateFAB } from '../../components/CreateFAB';
 import { MomentItem } from './MomentItem';
 import { uploadFile } from '../../api/upload';
 import { postMoment } from '../../api/moments';
@@ -84,16 +84,7 @@ export function MomentsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <TopBar
-        title={t('tabs.moments')}
-        right={
-          // Single "+" entry point — the camera button was a duplicate path to
-          // posting (it quick-posted a photo); the composer (+) covers it.
-          <IconButton onPress={() => nav.navigate('Composer')}>
-            <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
-          </IconButton>
-        }
-      />
+      <TopBar title={t('tabs.moments')} />
 
       <ScrollView
         horizontal
@@ -183,6 +174,8 @@ export function MomentsScreen() {
           )}
           refreshing={feedQ.isFetching && !feedQ.isLoading}
           onRefresh={() => feedQ.refetch()}
+          // Clear the bottom-right Create FAB so it never covers the last moment.
+          contentContainerStyle={{ paddingBottom: 96 }}
           // flex:1 confines the list to the space left after TopBar +
           // chip row, so its first item can't paint above its own box.
           // Without this the FlatList's container collapsed to content
@@ -204,6 +197,12 @@ export function MomentsScreen() {
           }
         />
       )}
+
+      {/* Create FAB — unified bottom-right entry point (matches 投票 tab) */}
+      <CreateFAB
+        onPress={() => nav.navigate('Composer')}
+        accessibilityLabel={t('empty.moments.cta')}
+      />
     </SafeAreaView>
   );
 }
