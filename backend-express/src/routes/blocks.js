@@ -116,7 +116,20 @@ router.post('/:id/report', auth, async (req, res, next) => {
       reason,
       note: typeof note === 'string' ? note.slice(0, 500) : '',
       context: typeof context === 'string' ? context.slice(0, 40) : 'profile',
-    }).catch(() => {});
+    })
+      .then(async (report) => {
+        // Notify admins that a report is waiting in the queue (tap → AdminReports).
+        try {
+          const { notifyAdmins } = require('../services/adminNotify');
+          const target = await User.findById(req.params.id).select('nickname').lean();
+          await notifyAdmins('report_submitted', {
+            title: '新的用户举报',
+            body: `${req.user.nickname || '用户'} 举报了 ${target?.nickname || '某用户'}（${reason}）`,
+            data: { type: 'report_submitted', reportId: String(report._id), kind: 'user' },
+          });
+        } catch (_) {}
+      })
+      .catch(() => {});
 
     ok(res, {});
   } catch (e) {

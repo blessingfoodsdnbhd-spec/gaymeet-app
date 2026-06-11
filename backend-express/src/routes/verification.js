@@ -4,6 +4,7 @@ const { uploadMedia } = require('../middleware/upload');
 const { ok, err } = require('../utils/respond');
 const Verification = require('../models/Verification');
 const User = require('../models/User');
+const { notifyAdmins } = require('../services/adminNotify');
 
 // When true, submissions self-approve after a short delay (demo / staging).
 // Default OFF → submissions sit as 'pending' for an admin to review in the
@@ -86,6 +87,16 @@ router.post('/submit', auth, uploadMedia.single('selfie'), async (req, res, next
       }, 3000);
     }
 
+    // Notify admins that a submission is waiting in the review queue (skip when
+    // submissions self-approve in demo/staging). Best-effort — tap → AdminVerifications.
+    if (!AUTO_APPROVE) {
+      notifyAdmins('verification_submitted', {
+        title: '新的照片认证待审核',
+        body: `${req.user.nickname || '用户'} 提交了照片认证`,
+        data: { type: 'verification_submitted', verificationId: String(record._id), userId: String(req.user._id) },
+      });
+    }
+
     ok(res, { status: 'pending', pose: record.pose });
   } catch (e) {
     next(e);
@@ -159,6 +170,14 @@ router.post(
             console.error('Video auto-approve error:', autoErr);
           }
         }, 5000);
+      }
+
+      if (!AUTO_APPROVE) {
+        notifyAdmins('verification_submitted', {
+          title: '新的视频认证待审核',
+          body: `${req.user.nickname || '用户'} 提交了视频认证`,
+          data: { type: 'verification_submitted', verificationId: String(record._id), userId: String(req.user._id) },
+        });
       }
 
       ok(res, { status: 'pending', verificationType: 'video' });
