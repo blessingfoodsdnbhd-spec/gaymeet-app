@@ -32,7 +32,8 @@
     "appleFailedRetry": "もう一度お試しください",
     "appleErrorTitle": "Appleサインインに失敗",
     "googleErrorTitle": "Googleサインイン",
-    "appleNoCredential": "Appleが有効な認証情報を返しませんでした。もう一度お試しください"
+    "appleNoCredential": "Appleが有効な認証情報を返しませんでした。もう一度お試しください",
+    "serverWaking": "サーバーを起動しています…"
   },
   "onboarding": {
     "1": {

@@ -297,7 +297,8 @@
     "appleFailedRetry": "Please retry",
     "appleNoCredential": "Apple didn't return a valid credential, please retry",
     "appleErrorTitle": "Apple Sign-In failed",
-    "googleErrorTitle": "Google Sign-In"
+    "googleErrorTitle": "Google Sign-In",
+    "serverWaking": "Waking up the server…"
   },
   "email": {
     "title": "What's your email?",

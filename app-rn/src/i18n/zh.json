@@ -297,7 +297,8 @@
     "appleFailedRetry": "请重试",
     "appleNoCredential": "Apple 没有返回有效凭证,请重试",
     "appleErrorTitle": "Apple 登录失败",
-    "googleErrorTitle": "Google 登录"
+    "googleErrorTitle": "Google 登录",
+    "serverWaking": "服务器正在唤醒中…"
   },
   "email": {
     "title": "你的邮箱是?",

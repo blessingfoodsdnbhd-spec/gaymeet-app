@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, Pressable, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { useAuth } from '../../store/auth';
 import { PRIVACY_URL, TERMS_URL, openLegal } from '../../utils/legalUrls';
 import { signInApple, signInGoogle } from '../../api/auth';
 import { signInWithGoogle } from '../../utils/googleSignin';
+import { warmBackend } from '../../utils/warmup';
 import type { AuthStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
@@ -22,6 +23,17 @@ export function WelcomeScreen() {
   const { t } = useTranslation();
   const signIn = useAuth((s) => s.signIn);
   const [busy, setBusy] = useState<'apple' | 'google' | null>(null);
+  // True once an auth request hits a cold-start network stall — drives the
+  // "server is waking up…" hint under the buttons.
+  const [waking, setWaking] = useState(false);
+
+  // Keep warming the Render free-tier dyno while the user is on this screen.
+  // App boot fires one ping, but a fully-cold dyno can take longer than that
+  // single ping's window to wake; these spaced retries close the gap so the
+  // backend is up by the time the user taps a sign-in button. Fire-and-forget.
+  useEffect(() => {
+    warmBackend();
+  }, []);
 
   const onApple = async () => {
     if (busy) return;
@@ -53,7 +65,9 @@ export function WelcomeScreen() {
             .join(' ')
             .trim() || undefined
         : undefined;
-      const res = await signInApple(credential.identityToken, name);
+      const res = await signInApple(credential.identityToken, name, {
+        onWaking: () => setWaking(true),
+      });
       await signIn(res.accessToken, res.refreshToken, res.user);
     } catch (e: any) {
       const status = e?.response?.status;
@@ -67,6 +81,7 @@ export function WelcomeScreen() {
       Alert.alert(t('welcome.appleErrorTitle'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     } finally {
       setBusy(null);
+      setWaking(false);
     }
   };
 
@@ -101,7 +116,9 @@ export function WelcomeScreen() {
       }
 
       diag.push('calling backend /auth/google');
-      const res = await signInGoogle(result.idToken);
+      const res = await signInGoogle(result.idToken, {
+        onWaking: () => setWaking(true),
+      });
       diag.push(
         `backend ok: user=${res.user?.id?.slice(-6) ?? '?'} ` +
         `interestsOnboardedAt=${res.user?.interestsOnboardedAt ?? 'null'}`,
@@ -129,6 +146,7 @@ export function WelcomeScreen() {
       );
     } finally {
       setBusy(null);
+      setWaking(false);
     }
   };
 
@@ -199,6 +217,24 @@ export function WelcomeScreen() {
           disabled={!!busy}
           fullWidth
         />
+        {/* Cold-start hint — shown while an auth request is retrying through a
+            sleeping Render dyno, so the wait reads as "waking up" not "broken". */}
+        {waking && busy && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginTop: 4,
+            }}
+          >
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <Text style={{ fontSize: 13, color: theme.colors.text2 }}>
+              {t('welcome.serverWaking')}
+            </Text>
+          </View>
+        )}
         <Text
           style={{
             fontSize: 11.5,

@@ -10,7 +10,6 @@ initSentry();
 import { NavigationContainer } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { View, ActivityIndicator } from 'react-native';
-import Constants from 'expo-constants';
 
 import './i18n';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -31,29 +30,7 @@ import {
 } from './utils/push';
 import { drainColdTap } from './utils/pushRouter';
 import { queryClient } from './api/queryClient';
-
-/**
- * Warm the Render free-tier dyno during the splash window so the user's
- * first real action (auth, nearby fetch, etc.) doesn't hit a 30-50s cold
- * start. Pairs with the timeout+retry hardening in api/auth.ts — together
- * they make cold-start nearly invisible.
- *
- * Fire-and-forget: we never await it, swallow all errors, and abort the
- * fetch after 30s so a hung connection doesn't sit in the runtime forever.
- * Uses native fetch (not the api axios instance) to bypass auth headers,
- * interceptors, and the refresh-token machinery — this is a raw warm-up
- * ping, not an authenticated call.
- */
-function wakeBackend() {
-  const baseURL =
-    (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
-    'https://gaymeet-api.onrender.com';
-  const controller = new AbortController();
-  const cancel = setTimeout(() => controller.abort(), 30_000);
-  fetch(`${baseURL.replace(/\/+$/, '')}/health`, { signal: controller.signal })
-    .catch(() => {})
-    .finally(() => clearTimeout(cancel));
-}
+import { wakeBackend } from './utils/warmup';
 
 // Deep links. meyou://invite/<code> (and the https mirror) → the redeem screen
 // with the code pre-filled. Other schemes fall through to push-tap routing.
