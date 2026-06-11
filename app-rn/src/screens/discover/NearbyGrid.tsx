@@ -2,12 +2,12 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Lock } from 'lucide-react-native';
+import { Lock, LayoutGrid } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
-import { useDiscoverPrefs, type GridColumns } from '../../store/discoverPrefs';
+import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
 import { prefetchMany } from '../../utils/voiceCache';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -90,33 +90,16 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
           <Text style={{ fontSize: 12, color: theme.colors.muted }}>
             {countLabel ?? t('nearby.peopleCount', { n: users.length })}
           </Text>
-          {/* Column chooser: 2 / 3 / 4 — persisted via discoverPrefs. */}
-          <View style={[styles.colChooser, { borderColor: theme.colors.line }]}>
-            {([2, 3, 4] as GridColumns[]).map((n) => {
-              const active = cols === n;
-              return (
-                <Pressable
-                  key={n}
-                  onPress={() => setCols(n)}
-                  hitSlop={4}
-                  style={[
-                    styles.colOption,
-                    active && { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: '700',
-                      color: active ? '#FFFFFF' : theme.colors.text2,
-                    }}
-                  >
-                    {n}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* Column chooser — single tap-to-cycle chip: 2 → 3 → 4 → 2 (BBBBBB).
+              Persisted via discoverPrefs. */}
+          <Pressable
+            onPress={() => setCols(cols === 2 ? 3 : cols === 3 ? 4 : 2)}
+            hitSlop={6}
+            style={[styles.colChip, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface }]}
+          >
+            <LayoutGrid size={14} color={theme.colors.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: theme.colors.text2 }}>{cols}</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -231,17 +214,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
-  colChooser: {
+  colChip: {
     flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  colOption: {
-    width: 26,
-    height: 24,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    height: 26,
+    borderWidth: 1,
+    borderRadius: 999,
   },
   tileBg: {
     flex: 1,
