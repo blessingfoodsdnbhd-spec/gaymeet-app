@@ -18,15 +18,31 @@ const mongoose = require('mongoose');
 const ChatRoom = require('../models/ChatRoom');
 const { ROOMS } = require('../config/worldChatRooms');
 
-// Store fallbacks. Overridable via env once the listings have stable IDs; the
-// Play URL is deterministic from the package id, the iOS one falls back to the
-// marketing site until the numeric App Store id is known.
+// e.g. "6762375260" — the App Store Connect app id (also enables the native iOS
+// smart app banner). Drives both the store link and the banner meta below.
+const IOS_APP_ID = process.env.IOS_APP_STORE_ID || '6762375260';
+// Store fallbacks, overridable via env.
 const PLAY_URL =
   process.env.ANDROID_PLAY_URL ||
   'https://play.google.com/store/apps/details?id=com.meetupnearby.app';
-const IOS_URL = process.env.IOS_APP_STORE_URL || 'https://meyou.uk';
-// e.g. "6471234567" — enables the native iOS smart app banner when set.
-const IOS_APP_ID = process.env.IOS_APP_STORE_ID || '';
+const IOS_URL =
+  process.env.IOS_APP_STORE_URL ||
+  (IOS_APP_ID ? `https://apps.apple.com/app/id${IOS_APP_ID}` : 'https://meyou.uk');
+
+// English names for the 4 fixed country sub-boards (mirrors countrySubChannels.js
+// keys) so the OG title reads "🌍 World Chit-Chat" rather than a generic label.
+const SUB_EN = { general: 'General', newcomers: 'Newcomers', social: 'Social', chitchat: 'Chit-Chat' };
+
+// Friendly share slug <-> canonical room id. Twin of app-rn/src/utils/roomLink.ts.
+//   country:<cc>:<key>  <->  <cc>-<key>   ·  everything else == itself
+// Accepts legacy colon slugs verbatim so links already in the wild keep working.
+function slugToRoomId(slug) {
+  if (!slug) return '';
+  if (slug.includes(':')) return slug; // legacy colon link / channel id — already canonical
+  const i = slug.indexOf('-');
+  if (i > 0) return `country:${slug.slice(0, i)}:${slug.slice(i + 1)}`;
+  return slug; // 'world', bare country code, or ObjectId
+}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s)
@@ -42,6 +58,13 @@ function escapeHtml(s) {
 async function resolveRoomName(roomId) {
   const builtin = ROOMS.find((r) => r.id === roomId);
   if (builtin) return `${builtin.flag} ${builtin.en}`;
+  // Country sub-board: country:<cc>:<key>  →  "🇲🇾 Malaysia Chit-Chat".
+  if (roomId.startsWith('country:')) {
+    const [, cc, key] = roomId.split(':');
+    const country = ROOMS.find((r) => r.id.toLowerCase() === String(cc).toLowerCase());
+    const sub = SUB_EN[key];
+    if (country && sub) return `${country.flag} ${country.en} ${sub}`;
+  }
   if (mongoose.isValidObjectId(roomId)) {
     try {
       const room = await ChatRoom.findById(roomId).select('title isPrivate status').lean();
@@ -54,9 +77,10 @@ async function resolveRoomName(roomId) {
   return 'Meyou';
 }
 
-function renderHtml({ roomId, roomName }) {
+function renderHtml({ roomId, roomName, shareUrl }) {
   const deepLink = `meyou://room/${encodeURIComponent(roomId)}`;
   const safeName = escapeHtml(roomName);
+  const safeUrl = escapeHtml(shareUrl || `https://meyou.uk/r/${encodeURIComponent(roomId)}`);
   const title = `Join “${safeName}” on Meyou`;
   const desc = 'Tap to open the chat in the Meyou app.';
   const banner = IOS_APP_ID
@@ -71,6 +95,10 @@ function renderHtml({ roomId, roomName }) {
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${desc}">
 <meta property="og:type" content="website">
+<meta property="og:url" content="${safeUrl}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${desc}">
 ${banner}
 <style>
   :root { color-scheme: light; }
@@ -132,12 +160,16 @@ ${banner}
 }
 
 async function roomLanding(req, res) {
-  const roomId = String(req.params.roomId || '').trim();
-  if (!roomId || roomId.length > 64) return res.status(404).send('Not found');
+  const slug = String(req.params.roomId || '').trim();
+  if (!slug || slug.length > 64) return res.status(404).send('Not found');
+  // Decode the friendly slug to the canonical room id the app navigates to. The
+  // deep link + name lookup use the canonical id; og:url echoes the slug visited.
+  const roomId = slugToRoomId(slug);
+  const shareUrl = `https://meyou.uk/r/${encodeURI(slug)}`;
   const roomName = await resolveRoomName(roomId);
   res.set('Content-Type', 'text/html; charset=utf-8');
   res.set('Cache-Control', 'public, max-age=60');
-  return res.send(renderHtml({ roomId, roomName }));
+  return res.send(renderHtml({ roomId, roomName, shareUrl }));
 }
 
 module.exports = { roomLanding };
