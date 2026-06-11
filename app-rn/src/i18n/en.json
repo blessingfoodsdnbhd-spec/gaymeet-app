@@ -1021,6 +1021,7 @@
     }
   },
   "premium": {
+    "upgradeToGift": "Upgrade to Premium to gift to friends",
     "heroTagline": "Unlock Meyou Premium for community engagement",
     "active": "You're a Premium member",
     "expiresAt": "Expires: {{date}}",

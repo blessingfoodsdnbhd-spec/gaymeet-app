@@ -325,12 +325,19 @@ export function ProfileScreen() {
               <Divider />
             </>
           )}
-          <SettingsRow
-            icon={<Gift size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.giftPremium')}
-            onPress={() => nav.navigate('PremiumGift')}
-          />
-          <Divider />
+          {/* Gifting Premium is Premium-only (SSSSSS) — free users would mint
+              free Premium for the recipient at no cost. Hide the entry; the
+              backend also returns 403 PREMIUM_REQUIRED as the real gate. */}
+          {!!(user as any).isPremium && (
+            <>
+              <SettingsRow
+                icon={<Gift size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.giftPremium')}
+                onPress={() => nav.navigate('PremiumGift')}
+              />
+              <Divider />
+            </>
+          )}
           <SettingsRow
             icon={<BadgeCheck size={18} color={theme.colors.success} strokeWidth={1.8} />}
             label={t('profile.rows.verification')}

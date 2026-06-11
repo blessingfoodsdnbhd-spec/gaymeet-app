@@ -1,7 +1,8 @@
 // Premium gifting (item 8 / GIFT1). A user gifts 7 days of Premium to another
-// user. Quotas (overhauled): a gifter may send a limited number of gifts per
-// CALENDAR MONTH — 5 if they are effectively Premium, 1 if free — and may gift
-// any given recipient at most ONCE EVER (lifetime, per gifter→recipient pair).
+// user. Gifting is Premium-only (SSSSSS): free users are blocked. A Premium
+// gifter may send 1 gift per CALENDAR MONTH, and may gift any given recipient
+// at most ONCE EVER (lifetime, per gifter→recipient pair) — so at most 12
+// distinct recipients per year.
 const router = require('express').Router();
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
@@ -11,8 +12,8 @@ const User = require('../models/User');
 const PremiumGift = require('../models/PremiumGift');
 
 const GIFT_DAYS = 7;
-const PREMIUM_MONTHLY_CAP = 5;
-const FREE_MONTHLY_CAP = 1;
+const PREMIUM_MONTHLY_CAP = 1;
+const FREE_MONTHLY_CAP = 0; // free users are blocked outright; kept for clarity
 const DAY = 24 * 60 * 60 * 1000;
 
 // Start of the current calendar month, UTC (matches the quota display).
@@ -24,7 +25,7 @@ function startOfMonthUTC(d = new Date()) {
 const monthlyCapFor = (user) => (isPremiumActive(user) ? PREMIUM_MONTHLY_CAP : FREE_MONTHLY_CAP);
 
 // ── GET /api/premium/gift/quota ───────────────────────────────────────────────
-// Drives the "今月剩余 X / N 次" header. `total` is 5 for Premium, 1 for free.
+// Drives the "今月剩余 X / N 次" header. `total` is 1 for Premium (free → 0).
 router.get('/gift/quota', auth, async (req, res, next) => {
   try {
     const total = monthlyCapFor(req.user);
@@ -41,6 +42,14 @@ router.get('/gift/quota', auth, async (req, res, next) => {
 // ── POST /api/premium/gift  { recipientId } ───────────────────────────────────
 router.post('/gift', auth, async (req, res, next) => {
   try {
+    // Premium-only feature (SSSSSS): a free user must never gift Premium —
+    // that would mint free Premium for the recipient at no cost (and invites
+    // sockpuppet abuse). Block before any quota/recipient work. The client
+    // hides the entry + redirects, but this is the authoritative gate.
+    if (!isPremiumActive(req.user)) {
+      return res.status(403).json({ error: 'Only Premium members can gift Premium', code: 'PREMIUM_REQUIRED' });
+    }
+
     const recipientId = String(req.body.recipientId || '');
     if (!recipientId) return err(res, 'recipientId required', 400);
     if (recipientId === req.user._id.toString()) {
@@ -50,7 +59,7 @@ router.post('/gift', auth, async (req, res, next) => {
     const recipient = await User.findById(recipientId);
     if (!recipient) return err(res, 'Recipient not found', 404);
 
-    // Monthly cap (5 Premium / 1 free).
+    // Monthly cap (1 for Premium; free users already 403'd above).
     const cap = monthlyCapFor(req.user);
     const usedThisMonth = await PremiumGift.countDocuments({
       gifter: req.user._id,

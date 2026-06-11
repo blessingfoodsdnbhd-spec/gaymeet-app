@@ -1021,6 +1021,7 @@
     }
   },
   "premium": {
+    "upgradeToGift": "升级 Premium 才能赠送给朋友",
     "heroTagline": "解锁 Meyou 会员,畅享社区功能",
     "active": "你已是 Premium 会员",
     "expiresAt": "到期: {{date}}",

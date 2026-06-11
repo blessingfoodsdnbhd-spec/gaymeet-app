@@ -1144,6 +1144,7 @@
     }
   },
   "premium": {
+    "upgradeToGift": "친구에게 선물하려면 프리미엄으로 업그레이드하세요",
     "heroTagline": "커뮤니티 활동을 위한 Meyou 프리미엄을 잠금 해제하세요",
     "active": "프리미엄 회원입니다",
     "expiresAt": "만료: {{date}}",

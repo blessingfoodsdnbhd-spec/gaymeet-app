@@ -1144,6 +1144,7 @@
     }
   },
   "premium": {
+    "upgradeToGift": "友達に贈るにはプレミアムにアップグレード",
     "heroTagline": "コミュニティ活動のためにMeyouプレミアムを解放",
     "active": "プレミアム会員です",
     "expiresAt": "有効期限: {{date}}",
