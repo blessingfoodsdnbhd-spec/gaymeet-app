@@ -26,6 +26,8 @@ import { Avatar } from '../../components/Avatar';
 import { ChatComposer } from '../../components/ChatComposer';
 import { SwipeToReply } from '../../components/SwipeToReply';
 import { Sheet } from '../../components/Sheet';
+import { OnlineSidebar } from '../../components/OnlineSidebar';
+import { UserLevelBadge } from '../../components/UserLevelBadge';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
@@ -101,6 +103,7 @@ export function WorldChatScreen() {
   const closed = room?.status === 'closed';
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [onlineOpen, setOnlineOpen] = React.useState(false);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -435,11 +438,13 @@ export function WorldChatScreen() {
               <Text style={{ fontSize: 11, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
             )}
           </View>
-          <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-            {isCustom && room
-              ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${online ?? room.onlineCount}`
-              : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
-          </Text>
+          <Pressable onPress={() => setOnlineOpen(true)} hitSlop={6}>
+            <Text style={{ fontSize: 12, color: theme.colors.primary, marginTop: 2, fontWeight: '600' }}>
+              {isCustom && room
+                ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${t('plaza.online', { n: online ?? room.onlineCount })}`
+                : `🟢 ${t('plaza.online', { n: online ?? 0 })}`}
+            </Text>
+          </Pressable>
         </View>
         {isCustom && room && (
           <Pressable onPress={() => setSettingsOpen(true)} hitSlop={8} style={{ marginLeft: 8 }}>
@@ -595,6 +600,9 @@ export function WorldChatScreen() {
         />
       )}
 
+      {/* Online-users list (mIRC-style sidebar) for this room. */}
+      <OnlineSidebar open={onlineOpen} onClose={() => setOnlineOpen(false)} roomId={roomId} />
+
       {/* Preview + optional caption before sending a photo */}
       <PhotoConfirmModal
         uri={pendingPhoto}
@@ -678,6 +686,7 @@ function Row({
             </Pressable>
           )}
           {!mine && msg.isOfficial && <VerifiedBadge size={13} />}
+          {!mine && typeof msg.level === 'number' && <UserLevelBadge level={msg.level} />}
           {isCreator && <Crown size={12} color={theme.colors.primary} />}
           <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(msg.createdAt)}</Text>
         </View>

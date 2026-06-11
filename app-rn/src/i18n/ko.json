@@ -1340,5 +1340,56 @@
     "monthlyQuota": "이번 달 남은 {{remaining}} / {{total}} 회",
     "alreadyPremium": "이미 Premium 회원",
     "alreadyGifted": "이미 선물함"
+  },
+  "level": {
+    "lv1": "새내기",
+    "lv2": "루키",
+    "lv3": "회원",
+    "lv4": "활동",
+    "lv5": "단골",
+    "lv6": "수다",
+    "lv7": "친숙",
+    "lv8": "토커",
+    "lv9": "전문가",
+    "lv10": "베테랑",
+    "lv12": "원로",
+    "lv15": "마스터",
+    "lv18": "그랜드마스터",
+    "lv20": "전설"
+  },
+  "plaza": {
+    "online": "{{n}}명 접속",
+    "channels": {
+      "title": "관심 채널"
+    },
+    "onlineList": {
+      "title": "접속 중 · {{n}}",
+      "empty": "지금 접속자가 없어요",
+      "premium": "프리미엄"
+    },
+    "leaderboard": {
+      "title": "랭킹",
+      "daily": "오늘",
+      "weekly": "이번 주",
+      "all": "전체",
+      "xp": "{{n}} XP",
+      "emptyTitle": "아직 순위가 없어요",
+      "emptySubtitle": "광장에서 채팅하면 XP를 얻어요"
+    },
+    "level": {
+      "maxed": "{{xp}} XP · 최고"
+    },
+    "channel": {
+      "games": "게임",
+      "food": "음식",
+      "movies": "영화",
+      "fitness": "피트니스",
+      "pets": "반려동물",
+      "dating": "소개팅",
+      "travel": "여행",
+      "startup": "창업",
+      "ai": "AI",
+      "realestate": "부동산"
+    }
   }
 }

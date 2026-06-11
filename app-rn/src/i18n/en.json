@@ -1151,5 +1151,56 @@
       "deleteBody": "This hides it from users. You can re-enable it later.",
       "delete": "Delete"
     }
+  },
+  "level": {
+    "lv1": "Newbie",
+    "lv2": "Rookie",
+    "lv3": "Member",
+    "lv4": "Active",
+    "lv5": "Regular",
+    "lv6": "Chatty",
+    "lv7": "Familiar",
+    "lv8": "Talkative",
+    "lv9": "Expert",
+    "lv10": "Veteran",
+    "lv12": "Elder",
+    "lv15": "Master",
+    "lv18": "Grandmaster",
+    "lv20": "Legend"
+  },
+  "plaza": {
+    "online": "{{n}} online",
+    "channels": {
+      "title": "Channels"
+    },
+    "onlineList": {
+      "title": "Online · {{n}}",
+      "empty": "No one online right now",
+      "premium": "Premium"
+    },
+    "leaderboard": {
+      "title": "Leaderboard",
+      "daily": "Today",
+      "weekly": "This week",
+      "all": "All-time",
+      "xp": "{{n}} XP",
+      "emptyTitle": "No rankings yet",
+      "emptySubtitle": "Chat in the Plaza to earn XP"
+    },
+    "level": {
+      "maxed": "{{xp}} XP · Max"
+    },
+    "channel": {
+      "games": "Games",
+      "food": "Food",
+      "movies": "Movies",
+      "fitness": "Fitness",
+      "pets": "Pets",
+      "dating": "Dating",
+      "travel": "Travel",
+      "startup": "Startups",
+      "ai": "AI",
+      "realestate": "Real estate"
+    }
   }
 }

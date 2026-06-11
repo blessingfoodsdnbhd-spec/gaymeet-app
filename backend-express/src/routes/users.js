@@ -643,6 +643,22 @@ router.get('/widget-data', auth, async (req, res, next) => {
   }
 });
 
+// ── GET /api/users/:id/level ──────────────────────────────────────────────────
+// Chat-XP level + progress (吹水等级). 'me' resolves to the caller. Distinct
+// from User.level (energy). Two-segment path, so it never shadows GET /:id.
+router.get('/:id/level', auth, async (req, res, next) => {
+  try {
+    const UserXP = require('../models/UserXP');
+    const { levelInfo } = require('../utils/xp');
+    const id = req.params.id === 'me' ? req.user._id.toString() : req.params.id;
+    if (!mongoose.isValidObjectId(id)) return err(res, 'Invalid id', 400);
+    const xp = await UserXP.findOne({ userId: id }).select('totalXP').lean();
+    ok(res, levelInfo(xp?.totalXP ?? 0));
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/users/:id ────────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res, next) => {
   try {

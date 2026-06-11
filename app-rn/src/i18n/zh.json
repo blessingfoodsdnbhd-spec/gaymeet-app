@@ -1151,5 +1151,56 @@
       "deleteBody": "将对用户隐藏,稍后可重新启用。",
       "delete": "删除"
     }
+  },
+  "level": {
+    "lv1": "新人",
+    "lv2": "萌新",
+    "lv3": "入门",
+    "lv4": "活跃",
+    "lv5": "常客",
+    "lv6": "健谈",
+    "lv7": "老友",
+    "lv8": "话痨",
+    "lv9": "达人",
+    "lv10": "资深成员",
+    "lv12": "元老",
+    "lv15": "大神",
+    "lv18": "宗师",
+    "lv20": "传奇吹水王"
+  },
+  "plaza": {
+    "online": "在线 {{n}} 人",
+    "channels": {
+      "title": "兴趣频道"
+    },
+    "onlineList": {
+      "title": "在线 {{n}} 人",
+      "empty": "暂时没有人在线",
+      "premium": "会员"
+    },
+    "leaderboard": {
+      "title": "排行榜",
+      "daily": "今日",
+      "weekly": "本周",
+      "all": "总榜",
+      "xp": "{{n}} XP",
+      "emptyTitle": "还没有排名",
+      "emptySubtitle": "在广场聊天即可获得经验值"
+    },
+    "level": {
+      "maxed": "{{xp}} XP · 满级"
+    },
+    "channel": {
+      "games": "游戏",
+      "food": "美食",
+      "movies": "电影",
+      "fitness": "健身",
+      "pets": "宠物",
+      "dating": "交友",
+      "travel": "旅游",
+      "startup": "创业",
+      "ai": "AI 讨论",
+      "realestate": "房地产"
+    }
   }
 }

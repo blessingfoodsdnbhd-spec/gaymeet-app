@@ -1340,5 +1340,56 @@
     "monthlyQuota": "今月の残り {{remaining}} / {{total}} 回",
     "alreadyPremium": "すでにPremium会員",
     "alreadyGifted": "贈呈済み"
+  },
+  "level": {
+    "lv1": "新人",
+    "lv2": "ルーキー",
+    "lv3": "メンバー",
+    "lv4": "アクティブ",
+    "lv5": "常連",
+    "lv6": "おしゃべり",
+    "lv7": "なじみ",
+    "lv8": "トーカー",
+    "lv9": "達人",
+    "lv10": "ベテラン",
+    "lv12": "長老",
+    "lv15": "マスター",
+    "lv18": "グランドマスター",
+    "lv20": "伝説"
+  },
+  "plaza": {
+    "online": "{{n}}人オンライン",
+    "channels": {
+      "title": "興味チャンネル"
+    },
+    "onlineList": {
+      "title": "オンライン · {{n}}",
+      "empty": "現在オンラインの人はいません",
+      "premium": "プレミアム"
+    },
+    "leaderboard": {
+      "title": "ランキング",
+      "daily": "今日",
+      "weekly": "今週",
+      "all": "全期間",
+      "xp": "{{n}} XP",
+      "emptyTitle": "まだランキングがありません",
+      "emptySubtitle": "広場でチャットしてXPを獲得しよう"
+    },
+    "level": {
+      "maxed": "{{xp}} XP · 最大"
+    },
+    "channel": {
+      "games": "ゲーム",
+      "food": "グルメ",
+      "movies": "映画",
+      "fitness": "フィットネス",
+      "pets": "ペット",
+      "dating": "出会い",
+      "travel": "旅行",
+      "startup": "起業",
+      "ai": "AI",
+      "realestate": "不動産"
+    }
   }
 }

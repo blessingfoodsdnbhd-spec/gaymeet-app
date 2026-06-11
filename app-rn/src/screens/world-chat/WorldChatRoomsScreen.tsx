@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight } from 'lucide-react-native';
+import { Search, ChevronRight, Trophy } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { TopBar } from '../../components/TopBar';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { getWorldChatRooms, type WorldChatRoom } from '../../api/worldChat';
+import { getInterestChannels, type InterestChannel } from '../../api/plaza';
 import { on as wsOn } from '../../api/ws';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -31,6 +32,22 @@ export function WorldChatRoomsScreen() {
     queryFn: getWorldChatRooms,
     staleTime: 20_000,
   });
+
+  // Interest channels (兴趣频道) — themed rooms on the same chat infra. Online
+  // counts come from the endpoint (they're not in the rooms-state snapshot), so
+  // refetch periodically to keep them fresh.
+  const channelsQ = useQuery({
+    queryKey: ['plaza', 'channels'],
+    queryFn: getInterestChannels,
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+  const channels = channelsQ.data?.channels ?? [];
+
+  const openChannel = (c: InterestChannel) => {
+    const name = t(c.i18nKey, c.name);
+    nav.navigate('WorldChatRoom', { roomId: c.id, title: `${c.emoji} ${name}` });
+  };
 
   // Live per-room counts via the periodic rooms-state snapshot.
   React.useEffect(() => {
@@ -75,6 +92,18 @@ export function WorldChatRoomsScreen() {
       <TopBar
         title={t('tabs.worldChat')}
         subtitle={`🌍 ${t('worldChat.online', { n: totalOnline })}`}
+        right={
+          <Pressable
+            onPress={() => nav.navigate('Leaderboard')}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Trophy size={20} color={theme.colors.primary} strokeWidth={2} />
+          </Pressable>
+        }
       />
 
       <View style={{ paddingHorizontal: 20, paddingBottom: 6 }}>
@@ -100,7 +129,40 @@ export function WorldChatRoomsScreen() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 28 }}
           ListHeaderComponent={
-            <Text style={[styles.section, { color: theme.colors.muted }]}>{t('worldChat.rooms.sectionGlobal')}</Text>
+            <View>
+              {/* Interest channels — hidden while searching to keep country results focused. */}
+              {!search.trim() && channels.length > 0 && (
+                <>
+                  <Text style={[styles.section, { color: theme.colors.muted }]}>{t('plaza.channels.title')}</Text>
+                  <View style={styles.channelGrid}>
+                    {channels.map((c) => {
+                      const name = t(c.i18nKey, c.name);
+                      return (
+                        <Pressable
+                          key={c.id}
+                          onPress={() => openChannel(c)}
+                          style={({ pressed }) => [
+                            styles.channelCard,
+                            { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1 },
+                          ]}
+                        >
+                          <Text style={{ fontSize: 24 }}>{c.emoji}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '700', color: theme.colors.text }}>
+                              {name}
+                            </Text>
+                            <Text style={{ fontSize: 11.5, color: theme.colors.online, marginTop: 2, fontWeight: '600' }}>
+                              🟢 {c.onlineCount}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+              <Text style={[styles.section, { color: theme.colors.muted }]}>{t('worldChat.rooms.sectionGlobal')}</Text>
+            </View>
           }
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => {
@@ -149,6 +211,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   section: { fontSize: 12, letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 12, marginTop: 6 },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 18,
+  },
+  channelCard: {
+    width: '47.5%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

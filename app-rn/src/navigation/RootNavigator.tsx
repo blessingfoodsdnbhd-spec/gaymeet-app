@@ -39,6 +39,7 @@ import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { CountryRoomsScreen } from '../screens/world-chat/CountryRoomsScreen';
+import { LeaderboardScreen } from '../screens/world-chat/LeaderboardScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
@@ -171,6 +172,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="WorldChatRoom"
             component={WorldChatScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="Leaderboard"
+            component={LeaderboardScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

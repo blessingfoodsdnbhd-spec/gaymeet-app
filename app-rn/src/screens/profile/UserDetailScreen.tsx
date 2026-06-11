@@ -23,6 +23,8 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { PremiumBadge } from '../../components/PremiumBadge';
+import { LevelProgress } from '../../components/UserLevelBadge';
+import { getUserLevel } from '../../api/plaza';
 import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
@@ -86,6 +88,14 @@ export function UserDetailScreen() {
   });
 
   const user = userQ.data;
+
+  // Chat-XP level + progress (吹水等级) — shown under the name in the header.
+  const levelQ = useQuery({
+    queryKey: ['user', userId, 'level'],
+    queryFn: () => getUserLevel(userId),
+    staleTime: 60_000,
+  });
+
   // Top carousel photos — all public photos, falling back to the avatar.
   const carouselPhotos: string[] = user
     ? (user.photos && user.photos.length > 0
@@ -340,6 +350,12 @@ export function UserDetailScreen() {
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>
                 {user.countryCode}
               </Text>
+            )}
+            {/* Chat-XP level (吹水等级) + progress toward the next tier. */}
+            {levelQ.data && (
+              <View style={{ marginTop: 12 }}>
+                <LevelProgress {...levelQ.data} />
+              </View>
             )}
             {/* Factual attributes (height/weight/body/relationship/mbti/intent/
                 city) as one plain bullet-separated line. Interests stay chips. */}

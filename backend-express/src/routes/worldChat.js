@@ -11,6 +11,8 @@ const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { isInterestRoomId } = require('../config/interestChannels');
+const { awardMessageXP, levelForUser, levelsForUsers } = require('../utils/xp');
 const { blockedIdSet } = require('../utils/blocking');
 
 const BODY_MAX = 500;
@@ -129,7 +131,8 @@ router.post('/send', auth, async (req, res, next) => {
 
     const rid = req.body?.roomId;
     const custom = isCustomRoomId(rid);
-    const roomId = VALID_ROOM_IDS.has(rid) || custom ? rid : 'world';
+    const interest = isInterestRoomId(rid);
+    const roomId = VALID_ROOM_IDS.has(rid) || custom || interest ? rid : 'world';
 
     const banned = await WorldChatBan.exists({ userId: req.user._id });
     if (banned) return err(res, 'You are banned from World Chat', 403);
@@ -190,6 +193,8 @@ router.post('/send', auth, async (req, res, next) => {
       ChatRoom.updateOne({ _id: roomId }, { $inc: { messageCount: 1 }, $set: { lastActiveAt: new Date() } }).catch(() => {});
     }
 
+    const senderLevel = await levelForUser(req.user._id);
+
     const payload = {
       messageId: msg._id.toString(),
       roomId,
@@ -197,6 +202,7 @@ router.post('/send', auth, async (req, res, next) => {
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
       isOfficial: req.user.isOfficial ?? false,
+      level: senderLevel,
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
@@ -211,6 +217,10 @@ router.post('/send', auth, async (req, res, next) => {
     };
     broadcast('world-chat:receive', payload, roomId);
     created(res, payload);
+
+    // Award chat XP (1/message, capped 100/day). Fire-and-forget — an XP write
+    // must never delay or fail a chat send.
+    awardMessageXP(req.user._id, roomId).catch(() => {});
 
     // Push the original sender when someone replies to them (not on self-reply).
     // notify() respects per-user opt-out (world_chat_reply isn't high-priority).
@@ -563,7 +573,8 @@ router.get('/recent', auth, async (req, res, next) => {
     const before = req.query.before;
     const rid = req.query.roomId;
     const custom = isCustomRoomId(rid);
-    const roomId = VALID_ROOM_IDS.has(rid) || custom ? rid : 'world';
+    const interest = isInterestRoomId(rid);
+    const roomId = VALID_ROOM_IDS.has(rid) || custom || interest ? rid : 'world';
 
     // Custom rooms are member-only (public ones are joined frictionlessly first).
     if (custom) {
@@ -595,8 +606,9 @@ router.get('/recent', auth, async (req, res, next) => {
       .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
 
-    const messages = rows
-      .filter((m) => m.userId) // populate -> null if the user was deleted
+    const kept = rows.filter((m) => m.userId); // populate -> null if the user was deleted
+    const levelBy = await levelsForUsers(kept.map((m) => m.userId._id));
+    const messages = kept
       .map((m) => {
         const r = m.replyToMessageId;
         const replyTo =
@@ -615,6 +627,7 @@ router.get('/recent', auth, async (req, res, next) => {
           displayName: m.userId.nickname,
           avatarUrl: m.userId.avatarUrl ?? null,
           isOfficial: m.userId.isOfficial ?? false,
+          level: levelBy.get(m.userId._id.toString()) ?? 1,
           countryCode: m.userId.countryCode ?? null,
           city: m.userId.city ?? null,
           body: m.body,

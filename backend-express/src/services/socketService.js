@@ -9,8 +9,34 @@ const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { isInterestRoomId } = require('../config/interestChannels');
+const { awardChannelJoinXP } = require('../utils/xp');
 
 let io;
+
+// ── Online-time tracking (for the daily "online >30 min" XP bonus) ────────────
+// In-memory, best-effort: `onlineSince` is the start of the currently-unaccounted
+// window per user; `dailyOnlineMin` accumulates minutes until the midnight cron
+// drains it. A restart loses the in-flight window only (the awarded total is in
+// UserXP). A 5-min interval accrues long sessions even without a disconnect.
+const onlineSince = new Map(); // userId -> epoch ms
+const dailyOnlineMin = new Map(); // userId -> minutes accumulated today
+
+function accrueOnline(userId) {
+  const start = onlineSince.get(userId);
+  if (!start) return;
+  const mins = (Date.now() - start) / 60000;
+  if (mins > 0) dailyOnlineMin.set(userId, (dailyOnlineMin.get(userId) || 0) + mins);
+  onlineSince.set(userId, Date.now());
+}
+
+/** Accrue everyone's current window, then return + clear the day's minutes. */
+function drainDailyOnlineMinutes() {
+  for (const uid of onlineSince.keys()) accrueOnline(uid);
+  const out = new Map(dailyOnlineMin);
+  dailyOnlineMin.clear();
+  return out;
+}
 
 /** Live online count per World Chat room (from the socket.io adapter). */
 function getRoomCounts() {
@@ -41,6 +67,19 @@ function roomOnlineCount(roomId) {
 function emitRoomCount(roomId) {
   if (!io || !roomId) return;
   io.to(socketRoom(roomId)).emit('world-chat:online-count', { roomId, count: roomOnlineCount(roomId) });
+}
+
+/** The userIds currently connected to a room (a user may hold ≥1 socket). */
+function roomOnlineUserIds(roomId) {
+  if (!io) return [];
+  const set = io.sockets.adapter.rooms.get(socketRoom(roomId));
+  if (!set) return [];
+  const ids = [];
+  for (const sid of set) {
+    const s = io.sockets.sockets.get(sid);
+    if (s?.userId) ids.push(s.userId);
+  }
+  return ids;
 }
 
 const isCustomRoomId = (id) => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
@@ -95,6 +134,9 @@ function initSocket(server) {
 
     // Notify matches that this user came online
     _notifyOnlineStatus(userId, true);
+
+    // Start an online-time window for the daily bonus (first socket only).
+    if (!onlineSince.has(userId)) onlineSince.set(userId, Date.now());
 
     // ── join_room ─────────────────────────────────────────────────────────────
     // Client sends this when opening a chat screen.
@@ -468,15 +510,19 @@ function initSocket(server) {
     // World Chat: switch rooms. Client emits when entering a country OR a
     // custom (user-created) room. Custom room ids are 24-hex ChatRoom ids.
     socket.on('world-chat:join-room', ({ roomId } = {}) => {
-      const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) ? roomId : 'world';
+      const interest = isInterestRoomId(roomId);
+      const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) || interest ? roomId : 'world';
       const prev = socket.data?.wcRoom || 'world';
       if (next !== prev) {
         socket.leave(socketRoom(prev));
         socket.join(socketRoom(next));
         socket.data = { ...(socket.data || {}), wcRoom: next };
-        // Custom rooms aren't in the periodic ROOMS snapshot — push their counts.
-        if (isCustomRoomId(prev)) emitRoomCount(prev);
-        if (isCustomRoomId(next)) emitRoomCount(next);
+        // Non-builtin rooms (custom + interest) aren't in the periodic ROOMS
+        // snapshot — push their counts directly.
+        if (!VALID_ROOM_IDS.has(prev)) emitRoomCount(prev);
+        if (!VALID_ROOM_IDS.has(next)) emitRoomCount(next);
+        // First time entering an interest channel → one-off join bonus.
+        if (interest) awardChannelJoinXP(userId, next).catch(() => {});
       }
       emitRoomsState();
     });
@@ -495,6 +541,9 @@ function initSocket(server) {
           lastActiveAt: new Date(),
         });
         _notifyOnlineStatus(userId, false);
+        // Bank this session's online minutes, then close the window.
+        accrueOnline(userId);
+        onlineSince.delete(userId);
       }
       // Socket has already left its rooms by 'disconnect' → counts are fresh.
       emitRoomsState();
@@ -509,6 +558,12 @@ function initSocket(server) {
       // best effort
     }
   }, 10_000).unref?.();
+
+  // Accrue online minutes for still-connected users so long sessions count
+  // toward the daily bonus even without a disconnect event.
+  setInterval(() => {
+    for (const uid of onlineSince.keys()) accrueOnline(uid);
+  }, 5 * 60 * 1000).unref?.();
 
   return io;
 }
@@ -543,4 +598,11 @@ function getIO() {
   return io;
 }
 
-module.exports = { initSocket, getIO, getRoomCounts, roomOnlineCount };
+module.exports = {
+  initSocket,
+  getIO,
+  getRoomCounts,
+  roomOnlineCount,
+  roomOnlineUserIds,
+  drainDailyOnlineMinutes,
+};

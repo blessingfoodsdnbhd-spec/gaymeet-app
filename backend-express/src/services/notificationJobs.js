@@ -6,6 +6,7 @@ const Swipe = require('../models/Swipe');
 const ChatRoom = require('../models/ChatRoom');
 const WorldChatMessage = require('../models/WorldChatMessage');
 const { notify, alreadyNotified } = require('./notificationService');
+const { awardDailyOnlineXP } = require('../utils/xp');
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
@@ -147,12 +148,31 @@ async function hotEventsDigest() {
   }
 }
 
+/**
+ * Daily 00:xx UTC: drain the in-memory online-minute counters from the socket
+ * layer and award the "online > 30 min" XP bonus. awardDailyOnlineXP() guards
+ * to once-per-UTC-day per user, so the multiple in-hour ticks are safe.
+ */
+async function dailyOnlineBonus() {
+  let minutesByUser = new Map();
+  try {
+    minutesByUser = require('./socketService').drainDailyOnlineMinutes();
+  } catch (_) {
+    return; // socket layer not ready
+  }
+  for (const [userId, minutes] of minutesByUser) {
+    await awardDailyOnlineXP(userId, minutes); // internally guarded + error-swallowing
+  }
+}
+
 // Fires every 15 min; daily digests run only on their target UTC hour, deduped
 // per-user-per-day by the ledger so the multiple in-hour ticks are safe.
 async function dailyTick() {
   try {
     const hour = new Date().getUTCHours();
-    if (hour === 8) {
+    if (hour === 0) {
+      await dailyOnlineBonus();
+    } else if (hour === 8) {
       await hotEventsDigest();
     } else if (hour === 20) {
       await viewersDigest();

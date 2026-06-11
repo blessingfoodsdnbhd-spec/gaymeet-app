@@ -17,6 +17,8 @@ export interface WorldChatMessage {
   displayName: string;
   avatarUrl: string | null;
   isOfficial?: boolean;
+  /** Chat-XP level (吹水等级) of the sender — small badge next to the name. */
+  level?: number;
   countryCode?: string | null;
   city?: string | null;
   body: string;

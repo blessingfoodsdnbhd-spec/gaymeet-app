@@ -65,6 +65,8 @@ export type RootStackParamList = {
   WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
   /** Room list inside one country (general + user-created rooms). */
   CountryRooms: { countryCode: string; title: string };
+  /** Plaza XP leaderboard (daily / weekly / all-time). */
+  Leaderboard: undefined;
   /** Create a user room inside a country. */
   CreateRoom: { countryCode: string; title: string };
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
