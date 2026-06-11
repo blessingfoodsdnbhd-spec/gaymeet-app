@@ -10,7 +10,7 @@ import {
   Alert,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { ChevronLeft, Search, Crown } from 'lucide-react-native';
@@ -51,6 +51,14 @@ const CITY_PRESETS: { flag: string; name: string; lat: number; lng: number }[] =
 export function MapPickerScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  // Moment mode opens this as a `fullScreenModal` (RootNavigator), which covers
+  // the status bar / Dynamic Island. The live top inset can resolve to 0 inside
+  // a full-screen modal, cramming the header under the island — so floor it with
+  // the window's own top inset (captured natively, device-accurate: ~59 on
+  // Dynamic Island, ~47 notch, 20 older). The card-push (virtual mode) already
+  // reports a correct inset, so Math.max is a no-op there.
+  const topInset = Math.max(insets.top, initialWindowMetrics?.insets.top ?? 0);
   const nav = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'MapPicker'>>();
   // 'moment' mode returns the picked place to the composer (no virtual-location
@@ -259,15 +267,15 @@ ${
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={8}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <View style={[styles.header, { paddingTop: topInset, borderBottomColor: theme.colors.line }]}>
+        <Pressable onPress={() => nav.goBack()} hitSlop={12} style={styles.headerBtn}>
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ flex: 1, marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {momentMode ? t('moments.compose.location') : t('virtualLocation.title')}
         </Text>
-        <Pressable onPress={canSave ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={8}>
+        <Pressable onPress={canSave ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={12} style={styles.headerBtn}>
           {busy ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : canSave ? (
@@ -415,7 +423,7 @@ ${
         onClose={() => setUpsellOpen(false)}
         reason={t('virtualLocation.subtitle')}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -424,9 +432,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  // ≥44pt touch targets for the back / save actions (Apple HIG).
+  headerBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   searchWrap: { paddingHorizontal: 16, paddingTop: 10, zIndex: 10 },
   searchBox: {
     flexDirection: 'row',

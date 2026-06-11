@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
 import { ensureAudioMode } from './utils/voiceCache';
@@ -107,7 +107,11 @@ export function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      {/* initialWindowMetrics seeds correct, synchronous safe-area insets on
+          first render — required for native-stack modals (e.g. the moment map
+          picker's fullScreenModal) to clear the status bar / Dynamic Island
+          instead of reporting a 0 top inset. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
           <ThemeProvider>
