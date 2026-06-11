@@ -6,6 +6,7 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, err } = require('../utils/respond');
 const WorldChatReport = require('../models/WorldChatReport');
 const VoteReport = require('../models/VoteReport');
+const UserReport = require('../models/UserReport');
 const Message = require('../models/Message');
 const FlaggedImage = require('../models/FlaggedImage');
 
@@ -14,7 +15,7 @@ router.use(requireAdminAuth);
 // ── GET /api/admin/reports — all unresolved reports, newest first ─────────────
 router.get('/reports', async (_req, res, next) => {
   try {
-    const [chat, vote, scam, images] = await Promise.all([
+    const [chat, vote, user, scam, images] = await Promise.all([
       WorldChatReport.find({ handled: false })
         .populate('reporterId', 'nickname')
         .populate('reportedUserId', 'nickname')
@@ -23,6 +24,14 @@ router.get('/reports', async (_req, res, next) => {
         .lean(),
       VoteReport.find({ handled: false })
         .populate('reporterId', 'nickname')
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean(),
+      // User-profile reports (filed via POST /api/users/:id/report). Each also
+      // auto-blocked the target; surfacing them lets admins review/ban.
+      UserReport.find({ handled: false })
+        .populate('reporterId', 'nickname')
+        .populate('reportedUserId', 'nickname')
         .sort({ createdAt: -1 })
         .limit(200)
         .lean(),
@@ -55,6 +64,14 @@ router.get('/reports', async (_req, res, next) => {
         reason: r.reason || '',
         reporter: r.reporterId?.nickname || '—',
         target: r.targetType === 'entry' ? '(entry)' : '(event)',
+        createdAt: r.createdAt,
+      })),
+      ...user.map((r) => ({
+        id: String(r._id),
+        kind: 'user',
+        reason: `[${r.reason}${r.context && r.context !== 'profile' ? ` · ${r.context}` : ''}]${r.note ? ` ${r.note}` : ''}`,
+        reporter: r.reporterId?.nickname || '—',
+        target: r.reportedUserId?.nickname || '(user)',
         createdAt: r.createdAt,
       })),
       ...scam.map((m) => ({
@@ -98,7 +115,12 @@ router.post('/reports/:kind/:id/resolve', async (req, res, next) => {
       if (!im) return err(res, 'Image not found', 404);
       return ok(res, { success: true });
     }
-    const Model = req.params.kind === 'vote' ? VoteReport : WorldChatReport;
+    const Model =
+      req.params.kind === 'vote'
+        ? VoteReport
+        : req.params.kind === 'user'
+        ? UserReport
+        : WorldChatReport;
     const r = await Model.findByIdAndUpdate(req.params.id, { handled: true }, { new: true });
     if (!r) return err(res, 'Report not found', 404);
     ok(res, { success: true });
@@ -108,7 +130,3 @@ router.post('/reports/:kind/:id/resolve', async (req, res, next) => {
 });
 
 module.exports = router;
-
-// Follow-up: user-profile reports (POST /api/users/:id/report in blocks.js)
-// currently only auto-block and are NOT persisted to a collection, so they
-// don't appear here. Add a UserReport model + write there to surface them.

@@ -19,18 +19,26 @@ export function CommentCard({
   isReply = false,
   onReply,
   onTapAuthor,
+  onReport,
 }: {
   comment: Comment;
   isReply?: boolean;
   onReply?: (c: Comment) => void;
   onTapAuthor?: (userId: string) => void;
+  /** Long-press to report the comment's author (Apple 1.2 — every UGC surface
+   *  must offer a report path). No-op for the viewer's own comments. */
+  onReport?: (c: Comment) => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
-    <View style={[styles.row, { paddingLeft: isReply ? 16 : 20 }]}>
+    <Pressable
+      onLongPress={onReport ? () => onReport(comment) : undefined}
+      delayLongPress={350}
+      style={[styles.row, { paddingLeft: isReply ? 16 : 20 }]}
+    >
       {isReply && <View style={[styles.threadLine, { backgroundColor: theme.colors.line }]} />}
       <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
         <Avatar
@@ -95,7 +103,7 @@ export function CommentCard({
           )}
         </Pressable>
       </Modal>
-    </View>
+    </Pressable>
   );
 }
 

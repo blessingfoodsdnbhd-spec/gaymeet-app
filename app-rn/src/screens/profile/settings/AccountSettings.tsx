@@ -14,6 +14,7 @@ import * as Sharing from 'expo-sharing';
 import { useAuth } from '../../../store/auth';
 import { deleteAccount, exportAccountData } from '../../../api/me';
 import { restoreSubscriptions } from '../../../utils/iap';
+import { openLegal, PRIVACY_URL, TERMS_URL, SUPPORT_URL } from '../../../utils/legalUrls';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { Sheet } from '../../../components/Sheet';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
@@ -144,6 +145,16 @@ export function AccountSettings() {
           label={exporting ? t('accountSettings.exporting') : t('accountSettings.exportData')}
           onPress={doExport}
         />
+      </SettingsCard>
+
+      {/* Legal — Apple guideline 1.2 / 3.1.2 require Privacy Policy + Terms to
+          be reachable from inside the app, not only the App Store listing. */}
+      <SettingsCard flat style={{ paddingVertical: 4 }}>
+        <LinkRow label={t('accountSettings.privacyPolicy')} onPress={() => openLegal(PRIVACY_URL)} />
+        <Divider />
+        <LinkRow label={t('accountSettings.termsOfService')} onPress={() => openLegal(TERMS_URL)} />
+        <Divider />
+        <LinkRow label={t('accountSettings.support')} onPress={() => openLegal(SUPPORT_URL)} />
       </SettingsCard>
 
       <SettingsCard flat style={{ paddingVertical: 4 }}>

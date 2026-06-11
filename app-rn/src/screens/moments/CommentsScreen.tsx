@@ -24,6 +24,8 @@ import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { CommentCard } from '../../components/comments/CommentCard';
 import { uploadFile } from '../../api/upload';
 import { getComments, postComment, type Comment } from '../../api/moments';
+import { useAuth } from '../../store/auth';
+import { showSafetyMenu } from '../../utils/safetyMenu';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Rt = RouteProp<RootStackParamList, 'Comments'>;
@@ -35,6 +37,7 @@ export function CommentsScreen() {
   const route = useRoute<Rt>();
   const { momentId, authorId } = route.params;
   const queryClient = useQueryClient();
+  const myId = useAuth((s) => s.user?.id);
 
   const [draft, setDraft] = useState('');
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
@@ -164,6 +167,17 @@ export function CommentsScreen() {
 
   const onTapAuthor = (userId: string) => (nav as any).navigate('UserDetail', { userId });
 
+  // Long-press a comment → report/block its author (Apple 1.2 — every UGC
+  // surface needs a report path). Skipped for the viewer's own comments.
+  const onReport = (c: Comment) => {
+    if (c.user._id === myId) return;
+    showSafetyMenu({
+      nav: nav as any,
+      userId: c.user._id,
+      userName: c.user.nickname,
+    });
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
@@ -228,7 +242,7 @@ export function CommentsScreen() {
               const isOpen = expanded.has(item._id);
               return (
                 <View>
-                  <CommentCard comment={item} onReply={setReplyTo} onTapAuthor={onTapAuthor} />
+                  <CommentCard comment={item} onReply={setReplyTo} onTapAuthor={onTapAuthor} onReport={onReport} />
                   {replies.length > 0 && (
                     <Pressable
                       onPress={() =>
@@ -257,6 +271,7 @@ export function CommentsScreen() {
                         isReply
                         onReply={setReplyTo}
                         onTapAuthor={onTapAuthor}
+                        onReport={onReport}
                       />
                     ))}
                 </View>

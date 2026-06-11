@@ -551,7 +551,8 @@
       "worldChat": "広場",
       "vote": "投票",
       "scamMessage": "詐欺?",
-      "nsfwImage": "画像?"
+      "nsfwImage": "画像?",
+      "user": "ユーザー"
     }
   },
   "adminStats": {
@@ -1004,6 +1005,9 @@
   "accountSettings": {
     "title": "アカウントとセキュリティ",
     "emailLabel": "メール",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfService": "利用規約",
+    "support": "ヘルプとサポート",
     "signOut": "ログアウト",
     "restorePurchases": "購入を復元",
     "restoring": "復元中…",

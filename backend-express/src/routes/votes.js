@@ -14,6 +14,7 @@ const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { notify, coalesceOk } = require('../services/notificationService');
 const { blockedIdSet } = require('../utils/blocking');
+const { hasProfanity } = require('../utils/profanityFilter');
 
 const TITLE_MAX = 80;
 const DESC_MAX = 500;
@@ -555,11 +556,14 @@ router.post('/:id/entries', auth, async (req, res, next) => {
     const exists = await VoteEntry.exists({ eventId: ev._id, submitterId: req.user._id });
     if (exists) return err(res, 'You already entered this contest', 409);
 
+    const caption = String(req.body?.caption ?? '').slice(0, CAPTION_MAX);
+    if (hasProfanity(caption)) return err(res, 'Inappropriate content', 422);
+
     const entry = await VoteEntry.create({
       eventId: ev._id,
       submitterId: req.user._id,
       photoUrl,
-      caption: String(req.body?.caption ?? '').slice(0, CAPTION_MAX),
+      caption,
     });
     await VoteEvent.updateOne({ _id: ev._id }, { $inc: { entryCount: 1 } });
     created(res, { id: entry._id.toString() });
