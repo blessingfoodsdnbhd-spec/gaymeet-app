@@ -16,7 +16,7 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Menu } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -51,8 +51,6 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { VerifiedBadge } from '../../components/NameWithBadge';
-import { PlazaHotRoomsStrip } from '../../components/PlazaHotRoomsStrip';
-import { PlazaDrawer } from '../../components/PlazaDrawer';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -75,7 +73,11 @@ type Rt = RouteProp<RootStackParamList, 'WorldChatRoom'>;
  * report + block (long-press), admin delete/ban (backend), and real
  * names/avatars (no anonymous identities).
  */
-export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
+export function WorldChatScreen({
+  embedded = false,
+  roomId: roomIdProp,
+  roomTitle: roomTitleProp,
+}: { embedded?: boolean; roomId?: string; roomTitle?: string } = {}) {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
   const nav = useNavigation<Nav>();
@@ -84,14 +86,14 @@ export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
   const me = useAuth((s) => s.user);
   const myId = me?.id;
 
-  // In lobby mode (the 广场 tab) the room is switched in-place via the hot-rooms
-  // strip / drawer, so it lives in state; a pushed single-room view just reads
-  // its route params once. Default landing is the World Lobby.
-  const [activeRoom, setActiveRoom] = React.useState<{ id: string; title: string }>(() => ({
-    id: route.params?.roomId ?? 'world',
-    title: route.params?.title ?? (lobby ? t('plaza.worldLobby') : t('worldChat.title')),
+  // Embedded mode (inside the 广场 tab controller) drives the room from props
+  // and is remounted by key when the user switches rooms; a pushed single-room
+  // view reads its route params once. Props win over route so the same screen
+  // serves both. Default room is the World Lobby.
+  const [activeRoom] = React.useState<{ id: string; title: string }>(() => ({
+    id: roomIdProp ?? route.params?.roomId ?? 'world',
+    title: roomTitleProp ?? route.params?.title ?? t('worldChat.title'),
   }));
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const roomId = activeRoom.id;
   const roomTitle = activeRoom.title;
   // A 24-hex id is a custom (user-created) room; everything else is global/country.
@@ -506,47 +508,35 @@ export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center' }]}>
-        {lobby ? (
-          <Pressable onPress={() => setDrawerOpen(true)} hitSlop={8} style={{ marginRight: 10 }} accessibilityLabel={t('plaza.rooms')}>
-            <Menu size={26} color={theme.colors.text} />
-          </Pressable>
-        ) : (
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={embedded ? [] : ['top']}>
+      {/* Header — hidden when embedded in the 广场 tab (the hub owns the chrome). */}
+      {!embedded && (
+        <View style={[styles.header, { borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center' }]}>
           <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 10 }}>
             <ChevronLeft size={26} color={theme.colors.text} />
           </Pressable>
-        )}
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            {isCustom && room?.isPrivate && <Lock size={13} color={theme.colors.muted} />}
-            <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
-              {headerTitle}
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              {isCustom && room?.isPrivate && <Lock size={13} color={theme.colors.muted} />}
+              <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
+                {headerTitle}
+              </Text>
+              {closed && (
+                <Text style={{ fontSize: 11, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
+              )}
+            </View>
+            <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
+              {isCustom && room
+                ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${online ?? room.onlineCount}`
+                : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
             </Text>
-            {closed && (
-              <Text style={{ fontSize: 11, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
-            )}
           </View>
-          <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
-            {isCustom && room
-              ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · 🟢 ${online ?? room.onlineCount}`
-              : `🟢 ${t('worldChat.online', { n: online ?? '—' })}`}
-          </Text>
+          {isCustom && room && (
+            <Pressable onPress={() => setSettingsOpen(true)} hitSlop={8} style={{ marginLeft: 8 }}>
+              <MoreVertical size={22} color={theme.colors.text} />
+            </Pressable>
+          )}
         </View>
-        {isCustom && room && (
-          <Pressable onPress={() => setSettingsOpen(true)} hitSlop={8} style={{ marginLeft: 8 }}>
-            <MoreVertical size={22} color={theme.colors.text} />
-          </Pressable>
-        )}
-      </View>
-
-      {/* 🔥 热门 — quick room switcher, lobby only. */}
-      {lobby && (
-        <PlazaHotRoomsStrip
-          activeRoomId={roomId}
-          onSelect={(r) => setActiveRoom({ id: r.id, title: r.title })}
-        />
       )}
 
       <KeyboardAvoidingView
@@ -728,18 +718,6 @@ export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
         onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
       />
 
-      {/* Room drawer (lobby only) — World Lobby + country rooms. */}
-      {lobby && (
-        <PlazaDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          activeRoomId={roomId}
-          onSelectRoom={(r) => {
-            setActiveRoom({ id: r.id, title: r.title });
-            setDrawerOpen(false);
-          }}
-        />
-      )}
     </SafeAreaView>
   );
 }

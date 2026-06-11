@@ -50,7 +50,7 @@ export const getWorldChatRooms = () =>
   unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms'));
 
 /** 🔥 热门聊天室 — rooms ordered by live online count (World anchored first).
- *  Powers the PlazaHotRoomsStrip; refresh on an interval for a live feel. */
+ *  Powers the Plaza 热门 switcher sheet; refresh on an interval for a live feel. */
 export const getHotWorldChatRooms = () =>
   unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms', { params: { sort: 'hot' } }));
 

@@ -189,6 +189,14 @@
     "profile": "我"
   },
   "plaza": {
+    "tab": { "hot": "🔥 热门", "match": "❤️ 交友", "voice": "🎤 语音", "interest": "🎮 兴趣", "country": "🌏 国家" },
+    "switcher": { "hot": "热门聊天室", "country": "选择国家" },
+    "comingSoon": "即将推出",
+    "notifyMe": "通知我",
+    "notified": "我们会通知你",
+    "match": { "title": "随机交友", "desc": "随机匹配新朋友一起聊天，我们会帮你配对 — 即将推出。" },
+    "voice": { "title": "语音房", "desc": "进入实时语音房间，一起开麦聊天 — 即将推出。" },
+    "interest": { "title": "兴趣频道", "desc": "按爱好找到同好 — 摄影、美食、游戏等 — 即将推出。" },
     "worldLobby": "世界大厅",
     "hotRooms": "🔥 热门",
     "rooms": "聊天室",

@@ -581,6 +581,14 @@
     "saveFailed": "保存に失敗しました"
   },
   "plaza": {
+    "tab": { "hot": "🔥 人気", "match": "❤️ 交流", "voice": "🎤 音声", "interest": "🎮 チャンネル", "country": "🌏 国別" },
+    "switcher": { "hot": "人気のチャット", "country": "国を選ぶ" },
+    "comingSoon": "近日公開",
+    "notifyMe": "通知を受け取る",
+    "notified": "お知らせします",
+    "match": { "title": "ランダムチャット", "desc": "新しい人とおしゃべりできるようつなぎます。近日公開。" },
+    "voice": { "title": "ボイスルーム", "desc": "ライブのボイスルームに入ってリアルタイムで話しましょう。近日公開。" },
+    "interest": { "title": "興味チャンネル", "desc": "好きなことで仲間を見つけよう — 写真・グルメ・ゲームなど。近日公開。" },
     "worldLobby": "ワールドロビー",
     "hotRooms": "🔥 人気",
     "rooms": "チャットルーム",

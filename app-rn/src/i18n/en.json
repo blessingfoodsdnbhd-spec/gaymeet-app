@@ -189,6 +189,14 @@
     "profile": "Me"
   },
   "plaza": {
+    "tab": { "hot": "🔥 Hot", "match": "❤️ Chat", "voice": "🎤 Voice", "interest": "🎮 Channels", "country": "🌏 Countries" },
+    "switcher": { "hot": "Hot rooms", "country": "Choose a country" },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify me",
+    "notified": "We'll let you know",
+    "match": { "title": "Random Chat", "desc": "Get matched with someone new to chat with. We'll pair you up — coming soon." },
+    "voice": { "title": "Voice Rooms", "desc": "Drop into a live voice room and talk in real time. Coming soon." },
+    "interest": { "title": "Interest Channels", "desc": "Find your people by what you love — photography, food, gaming & more. Coming soon." },
     "worldLobby": "World Lobby",
     "hotRooms": "🔥 Hot",
     "rooms": "Rooms",
