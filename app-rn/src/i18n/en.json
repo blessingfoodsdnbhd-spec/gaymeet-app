@@ -188,6 +188,32 @@
     "chats": "Chats",
     "profile": "Me"
   },
+  "plaza": {
+    "randomChat": "❤️ Random Chat",
+    "randomChatSub": "Get matched with someone online right now",
+    "todayHot": "Today's Hot",
+    "todayActive": "Today's Most Active",
+    "hotChannels": "Hottest channels",
+    "noActivity": "No activity yet — be the first!",
+    "match": {
+      "searching": "Finding a match…",
+      "found": "Match found!",
+      "next": "Next",
+      "addFriend": "Add Friend",
+      "added": "Added",
+      "exit": "Exit",
+      "partnerLeft": "Your chat partner left",
+      "findAnother": "Find another",
+      "sayHi": "Say hi 👋",
+      "placeholder": "Type a message…"
+    }
+  },
+  "role": {
+    "admin": "Admin",
+    "vip": "VIP",
+    "veteran": "Veteran",
+    "new": "Newcomer"
+  },
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",

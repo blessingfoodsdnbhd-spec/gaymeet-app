@@ -44,6 +44,14 @@ export const colors = {
   info: '#4F8FE8', // = brandBlue
   textMuted: '#8E8DA0', // = muted
 
+  // Plaza role badge dots (visual hierarchy — see components/RoleDot.tsx).
+  // admin=staff · vip=Premium · veteran=Lv≥10 · new=<7d · normal=everyone else.
+  roleAdmin: '#A855F7',
+  roleVip: '#FBBF24',
+  roleVeteran: '#3B82F6',
+  roleNew: '#22C55E',
+  roleNormal: '#9CA3AF',
+
   // chat
   bubbleMeBg: '#E25CAE',
   bubbleMeText: '#FFFFFF',

@@ -188,6 +188,32 @@
     "chats": "消息",
     "profile": "我"
   },
+  "plaza": {
+    "randomChat": "❤️ 随机聊天",
+    "randomChatSub": "立即匹配一位在线的聊天对象",
+    "todayHot": "今日热门",
+    "todayActive": "今日活跃用户",
+    "hotChannels": "最热频道",
+    "noActivity": "还没有动态——来抢沙发吧！",
+    "match": {
+      "searching": "正在寻找聊天对象…",
+      "found": "找到匹配！",
+      "next": "下一个",
+      "addFriend": "加好友",
+      "added": "已添加",
+      "exit": "退出",
+      "partnerLeft": "对方已离开",
+      "findAnother": "再找一个",
+      "sayHi": "打个招呼吧 👋",
+      "placeholder": "输入消息…"
+    }
+  },
+  "role": {
+    "admin": "管理员",
+    "vip": "VIP",
+    "veteran": "老成员",
+    "new": "新人"
+  },
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",

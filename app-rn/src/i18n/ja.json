@@ -578,6 +578,32 @@
     "enter": "Meyouを始める",
     "saveFailed": "保存に失敗しました"
   },
+  "plaza": {
+    "randomChat": "❤️ ランダムチャット",
+    "randomChatSub": "今オンラインの相手とマッチング",
+    "todayHot": "今日の人気",
+    "todayActive": "本日のアクティブユーザー",
+    "hotChannels": "人気チャンネル",
+    "noActivity": "まだ動きがありません — 最初の一人に！",
+    "match": {
+      "searching": "相手を探しています…",
+      "found": "マッチしました！",
+      "next": "次へ",
+      "addFriend": "友達追加",
+      "added": "追加済み",
+      "exit": "退出",
+      "partnerLeft": "相手が退出しました",
+      "findAnother": "もう一度探す",
+      "sayHi": "あいさつしよう 👋",
+      "placeholder": "メッセージを入力…"
+    }
+  },
+  "role": {
+    "admin": "管理者",
+    "vip": "VIP",
+    "veteran": "ベテラン",
+    "new": "新人"
+  },
   "worldChat": {
     "title": "広場",
     "online": "{{n}}人オンライン",

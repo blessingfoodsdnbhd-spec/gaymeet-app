@@ -17,6 +17,8 @@ export interface WorldChatMessage {
   displayName: string;
   avatarUrl: string | null;
   isOfficial?: boolean;
+  /** Plaza role for the colored dot — see components/RoleDot.tsx. */
+  role?: 'admin' | 'vip' | 'veteran' | 'new' | 'normal';
   countryCode?: string | null;
   city?: string | null;
   body: string;

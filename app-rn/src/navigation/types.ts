@@ -67,6 +67,10 @@ export type RootStackParamList = {
   CountryRooms: { countryCode: string; title: string };
   /** Create a user room inside a country. */
   CreateRoom: { countryCode: string; title: string };
+  /** ❤️ Random 1-on-1 matchmaking (Plaza Phase 3). */
+  Matchmaking: undefined;
+  /** 🏆 Daily hot leaderboard — rooms + most-active users. */
+  PlazaLeaderboard: undefined;
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;

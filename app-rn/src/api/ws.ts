@@ -139,11 +139,33 @@ export type WsWorldChatReceive = {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  role?: 'admin' | 'vip' | 'veteran' | 'new' | 'normal';
   countryCode?: string | null;
   city?: string | null;
   body: string;
   createdAt: string;
 };
+// ── Plaza random matchmaking (Phase 3) ──────────────────────────────────────
+export type WsMatchPartner = {
+  id: string;
+  nickname: string;
+  avatarUrl: string | null;
+  age: number | null;
+  countryCode: string | null;
+  city: string | null;
+  role: 'admin' | 'vip' | 'veteran' | 'new' | 'normal';
+};
+/** Fired to a waiting user when a partner arrives. */
+export type WsMatchFound = { sessionId: string; partnerId: string; partner: WsMatchPartner };
+/** An ephemeral 1-on-1 message from the session partner. */
+export type WsMatchMessage = { sessionId: string; fromUserId: string; body: string; createdAt: string };
+/** The partner left / tapped Next / the session expired. */
+export type WsMatchEnded = { sessionId: string; reason: 'left' | 'next' | 'disconnect' | 'expired' };
+/** Reply to a client-emitted `match:next` — same shape as the HTTP join. */
+export type WsMatchResult =
+  | { status: 'waiting' }
+  | { status: 'matched'; sessionId: string; partner: WsMatchPartner | null };
+
 export type WsWorldChatOnlineCount = { roomId?: string; count: number };
 export type WsWorldChatRoomsState = { counts: Record<string, number> };
 export type WsWorldChatDeleted = { messageId: string };
@@ -155,6 +177,10 @@ export interface WsEventMap {
   'match:new': WsMatchNew;
   'chat:receive': WsChatReceive;
   'world-chat:receive': WsWorldChatReceive;
+  'match:found': WsMatchFound;
+  'match:message': WsMatchMessage;
+  'match:ended': WsMatchEnded;
+  'match:result': WsMatchResult;
   'world-chat:online-count': WsWorldChatOnlineCount;
   'world-chat:rooms-state': WsWorldChatRoomsState;
   'world-chat:message-deleted': WsWorldChatDeleted;

@@ -40,6 +40,8 @@ import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { CountryRoomsScreen } from '../screens/world-chat/CountryRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
+import { MatchmakingScreen } from '../screens/world-chat/MatchmakingScreen';
+import { LeaderboardScreen } from '../screens/world-chat/LeaderboardScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
 import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
@@ -177,6 +179,16 @@ export function RootNavigator() {
             name="CreateRoom"
             component={CreateRoomScreen}
             options={{ animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="Matchmaking"
+            component={MatchmakingScreen}
+            options={{ animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="PlazaLeaderboard"
+            component={LeaderboardScreen}
+            options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen
             name="NoteDetail"

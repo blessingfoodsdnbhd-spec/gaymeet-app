@@ -9,6 +9,7 @@ const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const matchmaking = require('./matchmakingService');
 
 let io;
 
@@ -481,6 +482,32 @@ function initSocket(server) {
       emitRoomsState();
     });
 
+    // ── Plaza random matchmaking (Phase 3) ────────────────────────────────────
+    // Ephemeral 1-on-1 chat. Queue entry/exit also has HTTP endpoints
+    // (routes/plaza.js); these WS events carry the live in-session chat.
+
+    // Relay an ephemeral message to the session partner. Not persisted.
+    socket.on('match:send', ({ sessionId, body } = {}) => {
+      if (!sessionId || !body?.trim()) return;
+      if (body.length > 1000) return;
+      matchmaking.relayMessage(userId, sessionId, body.trim());
+    });
+
+    // "Next" — drop current match and re-enter the queue/matcher.
+    socket.on('match:next', async () => {
+      try {
+        const result = await matchmaking.next(socket.user);
+        socket.emit('match:result', result);
+      } catch (_) {
+        // best effort
+      }
+    });
+
+    // Leave matchmaking entirely (queue + any session).
+    socket.on('match:leave', async () => {
+      await matchmaking.leave(userId).catch(() => {});
+    });
+
     // Give the freshly-connected client (and everyone) the current snapshot.
     emitRoomsState();
 
@@ -495,6 +522,8 @@ function initSocket(server) {
           lastActiveAt: new Date(),
         });
         _notifyOnlineStatus(userId, false);
+        // Tear down any matchmaking queue entry / ephemeral session.
+        matchmaking.onDisconnect(userId).catch(() => {});
       }
       // Socket has already left its rooms by 'disconnect' → counts are fresh.
       emitRoomsState();

@@ -12,6 +12,11 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
+const { computeRole } = require('../utils/role');
+const PlazaDailyXp = require('../models/PlazaDailyXp');
+
+// Plaza activity XP awarded per message sent — powers the daily user board.
+const XP_PER_MESSAGE = 10;
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -197,6 +202,7 @@ router.post('/send', auth, async (req, res, next) => {
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
       isOfficial: req.user.isOfficial ?? false,
+      role: computeRole(req.user),
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
@@ -211,6 +217,9 @@ router.post('/send', auth, async (req, res, next) => {
     };
     broadcast('world-chat:receive', payload, roomId);
     created(res, payload);
+
+    // Plaza daily activity XP (powers the leaderboard). Fire-and-forget.
+    PlazaDailyXp.award(uid, XP_PER_MESSAGE);
 
     // Push the original sender when someone replies to them (not on self-reply).
     // notify() respects per-user opt-out (world_chat_reply isn't high-priority).
@@ -591,7 +600,7 @@ router.get('/recent', auth, async (req, res, next) => {
     const rows = await WorldChatMessage.find(q)
       .sort({ _id: -1 })
       .limit(limit)
-      .populate('userId', 'nickname avatarUrl countryCode city isOfficial')
+      .populate('userId', 'nickname avatarUrl countryCode city isOfficial isPremium premiumExpiresAt vipLevel vipExpiresAt level createdAt')
       .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
 
@@ -615,6 +624,7 @@ router.get('/recent', auth, async (req, res, next) => {
           displayName: m.userId.nickname,
           avatarUrl: m.userId.avatarUrl ?? null,
           isOfficial: m.userId.isOfficial ?? false,
+          role: computeRole(m.userId),
           countryCode: m.userId.countryCode ?? null,
           city: m.userId.city ?? null,
           body: m.body,

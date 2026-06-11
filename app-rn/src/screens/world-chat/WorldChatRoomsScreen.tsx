@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight } from 'lucide-react-native';
+import { Search, ChevronRight, Heart, Trophy } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -100,7 +100,50 @@ export function WorldChatRoomsScreen() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 28 }}
           ListHeaderComponent={
-            <Text style={[styles.section, { color: theme.colors.muted }]}>{t('worldChat.rooms.sectionGlobal')}</Text>
+            <View>
+              {/* ❤️ Random chat — full-bleed entry card (Plaza Phase 3). */}
+              <Pressable
+                onPress={() => nav.navigate('Matchmaking')}
+                style={({ pressed }) => [
+                  styles.card,
+                  { backgroundColor: theme.colors.primarySoft, borderColor: theme.colors.primarySoft, opacity: pressed ? 0.9 : 1 },
+                ]}
+              >
+                <View style={[styles.glyph, { backgroundColor: theme.colors.primary }]}>
+                  <Heart size={22} color="#FFFFFF" fill="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.primaryDeep }}>
+                    {t('plaza.randomChat')}
+                  </Text>
+                  <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep, opacity: 0.8, marginTop: 1 }}>
+                    {t('plaza.randomChatSub')}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.primaryDeep} />
+              </Pressable>
+
+              {/* 🏆 Today's hot leaderboard. */}
+              <Pressable
+                onPress={() => nav.navigate('PlazaLeaderboard')}
+                style={({ pressed }) => [
+                  styles.card,
+                  { marginTop: 10, backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1 },
+                ]}
+              >
+                <View style={[styles.glyph, { backgroundColor: theme.colors.warning }]}>
+                  <Trophy size={20} color="#FFFFFF" />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: '700', color: theme.colors.text }}>
+                  {t('plaza.todayHot')}
+                </Text>
+                <ChevronRight size={20} color={theme.colors.muted} />
+              </Pressable>
+
+              <Text style={[styles.section, { color: theme.colors.muted, marginTop: 22 }]}>
+                {t('worldChat.rooms.sectionGlobal')}
+              </Text>
+            </View>
           }
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => {
@@ -158,4 +201,5 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  glyph: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

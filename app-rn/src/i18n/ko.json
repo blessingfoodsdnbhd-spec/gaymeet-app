@@ -578,6 +578,32 @@
     "enter": "Meyou 시작",
     "saveFailed": "저장 실패"
   },
+  "plaza": {
+    "randomChat": "❤️ 랜덤 채팅",
+    "randomChatSub": "지금 온라인인 상대와 매칭하세요",
+    "todayHot": "오늘의 인기",
+    "todayActive": "오늘 가장 활발한 사용자",
+    "hotChannels": "인기 채널",
+    "noActivity": "아직 활동이 없어요 — 첫 번째가 되어보세요!",
+    "match": {
+      "searching": "상대를 찾는 중…",
+      "found": "매칭 성공!",
+      "next": "다음",
+      "addFriend": "친구 추가",
+      "added": "추가됨",
+      "exit": "나가기",
+      "partnerLeft": "상대방이 나갔습니다",
+      "findAnother": "다시 찾기",
+      "sayHi": "인사해 보세요 👋",
+      "placeholder": "메시지 입력…"
+    }
+  },
+  "role": {
+    "admin": "관리자",
+    "vip": "VIP",
+    "veteran": "고참",
+    "new": "신규"
+  },
   "worldChat": {
     "title": "광장",
     "online": "{{n}}명 온라인",

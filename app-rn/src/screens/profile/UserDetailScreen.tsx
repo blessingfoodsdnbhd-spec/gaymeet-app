@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
+import { RoleDot } from '../../components/RoleDot';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { PremiumBadge } from '../../components/PremiumBadge';
 import { Avatar } from '../../components/Avatar';
@@ -319,6 +320,7 @@ export function UserDetailScreen() {
           {/* Name + age + zodiac + country, below the photo. */}
           <View style={{ paddingTop: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <RoleDot role={(user as any).plazaRole} size={9} forceShow />
               <Text style={[styles.name, { color: theme.colors.text, marginTop: 0 }]}>
                 {user.nickname}
                 {(() => {

@@ -50,6 +50,7 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { VerifiedBadge } from '../../components/NameWithBadge';
+import { RoleDot } from '../../components/RoleDot';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -670,6 +671,7 @@ function Row({
       </Pressable>
       <View style={{ flex: 1, alignItems: mine ? 'flex-end' : 'flex-start' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          {!mine && <RoleDot role={msg.role} size={7} />}
           {!mine && (
             <Pressable onPress={onOpenUser}>
               <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: theme.colors.text }}>

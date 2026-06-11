@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { computeAge, computeZodiac } = require('../utils/zodiac');
+const { computeRole } = require('../utils/role');
 
 const preferencesSchema = new mongoose.Schema(
   {
@@ -483,6 +484,11 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
     obj.preferences.stealthMode = false;
     obj.preferences.stealthUntil = null;
   }
+
+  // Plaza role badge (admin/vip/veteran/new/normal) — derived, never stored.
+  // Computed from the raw doc so premium expiry + createdAt are honored. NB:
+  // exposed as `plazaRole`, NOT `role` (that field is the sexual-role pref).
+  obj.plazaRole = computeRole(src);
 
   return obj;
 };
