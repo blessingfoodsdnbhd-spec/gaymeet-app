@@ -275,6 +275,9 @@ userSchema.index({ referralCode: 1 });
 userSchema.index({ googleId: 1 }, { sparse: true });
 userSchema.index({ appleId: 1 }, { sparse: true });
 userSchema.index({ googleOriginalPurchaseToken: 1 }, { sparse: true });
+// Powers the "who blocked me" lookup in utils/blocking.js (incoming block list)
+// so symmetric block filtering isn't a collection scan. Multikey on the array.
+userSchema.index({ blockedUsers: 1 });
 
 // ── Virtuals ──────────────────────────────────────────────────────────────────
 userSchema.virtual('distanceLabel').get(function () {

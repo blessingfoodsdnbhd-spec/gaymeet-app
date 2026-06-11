@@ -580,6 +580,7 @@
     "aboutSection": "关于",
     "interestsSection": "兴趣",
     "loadFailed": "无法加载资料",
+    "userUnavailable": "用户不可用",
     "sendMessage": "发送消息",
     "sendMessagePremiumOnly": "Premium 功能",
     "lockedPhotosCount": "🔒 {{n}} 张私密照",

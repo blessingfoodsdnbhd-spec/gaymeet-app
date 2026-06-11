@@ -880,6 +880,7 @@
     "aboutSection": "紹介",
     "interestsSection": "興味",
     "loadFailed": "プロフィールを読み込めませんでした",
+    "userUnavailable": "利用できないユーザー",
     "sendMessage": "メッセージを送る",
     "sendMessagePremiumOnly": "プレミアム機能",
     "lockedPhotosCount": "🔒 ロックされた写真{{n}}枚",

@@ -1,7 +1,7 @@
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 
 import i18n from '../i18n';
-import { blockUser } from '../api/safety';
+import { blockUser, invalidateAfterBlock } from '../api/safety';
 import { useSafetyMenu, type SafetyMenuOptions } from '../store/safetyMenu';
 
 /**
@@ -55,6 +55,7 @@ export function showSafetyMenu(options: SafetyMenuOptions) {
               onPress: async () => {
                 try {
                   await blockUser(userId);
+                  invalidateAfterBlock();
                   onBlocked?.();
                 } catch (e: any) {
                   const status = e?.response?.status;

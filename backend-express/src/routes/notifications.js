@@ -10,6 +10,7 @@ const NotificationPreference = require('../models/NotificationPreference');
 const { ALL_TYPES } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { blockedIdSet } = require('../utils/blocking');
 
 // ── POST /api/notifications/token ─────────────────────────────────────────────
 router.post('/token', auth, async (req, res, next) => {
@@ -50,6 +51,7 @@ router.get('/', auth, async (req, res, next) => {
   try {
     const uid = req.user._id;
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // last 30 days
+    const blocked = await blockedIdSet(req.user);
 
     const [matches, gifts, energies, follows] = await Promise.all([
       // New matches
@@ -109,7 +111,10 @@ router.get('/', auth, async (req, res, next) => {
         user: f.follower,
         createdAt: f.createdAt,
       })),
-    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 50);
+    ]
+      // Mutual block: drop any activity whose actor is in a block with the viewer.
+      .filter((n) => !(n.user && blocked.has(String(n.user._id))))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 50);
 
     ok(res, notifications);
   } catch (e) {

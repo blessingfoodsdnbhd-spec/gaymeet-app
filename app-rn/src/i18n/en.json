@@ -580,6 +580,7 @@
     "aboutSection": "About",
     "interestsSection": "Interests",
     "loadFailed": "Couldn't load profile",
+    "userUnavailable": "User unavailable",
     "sendMessage": "Send a message",
     "sendMessagePremiumOnly": "Premium feature",
     "lockedPhotosCount": "🔒 {{n}} locked photos",
