@@ -400,6 +400,7 @@
     "premiumTitle": "Premium 会员专属",
     "premiumBody": "给还没 match 的人发消息是 Premium 会员功能。\n\n月费 RM {{monthly}}\n年费 RM {{annual}}\n(年费约省 2 个月)",
     "premiumOk": "好",
+    "premiumLabel": "Premium",
     "openFailedTitle": "打开失败",
     "openFailedFallback": "稍后再试",
     "swipeFailed": "操作失败",

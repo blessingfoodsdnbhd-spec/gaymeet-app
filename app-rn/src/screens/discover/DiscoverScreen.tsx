@@ -467,6 +467,11 @@ function CardsBody({
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+  const me = useAuth((s) => s.user);
+  // The direct-intro (✈️) badge is an upgrade nudge — only show it to users who
+  // don't already have Premium. Mirrors the `!!isPremium` check used elsewhere
+  // in Discover (LikedMeGrid, BoostButton); vipLevel covers the legacy flag.
+  const isPremium = !!(me as any)?.isPremium || ((me as any)?.vipLevel ?? 0) > 0;
 
   if (cardsQ.isLoading) {
     return (
@@ -523,10 +528,10 @@ function CardsBody({
           onPress={() => onOpenAbout(top)}
         />
         <CircleBtnPrimary onPress={() => stackRef.current?.swipe(true)} />
-        {/* Direct-intro button. Pro corner badge marks it as a Premium
-            feature so Premium users notice it's the entry point for DMing
-            unmatched profiles, and Free users see why their tap surfaces
-            the paywall. */}
+        {/* Direct-intro button — DMing unmatched profiles is Premium-gated
+            (server enforces it; a Free tap surfaces the paywall). The corner
+            badge is an upgrade nudge, so it's shown to Free users only;
+            Premium users get the clean icon with no label. */}
         <View>
           <CircleBtn
             icon={<Send size={18} color="#B14B59" strokeWidth={2} />}
@@ -534,10 +539,12 @@ function CardsBody({
             small
             onPress={() => onSendIntro(top)}
           />
-          <View pointerEvents="none" style={styles.proCorner}>
-            <Crown size={9} color="#FFFFFF" strokeWidth={2.4} />
-            <Text style={styles.proCornerText}>PRO</Text>
-          </View>
+          {!isPremium && (
+            <View pointerEvents="none" style={styles.proCorner}>
+              <Crown size={9} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.proCornerText}>{t('discover.premiumLabel')}</Text>
+            </View>
+          )}
         </View>
       </View>
     </>

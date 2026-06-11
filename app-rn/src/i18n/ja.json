@@ -125,6 +125,7 @@
     "premiumTitle": "プレミアム限定",
     "premiumBody": "マッチしていない人へのメッセージはプレミアム機能です。\n\n月額 RM {{monthly}}\n年額 RM {{annual}}\n（年額は約2か月分お得）",
     "premiumOk": "OK",
+    "premiumLabel": "Premium",
     "openFailedTitle": "開けませんでした",
     "openFailedFallback": "後でお試しください",
     "swipeFailed": "操作に失敗しました",
