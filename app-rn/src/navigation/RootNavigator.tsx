@@ -61,11 +61,13 @@ export function RootNavigator() {
   const onbHydrated = useOnboarding((s) => s.hydrated);
   const needsTags = !!user && !user.interestsOnboardedAt;
   const signedIn = !!user && !needsTags;
-  // Only genuinely-new accounts (no photos, no prompts) see the intro. Show it
-  // immediately for fresh users (avoids a Main flash) and hide once we've
-  // hydrated and confirmed they've already completed it.
+  // Only genuinely-new accounts (no photos, no prompts) see the intro, and only
+  // once we've hydrated the persisted flag and confirmed it's not done. Gating on
+  // `onbHydrated` is essential: before the AsyncStorage read resolves `onbDone`
+  // is still its default `false`, so deciding on the unhydrated value would flash
+  // the intro on EVERY cold launch for any fresh-but-already-onboarded user.
   const fresh = !!user && (user.photos?.length ?? 0) === 0 && (user.prompts?.length ?? 0) === 0;
-  const showOnboarding = signedIn && fresh && (!onbHydrated || !onbDone);
+  const showOnboarding = signedIn && fresh && onbHydrated && !onbDone;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
