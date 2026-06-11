@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../Avatar';
+import { SwipeToReply } from '../SwipeToReply';
 import { shortTime } from '../../utils/time';
 import { type Comment } from '../../api/moments';
 
@@ -30,64 +31,71 @@ export function CommentCard({
   const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
-    <View style={[styles.row, { paddingLeft: isReply ? 16 : 20 }]}>
-      {isReply && <View style={[styles.threadLine, { backgroundColor: theme.colors.line }]} />}
-      <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
-        <Avatar
-          name={comment.user.nickname}
-          uri={comment.user.avatarUrl}
-          avatarIdx={idxFor(comment.user._id)}
-          size={isReply ? 28 : 34}
-        />
-      </Pressable>
-
-      <View style={{ flex: 1 }}>
-        {/* Name + author badge + time */}
-        <View style={styles.nameRow}>
+    <>
+      {/* Swipe right on any comment/reply to quote it — unified with the chat
+          surfaces. Falls through to a no-op wrapper when onReply isn't wired. */}
+      <SwipeToReply enabled={!!onReply} onReply={() => onReply?.(comment)}>
+        <View style={[styles.row, { paddingLeft: isReply ? 16 : 20 }]}>
+          {isReply && <View style={[styles.threadLine, { backgroundColor: theme.colors.line }]} />}
           <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}>
-              {comment.user.nickname}
-            </Text>
-          </Pressable>
-          {comment.isAuthor && (
-            <View style={[styles.authorBadge, { backgroundColor: theme.colors.primarySoft }]}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: theme.colors.primaryDeep }}>
-                {t('moments.comments.author')}
-              </Text>
-            </View>
-          )}
-          <Text style={{ fontSize: 11, color: theme.colors.muted }}>
-            {shortTime(comment.createdAt)}
-          </Text>
-        </View>
-
-        {/* Text */}
-        {!!comment.content && (
-          <Text style={{ fontSize: 14, color: theme.colors.text, marginTop: 3, lineHeight: 20 }}>
-            {comment.content}
-          </Text>
-        )}
-
-        {/* Photo */}
-        {!!comment.photoUrl && (
-          <Pressable onPress={() => setPhotoOpen(true)} style={{ marginTop: 6 }}>
-            <Image
-              source={{ uri: comment.photoUrl }}
-              style={[styles.photo, { backgroundColor: theme.colors.surface2 }]}
-              contentFit="cover"
+            <Avatar
+              name={comment.user.nickname}
+              uri={comment.user.avatarUrl}
+              avatarIdx={idxFor(comment.user._id)}
+              size={isReply ? 28 : 34}
             />
           </Pressable>
-        )}
 
-        {/* Reply */}
-        <Pressable onPress={() => onReply?.(comment)} hitSlop={6} style={styles.replyBtn}>
-          <Text style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.muted }}>
-            {t('moments.comments.reply')}
-          </Text>
-        </Pressable>
-      </View>
+          <View style={{ flex: 1 }}>
+            {/* Name + author badge + time */}
+            <View style={styles.nameRow}>
+              <Pressable onPress={() => onTapAuthor?.(comment.user._id)} hitSlop={4}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text }}>
+                  {comment.user.nickname}
+                </Text>
+              </Pressable>
+              {comment.isAuthor && (
+                <View style={[styles.authorBadge, { backgroundColor: theme.colors.primarySoft }]}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: theme.colors.primaryDeep }}>
+                    {t('moments.comments.author')}
+                  </Text>
+                </View>
+              )}
+              <Text style={{ fontSize: 11, color: theme.colors.muted }}>
+                {shortTime(comment.createdAt)}
+              </Text>
+            </View>
 
-      {/* Full-screen photo viewer */}
+            {/* Text */}
+            {!!comment.content && (
+              <Text style={{ fontSize: 14, color: theme.colors.text, marginTop: 3, lineHeight: 20 }}>
+                {comment.content}
+              </Text>
+            )}
+
+            {/* Photo */}
+            {!!comment.photoUrl && (
+              <Pressable onPress={() => setPhotoOpen(true)} style={{ marginTop: 6 }}>
+                <Image
+                  source={{ uri: comment.photoUrl }}
+                  style={[styles.photo, { backgroundColor: theme.colors.surface2 }]}
+                  contentFit="cover"
+                />
+              </Pressable>
+            )}
+
+            {/* Reply */}
+            <Pressable onPress={() => onReply?.(comment)} hitSlop={6} style={styles.replyBtn}>
+              <Text style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.muted }}>
+                {t('moments.comments.reply')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </SwipeToReply>
+
+      {/* Full-screen photo viewer — kept outside the swipe wrapper so the modal
+          portal isn't affected by the row's transform. */}
       <Modal visible={photoOpen} transparent animationType="fade" onRequestClose={() => setPhotoOpen(false)}>
         <Pressable style={styles.viewer} onPress={() => setPhotoOpen(false)}>
           {!!comment.photoUrl && (
@@ -95,7 +103,7 @@ export function CommentCard({
           )}
         </Pressable>
       </Modal>
-    </View>
+    </>
   );
 }
 
