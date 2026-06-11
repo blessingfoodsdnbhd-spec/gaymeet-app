@@ -4,6 +4,9 @@ import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, Users, Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
 import { castVote, retractVote, saveVoteProgress, type VoteEventSummary, type FeedVoteEntry } from '../../api/votes';
@@ -37,6 +40,7 @@ export function VoteEventCard({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { width: screenW } = useWindowDimensions();
   const myId = useAuth((s) => s.user?.id);
   const cardW = width ?? screenW;
@@ -187,7 +191,13 @@ export function VoteEventCard({
                 <Text style={styles.countdown}>⏳ {countdown}</Text>
               </>
             ) : (
-              <Text numberOfLines={1} style={styles.submitter}>{item.submitter.displayName}</Text>
+              <Pressable
+                onPress={() => nav.navigate('UserDetail', { userId: item.submitter.id })}
+                hitSlop={8}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                <Text numberOfLines={1} style={styles.submitter}>{item.submitter.displayName}</Text>
+              </Pressable>
             )}
           </View>
 
