@@ -29,6 +29,9 @@ export interface CardStackHandle {
 const SWIPE_THRESHOLD = 100;
 const FLY_DISTANCE = 600;
 const FLY_DURATION = 250;
+// How long the new top card takes to settle in from the slot-1 peek pose
+// (scale 0.96 → 1.0). Snappier than the fly-off so the deck feels responsive.
+const ENTER_DURATION = 190;
 
 export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   { cards, onSwiped },
@@ -37,12 +40,24 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
   const top = cards[0];
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
-  // Promotion progress for the cards BEHIND the top one (0 = resting, 1 =
-  // fully shifted up one slot). This is driven ONLY by a commit (flyOff),
-  // never by the drag — so while the user is dragging the top card the
-  // behind cards stay perfectly still instead of creeping forward and
-  // snapping back (the jitter the user reported).
-  const promote = useSharedValue(0);
+  // Entrance progress for the TOP card only: 0 = sitting exactly where the
+  // slot-1 peek card sat (scale 0.96, translateY 10), 1 = fully settled as
+  // the top card (scale 1.0, translateY 0). It is driven ONLY just after a
+  // commit, so the cards BEHIND the top one never read an animating value —
+  // they are perfectly static during both the drag AND the fly-off.
+  //
+  // Why this replaces the old `promote` value (PR #183): #183 froze the
+  // behind cards during the drag (good) but still animated them up one slot
+  // *during the fly-off* (promote 0→1). On iOS that read as a smooth grow;
+  // on Android the per-frame scale change on a card with an elevation shadow
+  // jittered, and the user still saw "the second card move" while swiping.
+  // Driving the grow off the NEW TOP card instead — after it has been
+  // promoted — keeps every behind card bit-for-bit still on every platform,
+  // while the little settle-in happens on the card that is now in focus
+  // (where growth reads as intentional, not as jitter). It also dodges the
+  // promote-reset-vs-deck-shift race, since the behind cards no longer
+  // depend on any value that has to be reset across the re-render.
+  const enter = useSharedValue(1);
 
   // Prefetch upcoming cards' avatars into expo-image's disk cache so they
   // decode instantly the moment they shift into the rendered window. We
@@ -79,28 +94,30 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
       onSwiped(top, liked);
       tx.value = 0;
       ty.value = 0;
-      // Snap promotion back to 0 BEFORE the new deck renders. The card that
-      // was idx=1 (animated up to ~slot-0 via promote=1) becomes the new top
-      // and switches to topStyle (scale 1.0) — match. The card that was idx=2
-      // becomes the new idx=1 and must read card1Style at its resting scale
-      // (0.96), so promote has to be 0 again by this frame.
-      promote.value = 0;
+      // Hand the entrance to the card that was peeking at slot-1 and is now
+      // becoming the new top. Snap `enter` to 0 (the slot-1 pose: scale 0.96,
+      // translateY 10) so the new top's first painted frame lines up exactly
+      // with where it already sat — no jump — then grow it into the top slot.
+      // This runs alongside the deck-advance re-render, but unlike the old
+      // `promote` reset it doesn't matter if it lands a frame early/late: the
+      // behind cards are static, and the only card reading `enter` (the top)
+      // is the one we WANT to animate. So there's no commit-frame race.
+      enter.value = 0;
+      enter.value = withTiming(1, {
+        duration: ENTER_DURATION,
+        easing: Easing.bezier(0.2, 0.7, 0.2, 1),
+      });
     },
-    [top, onSwiped, tx, ty, promote],
+    [top, onSwiped, tx, ty, enter],
   );
 
   const flyOff = useCallback(
     (liked: boolean) => {
       'worklet';
       const sign = liked ? 1 : -1;
-      // Promote the behind cards into their next slots concurrently with the
-      // fly-off. This is the ONLY place promotion happens — so the behind
-      // cards grow smoothly during the commit (no "pop bigger" flash) but
-      // never move during an incomplete drag.
-      promote.value = withTiming(1, {
-        duration: FLY_DURATION,
-        easing: Easing.bezier(0.2, 0.7, 0.2, 1),
-      });
+      // The behind cards stay completely still during the fly-off — the grow
+      // into the top slot is played on the NEW top card afterwards (see
+      // finalize / `enter`). Here we only throw the current top off-screen.
       ty.value = withTiming(ty.value * 0.5, {
         duration: FLY_DURATION,
         easing: Easing.bezier(0.2, 0.7, 0.2, 1),
@@ -113,7 +130,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
         },
       );
     },
-    [tx, ty, promote, finalize],
+    [tx, ty, finalize],
   );
 
   const pan = Gesture.Pan()
@@ -134,47 +151,48 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     swipe: (liked: boolean) => flyOff(liked),
   }));
 
-  const topStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: tx.value },
-      { translateY: ty.value * 0.3 },
-      { rotate: `${tx.value * 0.06}deg` },
-    ],
-  }));
-
-  // Non-top card styles. These shift up one slot (smaller → bigger) driven
-  // by `promote`, which animates 0 → 1 ONLY during a commit (flyOff) — NOT
-  // during the drag. Earlier these read `tx` directly, so a behind card
-  // crept forward as you dragged the top card and then snapped back if you
-  // released without crossing the threshold — the jitter the user reported.
-  // Driving them off `promote` means:
-  //   - mid-drag (no commit): promote stays 0 → behind cards sit perfectly
-  //     still. Since these worklets no longer read `tx`, they don't even
-  //     re-run on each drag frame.
-  //   - on commit: promote runs 0 → 1 alongside the fly-off, so the behind
-  //     card has grown to its target by the time it becomes the new top
-  //     (topStyle scale 1.0) — no "pop bigger" flash.
-  //
-  // Math:
-  //   idx=1 (behind):     scale 0.96 → 1.00, translateY 10 → 0
-  //   idx=2 (behind 2):   scale 0.92 → 0.96, translateY 20 → 10, opacity 0.92 → 1.0
-  const card1Style = useAnimatedStyle(() => {
-    const p = promote.value;
-    const scale = 0.96 + (1.0 - 0.96) * p;
-    const y = 10 + (0 - 10) * p;
-    return { transform: [{ translateY: y }, { scale }] };
-  });
-
-  const card2Style = useAnimatedStyle(() => {
-    const p = promote.value;
-    const scale = 0.92 + (0.96 - 0.92) * p;
-    const y = 20 + (10 - 20) * p;
-    const opacity = 0.92 + (1.0 - 0.92) * p;
+  // Top card. Carries the drag (translateX / rotate / a damped translateY)
+  // PLUS the entrance: `enter` 0 → 1 grows it from the slot-1 peek pose
+  // (scale 0.96, translateY 10) into the full top slot (scale 1.0, y 0). At
+  // rest `enter` is 1, so a settled top card is the plain identity transform
+  // and the drag math is unchanged from before.
+  const topStyle = useAnimatedStyle(() => {
+    const e = enter.value;
+    const scale = 0.96 + (1.0 - 0.96) * e;
+    const baseY = 10 * (1 - e);
     return {
-      transform: [{ translateY: y }, { scale }],
-      opacity,
+      transform: [
+        { translateX: tx.value },
+        { translateY: baseY + ty.value * 0.3 },
+        { scale },
+        { rotate: `${tx.value * 0.06}deg` },
+      ],
     };
   });
+
+  // Behind-card styles. These are CONSTANT — they read no shared value, so
+  // the worklets evaluate once and the cards never move on any platform,
+  // during a drag OR a fly-off. (PR #183 froze them during the drag but still
+  // animated them up one slot during the fly-off via `promote`; on Android
+  // that per-frame scale change on a shadowed card jittered. The grow now
+  // lives on the new top card via `enter` instead — see topStyle.)
+  //
+  // When the top card flies off and the deck advances, the slot-1 card
+  // becomes the new top (its `enter` starts at the slot-1 pose below, so the
+  // hand-off is seamless), and the slot-2 card snaps up to slot-1. That snap
+  // is a single faint frame on a card that's mostly hidden behind the new
+  // top, masked by the fly-off + entrance — not the continuous second-card
+  // motion the user was seeing.
+  //   idx=1 (behind):   scale 0.96, translateY 10
+  //   idx=2 (behind 2): scale 0.92, translateY 20, opacity 0.92
+  const card1Style = useAnimatedStyle(() => ({
+    transform: [{ translateY: 10 }, { scale: 0.96 }],
+  }));
+
+  const card2Style = useAnimatedStyle(() => ({
+    transform: [{ translateY: 20 }, { scale: 0.92 }],
+    opacity: 0.92,
+  }));
 
   // Hoist the GestureDetector ABOVE the cards map so it doesn't unmount
   // and remount when the top card changes after a swipe. Previously each
