@@ -1,16 +1,15 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, ScrollView, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { TopBar, IconButton } from '../../components/TopBar';
+import { TopBar } from '../../components/TopBar';
 import { useTheme } from '../../theme/ThemeProvider';
-import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
+import { CreateFAB } from '../../components/CreateFAB';
 import { listVoteEvents, type VoteCategory } from '../../api/votes';
 import { VoteEventCard } from './VoteEventCard';
 import { VOTE_CATEGORIES } from './voteHelpers';
@@ -69,14 +68,7 @@ export function VotesTabScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <TopBar
-        title={t('tabs.vote')}
-        right={
-          <IconButton onPress={() => nav.navigate('CreateVote')}>
-            <Plus size={18} color={theme.colors.text} strokeWidth={1.6} />
-          </IconButton>
-        }
-      />
+      <TopBar title={t('tabs.vote')} />
 
       <View style={{ gap: 8, paddingBottom: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -126,25 +118,10 @@ export function VotesTabScreen() {
       )}
 
       {/* Create FAB */}
-      <Pressable
+      <CreateFAB
         onPress={() => nav.navigate('CreateVote')}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          right: 18,
-          bottom: 22,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: theme.colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-          ...theme.shadows.pop,
-        })}
         accessibilityLabel={t('votes.createTitle')}
-      >
-        <Plus size={28} color="#FFFFFF" strokeWidth={2.4} />
-      </Pressable>
+      />
     </SafeAreaView>
   );
 }
