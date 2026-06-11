@@ -50,6 +50,15 @@ export const colors = {
   bubbleThemBg: '#FFFFFF',
   bubbleThemText: '#1F1E29',
 
+  // Plaza identity tiers (广场身份, spec §9.3). Username color by身份/等级:
+  // 🟣 Admin · 🟡 VIP · 🏅 Lv20 传奇(gold) · 🔵 老成员 · ⚪ 普通 · 🟢 新人.
+  tierAdmin: '#8B5CD8', // purple
+  tierVip: '#E8A317', // gold-yellow (Premium)
+  tierLegend: '#D4A017', // legend gold (Lv20)
+  tierOld: '#4F8FE8', // blue (Lv10–19)
+  tierNormal: '#8E8DA0', // muted grey (Lv2–9, "white")
+  tierNew: '#3CC479', // green (Lv1)
+
   // dark theme (placeholders — not used in v2 launch)
   dark: {
     bg: '#1B1820',

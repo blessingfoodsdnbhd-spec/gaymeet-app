@@ -15,11 +15,18 @@ const {
   COUNTRY_SUB_CHANNELS,
   VOICE_ROOMS,
   VALID_ROOM_IDS,
+  CHANNEL_IDS,
   socketRoom,
+  isCountryChannel,
+  isValidChannel,
 } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
+const { identityOf, levelOf } = require('../utils/identity');
+const roomColors = require('../config/roomColors');
+const { titleKeyForLevel } = require('../config/xpTable');
+const xpService = require('../services/xpService');
 const translateService = require('../services/translateService');
 
 // Auto-translate daily character caps (cost management).
@@ -36,7 +43,10 @@ const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
 const TITLE_MAX = 80;
 const DESC_MAX = 300;
-const MAX_ROOMS_PER_USER = 20; // soft anti-spam cap on open rooms one user owns
+// Phase 4 spec §7.1 — simultaneous open rooms one user may own.
+const MAX_ROOMS_FREE = 3;
+const MAX_ROOMS_PREMIUM = 10;
+const maxRoomsFor = (user) => (isPremiumActive(user) ? MAX_ROOMS_PREMIUM : MAX_ROOMS_FREE);
 
 // A custom (user-created) room id is a 24-hex ChatRoom _id; a country room is
 // one of VALID_ROOM_IDS. Anything else is treated as the global 'world' room.
@@ -86,9 +96,11 @@ function serializeRoom(room, userId, onlineCount) {
     c && c._id ? { id: c._id.toString(), displayName: c.nickname, avatarUrl: c.avatarUrl ?? null } : { id: String(c) };
   return {
     id: room._id.toString(),
+    channelId: room.channelId || room.countryCode || null,
     countryCode: room.countryCode,
     title: room.title,
     description: room.description || '',
+    cardColor: room.cardColor || roomColors.DEFAULT_HEX,
     isPrivate: room.isPrivate,
     status: room.status,
     creator,
@@ -229,6 +241,11 @@ router.post('/send', auth, async (req, res, next) => {
       ChatRoom.updateOne({ _id: roomId }, { $inc: { messageCount: 1 }, $set: { lastActiveAt: new Date() } }).catch(() => {});
     }
 
+    // Plaza Phase 4 §9.2 — award chat XP for text messages (anti-grind + caps
+    // applied inside the service). Mutates req.user.level in place, so the
+    // payload below reflects the post-award level + identity.
+    const levelUp = msg.type === 'text' ? xpService.awardMessageXp(req.user, msg.body) : null;
+
     const payload = {
       messageId: msg._id.toString(),
       roomId,
@@ -236,6 +253,7 @@ router.post('/send', auth, async (req, res, next) => {
       displayName: req.user.nickname,
       avatarUrl: req.user.avatarUrl ?? null,
       isOfficial: req.user.isOfficial ?? false,
+      identity: identityOf(req.user), // { tier, level } — §9.3 colors + §9.2 level
       countryCode: req.user.countryCode ?? null,
       city: req.user.city ?? null,
       body: msg.body,
@@ -250,6 +268,21 @@ router.post('/send', auth, async (req, res, next) => {
     };
     broadcast('world-chat:receive', payload, roomId);
     created(res, payload);
+
+    // §9.2.6 — on level-up, push a system line into the room everyone present sees.
+    if (levelUp && levelUp.leveledUp) {
+      broadcast(
+        'world-chat:level-up',
+        {
+          roomId,
+          userId: uid,
+          userName: req.user.nickname || '',
+          newLevel: levelUp.newLevel,
+          titleKey: levelUp.titleKey || titleKeyForLevel(levelUp.newLevel),
+        },
+        roomId,
+      );
+    }
 
     // Push the original sender when someone replies to them (not on self-reply).
     // notify() respects per-user opt-out (world_chat_reply isn't high-priority).
@@ -326,9 +359,28 @@ router.get('/rooms', auth, async (req, res, next) => {
       const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 0, 0), 50) || null;
       const fresh = Date.now() - hotCache.at < HOT_TTL && hotCache.limit === limit && hotCache.rooms;
       if (!fresh) {
-        let ranked = ALL_ROOMS.filter(inHotPool).map(mapRoom).sort((a, b) => b.onlineCount - a.onlineCount);
-        if (limit) ranked = ranked.slice(0, limit);
-        hotCache = { at: Date.now(), limit, rooms: ranked };
+        const ranked = ALL_ROOMS.filter(inHotPool).map(mapRoom);
+        // §6.1 — user-created rooms compete in the same hot pool. Include public,
+        // open UGC rooms that currently have someone online (recent activity
+        // first as the candidate set, then filtered by live count).
+        try {
+          const ugc = await ChatRoom.find({ status: 'open', isPrivate: false })
+            .select('title')
+            .sort({ lastActiveAt: -1 })
+            .limit(80)
+            .lean();
+          for (const r of ugc) {
+            const id = r._id.toString();
+            const onlineCount = roomCount(id);
+            if (onlineCount > 0) {
+              ranked.push({ id, flag: '💬', label: { en: r.title, zh: r.title, native: r.title }, kind: 'ugc', onlineCount });
+            }
+          }
+        } catch (_) {
+          /* UGC merge is best-effort */
+        }
+        ranked.sort((a, b) => b.onlineCount - a.onlineCount);
+        hotCache = { at: Date.now(), limit, rooms: limit ? ranked.slice(0, limit) : ranked };
       }
       return ok(res, { rooms: hotCache.rooms, voiceRooms, subChannels });
     }
@@ -352,26 +404,48 @@ function broadcastToUser(userId, event, payload) {
   }
 }
 
-// Create a room in a country. Creator auto-joins.
+// Create a room inside a 二级频道 (country code or friend:/voice:/interest: id).
+// Creator auto-joins. Phase 4 §7: per-user quota (Free 3 / Premium 10), title +
+// description sensitive-word filtered (§7.6).
 router.post('/rooms', auth, async (req, res, next) => {
   try {
-    const { countryCode, title, description, isPrivate, password } = req.body || {};
-    if (!VALID_ROOM_IDS.has(countryCode)) return err(res, 'Invalid country');
+    const { channelId, countryCode, title, description, isPrivate, password } = req.body || {};
+    // Prefer channelId; fall back to legacy countryCode for older clients.
+    const channel = channelId || countryCode;
+    if (!isValidChannel(channel)) return err(res, 'Invalid channel');
     const ttl = String(title ?? '').trim();
     if (!ttl) return err(res, 'Title is required');
+    if (ttl.length < 2) return err(res, 'Title too short (min 2)');
     if (ttl.length > TITLE_MAX) return err(res, `Title too long (max ${TITLE_MAX})`);
     const desc = String(description ?? '').trim().slice(0, DESC_MAX);
+    // §7.6 — block names/descriptions that hit the sensitive-word filter.
+    if (BLOCKLIST.test(ttl) || (desc && BLOCKLIST.test(desc))) {
+      return err(res, 'Room name contains disallowed words', 422);
+    }
     const priv = !!isPrivate;
     if (priv && !String(password ?? '').trim()) return err(res, 'Private rooms need a password');
 
+    // 自建房颜色 — must be a palette color the creator has unlocked by level
+    // (defaults to Lv1 灰白 when omitted). Reject locked/unknown colors.
+    const cardColor = String(req.body?.cardColor ?? '').trim() || roomColors.DEFAULT_HEX;
+    if (!roomColors.isUnlocked(cardColor, levelOf(req.user))) {
+      return res.status(403).json({ error: 'Color not unlocked yet', code: 'COLOR_LOCKED' });
+    }
+
     const owned = await ChatRoom.countDocuments({ creatorId: req.user._id, status: 'open' });
-    if (owned >= MAX_ROOMS_PER_USER) return err(res, `You can own at most ${MAX_ROOMS_PER_USER} open rooms`, 429);
+    const cap = maxRoomsFor(req.user);
+    if (owned >= cap) {
+      return res.status(429).json({ error: `You can own at most ${cap} open rooms`, code: 'ROOM_LIMIT', cap });
+    }
 
     const room = await ChatRoom.create({
       creatorId: req.user._id,
-      countryCode,
+      channelId: channel,
+      // Mirror to countryCode for countries so legacy reads still resolve.
+      countryCode: isCountryChannel(channel) ? channel : undefined,
       title: ttl,
       description: desc,
+      cardColor,
       isPrivate: priv,
       passwordHash: priv ? hashPassword(String(password).trim()) : null,
       memberIds: [req.user._id],
@@ -384,24 +458,65 @@ router.post('/rooms', auth, async (req, res, next) => {
   }
 });
 
-// List rooms in a country. Public-open rooms to everyone; private/closed only
-// to members or the creator.
-router.get('/rooms/by-country/:countryCode', auth, async (req, res, next) => {
+// List the user-created (UGC) rooms inside a 二级频道. The channel's fixed
+// 总聊天室 / sub-boards are config-driven and rendered client-side; this returns
+// only the UGC rooms. Public-open rooms to everyone; private/closed only to
+// members or the creator. Sorted by live online count desc, then newest first
+// (spec §5.4 / §7.3) — online ranking is applied after the DB fetch since counts
+// live in the socket adapter.
+async function listChannelRooms(channel, userId, res, next) {
   try {
-    const cc = req.params.countryCode;
-    if (!VALID_ROOM_IDS.has(cc)) return err(res, 'Invalid country');
+    if (!isValidChannel(channel)) return err(res, 'Invalid channel');
+    // Match new channelId rooms AND legacy country rooms that only set countryCode.
+    const parentMatch = isCountryChannel(channel)
+      ? { $or: [{ channelId: channel }, { channelId: { $in: [null, undefined] }, countryCode: channel }] }
+      : { channelId: channel };
     const rooms = await ChatRoom.find({
-      countryCode: cc,
       $and: [
-        { $or: [{ isPrivate: false }, { memberIds: req.user._id }, { creatorId: req.user._id }] },
-        { $or: [{ status: 'open' }, { memberIds: req.user._id }, { creatorId: req.user._id }] },
+        parentMatch,
+        { $or: [{ isPrivate: false }, { memberIds: userId }, { creatorId: userId }] },
+        { $or: [{ status: 'open' }, { memberIds: userId }, { creatorId: userId }] },
       ],
     })
       .populate('creatorId', 'nickname avatarUrl')
       .sort({ lastActiveAt: -1 })
       .limit(100)
       .lean();
-    ok(res, { rooms: rooms.map((r) => serializeRoom(r, req.user._id, roomCount(r._id.toString()))) });
+    const serialized = rooms
+      .map((r) => serializeRoom(r, userId, roomCount(r._id.toString())))
+      // §7.3 — online desc, then createdAt desc (newest first).
+      .sort((a, b) => b.onlineCount - a.onlineCount || new Date(b.createdAt) - new Date(a.createdAt));
+    ok(res, { rooms: serialized });
+  } catch (e) {
+    next(e);
+  }
+}
+
+// Phase 4 canonical listing — any channel.
+router.get('/rooms/by-channel/:channelId', auth, (req, res, next) =>
+  listChannelRooms(req.params.channelId, req.user._id, res, next),
+);
+
+// Legacy alias — country rooms (pre-Phase-4 clients).
+router.get('/rooms/by-country/:countryCode', auth, (req, res, next) =>
+  listChannelRooms(req.params.countryCode, req.user._id, res, next),
+);
+
+// 我开的房间 — the current user's own open rooms across all channels (Phase 4
+// §6.3 热门 page). Includes the quota cap so the client can show "3/3 used".
+// Declared before '/rooms/:id' so the literal 'mine' segment isn't swallowed.
+router.get('/rooms/mine', auth, async (req, res, next) => {
+  try {
+    const rooms = await ChatRoom.find({ creatorId: req.user._id, status: 'open' })
+      .populate('creatorId', 'nickname avatarUrl')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    ok(res, {
+      rooms: rooms.map((r) => serializeRoom(r, req.user._id, roomCount(r._id.toString()))),
+      cap: maxRoomsFor(req.user),
+      isPremium: isPremiumActive(req.user),
+    });
   } catch (e) {
     next(e);
   }
@@ -621,6 +736,13 @@ router.patch('/rooms/:id', auth, async (req, res, next) => {
       room.title = ttl;
     }
     if (b.description !== undefined) room.description = String(b.description).trim().slice(0, DESC_MAX);
+    if (b.cardColor !== undefined) {
+      const hex = String(b.cardColor).trim();
+      if (!roomColors.isUnlocked(hex, levelOf(req.user))) {
+        return res.status(403).json({ error: 'Color not unlocked yet', code: 'COLOR_LOCKED' });
+      }
+      room.cardColor = hex;
+    }
     if (b.isPrivate !== undefined) {
       room.isPrivate = !!b.isPrivate;
       if (room.isPrivate) {
@@ -695,7 +817,10 @@ router.get('/recent', auth, async (req, res, next) => {
     const rows = await WorldChatMessage.find(q)
       .sort({ _id: -1 })
       .limit(limit)
-      .populate('userId', 'nickname avatarUrl countryCode city isOfficial')
+      .populate(
+        'userId',
+        'nickname avatarUrl countryCode city isOfficial level currentExp isPremium premiumExpiresAt vipLevel vipExpiresAt',
+      )
       .populate({ path: 'replyToMessageId', select: 'body type caption userId', populate: { path: 'userId', select: 'nickname' } })
       .lean();
 
@@ -719,6 +844,7 @@ router.get('/recent', auth, async (req, res, next) => {
           displayName: m.userId.nickname,
           avatarUrl: m.userId.avatarUrl ?? null,
           isOfficial: m.userId.isOfficial ?? false,
+          identity: identityOf(m.userId),
           countryCode: m.userId.countryCode ?? null,
           city: m.userId.city ?? null,
           body: m.body,

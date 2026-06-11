@@ -21,6 +21,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { createChatRoom } from '../../api/worldChat';
+import { useAuth } from '../../store/auth';
+import { DEFAULT_HEX } from '../../utils/roomColors';
+import { RoomColorPicker } from './RoomColorPicker';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -35,10 +38,12 @@ export function CreateRoomScreen() {
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const qc = useQueryClient();
-  const { countryCode, title: countryTitle } = route.params;
+  const { channelId, title: channelTitle } = route.params;
+  const myLevel = useAuth((s) => s.user?.level ?? 1);
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
+  const [cardColor, setCardColor] = React.useState(DEFAULT_HEX);
   const [isPrivate, setIsPrivate] = React.useState(false);
   const [password, setPassword] = React.useState('');
   const [saving, setSaving] = React.useState(false);
@@ -50,16 +55,25 @@ export function CreateRoomScreen() {
     setSaving(true);
     try {
       const room = await createChatRoom({
-        countryCode,
+        channelId,
         title: title.trim(),
         description: description.trim() || undefined,
+        cardColor,
         isPrivate,
         password: isPrivate ? password.trim() : undefined,
       });
-      qc.invalidateQueries({ queryKey: ['worldChat', 'countryRooms', countryCode] });
+      qc.invalidateQueries({ queryKey: ['worldChat', 'channelRooms', channelId] });
+      qc.invalidateQueries({ queryKey: ['worldChat', 'myRooms'] });
       nav.replace('WorldChatRoom', { roomId: room.id, title: room.title, custom: true });
     } catch (e: any) {
-      Alert.alert(t('worldChat.rooms.createFailed'), e?.response?.data?.error ?? '');
+      // §7.1 — quota reached returns 429 ROOM_LIMIT with a cap.
+      if (e?.response?.data?.code === 'ROOM_LIMIT') {
+        Alert.alert(t('worldChat.rooms.createFailed'), t('plaza.create.limitReached', { cap: e.response.data.cap }));
+      } else if (e?.response?.data?.code === 'COLOR_LOCKED') {
+        Alert.alert(t('worldChat.rooms.createFailed'), t('plaza.color.locked'));
+      } else {
+        Alert.alert(t('worldChat.rooms.createFailed'), e?.response?.data?.error ?? '');
+      }
     } finally {
       setSaving(false);
     }
@@ -88,7 +102,7 @@ export function CreateRoomScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }} keyboardShouldPersistTaps="handled">
           <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>
-            {t('worldChat.rooms.inCountry', { country: countryTitle })}
+            {t('worldChat.rooms.inChannel', { channel: channelTitle })}
           </Text>
 
           <View style={{ gap: 8 }}>
@@ -112,6 +126,12 @@ export function CreateRoomScreen() {
               multiline
               style={[input, { minHeight: 84, textAlignVertical: 'top' }]}
             />
+          </View>
+
+          <View style={{ gap: 10 }}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('plaza.color.title')}</Text>
+            <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: -4 }}>{t('plaza.color.hint')}</Text>
+            <RoomColorPicker userLevel={myLevel} value={cardColor} onChange={setCardColor} />
           </View>
 
           <View style={[styles.row, { borderColor: theme.colors.line }]}>

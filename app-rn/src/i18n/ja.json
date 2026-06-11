@@ -1,5 +1,7 @@
 {
-  "popularity": {"label": "人気"},
+  "popularity": {
+    "label": "人気"
+  },
   "common": {
     "back": "戻る",
     "search": "検索",
@@ -33,9 +35,6 @@
     "appleNoCredential": "Appleが有効な認証情報を返しませんでした。もう一度お試しください"
   },
   "onboarding": {
-    "skip": "スキップ",
-    "next": "次へ",
-    "done": "はじめる",
     "1": {
       "title": "コンテスト — バッジを獲得",
       "subtitle": "作品を出品すると上位3名が永久「ハイライト」バッジを獲得。"
@@ -55,7 +54,10 @@
     "5": {
       "title": "Meyouへようこそ",
       "subtitle": "プロフィールを完成させて出会いを始めましょう。"
-    }
+    },
+    "skip": "スキップ",
+    "next": "次へ",
+    "done": "はじめる"
   },
   "email": {
     "title": "メールアドレスは？",
@@ -584,24 +586,124 @@
     "saveFailed": "保存に失敗しました"
   },
   "plaza": {
-    "tab": { "hot": "🔥 人気", "match": "❤️ 交流", "voice": "🎤 音声", "interest": "🎮 チャンネル", "country": "🌏 国別" },
-    "switcher": { "hot": "人気のチャット", "country": "国を選ぶ" },
-    "channel": { "food": "グルメ", "photo": "写真", "games": "ゲーム", "ai": "AI", "realestate": "不動産", "pets": "ペット" },
-    "topic": { "lateNight": "深夜トーク", "singles": "シングル交流", "aiDiscuss": "AIディスカッション" },
+    "tab": {
+      "hot": "🔥 人気",
+      "match": "❤️ 交流",
+      "voice": "🎤 音声",
+      "interest": "🎮 チャンネル",
+      "country": "🌏 国別"
+    },
+    "switcher": {
+      "hot": "人気のチャット",
+      "country": "国を選ぶ"
+    },
+    "channel": {
+      "food": "グルメ",
+      "photo": "写真",
+      "games": "ゲーム",
+      "ai": "AI",
+      "realestate": "不動産",
+      "pets": "ペット",
+      "lateNight": "深夜雑談",
+      "startup": "起業",
+      "invest": "投資",
+      "movies": "映画",
+      "music": "音楽",
+      "travel": "旅行",
+      "cars": "車",
+      "fitness": "フィットネス",
+      "study": "勉強",
+      "design": "デザイン",
+      "fashion": "ファッション",
+      "baking": "ベーキング",
+      "coffee": "コーヒー"
+    },
+    "topic": {
+      "lateNight": "深夜トーク",
+      "singles": "シングル交流",
+      "aiDiscuss": "AIディスカッション"
+    },
     "comingSoon": "近日公開",
     "notifyMe": "通知を受け取る",
     "notified": "お知らせします",
-    "match": { "title": "ランダムチャット", "desc": "新しい人とおしゃべりできるようつなぎます。近日公開。" },
-    "voice": { "title": "ボイスルーム", "desc": "ライブのボイスルームに入ってリアルタイムで話しましょう。近日公開。", "lateNight": "深夜トーク", "cantonese": "広東語ルーム", "myChinese": "マレーシア華人", "entrepreneurs": "起業家" },
-    "interest": { "title": "興味チャンネル", "desc": "好きなことで仲間を見つけよう — 写真・グルメ・ゲームなど。近日公開。" },
-    "country": { "subchannel": { "general": "総合", "social": "交流", "newcomers": "新人", "events": "イベント" } },
+    "match": {
+      "title": "ランダムチャット",
+      "desc": "新しい人とおしゃべりできるようつなぎます。近日公開。"
+    },
+    "voice": {
+      "title": "ボイスルーム",
+      "desc": "ライブのボイスルームに入ってリアルタイムで話しましょう。近日公開。",
+      "lateNight": "深夜トーク",
+      "cantonese": "広東語ルーム",
+      "myChinese": "マレーシア華人",
+      "entrepreneurs": "起業家",
+      "randomMatch": "ランダムマッチ",
+      "singles": "シングル交流",
+      "mandarin": "標準中国語",
+      "english": "英語交流",
+      "karaoke": "カラオケ",
+      "gaming": "ゲーム",
+      "bosses": "経営者ルーム",
+      "ai": "AI討論",
+      "feelings": "心の樹洞"
+    },
+    "interest": {
+      "title": "興味チャンネル",
+      "desc": "好きなことで仲間を見つけよう — 写真・グルメ・ゲームなど。近日公開。"
+    },
+    "country": {
+      "subchannel": {
+        "general": "メインルーム",
+        "social": "交流エリア",
+        "newcomers": "新人紹介",
+        "events": "イベント",
+        "chitchat": "雑談エリア"
+      }
+    },
     "worldLobby": "ワールドロビー",
     "hotRooms": "🔥 人気",
     "rooms": "チャットルーム",
     "browse": "ルームを見る",
     "userJoined": "🎉 {{name}}さんが入室しました",
     "userLeft": "👋 {{name}}さんが退室しました",
-    "onlineCount": "{{count}}人オンライン"
+    "onlineCount": "{{count}}人オンライン",
+    "friend": {
+      "lateNight": "深夜チャット",
+      "singles": "シングル交流",
+      "overseas": "海外華人",
+      "voiceMatch": "ボイスマッチ",
+      "buddies": "仲間探し",
+      "mealMates": "ご飯仲間",
+      "travelMates": "旅仲間",
+      "bizPartners": "起業仲間",
+      "overseasRoom": "海外華人ルーム"
+    },
+    "level": {
+      "title": {
+        "lv1": "新人",
+        "lv5": "常連",
+        "lv10": "古参",
+        "lv20": "伝説の雑談王"
+      }
+    },
+    "hot": {
+      "topics": "人気トピック",
+      "myRooms": "マイルーム",
+      "noRooms": "まだ部屋を作成していません — ＋で作成しましょう。",
+      "quota": "{{used}}/{{cap}} ルーム"
+    },
+    "create": {
+      "limitReached": "上限に達しました — Premiumなら最大{{cap}}個作成できます。"
+    },
+    "online": "オンライン {{n}}人",
+    "onlineList": "オンライン一覧",
+    "levelUp": "🎖️ {{name}} がLv{{level}} {{title}} に昇格！",
+    "voiceTextNotice": "🎤 ボイス機能は近日公開。今はテキストルームです。",
+    "color": {
+      "title": "ルームの色",
+      "hint": "レベルアップで色が解放されます",
+      "locked": "この色はまだ解放されていません"
+    }
   },
   "chatTranslation": {
     "title": "チャット翻訳",
@@ -685,7 +787,11 @@
       "leaveConfirmTitle": "このルームを退出しますか？",
       "leaveConfirmBody": "このルームのメンバーではなくなります。",
       "roomDeleted": "このルームは削除されました。",
-      "kicked": "このルームから退出させられました。"
+      "kicked": "このルームから退出させられました。",
+      "sectionUgc": "ユーザールーム",
+      "ugcEmpty": "まだユーザールームがありません — ＋で作成。",
+      "roomCount": "{{n}}個のルーム",
+      "inChannel": "「{{channel}}」に作成"
     },
     "empty": "最初にあいさつしましょう 👋",
     "placeholder": "世界とチャット…",
@@ -1205,8 +1311,6 @@
       "profile80": "プロフィールが素敵 — プレミアムで3倍の表示を。"
     },
     "testimonials": {
-      "section": "会員の声",
-      "disclaimer": "*匿名化したサンプルです。",
       "1": {
         "name": "小美 · 25 · クアラルンプール",
         "quote": "Meyouで写真仲間にたくさん出会えました — コンテストがクセになる！"
@@ -1222,7 +1326,9 @@
       "4": {
         "name": "Nina · 26 · 香港",
         "quote": "プレミアムのプロフィール訪問者＋シークレットは100%の価値あり。"
-      }
+      },
+      "section": "会員の声",
+      "disclaimer": "*匿名化したサンプルです。"
     },
     "benefits": {
       "hideOnline": "オンライン状態を非表示",

@@ -64,10 +64,16 @@ export type RootStackParamList = {
   /** A World Chat room (广场). roomId 'world' = global; a country code; or a
    *  24-hex custom ChatRoom id. `custom` flags a user-created room. */
   WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
-  /** Room list inside one country (general + user-created rooms). */
-  CountryRooms: { countryCode: string; title: string };
-  /** Create a user room inside a country. */
-  CreateRoom: { countryCode: string; title: string };
+  /** Phase 4 room list inside a 二级频道: a country (4 fixed sub-boards + UGC) or
+   *  a friend/voice/interest channel (总聊天室 + UGC). `kind` picks the layout. */
+  ChannelRooms: {
+    channelId: string;
+    title: string;
+    kind: 'country' | 'friend' | 'voice' | 'interest';
+    flag?: string;
+  };
+  /** Create a user room inside a 二级频道. */
+  CreateRoom: { channelId: string; title: string; kind?: 'country' | 'friend' | 'voice' | 'interest' };
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;

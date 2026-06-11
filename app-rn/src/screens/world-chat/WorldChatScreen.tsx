@@ -17,7 +17,7 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -53,7 +53,9 @@ import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
+import { RoomOnlineSidebar } from './RoomOnlineSidebar';
 import { VerifiedBadge } from '../../components/NameWithBadge';
+import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -125,6 +127,8 @@ export function WorldChatScreen({
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   // Which sub-screen the settings sheet opens on ('main' = ⋮ menu, 'invite' = +).
   const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
+  // mIRC online-roster drawer (spec §9.1).
+  const [rosterOpen, setRosterOpen] = React.useState(false);
 
   // Share the room via the system share sheet using the meyou.uk/r/{id} short
   // link. Works for every room — custom, country, or the global world room.
@@ -286,8 +290,30 @@ export function WorldChatScreen({
       };
       const uJoin = await wsOn('world-chat:user-joined', handle('join'));
       const uLeft = await wsOn('world-chat:user-left', handle('leave'));
-      if (cancelled) { uJoin(); uLeft(); return; }
-      unsubs = [uJoin, uLeft];
+      // §9.2.6 — level-up announcement (shown to everyone present, incl. self).
+      const uLevel = await wsOn(
+        'world-chat:level-up',
+        (p: { roomId: string; userId: string; userName: string; newLevel: number; titleKey?: string | null }) => {
+          if (cancelled || p.roomId !== roomId) return;
+          const sys: WorldChatMessage = {
+            messageId: `sys_lvl_${p.userId}_${p.newLevel}_${Date.now()}`,
+            userId: p.userId,
+            displayName: p.userName,
+            avatarUrl: null,
+            body: '',
+            type: 'system',
+            system: { kind: 'levelup', name: p.userName, level: p.newLevel, titleKey: p.titleKey ?? null },
+            createdAt: new Date().toISOString(),
+          };
+          qc.setQueryData<Cache>(KEY, (prev) => {
+            const next = [sys, ...(prev?.messages ?? [])];
+            let seen = 0;
+            return { messages: next.filter((m) => (m.type === 'system' ? ++seen <= MAX_SYS_MSGS : true)) };
+          });
+        },
+      );
+      if (cancelled) { uJoin(); uLeft(); uLevel(); return; }
+      unsubs = [uJoin, uLeft, uLevel];
     })();
     return () => {
       cancelled = true;
@@ -597,6 +623,9 @@ export function WorldChatScreen({
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginLeft: 8 }}>
+            <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')}>
+              <Users size={22} color={theme.colors.text} />
+            </Pressable>
             <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
@@ -799,6 +828,17 @@ export function WorldChatScreen({
         onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
       />
 
+      {/* mIRC 在线名单 — right drawer (spec §9.1). */}
+      <RoomOnlineSidebar
+        open={rosterOpen}
+        onClose={() => setRosterOpen(false)}
+        roomId={roomId}
+        onOpenUser={(userId) => {
+          setRosterOpen(false);
+          if (userId !== myId) nav.navigate('UserDetail', { userId });
+        }}
+      />
+
     </SafeAreaView>
   );
 }
@@ -811,11 +851,31 @@ function SystemRow({ msg }: { msg: WorldChatMessage }) {
   React.useEffect(() => {
     Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }).start();
   }, [opacity]);
-  const name = msg.system?.name ?? msg.displayName;
-  const text = msg.system?.kind === 'leave' ? t('plaza.userLeft', { name }) : t('plaza.userJoined', { name });
+  const sys = msg.system;
+  const name = sys?.name ?? msg.displayName;
+  let text: string;
+  let levelUp = false;
+  if (sys?.kind === 'levelup') {
+    levelUp = true;
+    const title = sys.titleKey ? t(sys.titleKey) : '';
+    text = t('plaza.levelUp', { name, level: sys.level, title }).trim();
+  } else if (sys?.kind === 'leave') {
+    text = t('plaza.userLeft', { name });
+  } else {
+    text = t('plaza.userJoined', { name });
+  }
   return (
-    <Animated.View style={{ opacity, alignItems: 'center', paddingVertical: 1 }}>
-      <Text style={{ fontSize: 12, color: theme.colors.muted, textAlign: 'center' }}>{text}</Text>
+    <Animated.View style={{ opacity, alignItems: 'center', paddingVertical: levelUp ? 3 : 1 }}>
+      <Text
+        style={{
+          fontSize: levelUp ? 12.5 : 12,
+          fontWeight: levelUp ? '700' : '400',
+          color: levelUp ? theme.colors.primary : theme.colors.muted,
+          textAlign: 'center',
+        }}
+      >
+        {text}
+      </Text>
     </Animated.View>
   );
 }
@@ -860,6 +920,10 @@ function Row({
   // "🇲🇾 吉隆坡 · jacky teh" — location prefix when known, else just the name.
   const loc = [countryCodeToFlag(msg.countryCode), msg.city || ''].filter(Boolean).join(' ');
   const senderLabel = loc ? `${loc} · ${msg.displayName}` : msg.displayName;
+  // Plaza identity (§9.3) — username color by tier; level badge (§9.2).
+  const tier = msg.identity?.tier;
+  const nameColor = tier ? tierColor(theme, tier) : theme.colors.text;
+  const level = msg.identity?.level;
   const isPhoto = msg.type === 'photo' && !!msg.photoUrl;
   const isVoice = msg.type === 'voice' && !!msg.voiceUrl;
   const voiceSecs = Math.max(1, Math.round((msg.voiceDurationMs ?? 0) / 1000));
@@ -883,10 +947,16 @@ function Row({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
           {!mine && (
             <Pressable onPress={onOpenUser}>
-              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: theme.colors.text }}>
+              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: nameColor }}>
                 {senderLabel}
               </Text>
             </Pressable>
+          )}
+          {!mine && tier === 'legend' && <Text style={{ fontSize: 11 }}>{tierEmoji('legend')}</Text>}
+          {!mine && level != null && level >= 2 && (
+            <View style={{ borderWidth: 1, borderColor: nameColor, borderRadius: 999, paddingHorizontal: 5 }}>
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: nameColor }}>Lv{level}</Text>
+            </View>
           )}
           {!mine && msg.isOfficial && <VerifiedBadge size={13} />}
           {isCreator && <Crown size={12} color={theme.colors.primary} />}
