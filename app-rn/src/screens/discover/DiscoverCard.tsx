@@ -145,7 +145,12 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
         </Animated.View>
       </View>
 
-      <View style={styles.info}>
+      {/* Explicit opaque background: the info block must fully cover the card
+          behind it in the stack. Relying on the parent `card` background alone
+          left a seam where the next card's name (e.g. "Dennis Tan" under the
+          top card's "Edi Teh") ghosted through on Android. `surface` is a solid
+          #FFFFFF — never an rgba — so nothing behind can bleed in. */}
+      <View style={[styles.info, { backgroundColor: theme.colors.surface }]}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
           <Text style={[styles.name, { color: theme.colors.text }]}>{user.nickname}</Text>
           <FollowBadge status={user.followStatus} size={16} />
