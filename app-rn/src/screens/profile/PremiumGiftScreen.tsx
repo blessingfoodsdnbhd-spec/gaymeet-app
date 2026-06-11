@@ -35,7 +35,7 @@ export function PremiumGiftScreen() {
     enabled: !!myId && isPremium,
   });
 
-  // Monthly quota header: "今月剩余 X / N 次" (Premium-only: 5/month).
+  // Monthly quota header: "今月剩余 X / N 次" (Premium-only: 1/month).
   const quotaQ = useQuery({ queryKey: ['premiumGift', 'quota'], queryFn: getGiftQuota, enabled: isPremium });
   const quota = quotaQ.data;
   const remaining = quota?.remaining ?? 0;
