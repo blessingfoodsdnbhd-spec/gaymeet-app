@@ -131,7 +131,11 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       // Admin: a new user report landed → reports dashboard.
       return safeNavigate('AdminReports');
     case 'verification_result':
-      // User: their verification was approved/rejected → their status screen.
+      // User: approved → own profile (to see the new verified badge); rejected →
+      // the verification screen to re-submit.
+      if (String(data.status ?? '') === 'approved') {
+        return safeNavigate('Main', { screen: 'Profile' });
+      }
       return safeNavigate('Verification');
     default:
       return false;

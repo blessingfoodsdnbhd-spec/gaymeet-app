@@ -62,8 +62,8 @@ router.post('/verifications/:id/approve', async (req, res, next) => {
       targetUser: record.user, targetType: 'verification', targetId: record._id,
     });
     notify(record.user, 'verification_result', {
-      title: '认证已通过',
-      body: '你的照片认证已通过，已获得真人认证标识。',
+      title: '认证已通过 🎉',
+      body: '🎉 你的照片认证已通过，已获得认证徽章',
       data: { type: 'verification_result', status: 'approved' },
     });
 
@@ -97,7 +97,9 @@ router.post('/verifications/:id/reject', async (req, res, next) => {
     });
     notify(record.user, 'verification_result', {
       title: '认证未通过',
-      body: record.rejectedReason ? `你的照片认证被驳回，原因：${record.rejectedReason}` : '你的照片认证被驳回，请重新提交。',
+      body: record.rejectedReason
+        ? `你的照片认证被驳回，原因：${record.rejectedReason}。你可以重新提交`
+        : '你的照片认证被驳回，你可以重新提交',
       data: { type: 'verification_result', status: 'rejected' },
     });
 
