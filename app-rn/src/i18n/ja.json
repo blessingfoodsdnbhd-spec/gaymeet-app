@@ -149,6 +149,8 @@
       "location": "位置を追加",
       "taggedCount": "{{n}}人タグ",
       "chooseOnMap": "地図で選択",
+      "searchPlace": "場所を検索...",
+      "tapPinToSelect": "ピンをタップして場所を選択",
       "currentLocation": "現在地",
       "removeLocation": "位置を削除",
       "noFriends": "タグできる友達がまだいません",

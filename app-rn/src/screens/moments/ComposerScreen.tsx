@@ -25,6 +25,7 @@ import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSh
 import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
 import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
+import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
 
 const MAX_PHOTOS = 9;
 const MAX_CONTENT = 500;
@@ -350,6 +351,12 @@ export function ComposerScreen() {
         onClose={() => setLocOpen(false)}
         current={place}
         onPick={setPlace}
+        onChooseMap={() => {
+          setLocOpen(false);
+          // One-shot bridge — MapPicker resolves it on Save (HHHHH).
+          setMomentLocationHandler(setPlace);
+          (nav as any).navigate('MapPicker', { mode: 'moment' });
+        }}
       />
     </SafeAreaView>
   );
