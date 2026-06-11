@@ -8,7 +8,6 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -18,6 +17,7 @@ import {
   Crown,
   Eye,
   Gift,
+  ImagePlus,
   Mic,
   Pencil,
   Settings as SettingsIcon,
@@ -37,6 +37,7 @@ import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
+import { ProfilePhotoCarousel } from '../../components/ProfilePhotoCarousel';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
@@ -120,10 +121,6 @@ export function ProfileScreen() {
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
   const official = !!(user as any).isOfficial;
   const photoVerified = !!(user as any).isVerified;
-
-  // GGGG — large 3-column photo grid. Tile = (screen − h-padding − 2 gaps) / 3.
-  const GAP = 8;
-  const tile = Math.floor((width - theme.spacing.xl * 2 - GAP * 2) / 3);
 
   const goEdit = () => nav.navigate('EditProfile');
 
@@ -238,26 +235,33 @@ export function ProfileScreen() {
           )}
         </View>
 
-        {/* Public photos — large 3-col preview (read-only). Tap a photo to
-            view; tap 编辑 to manage. */}
+        {/* Public photos — full-width, page-snapped carousel (read-only),
+            matching the immersive gallery strangers see on UserDetailScreen.
+            Tap a photo to view fullscreen; tap 编辑 (or the empty state) to
+            manage in EditProfileScreen. */}
         <SectionTitle>{t('profile.publicPhotosLimit', { count: photos.length })}</SectionTitle>
-        {photos.length > 0 ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
-            {photos.map((url, i) => (
-              <Pressable key={`${url}-${i}`} onPress={() => photoViewer.open(photos, i)}>
-                <Image
-                  source={{ uri: url }}
-                  style={{ width: tile, height: tile, borderRadius: theme.radius.m, backgroundColor: theme.colors.surface2 }}
-                  contentFit="cover"
-                />
+        <ProfilePhotoCarousel
+          photos={photos}
+          width={width}
+          height={Math.round(width * 1.25)}
+          onPressPhoto={(p, i) => photoViewer.open(p, i)}
+          // Break out of the screen's horizontal padding for true full-bleed.
+          style={{ marginHorizontal: -theme.spacing.xl }}
+          empty={
+            <Pressable onPress={goEdit} style={{ alignItems: 'center', gap: 10, padding: 24 }}>
+              <ImagePlus size={28} color={theme.colors.primary} strokeWidth={1.8} />
+              <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.edit.addPhotosHint')}</Text>
+            </Pressable>
+          }
+          overlay={
+            photos.length > 0 ? (
+              <Pressable onPress={goEdit} style={styles.photoEditBtn}>
+                <Pencil size={14} color="#FFFFFF" strokeWidth={2} />
+                <Text style={styles.photoEditText}>{t('editProfile.title')}</Text>
               </Pressable>
-            ))}
-          </View>
-        ) : (
-          <Pressable onPress={goEdit}>
-            <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.edit.addPhotosHint')}</Text>
-          </Pressable>
-        )}
+            ) : null
+          }
+        />
 
         {/* Bio preview (read-only). */}
         <SectionTitle>{t('profile.edit.bio')}</SectionTitle>
@@ -447,4 +451,19 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   inviteCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 16, marginTop: 24 },
+  // Floating "编辑" pill on the photo carousel — keeps the manage-photos entry
+  // next to the photos themselves (bottom-right, clear of the centered dots).
+  photoEditBtn: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  photoEditText: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '600' },
 });

@@ -27,6 +27,7 @@ import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
+import { ProfilePhotoCarousel } from '../../components/ProfilePhotoCarousel';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { TagChip } from '../../components/TagChip';
@@ -72,7 +73,6 @@ export function UserDetailScreen() {
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const carouselH = Math.round(screenH * 0.5);
-  const [page, setPage] = React.useState(0);
   const introVoice = useDiscoverPrefs((s) => s.introVoice);
   // 小纸条 (anonymous note) composer — hidden on your own profile.
   const [noteOpen, setNoteOpen] = React.useState(false);
@@ -225,96 +225,53 @@ export function UserDetailScreen() {
             </View>
           )}
           {/* Full-bleed photo carousel — replaces the small round avatar.
-              Paged, swipeable through all photos; tap to open the zoom viewer. */}
-          <View
-            style={{
-              width: screenW,
-              height: carouselH,
-              marginHorizontal: -20,
-              backgroundColor: theme.colors.surface2,
-            }}
-          >
-            {carouselPhotos.length > 0 ? (
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={(e) =>
-                  setPage(Math.round(e.nativeEvent.contentOffset.x / screenW))
-                }
-              >
-                {carouselPhotos.map((url, idx) => (
+              Paged, swipeable through all photos; tap to open the zoom viewer.
+              Shared with the 我-tab via ProfilePhotoCarousel. */}
+          <ProfilePhotoCarousel
+            photos={carouselPhotos}
+            width={screenW}
+            height={carouselH}
+            onPressPhoto={(p, i) => photoViewer.open(p, i)}
+            style={{ marginHorizontal: -20 }}
+            empty={
+              <Avatar
+                name={user.nickname}
+                uri={user.avatarUrl}
+                avatarIdx={idxFor(userId)}
+                size={120}
+                shape="circle"
+              />
+            }
+            overlay={
+              <>
+                {/* Voice intro — auto-plays once on open when the pref is on. */}
+                {!!user.voiceIntroUrl && (
+                  <View style={styles.voiceBtn}>
+                    <VoicePlayButton url={user.voiceIntroUrl} autoPlay={introVoice} size={20} color="#FFFFFF" />
+                  </View>
+                )}
+
+                {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet.
+                    Hidden on own profile and in self-preview (can't note yourself). */}
+                {!isSelf && !previewMode && (
                   <Pressable
-                    key={`c-${idx}-${url}`}
-                    onPress={() => photoViewer.open(carouselPhotos, idx)}
-                    style={{ width: screenW, height: carouselH }}
+                    onPress={() => setNoteOpen(true)}
+                    hitSlop={8}
+                    style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
                   >
-                    <ExpoImage
-                      source={{ uri: url }}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      // VVVVV/MMMM — full-res decode. This gallery url is also
-                      // rendered small elsewhere (discover/nearby grids); without
-                      // this the large carousel reuses that grid-sized decode → 格子.
-                      allowDownscaling={false}
-                      priority="high"
-                    />
+                    <StickyNote size={18} color="#FFFFFF" strokeWidth={2} />
                   </Pressable>
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                <Avatar
-                  name={user.nickname}
-                  uri={user.avatarUrl}
-                  avatarIdx={idxFor(userId)}
-                  size={120}
-                  shape="circle"
-                />
-              </View>
-            )}
+                )}
 
-            {carouselPhotos.length > 1 && (
-              <View style={styles.dots} pointerEvents="none">
-                {carouselPhotos.map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.5)' },
-                    ]}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Voice intro — auto-plays once on open when the pref is on. */}
-            {!!user.voiceIntroUrl && (
-              <View style={styles.voiceBtn}>
-                <VoicePlayButton url={user.voiceIntroUrl} autoPlay={introVoice} size={20} color="#FFFFFF" />
-              </View>
-            )}
-
-            {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet.
-                Hidden on own profile and in self-preview (can't note yourself). */}
-            {!isSelf && !previewMode && (
-              <Pressable
-                onPress={() => setNoteOpen(true)}
-                hitSlop={8}
-                style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
-              >
-                <StickyNote size={18} color="#FFFFFF" strokeWidth={2} />
-              </Pressable>
-            )}
-
-            {/* Safety menu (report/block) — meaningless in self-preview. */}
-            {!previewMode && (
-              <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
-                <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
-              </Pressable>
-            )}
-          </View>
+                {/* Safety menu (report/block) — meaningless in self-preview. */}
+                {!previewMode && (
+                  <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
+                    <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
+                  </Pressable>
+                )}
+              </>
+            }
+          />
 
           {/* Name + age + zodiac + country, below the photo. */}
           <View style={{ paddingTop: 16 }}>
@@ -516,20 +473,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  dots: {
-    position: 'absolute',
-    bottom: 12,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   center: {
     flex: 1,
