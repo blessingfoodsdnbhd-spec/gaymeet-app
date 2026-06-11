@@ -123,6 +123,16 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!ownerId) return safeNavigate('Main');
       return safeNavigate('UserDetail', { userId: ownerId });
     }
+    // ── Admin moderation deep-links ──────────────────────────────────────────
+    case 'verification_submitted':
+      // Admin: a user submitted an action-photo verification → review queue.
+      return safeNavigate('AdminVerifications');
+    case 'report_submitted':
+      // Admin: a new user report landed → reports dashboard.
+      return safeNavigate('AdminReports');
+    case 'verification_result':
+      // User: their verification was approved/rejected → their status screen.
+      return safeNavigate('Verification');
     default:
       return false;
   }

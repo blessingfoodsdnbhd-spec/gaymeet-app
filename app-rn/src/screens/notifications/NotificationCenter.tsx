@@ -37,6 +37,17 @@ const EMOJI: Record<string, string> = {
   daily_digest: '🔥',
   comeback: '👋',
   invite_redeemed: '🎁',
+  // Admin moderation
+  verification_submitted: '🪪',
+  verification_result: '✅',
+  report_submitted: '🚩',
+  report_result: '🛡️',
+  account_banned: '🚫',
+  account_unbanned: '🔓',
+  chat_banned: '🔇',
+  chat_unbanned: '🔔',
+  photo_banned: '📵',
+  photo_unbanned: '📸',
 };
 
 const KEY = ['notifications', 'list'];
