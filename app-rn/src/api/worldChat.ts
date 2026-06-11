@@ -41,22 +41,46 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
 }
 
 export interface WorldChatRoom {
-  id: string; // 'world' | 'MY' | 'topic:late-night' | 'interest:food' | …
+  id: string; // 'world' | 'MY' | 'topic:late-night' | 'country:my:general' | …
   flag: string;
   label: { en: string; zh: string; native: string };
-  /** 'topic' = 🔥 hot topic room, 'country' = country room, 'interest' = 🎮 channel. */
-  kind?: 'topic' | 'country' | 'interest';
-  /** Present for topic/interest rooms — resolve the name with t() for full i18n. */
+  /** Room category. 'country-sub' = a country's sub-channel (general/social/…). */
+  kind?: 'topic' | 'country' | 'interest' | 'country-sub';
+  /** Present for topic/interest/sub-channel rooms — resolve the name with t(). */
   i18nKey?: string;
+  /** country-sub only: parent country code + sub-channel key. */
+  country?: string;
+  sub?: string;
   onlineCount: number;
 }
-export const getWorldChatRooms = () =>
-  unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms'));
 
-/** 🔥 热门聊天室 — rooms ordered by live online count (World anchored first).
- *  Powers the Plaza 热门 switcher sheet; refresh on an interval for a live feel. */
-export const getHotWorldChatRooms = () =>
-  unwrap<{ rooms: WorldChatRoom[] }>(api.get('/world-chat/rooms', { params: { sort: 'hot' } }));
+/** 🎤 voice room placeholder (display-only — voice infra ships in Phase 4). */
+export interface PlazaVoiceRoomDTO {
+  id: string;
+  emoji: string;
+  i18nKey: string;
+}
+
+/** A country sub-channel definition (general/social/newcomers/events). */
+export interface PlazaSubChannelDTO {
+  key: string;
+  emoji: string;
+  i18nKey: string;
+}
+
+export interface PlazaRoomsResponse {
+  rooms: WorldChatRoom[];
+  voiceRooms: PlazaVoiceRoomDTO[];
+  subChannels: PlazaSubChannelDTO[];
+}
+
+export const getWorldChatRooms = () =>
+  unwrap<PlazaRoomsResponse>(api.get('/world-chat/rooms'));
+
+/** 🔥 热门聊天室 — a pure ranking of every room by live online count, top N
+ *  (default 5). Powers the Plaza 热门 sheet; refresh on an interval for a live feel. */
+export const getHotWorldChatRooms = (limit = 5) =>
+  unwrap<PlazaRoomsResponse>(api.get('/world-chat/rooms', { params: { sort: 'hot', limit } }));
 
 /** Reverse-chronological room history (newest first). Pass `before` (a
  *  messageId) to page older. Backend strips blocked + admin-banned senders. */
