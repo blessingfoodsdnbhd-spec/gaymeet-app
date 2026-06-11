@@ -131,7 +131,7 @@
     "done": "Done"
   },
   "search": {"placeholder": "Search users, votes, rooms", "hintTitle": "Search Meyou", "hintSubtitle": "Find people, vote events, and chat rooms.", "empty": "No results for “{{q}}”", "tabs": {"users": "Users", "votes": "Votes", "rooms": "Rooms"}},
-  "adminReports": {"title": "Reports", "empty": "No open reports 🎉", "resolve": "Resolve", "noReason": "(no reason given)", "kind": {"worldChat": "Plaza", "vote": "Vote", "scamMessage": "Scam?", "nsfwImage": "NSFW?"}},
+  "adminReports": {"title": "Reports", "empty": "No open reports 🎉", "resolve": "Resolve", "noReason": "(no reason given)", "kind": {"worldChat": "Plaza", "vote": "Vote", "scamMessage": "Scam?", "nsfwImage": "NSFW?", "user": "User"}},
   "adminStats": {"title": "Analytics", "loadFailed": "Couldn't load stats", "totalUsers": "Total users", "dau": "DAU", "mau": "MAU", "signupsToday": "Signups today", "signups7d": "Signups 7d", "signups30d": "Signups 30d", "premium": "Premium", "moments24h": "Moments 24h", "totalMoments": "Total moments", "totalVotes": "Vote events", "totalMatches": "Matches"},
   "verification": {"title": "Photo verification", "intro": "Record a quick selfie doing the pose below so we can confirm you're a real person. Once approved you'll earn a green verified badge.", "poseLabel": "Your pose", "recordSelfie": "Record selfie", "recordVideo": "Record video", "recordVideoPremium": "Record video (Premium)", "submit": "Submit for review", "submitting": "Submitting…", "submitFailed": "Couldn't submit", "retake": "Retake", "videoReady": "Video ready to submit", "permTitle": "Camera access needed", "permBody": "Enable camera access to record your verification.", "pendingTitle": "Under review", "pendingBody": "We're reviewing your submission. This usually takes under 24 hours.", "approvedTitle": "You're verified!", "approvedBody": "Your profile now shows the green verified badge.", "rejectedTitle": "Verification wasn't approved", "verified": "Verified"},
   "adminVerifications": {"title": "Verifications", "empty": "No pending verifications 🎉", "photo": "Photo", "video": "Video", "poseLabel": "Pose", "approve": "Approve", "reject": "Reject", "rejectConfirmTitle": "Reject verification?", "rejectConfirmBody": "The user will need to submit again."},
@@ -882,6 +882,9 @@
   "accountSettings": {
     "title": "Account & security",
     "emailLabel": "Email",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "support": "Help & Support",
     "signOut": "Sign out",
     "restorePurchases": "Restore Purchases",
     "restoring": "Restoring…",

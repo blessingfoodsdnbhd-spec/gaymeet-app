@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const User = require('../models/User');
 const PhotoRequest = require('../models/PhotoRequest');
+const UserReport = require('../models/UserReport');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 
@@ -89,9 +90,14 @@ router.get('/me/blocked', auth, async (req, res, next) => {
 // ── POST /api/users/:id/report ────────────────────────────────────────────────
 router.post('/:id/report', auth, async (req, res, next) => {
   try {
-    const { reason } = req.body;
+    const { reason, context } = req.body;
+    // Client sends free-text context as `detail` (api/safety.ts reportUser).
+    const note = req.body.note ?? req.body.detail;
     if (!reason || !VALID_REPORT_REASONS.includes(reason)) {
       return err(res, `reason must be one of: ${VALID_REPORT_REASONS.join(', ')}`);
+    }
+    if (req.params.id === req.user._id.toString()) {
+      return err(res, 'Cannot report yourself');
     }
 
     // Block automatically on report
@@ -102,8 +108,16 @@ router.post('/:id/report', auth, async (req, res, next) => {
     // Sever any private-photo access between the two parties.
     cascadeRevokePhotoAccess(req.user._id, req.params.id).catch(() => {});
 
-    // In production: log to a reports collection
-    // For now, just acknowledge
+    // Persist for admin triage (Apple 1.2 — moderators must be able to act on
+    // reports). Best-effort: a logging failure must not block the user's report.
+    UserReport.create({
+      reporterId: req.user._id,
+      reportedUserId: req.params.id,
+      reason,
+      note: typeof note === 'string' ? note.slice(0, 500) : '',
+      context: typeof context === 'string' ? context.slice(0, 40) : 'profile',
+    }).catch(() => {});
+
     ok(res, {});
   } catch (e) {
     next(e);
