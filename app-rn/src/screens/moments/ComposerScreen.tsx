@@ -27,7 +27,7 @@ import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
 import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
 
-const MAX_PHOTOS = 9;
+const MAX_PHOTOS = 3;
 const MAX_CONTENT = 500;
 
 export function ComposerScreen() {
@@ -137,11 +137,14 @@ export function ComposerScreen() {
 
   // Source picker — show an action sheet on iOS, fall back to a chained
   // Alert on Android. Either route lets the user take a new photo OR
-  // pick existing ones from the library. Backend accepts up to 9 images
-  // per moment (Moment.images schema + routes/moments.js POST handler),
-  // so we keep MAX_PHOTOS in sync.
+  // pick existing ones from the library. Backend caps a moment at
+  // MAX_PHOTOS images (routes/moments.js POST handler), so we keep this
+  // client limit in sync.
   const onAddPhotoTap = () => {
-    if (photos.length >= MAX_PHOTOS) return;
+    if (photos.length >= MAX_PHOTOS) {
+      Alert.alert(t('moments.compose.maxPhotos', { max: MAX_PHOTOS }));
+      return;
+    }
     const opts = [
       t('moments.composer.takePhoto'),
       t('moments.composer.chooseFromLibrary'),
@@ -259,23 +262,31 @@ export function ComposerScreen() {
                 </Pressable>
               </View>
             ))}
-            {photos.length < MAX_PHOTOS && (
-              <Pressable
-                onPress={onAddPhotoTap}
-                style={[
-                  styles.addTile,
-                  {
-                    borderColor: theme.colors.primary,
-                    backgroundColor: theme.colors.primarySoft,
-                  },
-                ]}
-              >
-                <ImagePlus size={30} color={theme.colors.primary} strokeWidth={1.8} />
-                <Text style={{ fontSize: 11.5, color: theme.colors.primary, marginTop: 6, fontWeight: '600' }}>
-                  {t('moments.compose.addPhoto')}
-                </Text>
-              </Pressable>
-            )}
+            {(() => {
+              const full = photos.length >= MAX_PHOTOS;
+              const tint = full ? theme.colors.muted : theme.colors.primary;
+              return (
+                <Pressable
+                  onPress={onAddPhotoTap}
+                  disabled={full}
+                  style={[
+                    styles.addTile,
+                    {
+                      borderColor: tint,
+                      backgroundColor: full ? theme.colors.surface2 : theme.colors.primarySoft,
+                    },
+                  ]}
+                >
+                  <ImagePlus size={30} color={tint} strokeWidth={1.8} />
+                  <Text style={{ fontSize: 11.5, color: tint, marginTop: 6, fontWeight: '600' }}>
+                    {t('moments.compose.addPhoto')}
+                  </Text>
+                  <Text style={{ fontSize: 10.5, color: tint, marginTop: 2 }}>
+                    {t('moments.compose.photosCount', { n: photos.length, max: MAX_PHOTOS })}
+                  </Text>
+                </Pressable>
+              );
+            })()}
           </ScrollView>
 
           {/* Tag friends + add location (FB/IG-style). */}

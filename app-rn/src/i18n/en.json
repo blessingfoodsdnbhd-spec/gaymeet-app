@@ -440,6 +440,8 @@
         "ephemeral": "Disappears after 24h",
       "tag": "Tag Friends",
       "addPhoto": "Add photo",
+      "maxPhotos": "Maximum {{max}} photos",
+      "photosCount": "{{n}}/{{max}}",
       "location": "Add Location",
       "taggedCount": "{{n}} tagged",
       "chooseOnMap": "Choose on Map",

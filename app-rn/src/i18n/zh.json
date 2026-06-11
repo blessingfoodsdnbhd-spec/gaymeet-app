@@ -440,6 +440,8 @@
         "ephemeral": "24 小时后消失",
       "tag": "标记朋友",
       "addPhoto": "添加照片",
+      "maxPhotos": "最多添加 {{max}} 张照片",
+      "photosCount": "{{n}}/{{max}}",
       "location": "添加位置",
       "taggedCount": "{{n}} 人",
       "chooseOnMap": "在地图上选择",

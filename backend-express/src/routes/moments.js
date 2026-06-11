@@ -192,7 +192,7 @@ router.post('/', auth, async (req, res, next) => {
       return err(res, 'content or images required');
     }
     if (content.length > 500) return err(res, 'content max 500 chars');
-    if (images.length > 9) return err(res, 'max 9 images');
+    if (images.length > 3) return err(res, 'max 3 images');
     if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
 
     const data = {
