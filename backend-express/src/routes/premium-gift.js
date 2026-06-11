@@ -41,6 +41,14 @@ router.get('/gift/quota', auth, async (req, res, next) => {
 // ── POST /api/premium/gift  { recipientId } ───────────────────────────────────
 router.post('/gift', auth, async (req, res, next) => {
   try {
+    // Premium-only feature (SSSSSS): a free user must never gift Premium —
+    // that would mint free Premium for the recipient at no cost (and invites
+    // sockpuppet abuse). Block before any quota/recipient work. The client
+    // hides the entry + redirects, but this is the authoritative gate.
+    if (!isPremiumActive(req.user)) {
+      return res.status(403).json({ error: 'Only Premium members can gift Premium', code: 'PREMIUM_REQUIRED' });
+    }
+
     const recipientId = String(req.body.recipientId || '');
     if (!recipientId) return err(res, 'recipientId required', 400);
     if (recipientId === req.user._id.toString()) {

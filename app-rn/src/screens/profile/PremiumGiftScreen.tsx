@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Gift } from 'lucide-react-native';
@@ -22,14 +22,21 @@ export function PremiumGiftScreen() {
   const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
   const qc = useQueryClient();
 
+  // Premium-only feature (SSSSSS). A free user reaching this screen via deeplink
+  // or stale client is redirected to the paywall instead of seeing "1 / 1 次".
+  const isPremium = !!(me as any)?.isPremium;
+  useEffect(() => {
+    if (!isPremium) nav.replace('Premium');
+  }, [isPremium, nav]);
+
   const followingQ = useQuery({
     queryKey: ['users', 'following', myId],
     queryFn: () => getFollowing(myId),
-    enabled: !!myId,
+    enabled: !!myId && isPremium,
   });
 
-  // Monthly quota header: "今月剩余 X / N 次" (N = 5 Premium / 1 free).
-  const quotaQ = useQuery({ queryKey: ['premiumGift', 'quota'], queryFn: getGiftQuota });
+  // Monthly quota header: "今月剩余 X / N 次" (Premium-only: 5/month).
+  const quotaQ = useQuery({ queryKey: ['premiumGift', 'quota'], queryFn: getGiftQuota, enabled: isPremium });
   const quota = quotaQ.data;
   const remaining = quota?.remaining ?? 0;
   const total = quota?.total ?? 0;
@@ -65,6 +72,28 @@ export function PremiumGiftScreen() {
   };
 
   const list = followingQ.data ?? [];
+
+  // Non-Premium fallback: the effect above redirects to the paywall; render an
+  // upgrade prompt (never the "1 / 1 次" quota) for the frame before it fires.
+  if (!isPremium) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top']}>
+        <View style={[styles.header, { borderBottomColor: c.line }]}>
+          <Pressable onPress={() => nav.goBack()} hitSlop={8}>
+            <ChevronLeft size={theme.iconSize.l} color={c.text} />
+          </Pressable>
+          <Text style={[styles.title, { color: c.text }]}>{t('premiumGift.title')}</Text>
+        </View>
+        <EmptyState
+          emoji="🔒"
+          title={t('premiumGift.title')}
+          subtitle={t('premium.upgradeToGift')}
+          primaryLabel={t('premium.upsell.cta')}
+          onPrimary={() => nav.replace('Premium')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top']}>
