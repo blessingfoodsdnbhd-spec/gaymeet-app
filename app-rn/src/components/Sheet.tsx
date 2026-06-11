@@ -39,9 +39,18 @@ interface Props {
    * so we keep them in one window via this prop.
    */
   overlay?: React.ReactNode;
+  /**
+   * iOS-only: fires after the underlying Modal has fully dismissed. Use to
+   * chain a SECOND sheet open after this one closes — iOS rejects presenting
+   * a Modal while another is still dismissing, so opening the next sheet in
+   * the same tick we close this one makes it silently fail to appear. Wait
+   * for this callback instead. (No-op on Android, where there is no such
+   * present-while-dismissing race.)
+   */
+  onDismiss?: () => void;
 }
 
-export function Sheet({ open, onClose, children, maxHeight = '85%', overlay }: Props) {
+export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onDismiss }: Props) {
   const theme = useTheme();
   const { height: winH } = useWindowDimensions();
   const ty = useSharedValue(winH);
@@ -100,7 +109,7 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay }: P
     .onEnd((e) => onDragEnd(e.translationY, e.velocityY));
 
   return (
-    <Modal visible={open} transparent onRequestClose={onClose} animationType="none">
+    <Modal visible={open} transparent onRequestClose={onClose} animationType="none" onDismiss={onDismiss}>
       <GestureHandlerRootView style={StyleSheet.absoluteFill}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30,15,5,0.35)' }, backdropStyle]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} />

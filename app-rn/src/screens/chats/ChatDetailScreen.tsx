@@ -205,6 +205,22 @@ export function ChatDetailScreen() {
   // Edit sheet state
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
+  // sheet. On iOS a Modal can't be presented while another is still dismissing,
+  // so opening one in the same tick we close the actions sheet makes it
+  // silently fail to appear (the "edit does nothing" bug). Queue the follow-up
+  // here and run it from the actions sheet's onDismiss. Android has no such
+  // race, so it runs the follow-up immediately.
+  const pendingActionRef = useRef<(() => void) | null>(null);
+  const closeActionsThen = useCallback((next: () => void) => {
+    if (Platform.OS === 'ios') {
+      pendingActionRef.current = next;
+      setActionsFor(null);
+    } else {
+      setActionsFor(null);
+      next();
+    }
+  }, []);
   // Image viewer Modal
   const [viewerImage, setViewerImage] = useState<Message | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null); // VVVV — photo awaiting confirm
@@ -1295,6 +1311,15 @@ export function ChatDetailScreen() {
       <Sheet
         open={!!actionsFor}
         onClose={() => setActionsFor(null)}
+        onDismiss={() => {
+          // iOS: now that the actions Modal has dismissed, it's safe to present
+          // whichever sheet was queued (edit / full emoji picker).
+          const next = pendingActionRef.current;
+          if (next) {
+            pendingActionRef.current = null;
+            next();
+          }
+        }}
         maxHeight="40%"
       >
         {actionsFor && (
@@ -1327,8 +1352,7 @@ export function ChatDetailScreen() {
                 <Pressable
                   onPress={() => {
                     const m = actionsFor;
-                    setActionsFor(null);
-                    setEmojiPickerFor(m);
+                    closeActionsThen(() => setEmojiPickerFor(m));
                   }}
                   hitSlop={4}
                   style={[
@@ -1346,9 +1370,10 @@ export function ChatDetailScreen() {
                 label={t('chat.message.actions.edit')}
                 onPress={() => {
                   const m = actionsFor;
-                  setActionsFor(null);
-                  setEditingMsg(m);
-                  setEditDraft(m.content);
+                  closeActionsThen(() => {
+                    setEditingMsg(m);
+                    setEditDraft(m.content);
+                  });
                 }}
               />
             )}
