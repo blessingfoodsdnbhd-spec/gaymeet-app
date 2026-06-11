@@ -240,7 +240,10 @@ router.post('/send', auth, async (req, res, next) => {
 });
 
 // ── GET /api/world-chat/rooms ─────────────────────────────────────────────────
-// Available rooms + live online counts (from the socket adapter).
+// Available rooms + live online counts (from the socket adapter). Pass
+// `?sort=hot` for the 🔥 热门 strip: rooms ordered by live online count desc,
+// with World kept as the anchor at the front. Counts come straight from the
+// in-memory socket adapter, so no caching/DB hit is needed.
 router.get('/rooms', auth, async (req, res, next) => {
   try {
     let counts = {};
@@ -249,14 +252,18 @@ router.get('/rooms', auth, async (req, res, next) => {
     } catch (_) {
       // socket layer not ready
     }
-    ok(res, {
-      rooms: ROOMS.map((r) => ({
-        id: r.id,
-        flag: r.flag,
-        label: { en: r.en, zh: r.zh, native: r.native },
-        onlineCount: counts[r.id] ?? 0,
-      })),
-    });
+    let rooms = ROOMS.map((r) => ({
+      id: r.id,
+      flag: r.flag,
+      label: { en: r.en, zh: r.zh, native: r.native },
+      onlineCount: counts[r.id] ?? 0,
+    }));
+    if (req.query.sort === 'hot') {
+      rooms = rooms.sort((a, b) =>
+        a.id === 'world' ? -1 : b.id === 'world' ? 1 : b.onlineCount - a.onlineCount,
+      );
+    }
+    ok(res, { rooms });
   } catch (e) {
     next(e);
   }

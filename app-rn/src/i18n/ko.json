@@ -580,6 +580,15 @@
     "enter": "Meyou 시작",
     "saveFailed": "저장 실패"
   },
+  "plaza": {
+    "worldLobby": "월드 로비",
+    "hotRooms": "🔥 인기",
+    "rooms": "채팅방",
+    "browse": "방 둘러보기",
+    "userJoined": "🎉 {{name}}님이 입장했습니다",
+    "userLeft": "👋 {{name}}님이 퇴장했습니다",
+    "onlineCount": "{{count}}명 접속 중"
+  },
   "worldChat": {
     "title": "광장",
     "online": "{{n}}명 온라인",
