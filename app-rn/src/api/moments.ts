@@ -112,17 +112,21 @@ export interface Comment {
     avatarUrl?: string | null;
   };
   content: string;
+  photoUrl?: string | null;
   parentComment?: string | null;
-  likeCount: number;
-  isLiked: boolean;
+  /** true when the commenter is the moment's author (→ 作者 badge). */
+  isAuthor: boolean;
   createdAt: string;
 }
 
+/** Full flat comment list, newest first. The client groups into threads. */
 export const getComments = (momentId: string) =>
   unwrap<Comment[]>(api.get(`/moments/${momentId}/comments`));
 
-export const postComment = (momentId: string, content: string) =>
-  unwrap<Comment>(api.post(`/moments/${momentId}/comment`, { content }));
+export const postComment = (
+  momentId: string,
+  body: { content?: string; photoUrl?: string; parentCommentId?: string },
+) => unwrap<Comment>(api.post(`/moments/${momentId}/comment`, body));
 
 export const deleteComment = (momentId: string, commentId: string) =>
   unwrap<{ success: true }>(api.delete(`/moments/${momentId}/comments/${commentId}`));

@@ -173,12 +173,7 @@ router.get('/:id', auth, async (req, res, next) => {
         (id) => id.toString() === req.user._id.toString()
       ),
       likes: undefined,
-      comments: comments.map((c) => ({
-        ...c,
-        likeCount: c.likes.length,
-        isLiked: c.likes.some((id) => id.toString() === req.user._id.toString()),
-        likes: undefined,
-      })),
+      comments: comments.map((c) => serializeComment(c, moment.user)),
     });
   } catch (e) {
     next(e);
@@ -377,42 +372,67 @@ router.get('/:id/likes', auth, async (req, res, next) => {
   }
 });
 
+// Shape a comment for the client: adds `isAuthor` (the commenter is the moment's
+// author → 作者 badge) and strips internal fields.
+function serializeComment(c, momentUserId) {
+  const { likes, ...rest } = c;
+  return { ...rest, isAuthor: String(c.user?._id ?? c.user) === String(momentUserId) };
+}
+
 // ── POST /api/moments/:id/comment ─────────────────────────────────────────────
 router.post('/:id/comment', auth, async (req, res, next) => {
   try {
-    const { content, parentCommentId } = req.body;
-    if (!content) return err(res, 'content required');
-    if (content.length > 200) return err(res, 'comment max 200 chars');
-    if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
+    const { content, parentCommentId, photoUrl } = req.body;
+    const text = (content || '').trim();
+    if (!text && !photoUrl) return err(res, 'content or photo required');
+    if (text.length > 200) return err(res, 'comment max 200 chars');
+    if (text && hasProfanity(text)) return err(res, 'Inappropriate content', 422);
 
     const moment = await Moment.findOne({ _id: req.params.id, isActive: true });
     if (!moment) return err(res, 'Moment not found', 404);
 
+    // For a reply, resolve the parent so we can notify its author.
+    let parent = null;
+    if (parentCommentId) {
+      parent = await MomentComment.findOne({ _id: parentCommentId, moment: moment._id })
+        .select('user')
+        .lean();
+    }
+
     const comment = await MomentComment.create({
       moment: moment._id,
       user: req.user._id,
-      content,
+      content: text,
+      photoUrl: photoUrl || null,
       parentComment: parentCommentId ?? null,
     });
 
     await Moment.findByIdAndUpdate(moment._id, { $inc: { commentsCount: 1 } });
 
     const populated = await comment.populate('user', 'nickname avatarUrl');
+    const me = String(req.user._id);
+    const preview = (text || '📷').slice(0, 120);
+    const notified = new Set();
 
-    // Push moment author about the new comment (skip self-comment).
-    if (String(moment.user) !== String(req.user._id)) {
+    // Reply → notify the parent comment's author.
+    if (parent && String(parent.user) !== me) {
+      notified.add(String(parent.user));
+      sendPushToUser(parent.user, {
+        title: `${populated.user?.nickname || 'Someone'} replied`,
+        body: preview,
+        data: { type: 'comment_reply', momentId: String(moment._id), commentId: String(comment._id) },
+      }).catch(() => {});
+    }
+    // Notify the moment author (skip self, and skip if already notified above).
+    if (String(moment.user) !== me && !notified.has(String(moment.user))) {
       sendPushToUser(moment.user, {
         title: `${populated.user?.nickname || 'Someone'} commented`,
-        body: content.slice(0, 120),
+        body: preview,
         data: { type: 'comment', momentId: String(moment._id) },
       }).catch(() => {});
     }
 
-    created(res, {
-      ...populated.toObject(),
-      likeCount: 0,
-      isLiked: false,
-    });
+    created(res, serializeComment(populated.toObject(), moment.user));
   } catch (e) {
     next(e);
   }
@@ -440,24 +460,20 @@ router.delete('/:id/comments/:commentId', auth, async (req, res, next) => {
 });
 
 // ── GET /api/moments/:id/comments ─────────────────────────────────────────────
+// Returns the FULL flat comment list (≤200), newest first; the client groups
+// into threads.
 router.get('/:id/comments', auth, async (req, res, next) => {
   try {
-    const { page = 1, limit = 30 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const moment = await Moment.findById(req.params.id).select('user').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
 
     const comments = await MomentComment.find({ moment: req.params.id })
-      .sort({ createdAt: 1 })
-      .skip(skip)
-      .limit(parseInt(limit))
+      .sort({ createdAt: -1 })
+      .limit(200)
       .populate('user', 'nickname avatarUrl')
       .lean();
 
-    ok(res, comments.map((c) => ({
-      ...c,
-      likeCount: c.likes.length,
-      isLiked: c.likes.some((id) => id.toString() === req.user._id.toString()),
-      likes: undefined,
-    })));
+    ok(res, comments.map((c) => serializeComment(c, moment.user)));
   } catch (e) {
     next(e);
   }

@@ -178,7 +178,7 @@ export function MomentsScreen() {
               moment={item}
               onToggleLike={(m) => likeMut.mutate(m._id)}
               onTapAuthor={(m) => nav.navigate('UserDetail', { userId: m.user._id })}
-              onOpenComments={(m) => nav.navigate('Comments', { momentId: m._id })}
+              onOpenComments={(m) => nav.navigate('Comments', { momentId: m._id, authorId: m.user._id })}
             />
           )}
           refreshing={feedQ.isFetching && !feedQ.isLoading}
