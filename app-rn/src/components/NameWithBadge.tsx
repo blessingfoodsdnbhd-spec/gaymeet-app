@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { Check } from 'lucide-react-native';
+import { PremiumBadge } from './PremiumBadge';
 
 const OFFICIAL_BLUE = '#1D9BF0';
 const PHOTO_VERIFIED_GREEN = '#3CC479'; // theme.colors.success
@@ -54,6 +55,7 @@ export function NameWithBadge({
   name,
   official,
   verified,
+  premium,
   textStyle,
   numberOfLines,
   badgeSize = 15,
@@ -63,12 +65,14 @@ export function NameWithBadge({
   official?: boolean;
   /** Real-person (photo/video) verified → green seal. Shown when not official. */
   verified?: boolean;
+  /** Active Premium member → Meyou "M" mark after the verified seal. */
+  premium?: boolean;
   textStyle?: StyleProp<TextStyle>;
   numberOfLines?: number;
   badgeSize?: number;
   containerStyle?: StyleProp<ViewStyle>;
 }) {
-  if (!official && !verified) {
+  if (!official && !verified && !premium) {
     return (
       <Text style={textStyle} numberOfLines={numberOfLines}>
         {name}
@@ -81,7 +85,8 @@ export function NameWithBadge({
         {name}
       </Text>
       {/* Official (blue) takes precedence; otherwise the green real-person seal. */}
-      {official ? <VerifiedBadge size={badgeSize} /> : <PhotoVerifiedBadge size={badgeSize} />}
+      {official ? <VerifiedBadge size={badgeSize} /> : verified ? <PhotoVerifiedBadge size={badgeSize} /> : null}
+      <PremiumBadge isPremium={premium} size={badgeSize} />
     </View>
   );
 }

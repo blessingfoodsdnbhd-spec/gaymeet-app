@@ -20,8 +20,8 @@ export function PremiumBadge({
   return (
     <Image
       source={MEYOU_MARK}
-      style={{ width: size, height: size, borderRadius: Math.round(size * 0.28) }}
-      contentFit="cover"
+      style={{ width: size, height: size }}
+      contentFit="contain"
       accessibilityLabel="Premium"
     />
   );

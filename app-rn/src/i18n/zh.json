@@ -1,4 +1,5 @@
 {
+  "popularity": {"label": "人气"},
   "empty": {
     "viewers": { "subtitle": "分享你的 profile,邀请朋友来看看。", "cta": "分享我的 profile" },
     "votes": { "subtitle": "发起一个活动,邀请大家来参加。" },
