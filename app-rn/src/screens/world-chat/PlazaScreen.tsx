@@ -12,6 +12,10 @@ import { WorldChatScreen } from './WorldChatScreen';
 import { PlazaTabBar, type PlazaTab } from './PlazaTabBar';
 import { PlazaSwitcherSheet, type SwitchRoom } from './PlazaSwitcherSheet';
 import { PlazaComingSoon } from './PlazaComingSoon';
+import { PlazaSubChannelPills } from './PlazaSubChannelPills';
+import { PlazaVoiceList } from './PlazaVoiceList';
+
+const DEFAULT_SUB = 'general';
 
 /**
  * 广场 tab — a tab controller, not a hub or a landing page. Five section pills
@@ -19,10 +23,16 @@ import { PlazaComingSoon } from './PlazaComingSoon';
  * section's content fills the rest. 热门 is the default so the user lands
  * straight in the busiest room (chat already flowing — no empty World Lobby).
  *
- * Room-backed sections (热门 / 国家) embed WorldChatScreen and switch rooms via
- * a bottom sheet opened from the current-room pill — the ONLY switch affordance
- * (no drawer, no duplicate navigation). 交友 / 语音 / 兴趣 are 即将推出 until their
- * subsystems ship (random chat #165, voice Phase 4, interest channels #164).
+ * - 热门: a pure ranking — the top 5 rooms by live online count across every
+ *   type (topics / interest channels / world / country sub-channels). Default
+ *   landing is the #1 most active room.
+ * - 兴趣: the 6 interest channels, switched via the sheet.
+ * - 国家: pick a country, land in its `general` sub-channel; a pill row above
+ *   the chat switches between 总聊天室 / 交友区 / 新人区 / 活动区.
+ * - 语音: display-only placeholders (Phase 4) — a list with 即将推出 badges.
+ * - 交友: 即将推出 until random chat (#165) ships.
+ * Rooms switch via a bottom sheet from the current-room pill — the ONLY switch
+ * affordance (no drawer, no duplicate navigation).
  */
 export function PlazaScreen() {
   const theme = useTheme();
@@ -31,16 +41,19 @@ export function PlazaScreen() {
   const [tab, setTab] = React.useState<PlazaTab>('hot');
   const [hotRoom, setHotRoom] = React.useState<SwitchRoom | null>(null);
   const [countryRoom, setCountryRoom] = React.useState<SwitchRoom | null>(null);
-  const [sheet, setSheet] = React.useState<null | 'hot' | 'country'>(null);
+  const [countrySub, setCountrySub] = React.useState<string>(DEFAULT_SUB);
+  const [interestRoom, setInterestRoom] = React.useState<SwitchRoom | null>(null);
+  const [sheet, setSheet] = React.useState<null | 'hot' | 'country' | 'interest'>(null);
 
   const roomsQ = useQuery({
     queryKey: ['worldChat', 'rooms'],
     queryFn: getWorldChatRooms,
     staleTime: 10_000,
     refetchInterval: 25_000,
-    select: (d) => d.rooms,
   });
-  const rooms = roomsQ.data ?? [];
+  const rooms = roomsQ.data?.rooms ?? [];
+  const voiceRooms = roomsQ.data?.voiceRooms ?? [];
+  const subChannels = roomsQ.data?.subChannels ?? [];
 
   useFocusEffect(
     React.useCallback(() => {
@@ -72,8 +85,11 @@ export function PlazaScreen() {
     [live],
   );
   const nameOf = React.useCallback(
-    (r: WorldChatRoom) => (i18n.language.startsWith('zh') ? r.label.zh : r.label.en),
-    [i18n.language],
+    // Topic/interest/sub-channel rooms carry an i18nKey → resolve via t() so they
+    // localize to all 4 languages; country rooms fall back to their zh/en label.
+    (r: WorldChatRoom) =>
+      r.i18nKey ? t(r.i18nKey) : i18n.language.startsWith('zh') ? r.label.zh : r.label.en,
+    [t, i18n.language],
   );
   const toSwitchRoom = React.useCallback(
     (r: WorldChatRoom): SwitchRoom => ({
@@ -85,21 +101,53 @@ export function PlazaScreen() {
     [countOf, nameOf],
   );
 
-  // 热门 = every room by online (World included); 国家 = countries only.
-  const hotList = React.useMemo(
-    () => [...rooms].sort((a, b) => countOf(b.id, b.onlineCount) - countOf(a.id, a.onlineCount)).map(toSwitchRoom),
-    [rooms, countOf, toSwitchRoom],
+  const byOnlineDesc = React.useCallback(
+    (a: SwitchRoom, b: SwitchRoom) => b.onlineCount - a.onlineCount,
+    [],
   );
-  const countryList = React.useMemo(() => hotList.filter((r) => r.id !== 'world'), [hotList]);
 
-  // Pick a sensible default once rooms load: the busiest room / country. Only
-  // when nothing is selected yet, so we never override the user's choice.
+  // 热门 = pure ranking, top 5 by live online count. Bare country rooms are
+  // excluded (you enter a country via its sub-channels, not the bare room); the
+  // global 'world' lobby is kept.
+  const hotList = React.useMemo(
+    () =>
+      rooms
+        .filter((r) => !(r.kind === 'country' && r.id !== 'world'))
+        .map(toSwitchRoom)
+        .sort(byOnlineDesc)
+        .slice(0, 5),
+    [rooms, toSwitchRoom, byOnlineDesc],
+  );
+  // 国家 = countries only (the country picker). 兴趣 = interest channels only.
+  const countryList = React.useMemo(
+    () =>
+      rooms
+        .filter((r) => (r.kind ?? 'country') === 'country' && r.id !== 'world')
+        .map(toSwitchRoom)
+        .sort(byOnlineDesc),
+    [rooms, toSwitchRoom, byOnlineDesc],
+  );
+  const interestList = React.useMemo(
+    () => rooms.filter((r) => r.kind === 'interest').map(toSwitchRoom).sort(byOnlineDesc),
+    [rooms, toSwitchRoom, byOnlineDesc],
+  );
+
+  // Pick a sensible default once rooms load: the #1 hot room, busiest country,
+  // first interest channel. Only when nothing is selected yet, so we never
+  // override the user's choice.
   React.useEffect(() => {
     if (!hotRoom && hotList.length) setHotRoom(hotList[0]);
     if (!countryRoom && countryList.length) setCountryRoom(countryList[0]);
-  }, [hotList, countryList, hotRoom, countryRoom]);
+    if (!interestRoom && interestList.length) setInterestRoom(interestList[0]);
+  }, [hotList, countryList, interestList, hotRoom, countryRoom, interestRoom]);
 
-  const activeRoom = tab === 'hot' ? hotRoom : tab === 'country' ? countryRoom : null;
+  // 国家 tab: the chat room is the selected country's current sub-channel.
+  const hasSubChannels = subChannels.length > 0;
+  const countrySubRoomId =
+    countryRoom && hasSubChannels ? `country:${countryRoom.id.toLowerCase()}:${countrySub}` : null;
+  const activeSub = subChannels.find((s) => s.key === countrySub);
+  const countryRoomTitle =
+    countryRoom && activeSub ? `${countryRoom.name} · ${t(activeSub.i18nKey)}` : countryRoom?.name ?? '';
 
   const tabs: { key: PlazaTab; label: string }[] = [
     { key: 'hot', label: t('plaza.tab.hot') },
@@ -109,12 +157,18 @@ export function PlazaScreen() {
     { key: 'country', label: t('plaza.tab.country') },
   ];
 
+  // Current-room pill: shown on the room-backed tabs. For 国家 it reflects the
+  // active sub-channel's online count; tapping always opens the picker sheet.
+  const pillRoom = tab === 'hot' ? hotRoom : tab === 'country' ? countryRoom : tab === 'interest' ? interestRoom : null;
   const pill =
-    activeRoom != null
+    pillRoom != null
       ? {
-          label: `${activeRoom.flag} ${activeRoom.name}`,
-          count: countOf(activeRoom.id, activeRoom.onlineCount),
-          onPress: () => setSheet(tab as 'hot' | 'country'),
+          label: `${pillRoom.flag} ${pillRoom.name}`,
+          count:
+            tab === 'country' && countrySubRoomId
+              ? countOf(countrySubRoomId, 0)
+              : countOf(pillRoom.id, pillRoom.onlineCount),
+          onPress: () => setSheet(tab as 'hot' | 'country' | 'interest'),
         }
       : null;
 
@@ -123,14 +177,45 @@ export function PlazaScreen() {
       <PlazaTabBar tabs={tabs} active={tab} onChange={setTab} pill={pill} />
 
       <View style={{ flex: 1 }}>
-        {(tab === 'hot' || tab === 'country') &&
-          (activeRoom ? (
+        {tab === 'hot' &&
+          (hotRoom ? (
+            <WorldChatScreen key={`hot-${hotRoom.id}`} embedded roomId={hotRoom.id} roomTitle={hotRoom.name} />
+          ) : (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ))}
+
+        {tab === 'interest' &&
+          (interestRoom ? (
             <WorldChatScreen
-              key={`${tab}-${activeRoom.id}`}
+              key={`interest-${interestRoom.id}`}
               embedded
-              roomId={activeRoom.id}
-              roomTitle={activeRoom.name}
+              roomId={interestRoom.id}
+              roomTitle={interestRoom.name}
             />
+          ) : roomsQ.isSuccess && interestList.length === 0 ? (
+            // Defensive: only if the backend hasn't shipped interest channels yet.
+            <PlazaComingSoon icon="🎮" title={t('plaza.interest.title')} desc={t('plaza.interest.desc')} />
+          ) : (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ))}
+
+        {tab === 'country' &&
+          (countryRoom ? (
+            <>
+              {hasSubChannels && (
+                <PlazaSubChannelPills channels={subChannels} active={countrySub} onChange={setCountrySub} />
+              )}
+              <WorldChatScreen
+                key={`country-${countryRoom.id}-${countrySub}`}
+                embedded
+                roomId={countrySubRoomId ?? countryRoom.id}
+                roomTitle={countryRoomTitle}
+              />
+            </>
           ) : (
             <View style={styles.center}>
               <ActivityIndicator color={theme.colors.primary} />
@@ -140,21 +225,25 @@ export function PlazaScreen() {
         {tab === 'match' && (
           <PlazaComingSoon icon="❤️" title={t('plaza.match.title')} desc={t('plaza.match.desc')} />
         )}
-        {tab === 'voice' && (
-          <PlazaComingSoon icon="🎤" title={t('plaza.voice.title')} desc={t('plaza.voice.desc')} />
-        )}
-        {tab === 'interest' && (
-          <PlazaComingSoon icon="🎮" title={t('plaza.interest.title')} desc={t('plaza.interest.desc')} />
-        )}
+        {tab === 'voice' && <PlazaVoiceList rooms={voiceRooms} />}
       </View>
 
       <PlazaSwitcherSheet
         open={sheet != null}
-        title={sheet === 'country' ? t('plaza.switcher.country') : t('plaza.switcher.hot')}
-        rooms={sheet === 'country' ? countryList : hotList}
-        activeId={sheet === 'country' ? countryRoom?.id : hotRoom?.id}
+        title={
+          sheet === 'country'
+            ? t('plaza.switcher.country')
+            : sheet === 'interest'
+              ? t('plaza.interest.title')
+              : t('plaza.switcher.hot')
+        }
+        rooms={sheet === 'country' ? countryList : sheet === 'interest' ? interestList : hotList}
+        activeId={sheet === 'country' ? countryRoom?.id : sheet === 'interest' ? interestRoom?.id : hotRoom?.id}
         onSelect={(r) => {
-          if (sheet === 'country') setCountryRoom(r);
+          if (sheet === 'country') {
+            setCountryRoom(r);
+            setCountrySub(DEFAULT_SUB); // new country → reset to its general channel
+          } else if (sheet === 'interest') setInterestRoom(r);
           else setHotRoom(r);
           setSheet(null);
         }}

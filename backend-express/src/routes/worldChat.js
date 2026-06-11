@@ -10,7 +10,13 @@ const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
-const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const {
+  ALL_ROOMS,
+  COUNTRY_SUB_CHANNELS,
+  VOICE_ROOMS,
+  VALID_ROOM_IDS,
+  socketRoom,
+} = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
 
 const BODY_MAX = 500;
@@ -239,11 +245,29 @@ router.post('/send', auth, async (req, res, next) => {
   }
 });
 
+// A bare country room (e.g. 'MY') is a country *identity* used to build the
+// country picker — you never chat in it directly; entering a country lands you
+// in its `country:my:general` sub-channel. So 热门 ranks over everything EXCEPT
+// the bare country rooms (the global 'world' lobby is kept).
+const inHotPool = (r) => !(r.kind === 'country' && r.id !== 'world');
+
+// 30s cache for the 热门 ordering. Counts come from the in-memory socket adapter
+// (no DB hit), and live socket `rooms-state` events keep clients fresh between
+// fetches — so a short cache on the REST seed is safe + cheap.
+let hotCache = { at: 0, limit: null, rooms: null };
+const HOT_TTL = 30_000;
+
 // ── GET /api/world-chat/rooms ─────────────────────────────────────────────────
-// Available rooms + live online counts (from the socket adapter). Pass
-// `?sort=hot` for the 🔥 热门 strip: rooms ordered by live online count desc,
-// with World kept as the anchor at the front. Counts come straight from the
-// in-memory socket adapter, so no caching/DB hit is needed.
+// Available rooms (countries + 🔥 topic rooms + 🎮 interest channels + 🌏 country
+// sub-channels) + live online counts (from the socket adapter). Each room
+// carries a `kind` ('topic' | 'country' | 'interest' | 'country-sub') so the
+// client can group them across the Plaza tabs. The response also includes
+// `voiceRooms` (display-only 🎤 placeholders) and `subChannels` (the 4 country
+// sub-channel definitions) so the client renders those tabs from one source.
+//
+// Pass `?sort=hot` (optionally `&limit=5`) for the 🔥 热门 view: a pure ranking
+// of all rooms by live online count desc, top N. Counts come straight from the
+// in-memory socket adapter — cached 30s.
 router.get('/rooms', auth, async (req, res, next) => {
   try {
     let counts = {};
@@ -252,18 +276,31 @@ router.get('/rooms', auth, async (req, res, next) => {
     } catch (_) {
       // socket layer not ready
     }
-    let rooms = ROOMS.map((r) => ({
+    const mapRoom = (r) => ({
       id: r.id,
       flag: r.flag,
-      label: { en: r.en, zh: r.zh, native: r.native },
+      label: r.label,
+      kind: r.kind,
+      ...(r.i18nKey ? { i18nKey: r.i18nKey } : {}),
+      ...(r.country ? { country: r.country, sub: r.sub } : {}),
       onlineCount: counts[r.id] ?? 0,
-    }));
+    });
+
+    const voiceRooms = VOICE_ROOMS.map((v) => ({ id: v.id, emoji: v.emoji, i18nKey: v.i18nKey }));
+    const subChannels = COUNTRY_SUB_CHANNELS.map((s) => ({ key: s.key, emoji: s.emoji, i18nKey: s.i18nKey }));
+
     if (req.query.sort === 'hot') {
-      rooms = rooms.sort((a, b) =>
-        a.id === 'world' ? -1 : b.id === 'world' ? 1 : b.onlineCount - a.onlineCount,
-      );
+      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 0, 0), 50) || null;
+      const fresh = Date.now() - hotCache.at < HOT_TTL && hotCache.limit === limit && hotCache.rooms;
+      if (!fresh) {
+        let ranked = ALL_ROOMS.filter(inHotPool).map(mapRoom).sort((a, b) => b.onlineCount - a.onlineCount);
+        if (limit) ranked = ranked.slice(0, limit);
+        hotCache = { at: Date.now(), limit, rooms: ranked };
+      }
+      return ok(res, { rooms: hotCache.rooms, voiceRooms, subChannels });
     }
-    ok(res, { rooms });
+
+    ok(res, { rooms: ALL_ROOMS.map(mapRoom), voiceRooms, subChannels });
   } catch (e) {
     next(e);
   }
