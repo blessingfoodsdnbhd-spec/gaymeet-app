@@ -7,7 +7,7 @@ import { ensureAudioMode } from './utils/voiceCache';
 import { initSentry } from './lib/sentry';
 
 initSentry();
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getStateFromPath } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -29,6 +29,7 @@ import {
   setupPushTokenRefresh,
 } from './utils/push';
 import { drainColdTap } from './utils/pushRouter';
+import { slugToRoomId } from './utils/roomLink';
 import { queryClient } from './api/queryClient';
 import { wakeBackend } from './utils/warmup';
 
@@ -39,10 +40,23 @@ const LINKING = {
   config: {
     screens: {
       RedeemInvite: 'invite/:code',
-      // Room share links: the meyou.uk/r/{id} landing page bounces here via
-      // meyou://room/{id} (and a future Universal Link maps the same path).
+      // Room share links. Two entry points land here:
+      //  • the landing page bounce  meyou://room/<id>
+      //  • Universal Link / App Link  https://meyou.uk/r/<slug>  (rewritten below)
       WorldChatRoom: 'room/:roomId',
     },
+  },
+  // The public share URL is /r/<slug> with a friendly slug (world-chitchat), but
+  // the room screen wants the canonical colon id (country:world:chitchat). Rewrite
+  // /r/<slug> → /room/<canonical> before the default parser runs, so a tapped
+  // Universal Link / App Link opens the right room directly (no landing page).
+  getStateFromPath(path: string, options?: Parameters<typeof getStateFromPath>[1]) {
+    const m = path.match(/^\/?r\/([^/?#]+)/);
+    if (m) {
+      const roomId = slugToRoomId(decodeURIComponent(m[1]));
+      path = `/room/${encodeURIComponent(roomId)}`;
+    }
+    return getStateFromPath(path, options);
   },
 };
 

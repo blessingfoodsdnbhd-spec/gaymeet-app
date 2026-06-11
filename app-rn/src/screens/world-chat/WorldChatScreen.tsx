@@ -56,6 +56,7 @@ import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
 import { VerifiedBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
+import { roomShareUrl } from '../../utils/roomLink';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -133,12 +134,16 @@ export function WorldChatScreen({
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
 
-  // Share the room via the system share sheet using the meyou.uk/r/{id} short
-  // link. Works for every room — custom, country, or the global world room.
+  // Share the room via the system share sheet using the friendly meyou.uk/r/{slug}
+  // short link. Works for every room — custom, country, or the global world room.
+  // The link lives in `message` only: passing `url` too makes iOS hand both the
+  // body text AND the url attachment to the share target (e.g. WhatsApp pastes
+  // both), duplicating the link. The receiving app still builds a link preview
+  // from the URL in the body (meyou.uk/r/* serves OG tags). Android ignores `url`.
   const onShareRoom = React.useCallback(() => {
-    const url = `https://meyou.uk/r/${roomId}`;
+    const url = roomShareUrl(roomId);
     const message = t('worldChat.rooms.shareMessage', { name: headerTitle, link: url });
-    Share.share(Platform.OS === 'ios' ? { message, url } : { message }).catch(() => {});
+    Share.share({ message }).catch(() => {});
   }, [roomId, headerTitle, t]);
 
   const openInvite = React.useCallback(() => {

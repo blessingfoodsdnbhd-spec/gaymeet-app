@@ -18,6 +18,10 @@
       "supportsTablet": false,
       "buildNumber": "59",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "associatedDomains": [
+        "applinks:meyou.uk",
+        "applinks:www.meyou.uk"
+      ],
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Meyou uses your location to show you people nearby who share your interests.",
         "NSCameraUsageDescription": "Meyou needs camera access for video calls and profile photos.",
@@ -46,6 +50,17 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.POST_NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "meyou.uk", "pathPrefix": "/r/" },
+            { "scheme": "https", "host": "www.meyou.uk", "pathPrefix": "/r/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "plugins": [
