@@ -35,7 +35,6 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
-import { PremiumBadge } from '../../components/PremiumBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
@@ -179,6 +178,7 @@ export function ProfileScreen() {
             name={user.nickname}
             official={official}
             verified={photoVerified}
+            premium={(user as any).isPremium}
             badgeSize={18}
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
             containerStyle={{ marginTop: 12 }}
@@ -191,11 +191,6 @@ export function ProfileScreen() {
           {((user as any).popularity ?? 0) >= 1 && (
             <View style={{ marginTop: 6 }}>
               <PopularityBadge value={(user as any).popularity} size="md" />
-            </View>
-          )}
-          {(user as any).isPremium && (
-            <View style={{ marginTop: 6 }}>
-              <PremiumBadge isPremium size={20} />
             </View>
           )}
           {!official && <View style={{ height: 12 }} />}

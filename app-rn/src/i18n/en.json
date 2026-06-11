@@ -1,4 +1,5 @@
 {
+  "popularity": {"label": "Popular"},
   "empty": {
     "viewers": { "subtitle": "Share your profile to get more eyes on you.", "cta": "Share my profile" },
     "votes": { "subtitle": "Start a contest and invite people to join." },
