@@ -1,5 +1,15 @@
 import { api } from './client';
 
+/** Snapshot of the message a reply quotes (swipe-to-reply). `id`/`senderId` are
+ *  null only for defensively-malformed rows; `preview` is a one-line,
+ *  language-neutral summary (text content, or 📷 / 🎙️ / 📍 for media). */
+export interface MessageReplyPreview {
+  id: string | null;
+  senderId: string | null;
+  type: string | null;
+  preview: string;
+}
+
 /** Mirrors backend Message document. */
 export interface Message {
   id: string;
@@ -38,6 +48,8 @@ export interface Message {
   editedAt?: string | null;
   /** Emoji reactions: { emoji: [userId,…] }. Absent/`{}` when none. */
   reactions?: Record<string, string[]>;
+  /** Swipe-to-reply quote target. null/absent for ordinary messages. */
+  replyTo?: MessageReplyPreview | null;
 }
 
 export interface ChatUser {
@@ -89,8 +101,15 @@ export const getMessages = (otherUserId: string, before?: string) =>
     }),
   );
 
-export const sendMessage = (matchId: string, content: string, type: 'text' | 'sticker' = 'text') =>
-  unwrap<Message>(api.post(`/conversations/${matchId}/send`, { content, type }));
+export const sendMessage = (
+  matchId: string,
+  content: string,
+  type: 'text' | 'sticker' = 'text',
+  replyToMessageId?: string,
+) =>
+  unwrap<Message>(
+    api.post(`/conversations/${matchId}/send`, { content, type, replyToMessageId }),
+  );
 
 /** Image message — caller is expected to have already uploaded the file
  *  to B2 via api/upload.uploadFile() and pass the resulting URL. */

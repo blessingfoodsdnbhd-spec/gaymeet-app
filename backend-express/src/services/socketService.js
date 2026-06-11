@@ -134,7 +134,7 @@ function initSocket(server) {
     // Mirrors the validation in routes/conversations.js POST /send.
     socket.on(
       'chat:send',
-      async ({ matchId, content, type = 'text', mediaUrl, location } = {}) => {
+      async ({ matchId, content, type = 'text', mediaUrl, location, replyToMessageId } = {}) => {
         if (!matchId) return;
 
         const ALLOWED = ['text', 'sticker', 'image', 'location'];
@@ -188,6 +188,20 @@ function initSocket(server) {
                 : null,
           };
         }
+
+        // Swipe-to-reply quote (mirrors routes/conversations.js POST /send).
+        if (replyToMessageId && /^[0-9a-fA-F]{24}$/.test(String(replyToMessageId))) {
+          const orig = await Message.findOne({ _id: replyToMessageId, matchId }).lean();
+          if (orig) {
+            messageData.replyTo = {
+              messageId: orig._id,
+              senderId: orig.senderId,
+              type: orig.type,
+              preview: Message.replyPreviewOf(orig),
+            };
+          }
+        }
+
         const message = await Message.create(messageData);
 
         // Find the other user
@@ -219,6 +233,14 @@ function initSocket(server) {
                 lat: message.location.lat,
                 lng: message.location.lng,
                 label: message.location.label || null,
+              }
+            : null,
+          replyTo: message.replyTo
+            ? {
+                id: message.replyTo.messageId?.toString() ?? null,
+                senderId: message.replyTo.senderId?.toString() ?? null,
+                type: message.replyTo.type ?? null,
+                preview: message.replyTo.preview ?? '',
               }
             : null,
           createdAt: message.createdAt.toISOString(),

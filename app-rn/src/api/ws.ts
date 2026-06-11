@@ -78,6 +78,12 @@ export type WsChatReceive = {
   mediaUrl?: string | null;
   mediaType?: 'image' | 'gif' | null;
   location?: { lat: number; lng: number; label?: string | null } | null;
+  replyTo?: {
+    id: string | null;
+    senderId: string | null;
+    type: string | null;
+    preview: string;
+  } | null;
 };
 
 export type WsChatTyping = {

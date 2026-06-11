@@ -34,6 +34,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Bubble } from '../../components/Bubble';
 import { ChatComposer } from '../../components/ChatComposer';
+import { SwipeToReply } from '../../components/SwipeToReply';
 import { Sheet } from '../../components/Sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { ImageBubble } from './ImageBubble';
@@ -123,6 +124,22 @@ function senderIdOf(m: any): string {
   return s && typeof s === 'object' ? String(s._id ?? s.id ?? '') : String(s ?? '');
 }
 
+// One-line, language-neutral summary of a message for a reply quote. Mirrors the
+// backend's Message.replyPreviewOf so the optimistic quote matches what the
+// server stores on reload.
+function replyPreviewText(m: Message): string {
+  switch (m.type) {
+    case 'image':
+      return '📷';
+    case 'voice':
+      return '🎙️';
+    case 'location':
+      return '📍';
+    default:
+      return m.content || '';
+  }
+}
+
 export function ChatDetailScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -168,6 +185,15 @@ export function ChatDetailScreen() {
   const otherTyping = !!typingMap[matchId];
 
   const [composing, setComposing] = useState('');
+  // Swipe-to-reply quote target + transient highlight after jumping to the
+  // quoted original.
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const listRef = useRef<FlatList>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Live mirror of the rendered (inverted) list so jumpToMessage can resolve an
+  // index without being recreated whenever the message list changes.
+  const invItemsRef = useRef<ListItem[]>([]);
   const [showStickers, setShowStickers] = useState(false);
   // +-button action sheet (camera / gallery / location)
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
@@ -372,9 +398,16 @@ export function ChatDetailScreen() {
   }, [matchId]);
 
   const sendMut = useMutation({
-    mutationFn: ({ content, type }: { content: string; type: 'text' | 'sticker' }) =>
-      sendMessage(matchId, content, type),
-    onMutate: ({ content, type }) => {
+    mutationFn: ({
+      content,
+      type,
+      replyTo,
+    }: {
+      content: string;
+      type: 'text' | 'sticker';
+      replyTo?: Message | null;
+    }) => sendMessage(matchId, content, type, replyTo?.id),
+    onMutate: ({ content, type, replyTo }) => {
       const pendingId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const optimistic: Message = {
         id: pendingId,
@@ -385,6 +418,15 @@ export function ChatDetailScreen() {
         type,
         createdAt: new Date().toISOString(),
         status: 'sending',
+        // Show the quote immediately; the server echo re-sets the same fields.
+        replyTo: replyTo
+          ? {
+              id: replyTo.id,
+              senderId: senderIdOf(replyTo),
+              type: replyTo.type,
+              preview: replyPreviewText(replyTo),
+            }
+          : null,
       };
       queryClient.setQueryData<Message[]>(
         ['chats', 'messages', matchId],
@@ -428,9 +470,45 @@ export function ChatDetailScreen() {
   const onSend = useCallback(() => {
     const content = composing.trim();
     if (!content) return;
+    const replyTo = replyingTo;
     setComposing('');
-    sendMut.mutate({ content, type: 'text' });
-  }, [composing, sendMut]);
+    setReplyingTo(null);
+    sendMut.mutate({ content, type: 'text', replyTo });
+  }, [composing, sendMut, replyingTo]);
+
+  // Swipe-right on a bubble → quote it in the composer. Ignore rows that aren't
+  // real server messages yet (optimistic/failed sends have no usable id).
+  const onReplyTo = useCallback((msg: Message) => {
+    if (msg.pendingId || msg.isSystem || msg.status === 'failed') return;
+    setReplyingTo(msg);
+  }, []);
+
+  // Tap a quote → scroll to the original (if it's in the loaded window) and
+  // flash it. No-op for older messages not yet paged in.
+  const jumpToMessage = useCallback(
+    (id: string) => {
+      const idx = invItemsRef.current.findIndex(
+        (it) => it.kind === 'msg' && it.msg.id === id,
+      );
+      if (idx < 0) return;
+      try {
+        listRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: true });
+      } catch {
+        // onScrollToIndexFailed handles the variable-height retry
+      }
+      setHighlightedId(id);
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setHighlightedId(null), 1800);
+    },
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    },
+    [],
+  );
 
   const onSticker = useCallback(
     (emoji: string) => {
@@ -762,6 +840,7 @@ export function ChatDetailScreen() {
   // messages arrive, while (correctly) not yanking the user down mid-scroll
   // when they're reading older history.
   const invItems = useMemo(() => items.slice().reverse(), [items]);
+  invItemsRef.current = invItems;
 
   return (
     <SafeAreaView
@@ -854,8 +933,27 @@ export function ChatDetailScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             data={invItems}
             inverted
+            onScrollToIndexFailed={(info) => {
+              // Variable row heights → scrollToIndex can miss; approximate then retry.
+              listRef.current?.scrollToOffset({
+                offset: info.averageItemLength * info.index,
+                animated: true,
+              });
+              setTimeout(() => {
+                try {
+                  listRef.current?.scrollToIndex({
+                    index: info.index,
+                    viewPosition: 0.5,
+                    animated: true,
+                  });
+                } catch {
+                  /* give up silently */
+                }
+              }, 300);
+            }}
             // Keep the chat CONTENT from jumping. Without this, every new row —
             // a message either side sends, the optimistic→real swap, a WS echo —
             // is prepended to the inverted data and shoves whatever the user was
@@ -985,13 +1083,50 @@ export function ChatDetailScreen() {
                   </Pressable>
                 );
               }
+              const highlighted = !!msg.id && msg.id === highlightedId;
               return (
-                <View
-                  style={{
-                    flexDirection: 'column',
-                    alignItems: mine ? 'flex-end' : 'flex-start',
-                  }}
-                >
+                <SwipeToReply enabled={!msg.pendingId} onReply={() => onReplyTo(msg)}>
+                  <View
+                    style={{
+                      flexDirection: 'column',
+                      alignItems: mine ? 'flex-end' : 'flex-start',
+                      borderRadius: 12,
+                      paddingVertical: highlighted ? 4 : 0,
+                      paddingHorizontal: highlighted ? 4 : 0,
+                      backgroundColor: highlighted
+                        ? theme.colors.primarySoft
+                        : 'transparent',
+                    }}
+                  >
+                  {/* Quoted reply — tap to jump to the original. */}
+                  {msg.replyTo && (
+                    <Pressable
+                      onPress={() => msg.replyTo?.id && jumpToMessage(msg.replyTo.id)}
+                      style={{
+                        maxWidth: '78%',
+                        marginBottom: 3,
+                        alignSelf: mine ? 'flex-end' : 'flex-start',
+                        backgroundColor: theme.colors.surface2,
+                        borderRadius: 10,
+                        borderLeftWidth: 3,
+                        borderLeftColor: theme.colors.primary,
+                        paddingVertical: 5,
+                        paddingHorizontal: 9,
+                      }}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={{ fontSize: 11.5, fontWeight: '700', color: theme.colors.primary }}
+                      >
+                        {msg.replyTo.senderId === myId
+                          ? t('chats.detail.you')
+                          : thread?.user.nickname ?? ''}
+                      </Text>
+                      <Text numberOfLines={1} style={{ fontSize: 12.5, color: theme.colors.muted }}>
+                        {msg.replyTo.preview}
+                      </Text>
+                    </Pressable>
+                  )}
                   {bubble}
                   {!mine && msg.flagged && (
                     <View
@@ -1024,7 +1159,7 @@ export function ChatDetailScreen() {
                         maxWidth: '80%',
                       }}
                     >
-                      {Object.entries(msg.reactions).map(([emoji, ids]) => {
+                      {Object.entries<string[]>(msg.reactions).map(([emoji, ids]) => {
                         const reactedByMe = !!me?.id && ids.includes(me.id);
                         return (
                           <Pressable
@@ -1074,7 +1209,8 @@ export function ChatDetailScreen() {
                       {t('chat.message.edited')}
                     </Text>
                   )}
-                </View>
+                  </View>
+                </SwipeToReply>
               );
             }}
             // Inverted list: ListHeaderComponent renders at the VISUAL BOTTOM,
@@ -1133,6 +1269,19 @@ export function ChatDetailScreen() {
           onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
           onOpenStickers={() => setShowStickers((s) => !s)}
           placeholder={t('chats.detail.messagePlaceholder')}
+          replyTo={
+            replyingTo
+              ? {
+                  id: replyingTo.id,
+                  name:
+                    senderIdOf(replyingTo) === myId
+                      ? t('chats.detail.you')
+                      : thread?.user.nickname,
+                  text: replyPreviewText(replyingTo),
+                }
+              : null
+          }
+          onCancelReply={() => setReplyingTo(null)}
         />
       </KeyboardAvoidingView>
 
