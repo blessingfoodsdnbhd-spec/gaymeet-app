@@ -148,6 +148,8 @@
       "ephemeral": "24時間後に消える",
       "tag": "友達をタグ",
       "addPhoto": "写真を追加",
+      "maxPhotos": "写真は最大{{max}}枚まで追加できます",
+      "photosCount": "{{n}}/{{max}}",
       "location": "位置を追加",
       "taggedCount": "{{n}}人タグ",
       "chooseOnMap": "地図で選択",

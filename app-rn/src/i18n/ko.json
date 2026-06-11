@@ -148,6 +148,8 @@
       "ephemeral": "24시간 후 사라짐",
       "tag": "친구 태그",
       "addPhoto": "사진 추가",
+      "maxPhotos": "사진은 최대 {{max}}장까지 추가할 수 있습니다",
+      "photosCount": "{{n}}/{{max}}",
       "location": "위치 추가",
       "taggedCount": "{{n}}명 태그됨",
       "chooseOnMap": "지도에서 선택",
