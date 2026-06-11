@@ -10,6 +10,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { useAuth } from '../../store/auth';
 import { useToast } from '../../components/ToastProvider';
 import { getMyInviteCode, getInviteStats } from '../../api/invites';
@@ -101,9 +102,16 @@ export function InviteFriendsScreen() {
               {statsQ.data!.recentInvitees.map((u) => (
                 <Pressable key={u.id} onPress={() => nav.navigate('UserDetail', { userId: u.id })} style={{ alignItems: 'center', width: 64 }}>
                   <Avatar name={u.displayName} uri={u.avatarUrl} size={48} />
-                  <Text numberOfLines={1} style={{ fontSize: 11, color: theme.colors.text2, marginTop: 4, maxWidth: 64 }}>
-                    {u.displayName}
-                  </Text>
+                  <NameWithBadge
+                    name={u.displayName}
+                    official={u.isOfficial}
+                    verified={u.isVerified}
+                    premium={u.isPremium}
+                    textStyle={{ fontSize: 11, color: theme.colors.text2, maxWidth: 64 }}
+                    numberOfLines={1}
+                    badgeSize={12}
+                    containerStyle={{ marginTop: 4, maxWidth: 64 }}
+                  />
                 </Pressable>
               ))}
             </View>

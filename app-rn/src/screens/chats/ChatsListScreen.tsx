@@ -21,7 +21,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { getConversations, type ChatThread } from '../../api/chats';
 import { getNotesUnread } from '../../api/notes';
 import { useChats } from '../../store/chats';
@@ -339,17 +339,20 @@ function NewMatchesStrip({
               size={58}
               showOnline={th.user.isOnline}
             />
-            <Text
+            <NameWithBadge
+              name={th.user.nickname}
+              official={th.user.isOfficial}
+              verified={th.user.isVerified}
+              premium={th.user.isPremium}
               numberOfLines={1}
-              style={{
+              badgeSize={12}
+              textStyle={{
                 fontSize: 11,
                 color: theme.colors.text,
                 marginTop: 6,
                 maxWidth: 60,
               }}
-            >
-              {th.user.nickname}
-            </Text>
+            />
           </Pressable>
         ))}
       </ScrollView>
@@ -400,18 +403,21 @@ function ThreadRow({
       </Pressable>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text
+          <NameWithBadge
+            name={thread.user.nickname}
+            official={thread.user.isOfficial}
+            verified={thread.user.isVerified}
+            premium={thread.user.isPremium}
             numberOfLines={1}
-            style={{
+            badgeSize={14}
+            containerStyle={{ flex: 1 }}
+            textStyle={{
               flex: 1,
               fontSize: 15,
               fontWeight: '600',
               color: theme.colors.text,
             }}
-          >
-            {thread.user.nickname}
-          </Text>
-          {thread.user.isOfficial && <VerifiedBadge size={14} />}
+          />
           {thread.source === 'match' && (
             <Flame size={13} color={theme.colors.primary} fill={theme.colors.primary} />
           )}

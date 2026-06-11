@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { Button } from '../../components/Button';
 import { getLikedMe, type LikerUser } from '../../api/me';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
@@ -242,9 +243,21 @@ function LikerRow({ user, onPress }: { user: LikerUser; onPress: () => void }) {
         )}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
-          {user.isBlurred ? '••••' : user.nickname}
-        </Text>
+        {user.isBlurred ? (
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
+            ••••
+          </Text>
+        ) : (
+          <NameWithBadge
+            name={user.nickname}
+            official={user.isOfficial}
+            verified={user.isVerified}
+            premium={user.isPremium}
+            textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
+            numberOfLines={1}
+            badgeSize={14}
+          />
+        )}
         {!user.isBlurred && (() => {
           const a = computeAge(user.dob) ?? user.age;
           if (a == null) return null;

@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { Chip } from '../../components/Chip';
 import { tagById } from '../../data/interestTags';
@@ -105,9 +106,14 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         </Pressable>
         <View style={{ flex: 1 }}>
           <Pressable onPress={() => onTapAuthor?.(moment)} hitSlop={4}>
-            <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
-              {moment.user.nickname}
-            </Text>
+            <NameWithBadge
+              name={moment.user.nickname}
+              official={moment.user.isOfficial}
+              verified={moment.user.isVerified}
+              premium={moment.user.isPremium}
+              textStyle={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}
+              badgeSize={16}
+            />
           </Pressable>
           <Text style={{ color: theme.colors.muted, fontSize: 11.5, marginTop: 2 }}>
             {shortTime(moment.createdAt)}

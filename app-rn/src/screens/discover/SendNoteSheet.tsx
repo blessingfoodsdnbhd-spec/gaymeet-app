@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { Button } from '../../components/Button';
 import { getNotesQuota, sendNote } from '../../api/notes';
 import type { RootStackParamList } from '../../navigation/types';
@@ -30,6 +31,9 @@ interface Recipient {
   id: string;
   nickname: string;
   avatarUrl?: string | null;
+  isOfficial?: boolean;
+  isVerified?: boolean;
+  isPremium?: boolean;
 }
 
 /**
@@ -113,9 +117,15 @@ export function SendNoteSheet({
           <View style={styles.headerRow}>
             <Avatar name={recipient.nickname || '?'} uri={recipient.avatarUrl} size={40} />
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '700', color: theme.colors.text }}>
-                {recipient.nickname}
-              </Text>
+              <NameWithBadge
+                name={recipient.nickname}
+                official={recipient.isOfficial}
+                verified={recipient.isVerified}
+                premium={recipient.isPremium}
+                textStyle={{ fontSize: 15, fontWeight: '700', color: theme.colors.text }}
+                numberOfLines={1}
+                badgeSize={14}
+              />
               <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 1 }}>
                 📝 {t('notes.anonymousHint')}
               </Text>

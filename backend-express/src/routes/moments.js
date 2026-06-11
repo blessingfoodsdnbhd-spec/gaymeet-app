@@ -114,7 +114,7 @@ router.get('/', auth, async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('user', 'nickname avatarUrl isPremium countryCode')
+      .populate('user', 'nickname avatarUrl isOfficial isVerified isPremium countryCode')
       .populate('taggedUserIds', 'nickname avatarUrl')
       .lean();
 
@@ -148,7 +148,7 @@ router.get('/:id', auth, async (req, res, next) => {
       isActive: true,
       $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }],
     })
-      .populate('user', 'nickname avatarUrl isPremium countryCode')
+      .populate('user', 'nickname avatarUrl isOfficial isVerified isPremium countryCode')
       .populate('taggedUserIds', 'nickname avatarUrl')
       .lean();
 
@@ -163,7 +163,7 @@ router.get('/:id', auth, async (req, res, next) => {
     const comments = await MomentComment.find({ moment: moment._id })
       .sort({ createdAt: 1 })
       .limit(50)
-      .populate('user', 'nickname avatarUrl')
+      .populate('user', 'nickname avatarUrl isOfficial isVerified isPremium')
       .lean();
 
     ok(res, {
@@ -409,7 +409,7 @@ router.post('/:id/comment', auth, async (req, res, next) => {
 
     await Moment.findByIdAndUpdate(moment._id, { $inc: { commentsCount: 1 } });
 
-    const populated = await comment.populate('user', 'nickname avatarUrl');
+    const populated = await comment.populate('user', 'nickname avatarUrl isOfficial isVerified isPremium');
     const me = String(req.user._id);
     const preview = (text || '📷').slice(0, 120);
     const notified = new Set();
@@ -470,7 +470,7 @@ router.get('/:id/comments', auth, async (req, res, next) => {
     const comments = await MomentComment.find({ moment: req.params.id })
       .sort({ createdAt: -1 })
       .limit(200)
-      .populate('user', 'nickname avatarUrl')
+      .populate('user', 'nickname avatarUrl isOfficial isVerified isPremium')
       .lean();
 
     ok(res, comments.map((c) => serializeComment(c, moment.user)));

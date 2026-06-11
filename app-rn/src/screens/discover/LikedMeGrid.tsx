@@ -45,6 +45,11 @@ export function LikedMeGrid() {
             nickname: u.isBlurred ? '••••' : u.nickname,
             avatarUrl: u.avatarUrl ?? null,
             isOnline: !u.isBlurred && !!u.isOnline,
+            // Identity badges only on unblurred tiles — never leak that a
+            // premium/verified user liked you while the row is gated.
+            isOfficial: !u.isBlurred && !!u.isOfficial,
+            isVerified: !u.isBlurred && !!u.isVerified,
+            isPremium: !u.isBlurred && !!u.isPremium,
             isBlurred: u.isBlurred,
             avatarIdx: idxFor(u._id),
             distance: null,

@@ -39,6 +39,7 @@ import { Sheet } from '../../components/Sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { ImageBubble } from './ImageBubble';
 import { LocationBubble } from './LocationBubble';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { useAuth } from '../../store/auth';
 import { useChats } from '../../store/chats';
 import {
@@ -889,9 +890,15 @@ export function ChatDetailScreen() {
                 showOnline={thread.user.isOnline}
               />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-                  {thread.user.nickname}
-                </Text>
+                <NameWithBadge
+                  name={thread.user.nickname}
+                  official={thread.user.isOfficial}
+                  verified={thread.user.isVerified}
+                  premium={thread.user.isPremium}
+                  numberOfLines={1}
+                  badgeSize={16}
+                  textStyle={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}
+                />
                 <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
                   {otherTyping ? t('chats.detail.typing') : thread.user.isOnline ? t('chats.detail.online') : t('chats.detail.offline')}
                 </Text>
@@ -1491,9 +1498,20 @@ export function ChatDetailScreen() {
                     avatarIdx={idxFor(uid)}
                     size={36}
                   />
-                  <Text style={{ fontSize: 15, color: theme.colors.text }}>
-                    {name}
-                  </Text>
+                  {isMe ? (
+                    <Text style={{ fontSize: 15, color: theme.colors.text }}>
+                      {name}
+                    </Text>
+                  ) : (
+                    <NameWithBadge
+                      name={name}
+                      official={thread?.user.isOfficial}
+                      verified={thread?.user.isVerified}
+                      premium={thread?.user.isPremium}
+                      badgeSize={14}
+                      textStyle={{ fontSize: 15, color: theme.colors.text }}
+                    />
+                  )}
                 </View>
               );
             })}

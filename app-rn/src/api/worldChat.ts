@@ -26,6 +26,8 @@ export interface WorldChatMessage {
   displayName: string;
   avatarUrl: string | null;
   isOfficial?: boolean;
+  isVerified?: boolean;
+  isPremium?: boolean;
   /** Plaza identity tier + level (§9.2/§9.3). Absent on legacy/system rows. */
   identity?: PlazaIdentity;
   countryCode?: string | null;
@@ -206,6 +208,9 @@ export interface RoomFriend {
   avatarUrl: string | null;
   isOnline?: boolean;
   lastActiveAt?: string | null;
+  isOfficial?: boolean;
+  isVerified?: boolean;
+  isPremium?: boolean;
 }
 
 export const getCountryRooms = (countryCode: string) =>

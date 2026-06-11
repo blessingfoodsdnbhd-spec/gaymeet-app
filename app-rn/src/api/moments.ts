@@ -7,6 +7,8 @@ export interface MomentAuthor {
   _id: string;
   nickname: string;
   avatarUrl?: string | null;
+  isOfficial?: boolean;
+  isVerified?: boolean;
   isPremium?: boolean;
   countryCode?: string | null;
 }
@@ -110,6 +112,9 @@ export interface Comment {
     _id: string;
     nickname: string;
     avatarUrl?: string | null;
+    isOfficial?: boolean;
+    isVerified?: boolean;
+    isPremium?: boolean;
   };
   content: string;
   photoUrl?: string | null;

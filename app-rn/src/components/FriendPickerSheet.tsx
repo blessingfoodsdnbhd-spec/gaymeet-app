@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
 import { Avatar } from './Avatar';
+import { NameWithBadge } from './NameWithBadge';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../store/auth';
 import { getFollowing, getFollowers, type FollowedUser } from '../api/me';
@@ -125,9 +126,16 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
           return (
             <Pressable onPress={() => toggle(item)} style={styles.row}>
               <Avatar name={item.nickname} uri={item.avatarUrl} avatarIdx={0} size={40} />
-              <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
-                {item.nickname}
-              </Text>
+              <NameWithBadge
+                name={item.nickname}
+                official={item.isOfficial}
+                verified={item.isVerified}
+                premium={item.isPremium}
+                textStyle={{ fontSize: 15, color: theme.colors.text }}
+                numberOfLines={1}
+                badgeSize={14}
+                containerStyle={{ flex: 1 }}
+              />
               <View
                 style={[
                   styles.check,

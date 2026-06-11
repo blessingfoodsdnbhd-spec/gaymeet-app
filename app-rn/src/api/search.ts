@@ -6,6 +6,7 @@ export interface SearchUser {
   avatarUrl: string | null;
   isOfficial?: boolean;
   isVerified?: boolean;
+  isPremium?: boolean;
 }
 export interface SearchVote {
   id: string;

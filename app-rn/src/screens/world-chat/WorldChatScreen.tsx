@@ -54,7 +54,7 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -947,9 +947,15 @@ function Row({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
           {!mine && (
             <Pressable onPress={onOpenUser}>
-              <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: '700', color: nameColor }}>
-                {senderLabel}
-              </Text>
+              <NameWithBadge
+                name={senderLabel}
+                official={msg.isOfficial}
+                verified={msg.isVerified}
+                premium={msg.isPremium}
+                numberOfLines={1}
+                badgeSize={13}
+                textStyle={{ fontSize: 12.5, fontWeight: '700', color: nameColor }}
+              />
             </Pressable>
           )}
           {!mine && tier === 'legend' && <Text style={{ fontSize: 11 }}>{tierEmoji('legend')}</Text>}
@@ -958,7 +964,6 @@ function Row({
               <Text style={{ fontSize: 9.5, fontWeight: '800', color: nameColor }}>Lv{level}</Text>
             </View>
           )}
-          {!mine && msg.isOfficial && <VerifiedBadge size={13} />}
           {isCreator && <Crown size={12} color={theme.colors.primary} />}
           <Text style={{ fontSize: 11, color: theme.colors.muted }}>{shortTime(msg.createdAt)}</Text>
         </View>

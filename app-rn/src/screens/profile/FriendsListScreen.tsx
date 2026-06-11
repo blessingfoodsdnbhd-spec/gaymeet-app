@@ -21,6 +21,7 @@ import { SortChipRow } from '../../components/SortChipRow';
 import { sortList } from '../../utils/listSort';
 import { useListSortPrefs } from '../../store/listSortPrefs';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { Button } from '../../components/Button';
 import { getFollowing, getFollowers, type FollowedUser } from '../../api/me';
 import { toggleFollow } from '../../api/follows';
@@ -261,14 +262,15 @@ function FriendRow({
         showOnline={user.isOnline}
       />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
-          {user.nickname}
-        </Text>
-        {user.isPremium && (
-          <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 2 }}>
-            Premium
-          </Text>
-        )}
+        <NameWithBadge
+          name={user.nickname}
+          official={user.isOfficial}
+          verified={user.isVerified}
+          premium={user.isPremium}
+          textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
+          numberOfLines={1}
+          badgeSize={14}
+        />
       </View>
       {/* Direct follow/unfollow. Nested Pressable so the row's onPress (→ profile)
           doesn't also fire when the pill is tapped. following → "已关注" (filled);

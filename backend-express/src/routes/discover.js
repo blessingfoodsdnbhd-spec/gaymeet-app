@@ -205,6 +205,10 @@ router.get('/cards', auth, async (req, res, next) => {
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: popularityOf(u),
+      // Identity badge — recompute premium with expiry/vipLevel awareness (the
+      // aggregation bypasses toPublicJSON, so the raw isPremium field is neither
+      // expiry- nor vipLevel-aware). isOfficial/isVerified pass through verbatim.
+      isPremium: isPremiumActive(u),
       ...presenceFields(u),
     }));
     ok(res, cards);
@@ -321,6 +325,8 @@ router.post('/search-new', auth, async (req, res, next) => {
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: popularityOf(u),
+      // Expiry/vipLevel-aware premium for the identity M badge (see /cards note).
+      isPremium: isPremiumActive(u),
       ...presenceFields(u),
     }));
     ok(res, cards);
@@ -502,6 +508,8 @@ router.get('/nearby', auth, async (req, res, next) => {
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
       popularity: popularityOf(u),
+      // Expiry/vipLevel-aware premium for the identity M badge (see /cards note).
+      isPremium: isPremiumActive(u),
       ...presenceFields(u),
     }));
 
