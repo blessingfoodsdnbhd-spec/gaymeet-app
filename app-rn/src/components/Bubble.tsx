@@ -47,6 +47,12 @@ export function Bubble({ text, from, shape = 'rounded', tail = true, style }: Pr
           fontSize: 15,
           lineHeight: 22,
           color: isMe ? theme.colors.bubbleMeText : theme.colors.bubbleThemText,
+          // The bubble View hugs its content (maxWidth %, inside a zero-width
+          // Pressable), so iOS floors the container width ~1px below the text's
+          // natural glyph width and clips the trailing character ("Yes" → "Ye").
+          // A hair of trailing room absorbs the sub-pixel rounding. The padding
+          // is transparent so it's visually invisible.
+          paddingRight: 2,
         }}
       >
         {text}
