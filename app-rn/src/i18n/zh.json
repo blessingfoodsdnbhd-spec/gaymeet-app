@@ -916,6 +916,7 @@
   },
   "likedMe": {
     "title": "想认识你的人",
+    "count": "{{n}} 人想认识你",
     "empty": "还没有人想认识你",
     "upgradeCta": "升级看清楚是谁",
     "loadFailed": "无法加载"
