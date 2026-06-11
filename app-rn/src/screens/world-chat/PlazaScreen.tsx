@@ -9,7 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getWorldChatRooms, type WorldChatRoom } from '../../api/worldChat';
 import { on as wsOn } from '../../api/ws';
-import { subBoardRoomId } from '../../utils/plazaIdentity';
+import { subBoardRoomId, plazaRoomName } from '../../utils/plazaIdentity';
 import { PlazaHotList } from './PlazaHotList';
 import { PlazaChannelList, type ChannelItem } from './PlazaChannelList';
 import type { RootStackParamList } from '../../navigation/types';
@@ -77,10 +77,7 @@ export function PlazaScreen() {
     (id: string, fallback = 0) => (live && live[id] != null ? live[id] : fallback),
     [live],
   );
-  const nameOf = React.useCallback(
-    (r: WorldChatRoom) => (r.i18nKey ? t(r.i18nKey, { defaultValue: isZh ? r.label.zh : r.label.en }) : isZh ? r.label.zh : r.label.en),
-    [t, isZh],
-  );
+  const nameOf = React.useCallback((r: WorldChatRoom) => plazaRoomName(r, t, isZh), [t, isZh]);
 
   // Build the 二级频道 grid for a kind. For countries the card count reflects the
   // 总聊天室 (general sub-board), which is where activity actually lives.

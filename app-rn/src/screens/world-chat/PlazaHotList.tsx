@@ -15,6 +15,7 @@ import {
   type ChatRoomSummary,
 } from '../../api/worldChat';
 import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
+import { plazaRoomName } from '../../utils/plazaIdentity';
 import { RoomCardShell } from './RoomCardShell';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -50,8 +51,7 @@ export function PlazaHotList() {
     }, []), // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const nameOf = (r: WorldChatRoom) =>
-    r.i18nKey ? t(r.i18nKey, { defaultValue: isZh ? r.label.zh : r.label.en }) : isZh ? r.label.zh : r.label.en;
+  const nameOf = (r: WorldChatRoom) => plazaRoomName(r, t, isZh);
 
   // A hot room may be a config room (open directly) or a public UGC room (join
   // frictionlessly first, then enter).

@@ -57,7 +57,9 @@ const subChannelId = (countryCode, key) =>
   countryCode === 'world' && key === 'general' ? 'world' : `country:${String(countryCode).toLowerCase()}:${key}`;
 
 // Fan every country (INCLUDING 世界大厅) out into its 4 fixed sub-boards. The
-// country flag rides along so 热门 can render "🇲🇾 总聊天室".
+// country flag + label ride along so the client can prefix the sub-board name
+// with its country ("马来西亚总聊天室") — a bare "总聊天室" gives no hint which
+// country's room you're in once you're inside it or in the cross-country 热门 list.
 const COUNTRY_SUB_ROOMS = ROOMS.flatMap((c) =>
   COUNTRY_SUB_CHANNELS.map((s) => ({
     id: subChannelId(c.id, s.key),
@@ -66,6 +68,7 @@ const COUNTRY_SUB_ROOMS = ROOMS.flatMap((c) =>
     kind: 'country-sub',
     i18nKey: s.i18nKey,
     country: c.id,
+    countryLabel: { en: c.en, zh: c.zh, native: c.native },
     sub: s.key,
   })),
 );
