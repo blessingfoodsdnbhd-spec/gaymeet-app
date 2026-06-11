@@ -125,6 +125,7 @@
     "premiumTitle": "프리미엄 전용",
     "premiumBody": "매칭하지 않은 사람에게 메시지를 보내는 것은 프리미엄 기능입니다.\n\n월 RM {{monthly}}\n연 RM {{annual}}\n(연간 결제 시 약 2개월 절약)",
     "premiumOk": "확인",
+    "premiumLabel": "Premium",
     "openFailedTitle": "열 수 없습니다",
     "openFailedFallback": "나중에 다시 시도해 주세요",
     "swipeFailed": "작업 실패",

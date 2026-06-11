@@ -400,6 +400,7 @@
     "premiumTitle": "Premium only",
     "premiumBody": "Messaging people you haven't matched with is a Premium feature.\n\nMonthly RM {{monthly}}\nAnnual RM {{annual}}\n(Annual saves ~2 months)",
     "premiumOk": "OK",
+    "premiumLabel": "Premium",
     "openFailedTitle": "Couldn't open",
     "openFailedFallback": "Please try later",
     "swipeFailed": "Action failed",
