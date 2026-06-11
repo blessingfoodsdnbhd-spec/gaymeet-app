@@ -24,6 +24,7 @@ import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { TagChip } from '../../components/TagChip';
+import { ProfileStatsText } from '../../components/ProfileStatsText';
 import { Card } from '../../components/Card';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useAuth } from '../../store/auth';
@@ -45,7 +46,7 @@ import { shareProfile } from '../../utils/shareProfile';
 import { SendNoteSheet } from './SendNoteSheet';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
-import { computeAge, computeZodiac, zodiacLabel } from '../../utils/zodiac';
+import { computeAge } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
@@ -59,7 +60,7 @@ interface Props {
 
 export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const theme = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
@@ -475,53 +476,9 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               )}
             </View>
 
-          {(() => {
-            // Compact stats pills — age (more prominent than the inline header
-            // suffix), plus any optional body/work/location fields the user has
-            // filled. Hidden entirely when nothing is set.
-            const stats: string[] = [];
-            // Age + zodiac. Prefer a live age from dob (always fresh); fall back
-            // to the stored age for legacy users. Zodiac only when dob is set.
-            const age = computeAge(user.dob) ?? user.age;
-            if (age != null) {
-              const z = computeZodiac(user.dob);
-              stats.push(
-                t('about.stats.age', { n: age }) +
-                  (z ? ` · ${zodiacLabel(z, i18n.language)}` : ''),
-              );
-            }
-            if (user.height) stats.push(`${user.height} cm`);
-            if (user.weight) stats.push(`${user.weight} kg`);
-            if (user.bodyType) stats.push(t(`profile.edit.bodyTypes.${user.bodyType}`));
-            if (user.relationshipStatus) {
-              const k =
-                ({ in_relationship: 'inRelationship', open_relationship: 'openRelationship' } as Record<string, string>)[
-                  user.relationshipStatus
-                ] ?? user.relationshipStatus;
-              stats.push(`💕 ${t(`profile.relationshipStatus.${k}`)}`);
-            }
-            if (user.mbti) stats.push(`🧠 ${user.mbti}`);
-            (user.intents ?? []).forEach((i) => stats.push(`🎯 ${t(`profile.intents.${i}`)}`));
-            if (user.city) stats.push(user.city);
-            if (stats.length === 0) return null;
-            return (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                {stats.map((s, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: theme.radius.pill,
-                      backgroundColor: theme.colors.surface2,
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, color: theme.colors.text2 }}>{s}</Text>
-                  </View>
-                ))}
-              </View>
-            );
-          })()}
+          {/* Factual attributes as one plain bullet-separated line (was a grid
+              of rounded "stats pills"). Interests stay as chips below. */}
+          <ProfileStatsText user={user} style={{ marginTop: 12 }} />
 
           {user.bio && (
             <View style={{ marginTop: 18 }}>

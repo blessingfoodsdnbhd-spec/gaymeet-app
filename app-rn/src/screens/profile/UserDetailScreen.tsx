@@ -30,6 +30,7 @@ import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { TagChip } from '../../components/TagChip';
+import { ProfileStatsText } from '../../components/ProfileStatsText';
 import { Card } from '../../components/Card';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { getUserById } from '../../api/me';
@@ -340,6 +341,9 @@ export function UserDetailScreen() {
                 {user.countryCode}
               </Text>
             )}
+            {/* Factual attributes (height/weight/body/relationship/mbti/intent/
+                city) as one plain bullet-separated line. Interests stay chips. */}
+            <ProfileStatsText user={user} style={{ marginTop: 8 }} />
           </View>
 
           {/* Locked photos block — only shown if owner has any. Status
