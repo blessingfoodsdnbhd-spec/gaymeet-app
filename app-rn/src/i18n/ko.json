@@ -1002,6 +1002,19 @@
       "messagePlaceholder": "메시지를 입력하세요…",
       "unmatchFailed": "매칭 취소 실패",
       "you": "나"
+    },
+    "swipe": {
+      "pin": "고정",
+      "unpin": "고정 해제",
+      "delete": "삭제",
+      "pinned": "상단에 고정됨",
+      "unpinned": "고정 해제됨",
+      "pinLimit": "최대 2개까지 고정할 수 있어요. 먼저 하나를 해제하세요",
+      "pinFailed": "오류가 발생했습니다. 다시 시도해 주세요",
+      "deleteTitle": "대화 삭제",
+      "deleteConfirm": "{{name}}님과의 대화를 삭제할까요? 모든 채팅 기록이 삭제되며 복구할 수 없습니다.",
+      "deleted": "대화를 삭제했습니다",
+      "deleteFailed": "삭제하지 못했습니다. 다시 시도해 주세요"
     }
   },
   "match": {

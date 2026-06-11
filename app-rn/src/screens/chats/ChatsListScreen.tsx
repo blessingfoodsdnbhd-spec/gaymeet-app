@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   Pressable,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Flame, StickyNote, ChevronRight } from 'lucide-react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Search, Flame, StickyNote, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -22,7 +24,15 @@ import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { VerifiedBadge } from '../../components/NameWithBadge';
-import { getConversations, type ChatThread } from '../../api/chats';
+import { useToast } from '../../components/ToastProvider';
+import {
+  getConversations,
+  pinConversation,
+  unpinConversation,
+  clearConversation,
+  PinLimitError,
+  type ChatThread,
+} from '../../api/chats';
 import { getNotesUnread } from '../../api/notes';
 import { useChats } from '../../store/chats';
 import { on as wsOn } from '../../api/ws';
@@ -48,6 +58,7 @@ export function ChatsListScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
+  const toast = useToast();
   const [q, setQ] = useState('');
 
   const setThreads = useChats((s) => s.setThreads);
@@ -133,6 +144,85 @@ export function ChatsListScreen() {
     [nav],
   );
 
+  // Pin / unpin — personal, max 2. Optimistically reorder the cached list so
+  // the row jumps to/from the top instantly, then refetch to reconcile with
+  // the server's authoritative pin order.
+  const handleTogglePin = useCallback(
+    async (thread: ChatThread) => {
+      const willPin = !thread.isPinned;
+      const data = queryClient.getQueryData<ChatThread[]>(['chats', 'list']) ?? [];
+      if (willPin && data.filter((x) => x.isPinned).length >= 2) {
+        toast.error(t('chats.swipe.pinLimit'));
+        return;
+      }
+      queryClient.setQueryData<ChatThread[]>(['chats', 'list'], (old) =>
+        old ? reorderPinned(old, thread.matchId, willPin) : old,
+      );
+      try {
+        if (willPin) await pinConversation(thread.matchId);
+        else await unpinConversation(thread.matchId);
+        toast.success(willPin ? t('chats.swipe.pinned') : t('chats.swipe.unpinned'));
+      } catch (e) {
+        toast.error(
+          e instanceof PinLimitError ? t('chats.swipe.pinLimit') : t('chats.swipe.pinFailed'),
+        );
+      } finally {
+        refetchThreads();
+      }
+    },
+    [queryClient, refetchThreads, toast, t],
+  );
+
+  // Per-user delete (clears my history only — not a mutual unmatch). Confirm
+  // first, then optimistically drop the row and call the backend.
+  const handleDelete = useCallback(
+    (thread: ChatThread) => {
+      Alert.alert(
+        t('chats.swipe.deleteTitle'),
+        t('chats.swipe.deleteConfirm', { name: thread.user.nickname }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('chats.swipe.delete'),
+            style: 'destructive',
+            onPress: async () => {
+              queryClient.setQueryData<ChatThread[]>(['chats', 'list'], (old) =>
+                old ? old.filter((x) => x.matchId !== thread.matchId) : old,
+              );
+              try {
+                await clearConversation(thread.matchId);
+                toast.success(t('chats.swipe.deleted'));
+              } catch {
+                toast.error(t('chats.swipe.deleteFailed'));
+                refetchThreads();
+              }
+            },
+          },
+        ],
+      );
+    },
+    [queryClient, refetchThreads, toast, t],
+  );
+
+  // Long-press a row → same actions as the swipe gestures, for discoverability.
+  const handleLongPress = useCallback(
+    (thread: ChatThread) => {
+      Alert.alert(thread.user.nickname, undefined, [
+        {
+          text: thread.isPinned ? t('chats.swipe.unpin') : t('chats.swipe.pin'),
+          onPress: () => handleTogglePin(thread),
+        },
+        {
+          text: t('chats.swipe.delete'),
+          style: 'destructive',
+          onPress: () => handleDelete(thread),
+        },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]);
+    },
+    [handleTogglePin, handleDelete, t],
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
       <TopBar title={t('tabs.chats')} />
@@ -210,10 +300,13 @@ export function ChatsListScreen() {
             </>
           }
           renderItem={({ item }) => (
-            <ThreadRow
+            <SwipeableThreadRow
               thread={item}
               onPress={() => openThread(item)}
               onAvatarPress={() => nav.navigate('UserDetail', { userId: item.user.id })}
+              onTogglePin={() => handleTogglePin(item)}
+              onDelete={() => handleDelete(item)}
+              onLongPress={() => handleLongPress(item)}
             />
           )}
           ItemSeparatorComponent={() => (
@@ -357,14 +450,133 @@ function NewMatchesStrip({
   );
 }
 
-function ThreadRow({
+/** Optimistic client mirror of the server's pin-first ordering: flip one
+ *  thread's pin flag, float pinned threads to the top, and drop a freshly
+ *  pinned thread at the very top of the pinned group. */
+function reorderPinned(
+  list: ChatThread[],
+  matchId: string,
+  pinned: boolean,
+): ChatThread[] {
+  const updated = list.map((t) =>
+    t.matchId === matchId ? { ...t, isPinned: pinned } : t,
+  );
+  const pins = updated.filter((t) => t.isPinned);
+  const rest = updated.filter((t) => !t.isPinned);
+  if (pinned) {
+    const i = pins.findIndex((t) => t.matchId === matchId);
+    if (i > 0) pins.unshift(...pins.splice(i, 1));
+  }
+  return [...pins, ...rest];
+}
+
+/** A row wrapped in left (pin/unpin) + right (delete) swipe actions. The inner
+ *  ThreadRow has an opaque bg so it slides cleanly over the action buttons. */
+function SwipeableThreadRow({
   thread,
   onPress,
   onAvatarPress,
+  onTogglePin,
+  onDelete,
+  onLongPress,
 }: {
   thread: ChatThread;
   onPress: () => void;
   onAvatarPress: () => void;
+  onTogglePin: () => void;
+  onDelete: () => void;
+  onLongPress: () => void;
+}) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const ref = useRef<Swipeable>(null);
+  const close = () => ref.current?.close();
+
+  return (
+    <Swipeable
+      ref={ref}
+      friction={2}
+      leftThreshold={56}
+      rightThreshold={56}
+      overshootLeft={false}
+      overshootRight={false}
+      renderLeftActions={() => (
+        <SwipeAction
+          label={thread.isPinned ? t('chats.swipe.unpin') : t('chats.swipe.pin')}
+          icon={
+            thread.isPinned ? (
+              <PinOff size={22} color="#FFFFFF" strokeWidth={2} />
+            ) : (
+              <Pin size={22} color="#FFFFFF" strokeWidth={2} />
+            )
+          }
+          bg={theme.colors.primary}
+          onPress={() => {
+            close();
+            onTogglePin();
+          }}
+        />
+      )}
+      renderRightActions={() => (
+        <SwipeAction
+          label={t('chats.swipe.delete')}
+          icon={<Trash2 size={22} color="#FFFFFF" strokeWidth={2} />}
+          bg={theme.colors.danger}
+          onPress={() => {
+            close();
+            onDelete();
+          }}
+        />
+      )}
+    >
+      <ThreadRow
+        thread={thread}
+        onPress={onPress}
+        onAvatarPress={onAvatarPress}
+        onLongPress={onLongPress}
+      />
+    </Swipeable>
+  );
+}
+
+function SwipeAction({
+  label,
+  icon,
+  bg,
+  onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  bg: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: 88,
+        backgroundColor: bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+      }}
+    >
+      {icon}
+      <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ThreadRow({
+  thread,
+  onPress,
+  onAvatarPress,
+  onLongPress,
+}: {
+  thread: ChatThread;
+  onPress: () => void;
+  onAvatarPress: () => void;
+  onLongPress?: () => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -377,13 +589,21 @@ function ThreadRow({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 12,
         gap: 12,
-        backgroundColor: pressed ? theme.colors.surface2 : 'transparent',
+        // Opaque resting bg so the row fully covers the swipe-action buttons
+        // behind it; a faint primary tint marks pinned threads.
+        backgroundColor: pressed
+          ? theme.colors.surface2
+          : thread.isPinned
+            ? theme.colors.primarySoft
+            : theme.colors.bg,
       })}
     >
       {/* Avatar opens the OTHER user's full-screen profile; tapping the rest
@@ -414,6 +634,9 @@ function ThreadRow({
           {thread.user.isOfficial && <VerifiedBadge size={14} />}
           {thread.source === 'match' && (
             <Flame size={13} color={theme.colors.primary} fill={theme.colors.primary} />
+          )}
+          {thread.isPinned && (
+            <Pin size={12} color={theme.colors.primary} fill={theme.colors.primary} strokeWidth={1.6} />
           )}
           <Text style={{ fontSize: 12, color: theme.colors.muted }}>{time}</Text>
         </View>

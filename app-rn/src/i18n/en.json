@@ -861,6 +861,19 @@
       "messagePlaceholder": "Say something…",
       "unmatchFailed": "Unmatch failed",
       "you": "You"
+    },
+    "swipe": {
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "delete": "Delete",
+      "pinned": "Pinned to top",
+      "unpinned": "Unpinned",
+      "pinLimit": "You can pin up to 2 chats — unpin one first",
+      "pinFailed": "Something went wrong, try again",
+      "deleteTitle": "Delete conversation",
+      "deleteConfirm": "Delete your conversation with {{name}}? This removes all chat history and can't be undone.",
+      "deleted": "Conversation deleted",
+      "deleteFailed": "Couldn't delete, try again"
     }
   },
   "match": {

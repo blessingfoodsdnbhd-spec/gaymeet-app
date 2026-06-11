@@ -1002,6 +1002,19 @@
       "messagePlaceholder": "メッセージを入力…",
       "unmatchFailed": "マッチ解除に失敗しました",
       "you": "あなた"
+    },
+    "swipe": {
+      "pin": "固定",
+      "unpin": "固定解除",
+      "delete": "削除",
+      "pinned": "上部に固定しました",
+      "unpinned": "固定を解除しました",
+      "pinLimit": "固定できるのは2件までです。先に1件解除してください",
+      "pinFailed": "エラーが発生しました。もう一度お試しください",
+      "deleteTitle": "会話を削除",
+      "deleteConfirm": "{{name}}さんとの会話を削除しますか？すべてのチャット履歴が削除され、元に戻せません。",
+      "deleted": "会話を削除しました",
+      "deleteFailed": "削除できませんでした。もう一度お試しください"
     }
   },
   "match": {

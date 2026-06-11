@@ -72,6 +72,13 @@ router.get('/', auth, async (req, res, next) => {
 
     const myCoords = req.user.location?.coordinates;
     const blocked = await blockedIdSet(req.user);
+    const meId = req.user._id.toString();
+
+    // Pinned threads (personal, max 2) float to the top, most-recently-pinned
+    // first. pinnedRank maps matchId → its index in the user's pin list.
+    const pinnedRank = new Map(
+      (req.user.pinnedConversations || []).map((x, i) => [x.toString(), i])
+    );
 
     const result = matches
       .map((m) => {
@@ -85,6 +92,16 @@ router.get('/', auth, async (req, res, next) => {
         // mutual block with the viewer (hide the whole thread from the inbox).
         if (!other) return null;
         if (blocked.has(other._id.toString())) return null;
+
+        // Per-user delete: hide threads the viewer cleared, unless the other
+        // side has since sent a newer message (lastMessageAt > clearedAt).
+        const clearedAt = m.clearedAt?.[meId];
+        if (
+          clearedAt &&
+          (!m.lastMessageAt || new Date(m.lastMessageAt) <= new Date(clearedAt))
+        ) {
+          return null;
+        }
 
         const unread = m.unreadCounts?.[req.user._id.toString()] || 0;
 
@@ -122,9 +139,16 @@ router.get('/', auth, async (req, res, next) => {
           lastMessageSystem: !!(m.lastMessage && !m.lastMessageBy),
           unreadCount: unread,
           source: m.source ?? 'match',
+          isPinned: pinnedRank.has(m._id.toString()),
         };
       })
       .filter(Boolean); // remove nulls from skipped entries
+
+    // Pinned first (by pin order); the rest keep their lastMessageAt order
+    // since Array.prototype.sort is stable.
+    const rank = (id) =>
+      pinnedRank.has(id) ? pinnedRank.get(id) : Number.MAX_SAFE_INTEGER;
+    result.sort((a, b) => rank(a.matchId) - rank(b.matchId));
 
     ok(res, result);
   } catch (e) {
@@ -407,7 +431,13 @@ router.get('/:userId/messages', auth, async (req, res, next) => {
 
     const { before, limit = 50 } = req.query;
     const query = { matchId: match._id };
-    if (before) query.createdAt = { $lt: new Date(before) };
+    const createdAt = {};
+    if (before) createdAt.$lt = new Date(before);
+    // Per-user delete: only surface messages newer than when the viewer last
+    // cleared this conversation (full doc here, so clearedAt is a real Map).
+    const clearedAt = match.clearedAt?.get?.(req.user._id.toString());
+    if (clearedAt) createdAt.$gt = new Date(clearedAt);
+    if (Object.keys(createdAt).length) query.createdAt = createdAt;
 
     const messages = await Message.find(query)
       .sort({ createdAt: -1 })
@@ -754,6 +784,76 @@ router.post('/:matchId/messages/:msgId/reactions', auth, async (req, res, next) 
 // ── DELETE /api/conversations/:matchId — unmatch ──────────────────────────────
 // Tombstones the match: sets isActive=false so it disappears from both users'
 // chat lists. Messages stay in the DB for moderation review.
+// ── POST /api/conversations/:matchId/pin ────────────────────────────────────────
+// Pin a conversation to the top of the caller's inbox. Personal (stored on the
+// User, not shared on the Match), capped at 2, newest-pinned first. Idempotent.
+// Returns 409 PIN_LIMIT when the user already has 2 pins and tries a third.
+router.post('/:matchId/pin', auth, async (req, res, next) => {
+  try {
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+      isActive: true,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const pinned = (req.user.pinnedConversations || []).map((x) => x.toString());
+    const id = match._id.toString();
+    if (!pinned.includes(id)) {
+      if (pinned.length >= 2) return err(res, 'PIN_LIMIT', 409);
+      await User.findByIdAndUpdate(req.user._id, {
+        $push: { pinnedConversations: { $each: [match._id], $position: 0 } },
+      });
+    }
+    ok(res, { pinned: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/conversations/:matchId/pin ──────────────────────────────────────
+// Unpin a conversation. Idempotent — a no-op if it wasn't pinned.
+router.delete('/:matchId/pin', auth, async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { pinnedConversations: req.params.matchId },
+    });
+    ok(res, { pinned: false });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/conversations/:matchId/history ──────────────────────────────────
+// Per-user "delete conversation": removes the thread from the CALLER's inbox and
+// hides their history (messages before now), without touching the other party or
+// the shared Match. Reappears if the other user sends a newer message. Also
+// unpins it. Distinct from DELETE /:matchId, which is a mutual unmatch.
+router.delete('/:matchId/history', auth, async (req, res, next) => {
+  try {
+    const match = await Match.findOne({
+      _id: req.params.matchId,
+      users: req.user._id,
+    });
+    if (!match) return err(res, 'Conversation not found', 404);
+
+    const uid = req.user._id.toString();
+    if (!match.clearedAt) match.clearedAt = new Map();
+    match.clearedAt.set(uid, new Date());
+    if (match.unreadCounts) match.unreadCounts.set(uid, 0);
+    await match.save();
+
+    // A deleted thread shouldn't keep occupying a pin slot.
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { pinnedConversations: match._id },
+    });
+
+    ok(res, { cleared: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.delete('/:matchId', auth, async (req, res, next) => {
   try {
     const match = await Match.findOne({
