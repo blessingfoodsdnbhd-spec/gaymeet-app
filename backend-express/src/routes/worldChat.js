@@ -311,11 +311,14 @@ router.post('/send', auth, async (req, res, next) => {
   }
 });
 
-// A bare country room (e.g. 'MY') is a country *identity* used to build the
-// country picker — you never chat in it directly; entering a country lands you
-// in its `country:my:general` sub-channel. So 热门 ranks over everything EXCEPT
-// the bare country rooms (the global 'world' lobby is kept).
-const inHotPool = (r) => !(r.kind === 'country' && r.id !== 'world');
+// A bare country room (e.g. 'MY', and the 'world' lobby identity) is a country
+// *container* used to build the country picker — you never chat in it directly;
+// entering a country lands you in its `country:<cc>:general` 总聊天室 sub-channel.
+// 世界大厅's 总聊天室 reuses the legacy id 'world', so the world lobby is still
+// rankable via that country-sub entry. Excluding ALL bare country containers
+// (incl 'world') keeps the lobby in 热门 exactly once ("World 总聊天室") instead of
+// listing both the container ("World") and its 总聊天室 ("World Main") as a dupe.
+const inHotPool = (r) => r.kind !== 'country';
 
 // 30s cache for the 热门 ordering. Counts come from the in-memory socket adapter
 // (no DB hit), and live socket `rooms-state` events keep clients fresh between
