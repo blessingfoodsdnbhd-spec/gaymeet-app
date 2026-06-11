@@ -195,31 +195,33 @@ export function ProfileScreen() {
             </View>
           )}
           {!official && <View style={{ height: 12 }} />}
-          <Pressable
-            onPress={goEdit}
-            style={({ pressed }) => [
-              styles.editBtn,
-              { borderColor: theme.colors.line, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Pencil size={15} color={theme.colors.primary} strokeWidth={2} />
-            <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
-              {t('editProfile.title')}
-            </Text>
-          </Pressable>
-          {/* Preview own profile exactly as other users see it (stranger view). */}
-          <Pressable
-            onPress={() => nav.navigate('UserDetail', { userId: user.id, previewMode: true })}
-            style={({ pressed }) => [
-              styles.previewBtn,
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Eye size={14} color={theme.colors.text2} strokeWidth={2} />
-            <Text style={{ color: theme.colors.text2, fontSize: 13, fontWeight: '600' }}>
-              {t('profile.previewMyProfile')}
-            </Text>
-          </Pressable>
+          {/* Edit + preview side by side. Preview opens your own card in stranger view. */}
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={goEdit}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { borderColor: theme.colors.line, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Pencil size={15} color={theme.colors.primary} strokeWidth={2} />
+              <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
+                {t('editProfile.title')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => nav.navigate('UserDetail', { userId: user.id, previewMode: true })}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { borderColor: theme.colors.line, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Eye size={15} color={theme.colors.text2} strokeWidth={2} />
+              <Text style={{ color: theme.colors.text2, fontSize: 14, fontWeight: '600' }}>
+                {t('profile.previewMyProfile')}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Stats — 6 tiles, tappable. */}
@@ -418,23 +420,22 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   bellBadgeText: { color: '#FFFFFF', fontSize: 9.5, fontWeight: '800' },
-  editBtn: {
+  actionRow: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    gap: 10,
+    marginTop: 14,
+  },
+  actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    marginTop: 14,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
-  },
-  previewBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
   },
   statsRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
