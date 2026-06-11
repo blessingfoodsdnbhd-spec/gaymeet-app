@@ -8,7 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { getUserHighlights } from '../../api/votes';
-import { medalFor } from './voteHelpers';
+import { RankMedal } from '../../components/RankMedal';
 import { shortTime } from '../../utils/time';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -53,7 +53,9 @@ export function HighlightsSection({ userId }: { userId: string }) {
                 style={{ width: 116, height: 116, borderRadius: 14, backgroundColor: theme.colors.surface2 }}
                 contentFit="cover"
               />
-              <Text style={{ position: 'absolute', top: 4, left: 6, fontSize: 26 }}>{medalFor(h.rank)}</Text>
+              <View style={{ position: 'absolute', top: 4, left: 6 }}>
+                <RankMedal rank={h.rank} size={24} />
+              </View>
             </View>
             <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text, marginTop: 6 }}>
               {h.eventTitle}
