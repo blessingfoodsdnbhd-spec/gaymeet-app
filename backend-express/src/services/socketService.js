@@ -44,6 +44,7 @@ function emitRoomCount(roomId) {
 }
 
 const isCustomRoomId = (id) => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
+const isUserTopicRoomId = (id) => typeof id === 'string' && /^user-topic:[a-f0-9]{24}$/i.test(id);
 
 /**
  * Announce a join/leave to everyone currently in a World Chat room — the
@@ -484,7 +485,8 @@ function initSocket(server) {
     // World Chat: switch rooms. Client emits when entering a country OR a
     // custom (user-created) room. Custom room ids are 24-hex ChatRoom ids.
     socket.on('world-chat:join-room', ({ roomId } = {}) => {
-      const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) ? roomId : 'world';
+      const next =
+        VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) || isUserTopicRoomId(roomId) ? roomId : 'world';
       const prev = socket.data?.wcRoom || 'world';
       if (next !== prev) {
         // Announce the part to the old room while we're still in it, then the
@@ -494,9 +496,17 @@ function initSocket(server) {
         socket.join(socketRoom(next));
         socket.data = { ...(socket.data || {}), wcRoom: next };
         emitPresenceEvent('join', next, socket.user);
-        // Custom rooms aren't in the periodic ROOMS snapshot — push their counts.
-        if (isCustomRoomId(prev)) emitRoomCount(prev);
-        if (isCustomRoomId(next)) emitRoomCount(next);
+        // Custom + UGC rooms aren't in the periodic ROOMS snapshot — push counts.
+        if (isCustomRoomId(prev) || isUserTopicRoomId(prev)) emitRoomCount(prev);
+        if (isCustomRoomId(next) || isUserTopicRoomId(next)) emitRoomCount(next);
+        // Entering a UGC topic room resets its 7-day no-activity timer.
+        if (isUserTopicRoomId(next)) {
+          try {
+            require('../models/UserTopicRoom').updateOne({ roomId: next }, { $set: { lastActivityAt: new Date() } }).catch(() => {});
+          } catch (_) {
+            /* model not ready */
+          }
+        }
       }
       emitRoomsState();
     });

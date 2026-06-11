@@ -585,6 +585,7 @@
     "switcher": { "hot": "人気のチャット", "country": "国を選ぶ" },
     "channel": { "food": "グルメ", "photo": "写真", "games": "ゲーム", "ai": "AI", "realestate": "不動産", "pets": "ペット" },
     "topic": { "lateNight": "深夜トーク", "singles": "シングル交流", "aiDiscuss": "AIディスカッション" },
+    "create": { "title": "トピックルーム作成", "cta": "トピックルーム作成", "submit": "作成", "titleField": "タイトル", "titlePh": "ルーム名を付けてください", "emojiField": "絵文字", "descField": "紹介（任意）", "descPh": "どんなルーム？", "categoryField": "タイプ", "catTopic": "トピック", "voiceLocked": "🎤 ボイスルーム近日公開", "quotaRemaining": "本日 {{total}} 件中 {{remaining}} 件", "quotaUpgrade": "Premium にアップグレードでさらに作成", "quotaReached": "本日の上限に達しました — 明日また試してください", "failed": "ルームを作成できませんでした", "createdBy": "{{name}} が作成", "aboutToDelete": "あなたのルーム「{{title}}」は明日削除されます（{{days}}日間利用者なし）", "keepAlive": "7日間延長", "deleted": "あなたのルーム「{{title}}」は削除されました" },
     "comingSoon": "近日公開",
     "notifyMe": "通知を受け取る",
     "notified": "お知らせします",

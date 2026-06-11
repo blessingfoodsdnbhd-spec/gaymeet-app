@@ -67,6 +67,8 @@ export type RootStackParamList = {
   CountryRooms: { countryCode: string; title: string };
   /** Create a user room inside a country. */
   CreateRoom: { countryCode: string; title: string };
+  /** Create a UGC topic room (广场 热门). */
+  CreateTopicRoom: undefined;
   /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
   NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;

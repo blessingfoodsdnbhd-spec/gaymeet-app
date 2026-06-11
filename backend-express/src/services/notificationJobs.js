@@ -202,12 +202,86 @@ async function emptyRoomSweep() {
   }
 }
 
+/**
+ * UGC topic rooms auto-expire after 7 days with no activity (no message, nobody
+ * entered — `lastActivityAt` is bumped on both). One day before, we warn the
+ * creator (deduped, so once per room); at 7 days the room + its messages are
+ * deleted. A room with someone currently inside is always spared.
+ */
+const TOPIC_WARN_MS = 6 * DAY;
+const TOPIC_DELETE_MS = 7 * DAY;
+async function topicRoomSweep() {
+  try {
+    const UserTopicRoom = require('../models/UserTopicRoom');
+    const now = Date.now();
+
+    let io = null;
+    let roomOnlineCount = () => 0;
+    try {
+      const s = require('./socketService');
+      io = s.getIO();
+      if (typeof s.roomOnlineCount === 'function') roomOnlineCount = s.roomOnlineCount;
+    } catch (_) {}
+
+    // 1) Warn creators ~1 day out (inactive 6–7 days), once per room.
+    const warning = await UserTopicRoom.find({
+      category: 'topic',
+      archived: false,
+      lastActivityAt: { $gt: new Date(now - TOPIC_DELETE_MS), $lte: new Date(now - TOPIC_WARN_MS) },
+    })
+      .select('roomId title creatorId')
+      .lean();
+    for (const r of warning) {
+      if (roomOnlineCount(r.roomId) > 0) continue; // active right now — not expiring
+      if (await alreadyNotified(r.creatorId, 'topic_room_expiring', 'roomId', r.roomId)) continue;
+      await notify(r.creatorId, 'topic_room_expiring', {
+        i18n: {
+          en: { title: 'Room expiring', body: `Your room "${r.title}" will be deleted tomorrow (no users for 6 days)` },
+          zh: { title: '房间即将删除', body: `你的房间「${r.title}」明天将被删除（连续 6 天无人）` },
+          ko: { title: '방 삭제 예정', body: `회원님의 방 "${r.title}"이(가) 내일 삭제됩니다 (6일간 이용자 없음)` },
+          ja: { title: 'ルーム削除予定', body: `あなたのルーム「${r.title}」は明日削除されます（6日間利用者なし）` },
+        },
+        data: { roomId: r.roomId },
+      }).catch(() => {});
+    }
+
+    // 2) Delete rooms inactive ≥7 days (unless someone is in them right now).
+    const stale = await UserTopicRoom.find({
+      category: 'topic',
+      archived: false,
+      lastActivityAt: { $lt: new Date(now - TOPIC_DELETE_MS) },
+    })
+      .select('roomId title creatorId')
+      .lean();
+    for (const r of stale) {
+      if (roomOnlineCount(r.roomId) > 0) continue;
+      await Promise.all([
+        UserTopicRoom.deleteOne({ roomId: r.roomId }),
+        WorldChatMessage.deleteMany({ roomId: r.roomId }),
+      ]);
+      if (io) io.emit('world-chat:room-deleted', { roomId: r.roomId });
+      notify(r.creatorId, 'topic_room_deleted', {
+        i18n: {
+          en: { title: 'Room deleted', body: `Your room "${r.title}" was deleted` },
+          zh: { title: '房间已删除', body: `你的房间「${r.title}」已被删除` },
+          ko: { title: '방 삭제됨', body: `회원님의 방 "${r.title}"이(가) 삭제되었습니다` },
+          ja: { title: 'ルーム削除', body: `あなたのルーム「${r.title}」は削除されました` },
+        },
+        data: { roomId: r.roomId },
+      }).catch(() => {});
+    }
+  } catch (_) {
+    /* best-effort */
+  }
+}
+
 function startNotificationJobs() {
   if (process.env.NODE_ENV === 'test') return;
   setInterval(voteDeadlineSweep, 60 * 1000).unref?.();
   setInterval(comebackSweep, 60 * 60 * 1000).unref?.();
   setInterval(dailyTick, 15 * 60 * 1000).unref?.();
   setInterval(emptyRoomSweep, 10 * 60 * 1000).unref?.();
+  setInterval(topicRoomSweep, 6 * 60 * 60 * 1000).unref?.(); // UGC 7-day auto-expire
   console.log('[notifications] scheduled jobs started');
 }
 

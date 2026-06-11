@@ -2,11 +2,13 @@ import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { getWorldChatRooms, type WorldChatRoom } from '../../api/worldChat';
+import type { RootStackParamList } from '../../navigation/types';
 import { on as wsOn } from '../../api/ws';
 import { WorldChatScreen } from './WorldChatScreen';
 import { PlazaTabBar, type PlazaTab } from './PlazaTabBar';
@@ -37,6 +39,7 @@ const DEFAULT_SUB = 'general';
 export function PlazaScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [tab, setTab] = React.useState<PlazaTab>('hot');
   const [hotRoom, setHotRoom] = React.useState<SwitchRoom | null>(null);
@@ -54,6 +57,7 @@ export function PlazaScreen() {
   const rooms = roomsQ.data?.rooms ?? [];
   const voiceRooms = roomsQ.data?.voiceRooms ?? [];
   const subChannels = roomsQ.data?.subChannels ?? [];
+  const ugcRooms = roomsQ.data?.ugcRooms ?? [];
 
   useFocusEffect(
     React.useCallback(() => {
@@ -106,10 +110,25 @@ export function PlazaScreen() {
     [],
   );
 
-  // 热门 = pure ranking, top 5 by live online count. Bare country rooms are
-  // excluded (you enter a country via its sub-channels, not the bare room); the
-  // global 'world' lobby is kept.
-  const hotList = React.useMemo(
+  // UGC topic rooms — always BELOW the official rooms in 热门, sorted by online.
+  const ugcList = React.useMemo(
+    () =>
+      ugcRooms
+        .map((r) => ({
+          id: r.id,
+          flag: r.flag,
+          name: r.label.zh, // UGC titles are single-language (label.* all equal)
+          onlineCount: countOf(r.id, r.onlineCount),
+          by: r.creator?.displayName ? t('plaza.create.createdBy', { name: r.creator.displayName }) : undefined,
+        }))
+        .sort(byOnlineDesc),
+    [ugcRooms, countOf, byOnlineDesc, t],
+  );
+
+  // 热门 = official rooms ranked by live online count (top 5), with UGC rooms
+  // appended below. Bare country rooms are excluded (you enter a country via its
+  // sub-channels, not the bare room); the global 'world' lobby is kept.
+  const officialHot = React.useMemo(
     () =>
       rooms
         .filter((r) => !(r.kind === 'country' && r.id !== 'world'))
@@ -118,6 +137,7 @@ export function PlazaScreen() {
         .slice(0, 5),
     [rooms, toSwitchRoom, byOnlineDesc],
   );
+  const hotList = React.useMemo(() => [...officialHot, ...ugcList], [officialHot, ugcList]);
   // 国家 = countries only (the country picker). 兴趣 = interest channels only.
   const countryList = React.useMemo(
     () =>
@@ -239,6 +259,14 @@ export function PlazaScreen() {
         }
         rooms={sheet === 'country' ? countryList : sheet === 'interest' ? interestList : hotList}
         activeId={sheet === 'country' ? countryRoom?.id : sheet === 'interest' ? interestRoom?.id : hotRoom?.id}
+        onCreate={
+          sheet === 'hot'
+            ? () => {
+                setSheet(null);
+                nav.navigate('CreateTopicRoom');
+              }
+            : undefined
+        }
         onSelect={(r) => {
           if (sheet === 'country') {
             setCountryRoom(r);

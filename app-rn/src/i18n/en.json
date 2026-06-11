@@ -193,6 +193,7 @@
     "switcher": { "hot": "Hot rooms", "country": "Choose a country" },
     "channel": { "food": "Food", "photo": "Photography", "games": "Games", "ai": "AI", "realestate": "Real Estate", "pets": "Pets" },
     "topic": { "lateNight": "Late Night", "singles": "Singles", "aiDiscuss": "AI Discussion" },
+    "create": { "title": "Create Topic Room", "cta": "Create Topic Room", "submit": "Create", "titleField": "Title", "titlePh": "Name your room", "emojiField": "Emoji", "descField": "Description (optional)", "descPh": "What's this room about?", "categoryField": "Type", "catTopic": "Topic", "voiceLocked": "🎤 Voice rooms coming soon", "quotaRemaining": "{{remaining}} of {{total}} left today", "quotaUpgrade": "Upgrade to Premium for more", "quotaReached": "You've hit your limit — try again tomorrow", "failed": "Couldn't create the room", "createdBy": "by {{name}}", "aboutToDelete": "Your room \"{{title}}\" will be deleted tomorrow (no users for {{days}} days)", "keepAlive": "Keep 7 more days", "deleted": "Your room \"{{title}}\" has been deleted" },
     "comingSoon": "Coming Soon",
     "notifyMe": "Notify me",
     "notified": "We'll let you know",

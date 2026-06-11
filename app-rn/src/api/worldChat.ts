@@ -68,10 +68,22 @@ export interface PlazaSubChannelDTO {
   i18nKey: string;
 }
 
+/** A user-created topic room. Ranked BELOW official rooms in 热门. */
+export interface UgcTopicRoomDTO {
+  id: string; // `user-topic:<id>`
+  flag: string; // the room emoji
+  label: { en: string; zh: string; native: string };
+  kind: 'user-topic';
+  pinned: boolean;
+  creator: { id: string; displayName?: string; avatarUrl?: string | null } | null;
+  onlineCount: number;
+}
+
 export interface PlazaRoomsResponse {
   rooms: WorldChatRoom[];
   voiceRooms: PlazaVoiceRoomDTO[];
   subChannels: PlazaSubChannelDTO[];
+  ugcRooms: UgcTopicRoomDTO[];
 }
 
 export const getWorldChatRooms = () =>

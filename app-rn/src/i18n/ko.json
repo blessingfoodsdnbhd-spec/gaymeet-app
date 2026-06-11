@@ -585,6 +585,7 @@
     "switcher": { "hot": "인기 채팅방", "country": "국가 선택" },
     "channel": { "food": "음식", "photo": "사진", "games": "게임", "ai": "AI", "realestate": "부동산", "pets": "반려동물" },
     "topic": { "lateNight": "심야 수다", "singles": "싱글 만남", "aiDiscuss": "AI 토론" },
+    "create": { "title": "주제 방 만들기", "cta": "주제 방 만들기", "submit": "만들기", "titleField": "제목", "titlePh": "방 이름을 지어주세요", "emojiField": "이모지", "descField": "소개 (선택)", "descPh": "어떤 방인가요?", "categoryField": "유형", "catTopic": "주제", "voiceLocked": "🎤 음성 방 곧 출시", "quotaRemaining": "오늘 {{total}}개 중 {{remaining}}개 남음", "quotaUpgrade": "Premium으로 업그레이드하면 더 만들 수 있어요", "quotaReached": "오늘 한도에 도달했어요 — 내일 다시 시도하세요", "failed": "방을 만들 수 없습니다", "createdBy": "{{name}}님이 만듦", "aboutToDelete": "회원님의 방 \"{{title}}\"이(가) 내일 삭제됩니다 ({{days}}일간 이용자 없음)", "keepAlive": "7일 더 유지", "deleted": "회원님의 방 \"{{title}}\"이(가) 삭제되었습니다" },
     "comingSoon": "출시 예정",
     "notifyMe": "알림 받기",
     "notified": "알려드릴게요",

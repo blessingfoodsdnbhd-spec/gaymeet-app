@@ -26,8 +26,11 @@ const DESC_MAX = 300;
 const MAX_ROOMS_PER_USER = 20; // soft anti-spam cap on open rooms one user owns
 
 // A custom (user-created) room id is a 24-hex ChatRoom _id; a country room is
-// one of VALID_ROOM_IDS. Anything else is treated as the global 'world' room.
+// one of VALID_ROOM_IDS. A UGC topic room id is `user-topic:<24hex>`. Anything
+// else is treated as the global 'world' room.
 const isCustomRoomId = (id) => typeof id === 'string' && /^[a-f0-9]{24}$/i.test(id);
+const isUserTopicRoomId = (id) => typeof id === 'string' && /^user-topic:[a-f0-9]{24}$/i.test(id);
+const UserTopicRoom = require('../models/UserTopicRoom');
 
 // ── Private-room password hashing (scrypt, dependency-free) ───────────────────
 function hashPassword(pw) {
@@ -135,7 +138,8 @@ router.post('/send', auth, async (req, res, next) => {
 
     const rid = req.body?.roomId;
     const custom = isCustomRoomId(rid);
-    const roomId = VALID_ROOM_IDS.has(rid) || custom ? rid : 'world';
+    const userTopic = isUserTopicRoomId(rid);
+    const roomId = VALID_ROOM_IDS.has(rid) || custom || userTopic ? rid : 'world';
 
     const banned = await WorldChatBan.exists({ userId: req.user._id });
     if (banned) return err(res, 'You are banned from World Chat', 403);
@@ -146,6 +150,13 @@ router.post('/send', auth, async (req, res, next) => {
       if (!room) return err(res, 'Room not found', 404);
       if (room.status === 'closed') return err(res, 'This room is closed', 403);
       if (!room.memberIds.some((m) => sameId(m, req.user._id))) return err(res, 'Join the room first', 403);
+    }
+
+    // UGC topic rooms are open to everyone (no membership) — just verify the
+    // room exists and hasn't been archived by moderation.
+    if (userTopic) {
+      const tr = await UserTopicRoom.findOne({ roomId }).select('archived');
+      if (!tr || tr.archived) return err(res, 'Room not found', 404);
     }
 
     // Content filter applies to the visible text (body for text, caption for photo).
@@ -194,6 +205,9 @@ router.post('/send', auth, async (req, res, next) => {
     // Keep the room list sortable + show activity.
     if (custom) {
       ChatRoom.updateOne({ _id: roomId }, { $inc: { messageCount: 1 }, $set: { lastActiveAt: new Date() } }).catch(() => {});
+    } else if (userTopic) {
+      // Resets the 7-day no-activity auto-delete timer.
+      UserTopicRoom.updateOne({ roomId }, { $set: { lastActivityAt: new Date() } }).catch(() => {});
     }
 
     const payload = {
@@ -257,6 +271,39 @@ const inHotPool = (r) => !(r.kind === 'country' && r.id !== 'world');
 let hotCache = { at: 0, limit: null, rooms: null };
 const HOT_TTL = 30_000;
 
+// 30s cache for the UGC topic-room list (one DB query, shared across requests).
+// These render at the BOTTOM of 热门, below the official rooms; the client sorts
+// them by live online count.
+let ugcCache = { at: 0, rooms: null };
+const UGC_TTL = 30_000;
+async function loadUgcRooms() {
+  if (Date.now() - ugcCache.at < UGC_TTL && ugcCache.rooms) return ugcCache.rooms;
+  let online = () => 0;
+  try {
+    online = require('../services/socketService').roomOnlineCount;
+  } catch (_) {
+    // socket layer not ready
+  }
+  const docs = await UserTopicRoom.find({ archived: false, category: 'topic' })
+    .sort({ pinned: -1, lastActivityAt: -1 })
+    .limit(100)
+    .populate('creatorId', 'nickname avatarUrl')
+    .lean();
+  const rooms = docs.map((d) => ({
+    id: d.roomId,
+    flag: d.emoji || '💬',
+    label: { en: d.title, zh: d.title, native: d.title },
+    kind: 'user-topic',
+    pinned: !!d.pinned,
+    creator: d.creatorId
+      ? { id: d.creatorId._id.toString(), displayName: d.creatorId.nickname, avatarUrl: d.creatorId.avatarUrl ?? null }
+      : null,
+    onlineCount: online(d.roomId),
+  }));
+  ugcCache = { at: Date.now(), rooms };
+  return rooms;
+}
+
 // ── GET /api/world-chat/rooms ─────────────────────────────────────────────────
 // Available rooms (countries + 🔥 topic rooms + 🎮 interest channels + 🌏 country
 // sub-channels) + live online counts (from the socket adapter). Each room
@@ -288,6 +335,7 @@ router.get('/rooms', auth, async (req, res, next) => {
 
     const voiceRooms = VOICE_ROOMS.map((v) => ({ id: v.id, emoji: v.emoji, i18nKey: v.i18nKey }));
     const subChannels = COUNTRY_SUB_CHANNELS.map((s) => ({ key: s.key, emoji: s.emoji, i18nKey: s.i18nKey }));
+    const ugcRooms = await loadUgcRooms().catch(() => []);
 
     if (req.query.sort === 'hot') {
       const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 0, 0), 50) || null;
@@ -297,10 +345,11 @@ router.get('/rooms', auth, async (req, res, next) => {
         if (limit) ranked = ranked.slice(0, limit);
         hotCache = { at: Date.now(), limit, rooms: ranked };
       }
-      return ok(res, { rooms: hotCache.rooms, voiceRooms, subChannels });
+      // Official ranked rooms first; UGC rooms always below, sorted by online.
+      return ok(res, { rooms: hotCache.rooms, voiceRooms, subChannels, ugcRooms });
     }
 
-    ok(res, { rooms: ALL_ROOMS.map(mapRoom), voiceRooms, subChannels });
+    ok(res, { rooms: ALL_ROOMS.map(mapRoom), voiceRooms, subChannels, ugcRooms });
   } catch (e) {
     next(e);
   }
@@ -607,13 +656,19 @@ router.get('/recent', auth, async (req, res, next) => {
     const before = req.query.before;
     const rid = req.query.roomId;
     const custom = isCustomRoomId(rid);
-    const roomId = VALID_ROOM_IDS.has(rid) || custom ? rid : 'world';
+    const userTopic = isUserTopicRoomId(rid);
+    const roomId = VALID_ROOM_IDS.has(rid) || custom || userTopic ? rid : 'world';
 
     // Custom rooms are member-only (public ones are joined frictionlessly first).
     if (custom) {
       const room = await ChatRoom.findById(roomId).select('memberIds');
       if (!room) return err(res, 'Room not found', 404);
       if (!room.memberIds.some((m) => sameId(m, req.user._id))) return err(res, 'Join the room first', 403);
+    }
+    // UGC topic rooms are public — just confirm the room exists and isn't archived.
+    if (userTopic) {
+      const tr = await UserTopicRoom.findOne({ roomId }).select('archived');
+      if (!tr || tr.archived) return err(res, 'Room not found', 404);
     }
 
     const bannedIds = await WorldChatBan.find().distinct('userId');

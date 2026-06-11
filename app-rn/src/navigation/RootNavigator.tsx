@@ -40,6 +40,7 @@ import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { CountryRoomsScreen } from '../screens/world-chat/CountryRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
+import { CreateTopicRoomScreen } from '../screens/world-chat/CreateTopicRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
 import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
@@ -176,6 +177,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="CreateRoom"
             component={CreateRoomScreen}
+            options={{ animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="CreateTopicRoom"
+            component={CreateTopicRoomScreen}
             options={{ animation: 'slide_from_bottom' }}
           />
           <Stack.Screen

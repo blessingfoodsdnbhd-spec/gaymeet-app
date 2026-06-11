@@ -193,6 +193,7 @@
     "switcher": { "hot": "热门聊天室", "country": "选择国家" },
     "channel": { "food": "美食", "photo": "摄影", "games": "游戏", "ai": "AI", "realestate": "房产", "pets": "宠物" },
     "topic": { "lateNight": "深夜吹水", "singles": "单身交友", "aiDiscuss": "AI 讨论" },
+    "create": { "title": "创建话题房间", "cta": "创建话题房间", "submit": "创建", "titleField": "标题", "titlePh": "给房间起个名字", "emojiField": "Emoji", "descField": "简介（可选）", "descPh": "这个房间聊什么？", "categoryField": "类型", "catTopic": "话题", "voiceLocked": "🎤 语音房即将推出", "quotaRemaining": "今日剩余 {{remaining}} / {{total}} 房间", "quotaUpgrade": "升级 Premium 解锁更多", "quotaReached": "今日已用完，明天再来", "failed": "创建失败", "createdBy": "由 {{name}} 创建", "aboutToDelete": "你的房间「{{title}}」明天将被删除（连续 {{days}} 天无人）", "keepAlive": "保留 7 天", "deleted": "你的房间「{{title}}」已被删除" },
     "comingSoon": "即将推出",
     "notifyMe": "通知我",
     "notified": "我们会通知你",
