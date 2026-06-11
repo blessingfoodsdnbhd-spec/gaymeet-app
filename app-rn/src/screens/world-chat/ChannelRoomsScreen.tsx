@@ -10,7 +10,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getChannelRooms, joinChatRoom, type ChatRoomSummary } from '../../api/worldChat';
 import { on as wsOn } from '../../api/ws';
-import { subBoardRoomId } from '../../utils/plazaIdentity';
+import { subBoardRoomId, prefixCountrySub } from '../../utils/plazaIdentity';
 import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
 import { RoomCardShell } from './RoomCardShell';
 import type { RootStackParamList } from '../../navigation/types';
@@ -33,7 +33,8 @@ const COUNTRY_SUBS = ['general', 'newcomers', 'social', 'chitchat'] as const;
  */
 export function ChannelRoomsScreen() {
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isZh = i18n.language.startsWith('zh');
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const qc = useQueryClient();
@@ -80,15 +81,14 @@ export function ChannelRoomsScreen() {
     if (isCountry) {
       return COUNTRY_SUBS.map((key) => {
         const roomId = subBoardRoomId(channelId, key);
-        return {
-          roomId,
-          name: t(`plaza.country.subchannel.${key}`),
-          roomTitle: `${title} · ${t(`plaza.country.subchannel.${key}`)}`,
-        };
+        // Prefix with the country ("马来西亚总聊天室") so the board is identifiable
+        // both in this list and as the room header once you're inside.
+        const name = prefixCountrySub(isZh, title, t(`plaza.country.subchannel.${key}`));
+        return { roomId, name, roomTitle: name };
       });
     }
     return [{ roomId: channelId, name: t('worldChat.rooms.general'), roomTitle: title }];
-  }, [isCountry, channelId, title, t]);
+  }, [isCountry, channelId, title, t, isZh]);
 
   const openRoom = async (room: ChatRoomSummary) => {
     if (room.isMember) {

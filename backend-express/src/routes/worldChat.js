@@ -348,7 +348,7 @@ router.get('/rooms', auth, async (req, res, next) => {
       label: r.label,
       kind: r.kind,
       ...(r.i18nKey ? { i18nKey: r.i18nKey } : {}),
-      ...(r.country ? { country: r.country, sub: r.sub } : {}),
+      ...(r.country ? { country: r.country, sub: r.sub, countryLabel: r.countryLabel } : {}),
       onlineCount: counts[r.id] ?? 0,
     });
 

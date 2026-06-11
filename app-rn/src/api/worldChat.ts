@@ -63,6 +63,9 @@ export interface WorldChatRoom {
   /** country-sub only: parent country code + sub-channel key. */
   country?: string;
   sub?: string;
+  /** country-sub only: parent country's localized name, used to prefix the
+   * sub-board name (e.g. "马来西亚" → "马来西亚总聊天室"). */
+  countryLabel?: { en: string; zh: string; native: string };
   onlineCount: number;
 }
 
