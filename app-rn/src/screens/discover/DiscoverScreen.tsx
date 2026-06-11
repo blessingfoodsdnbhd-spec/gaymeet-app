@@ -689,8 +689,14 @@ const styles = StyleSheet.create({
     right: -10,
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: 2,
-    paddingHorizontal: 6,
+    // Pill is ~16px tall, so borderRadius 999 rounds the ends to a ~8px radius.
+    // Horizontal padding must clear that radius or the rounded corner clips the
+    // last glyph of "Premium" (the "m"). Extra right padding accounts for the
+    // text's trailing letterSpacing.
+    paddingLeft: 8,
+    paddingRight: 10,
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: '#6B4FE0',
