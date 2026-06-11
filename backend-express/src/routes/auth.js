@@ -7,6 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const appleSignin = require('apple-signin-auth');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
+const { enforceSignupIpLimit } = require('../middleware/antiSpam');
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
@@ -33,6 +34,9 @@ router.post('/register', async (req, res, next) => {
       return err(res, 'email, password and nickname are required');
     }
     if (password.length < 6) return err(res, 'Password must be at least 6 characters');
+
+    // Anti-spam: cap account creation per source IP (3 / 24h).
+    if (await enforceSignupIpLimit(req, res)) return;
 
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return err(res, 'Email already registered', 409);

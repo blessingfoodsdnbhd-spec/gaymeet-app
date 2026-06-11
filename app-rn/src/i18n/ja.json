@@ -73,7 +73,11 @@
     "invalid": "コードが正しくありません。もう一度お試しください"
   },
   "errors": {
-    "reservedName": "この名前は公式用に予約されています"
+    "reservedName": "この名前は公式用に予約されています",
+    "rateLimited": "送信が速すぎます。{{retryAfter}}秒後にもう一度お試しください",
+    "accountTooYoung": "新規アカウントは{{waitHours}}時間後に利用可能になります",
+    "duplicateMessage": "重複したメッセージが検出されました",
+    "tooManySignups": "このネットワークからの登録が多すぎます。後でお試しください"
   },
   "verified": {
     "tooltip": "認証済みの公式アカウント"

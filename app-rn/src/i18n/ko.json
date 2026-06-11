@@ -73,7 +73,11 @@
     "invalid": "코드가 올바르지 않습니다. 다시 시도해 주세요"
   },
   "errors": {
-    "reservedName": "이 이름은 공식 용도로 예약되어 있습니다"
+    "reservedName": "이 이름은 공식 용도로 예약되어 있습니다",
+    "rateLimited": "너무 빠릅니다 — {{retryAfter}}초 후 다시 시도하세요",
+    "accountTooYoung": "새 계정은 {{waitHours}}시간 후에 이 기능이 열립니다",
+    "duplicateMessage": "중복된 메시지가 감지되었습니다",
+    "tooManySignups": "이 네트워크에서 가입이 너무 많습니다 — 나중에 다시 시도하세요"
   },
   "verified": {
     "tooltip": "인증된 공식 계정"

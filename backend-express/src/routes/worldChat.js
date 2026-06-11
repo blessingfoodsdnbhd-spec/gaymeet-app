@@ -10,6 +10,11 @@ const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
+const {
+  enforceRateLimit,
+  enforceNoDuplicate,
+  enforceAccountAgeOr403,
+} = require('../middleware/antiSpam');
 const { ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
 
@@ -141,6 +146,12 @@ router.post('/send', auth, async (req, res, next) => {
       if (room.status === 'closed') return err(res, 'This room is closed', 403);
       if (!room.memberIds.some((m) => sameId(m, req.user._id))) return err(res, 'Join the room first', 403);
     }
+
+    // Anti-spam: account-age gate (1h to post text/voice, 24h to post photos),
+    // per-tier rate limits, and duplicate-text rejection.
+    if (enforceAccountAgeOr403(req, res, isPhoto ? 24 : 1)) return;
+    if (await enforceRateLimit(req, res, isPhoto ? 'photo' : 'plazaMsg')) return;
+    if (!isPhoto && !isVoice && (await enforceNoDuplicate(req, res, body))) return;
 
     // Content filter applies to the visible text (body for text, caption for photo).
     const filterTarget = isPhoto ? caption : body;
@@ -294,6 +305,10 @@ router.post('/rooms', auth, async (req, res, next) => {
     const priv = !!isPrivate;
     if (priv && !String(password ?? '').trim()) return err(res, 'Private rooms need a password');
 
+    // Anti-spam: UGC rooms need a 7-day-old account, plus daily/lifetime caps.
+    if (enforceAccountAgeOr403(req, res, 7 * 24)) return;
+    if (await enforceRateLimit(req, res, 'plazaRoomCreate')) return;
+
     const owned = await ChatRoom.countDocuments({ creatorId: req.user._id, status: 'open' });
     if (owned >= MAX_ROOMS_PER_USER) return err(res, `You can own at most ${MAX_ROOMS_PER_USER} open rooms`, 429);
 
@@ -443,6 +458,8 @@ router.post('/rooms/:id/invite', auth, async (req, res, next) => {
     const room = await ChatRoom.findById(req.params.id).select('creatorId title');
     if (!room) return err(res, 'Room not found', 404);
     if (!sameId(room.creatorId, req.user._id)) return err(res, 'Only the creator can invite', 403);
+    // Anti-spam: inviting friends needs a 7-day-old account.
+    if (enforceAccountAgeOr403(req, res, 7 * 24)) return;
     const ids = Array.isArray(req.body?.userIds) ? req.body.userIds.filter((x) => mongoose.isValidObjectId(x)) : [];
     if (!ids.length) return err(res, 'No users to invite');
     const links = await Follow.find({

@@ -115,7 +115,11 @@
     "sessionExpired": "Your session expired — please log in again"
   },
   "errors": {
-    "reservedName": "This name is reserved for official use"
+    "reservedName": "This name is reserved for official use",
+    "rateLimited": "Too fast — try again in {{retryAfter}}s",
+    "accountTooYoung": "New account unlocks this feature in {{waitHours}}h",
+    "duplicateMessage": "Duplicate message detected",
+    "tooManySignups": "Too many signups from this network — try again later"
   },
   "verified": {
     "tooltip": "Verified official account"

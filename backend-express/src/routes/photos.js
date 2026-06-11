@@ -6,6 +6,7 @@ const { auth } = require('../middleware/auth');
 const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2 = require('../services/r2Service');
 const { ok, err } = require('../utils/respond');
+const { enforceRateLimit } = require('../middleware/antiSpam');
 
 const MAX_PUBLIC_PHOTOS = 5;
 
@@ -35,6 +36,9 @@ async function storePhoto(file, req) {
 router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) => {
   try {
     if (!req.file) return err(res, 'No file uploaded');
+
+    // Anti-spam: cap photo uploads per hour / day (per tier).
+    if (await enforceRateLimit(req, res, 'photo')) return;
 
     const user = await User.findById(req.user._id);
     const raw = req.body?.primary;
