@@ -17,16 +17,12 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Camera,
   ChevronLeft,
   Copy,
   Edit2,
   Flag,
-  Mic,
   MoreHorizontal,
   Plus,
-  Send,
-  Smile,
   Trash2,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +33,7 @@ import { showSafetyMenu } from '../../utils/safetyMenu';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { Bubble } from '../../components/Bubble';
+import { ChatComposer } from '../../components/ChatComposer';
 import { Sheet } from '../../components/Sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { ImageBubble } from './ImageBubble';
@@ -859,6 +856,18 @@ export function ChatDetailScreen() {
           <FlatList
             data={invItems}
             inverted
+            // Keep the chat CONTENT from jumping. Without this, every new row —
+            // a message either side sends, the optimistic→real swap, a WS echo —
+            // is prepended to the inverted data and shoves whatever the user was
+            // reading. maintainVisibleContentPosition pins the on-screen rows in
+            // place when content is inserted; autoscrollToTopThreshold lets the
+            // list still follow new messages when the user is already pinned to
+            // the bottom (within 10px of the newest), i.e. normal chat behaviour,
+            // while leaving them undisturbed when scrolled up reading history.
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 10,
+            }}
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
             renderItem={({ item }) => {
@@ -1114,115 +1123,17 @@ export function ChatDetailScreen() {
         )}
 
         {/* Composer */}
-        <View
-          style={[
-            styles.composer,
-            { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
-          ]}
-        >
-          {/* + button → pick from photo library (routes through PhotoConfirmModal) */}
-          <Pressable
-            onPress={pickGallery}
-            hitSlop={8}
-            style={{
-              width: 44,
-              height: 44,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Plus size={26} color={theme.colors.muted} strokeWidth={1.6} />
-          </Pressable>
-          {/* Rounded pill: TextInput + emoji on right edge (WhatsApp-style) */}
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: theme.colors.surface2,
-              borderRadius: 24,
-              borderWidth: 1,
-              borderColor: theme.colors.line,
-              paddingLeft: 14,
-              paddingRight: 6,
-              minHeight: 40,
-            }}
-          >
-            <TextInput
-              value={composing}
-              onChangeText={onComposeChange}
-              placeholder={t('chats.detail.messagePlaceholder')}
-              placeholderTextColor={theme.colors.muted}
-              multiline
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                fontSize: 15,
-                color: theme.colors.text,
-                maxHeight: 120,
-              }}
-            />
-            <Pressable
-              onPress={() => setShowStickers((s) => !s)}
-              hitSlop={8}
-              style={{
-                width: 36,
-                height: 36,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Smile size={24} color={theme.colors.muted} strokeWidth={1.6} />
-            </Pressable>
-          </View>
-          {/* Right side: empty → camera + mic; typing → send arrow (WhatsApp swap) */}
-          {composing.trim() ? (
-            <Pressable
-              onPress={onSend}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: theme.colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Send size={20} color="#FFFFFF" strokeWidth={2} />
-            </Pressable>
-          ) : (
-            <>
-              <Pressable
-                onPress={pickCamera}
-                hitSlop={8}
-                style={{
-                  width: 44,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Camera size={24} color={theme.colors.muted} strokeWidth={1.6} />
-              </Pressable>
-              <Pressable
-                onPress={() => setVoiceRecorderOpen(true)}
-                hitSlop={8}
-                style={{
-                  width: 44,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Mic
-                  size={24}
-                  color={voiceRecorderOpen ? theme.colors.error : theme.colors.muted}
-                  strokeWidth={1.6}
-                />
-              </Pressable>
-            </>
-          )}
-        </View>
+        <ChatComposer
+          value={composing}
+          onChangeText={onComposeChange}
+          onSend={onSend}
+          onPickPhotoFromLibrary={pickGallery}
+          onTakePhoto={pickCamera}
+          onVoiceRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+          onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
+          onOpenStickers={() => setShowStickers((s) => !s)}
+          placeholder={t('chats.detail.messagePlaceholder')}
+        />
       </KeyboardAvoidingView>
 
       <ChatVoiceRecorderSheet
@@ -1692,13 +1603,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

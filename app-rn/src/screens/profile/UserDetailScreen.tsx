@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, MoreHorizontal, Send, StickyNote, X } from 'lucide-react-native';
+import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, StickyNote, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -22,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../theme/ThemeProvider';
 import { VerifiedBadge, PhotoVerifiedBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
+import { PremiumBadge } from '../../components/PremiumBadge';
 import { Avatar } from '../../components/Avatar';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
@@ -65,7 +66,7 @@ export function UserDetailScreen() {
   const queryClient = useQueryClient();
   const me = useAuth((s) => s.user);
   const isPremium = !!(me as any)?.isPremium;
-  const { userId } = route.params;
+  const { userId, previewMode = false } = route.params;
   const photoViewer = usePhotoViewer();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -99,6 +100,9 @@ export function UserDetailScreen() {
       nav,
       // Coming from outside a chat context — no unmatch action.
       includeUnmatch: false,
+      // Surface invalidation is centralized in showSafetyMenu; here we just
+      // leave the now-blocked profile (the next fetch would 404 BLOCKED anyway).
+      onBlocked: () => nav.goBack(),
     });
   };
 
@@ -182,7 +186,13 @@ export function UserDetailScreen() {
 
       {userQ.isError && (
         <View style={styles.center}>
-          <Text style={{ color: theme.colors.muted }}>{t('userDetail.loadFailed')}</Text>
+          <Text style={{ color: theme.colors.muted }}>
+            {/* 403/404 → the user is blocked or gone: show "用户不可用".
+                Other errors (network/5xx) keep the generic load-failed copy. */}
+            {[403, 404].includes((userQ.error as any)?.response?.status)
+              ? t('userDetail.userUnavailable')
+              : t('userDetail.loadFailed')}
+          </Text>
         </View>
       )}
 
@@ -191,6 +201,28 @@ export function UserDetailScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
+          {/* Self-preview banner — informational, shown only when arriving via
+              the 我-tab "preview as others see me" entry. */}
+          {previewMode && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: insets.top + 8,
+                marginBottom: 4,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: theme.radius.m,
+                backgroundColor: theme.colors.primarySoft,
+              }}
+            >
+              <Eye size={16} color={theme.colors.primaryDeep} strokeWidth={2} />
+              <Text style={{ flex: 1, color: theme.colors.primaryDeep, fontSize: 13, fontWeight: '600' }}>
+                {t('profile.previewBanner')}
+              </Text>
+            </View>
+          )}
           {/* Full-bleed photo carousel — replaces the small round avatar.
               Paged, swipeable through all photos; tap to open the zoom viewer. */}
           <View
@@ -221,6 +253,11 @@ export function UserDetailScreen() {
                       style={StyleSheet.absoluteFill}
                       contentFit="cover"
                       cachePolicy="memory-disk"
+                      // VVVVV/MMMM — full-res decode. This gallery url is also
+                      // rendered small elsewhere (discover/nearby grids); without
+                      // this the large carousel reuses that grid-sized decode → 格子.
+                      allowDownscaling={false}
+                      priority="high"
                     />
                   </Pressable>
                 ))}
@@ -258,8 +295,9 @@ export function UserDetailScreen() {
               </View>
             )}
 
-            {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet. */}
-            {!isSelf && (
+            {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet.
+                Hidden on own profile and in self-preview (can't note yourself). */}
+            {!isSelf && !previewMode && (
               <Pressable
                 onPress={() => setNoteOpen(true)}
                 hitSlop={8}
@@ -269,9 +307,12 @@ export function UserDetailScreen() {
               </Pressable>
             )}
 
-            <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
-              <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
-            </Pressable>
+            {/* Safety menu (report/block) — meaningless in self-preview. */}
+            {!previewMode && (
+              <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
+                <MoreHorizontal size={20} color="#FFFFFF" strokeWidth={2} />
+              </Pressable>
+            )}
           </View>
 
           {/* Name + age + zodiac + country, below the photo. */}
@@ -292,6 +333,7 @@ export function UserDetailScreen() {
                 <PhotoVerifiedBadge size={16} />
               ) : null}
               <PopularityBadge value={(user as any).popularity} size="md" />
+              <PremiumBadge isPremium={(user as any).isPremium} size={18} />
             </View>
             {user.countryCode && (
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>
@@ -336,8 +378,9 @@ export function UserDetailScreen() {
               ) : (
                 <LockedPhotosBlock
                   status={reqStatus}
-                  busy={requestMut.isPending}
+                  busy={!previewMode && requestMut.isPending}
                   onRequest={() => requestMut.mutate()}
+                  disabled={previewMode}
                 />
               )}
             </View>
@@ -394,6 +437,8 @@ export function UserDetailScreen() {
             </View>
           )}
 
+          {/* Send-message CTA hidden in self-preview (can't DM yourself). */}
+          {!previewMode && (
           <Pressable onPress={onSendMessage} style={{ marginTop: 32 }}>
             {({ pressed }) => (
               <LinearGradient
@@ -419,6 +464,7 @@ export function UserDetailScreen() {
               </LinearGradient>
             )}
           </Pressable>
+          )}
         </ScrollView>
       )}
       {photoViewer.node}

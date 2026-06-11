@@ -149,6 +149,8 @@
       "location": "位置を追加",
       "taggedCount": "{{n}}人タグ",
       "chooseOnMap": "地図で選択",
+      "searchPlace": "場所を検索...",
+      "tapPinToSelect": "ピンをタップして場所を選択",
       "currentLocation": "現在地",
       "removeLocation": "位置を削除",
       "noFriends": "タグできる友達がまだいません",
@@ -283,6 +285,8 @@
       "privatePhotos": "非公開"
     },
     "editProfile": "プロフィール編集",
+    "previewMyProfile": "他の人から見たプロフィール",
+    "previewBanner": "🔍 プレビュー — 他の人に見える表示です",
     "publicPhotos": "公開写真",
     "publicPhotosLimit": "公開写真 · {{count}} / 5",
     "privatePhotos": "非公開写真 🔒",
@@ -815,7 +819,10 @@
       "recording": "録音中…",
       "tooShort": "もう少し長く",
       "send": "送信",
-      "sendFailed": "ボイスメッセージを送信できませんでした"
+      "sendFailed": "ボイスメッセージを送信できませんでした",
+      "slideToCancel": "スライドでキャンセル",
+      "locked": "ロック中",
+      "tapToDelete": "タップで削除"
     },
     "icebreakers": {
       "header": "👋 まずは挨拶してみよう！",
@@ -875,6 +882,7 @@
     "aboutSection": "紹介",
     "interestsSection": "興味",
     "loadFailed": "プロフィールを読み込めませんでした",
+    "userUnavailable": "利用できないユーザー",
     "sendMessage": "メッセージを送る",
     "sendMessagePremiumOnly": "プレミアム機能",
     "lockedPhotosCount": "🔒 ロックされた写真{{n}}枚",
@@ -1036,6 +1044,7 @@
   },
   "likedMe": {
     "title": "あなたにいいねした人",
+    "count": "{{n}}人がいいね",
     "empty": "まだ誰もいません",
     "upgradeCta": "誰かを見るにはアップグレード",
     "loadFailed": "読み込めませんでした"

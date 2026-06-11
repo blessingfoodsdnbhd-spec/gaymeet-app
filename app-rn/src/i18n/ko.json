@@ -149,6 +149,8 @@
       "location": "위치 추가",
       "taggedCount": "{{n}}명 태그됨",
       "chooseOnMap": "지도에서 선택",
+      "searchPlace": "장소 검색...",
+      "tapPinToSelect": "핀을 눌러 장소를 선택하세요",
       "currentLocation": "현재 위치",
       "removeLocation": "위치 제거",
       "noFriends": "아직 태그할 친구가 없어요",
@@ -283,6 +285,8 @@
       "privatePhotos": "비공개"
     },
     "editProfile": "프로필 편집",
+    "previewMyProfile": "다른 사람이 보는 내 프로필",
+    "previewBanner": "🔍 미리보기 모드 — 다른 사람에게 보이는 모습입니다",
     "publicPhotos": "공개 사진",
     "publicPhotosLimit": "공개 사진 · {{count}} / 5",
     "privatePhotos": "비공개 사진 🔒",
@@ -815,7 +819,10 @@
       "recording": "녹음 중…",
       "tooShort": "조금 더 길게",
       "send": "보내기",
-      "sendFailed": "음성 메시지를 보내지 못했습니다"
+      "sendFailed": "음성 메시지를 보내지 못했습니다",
+      "slideToCancel": "밀어서 취소",
+      "locked": "잠김",
+      "tapToDelete": "탭하여 삭제"
     },
     "icebreakers": {
       "header": "👋 먼저 인사를 건네보세요!",
@@ -875,6 +882,7 @@
     "aboutSection": "소개",
     "interestsSection": "관심사",
     "loadFailed": "프로필을 불러올 수 없습니다",
+    "userUnavailable": "이용할 수 없는 사용자",
     "sendMessage": "메시지 보내기",
     "sendMessagePremiumOnly": "프리미엄 기능",
     "lockedPhotosCount": "🔒 잠긴 사진 {{n}}장",
@@ -1036,6 +1044,7 @@
   },
   "likedMe": {
     "title": "나를 좋아한 사람",
+    "count": "{{n}}명이 좋아함",
     "empty": "아직 아무도 없어요",
     "upgradeCta": "누구인지 보려면 업그레이드",
     "loadFailed": "불러올 수 없습니다"

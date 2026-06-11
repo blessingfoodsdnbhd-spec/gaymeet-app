@@ -81,7 +81,10 @@ export function MapPickerScreen() {
   // this, `picked` stayed null until a tap registered, so Save sat disabled,
   // the teleport POST was never sent, virtualLat/Lng stayed null, and the 📍
   // indicator never appeared. Tapping or dragging the pin still updates this.
-  const [picked, setPicked] = useState<{ lat: number; lng: number }>({
+  // `name` rides along when the pick came from a tapped POI pin or a search
+  // result, so moment mode can use the place's real name as the label without a
+  // reverse-geocode round trip (HHHHH).
+  const [picked, setPicked] = useState<{ lat: number; lng: number; name?: string }>({
     lat: startLat,
     lng: startLng,
   });
@@ -101,10 +104,12 @@ export function MapPickerScreen() {
       `try{map.setView([${lat}, ${lng}], 12);marker.setLatLng([${lat}, ${lng}]);}catch(e){};true;`,
     );
   };
-  const pickResult = (lat: number, lng: number) => {
+  const pickResult = (lat: number, lng: number, name?: string) => {
     Keyboard.dismiss();
     setQuery('');
     goTo(lat, lng);
+    // In moment mode, remember the searched place's name as the label.
+    if (momentMode && name) setPicked({ lat, lng, name });
   };
 
   const html = useMemo(
@@ -116,21 +121,65 @@ export function MapPickerScreen() {
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  var map = L.map('map',{zoomControl:false}).setView([${startLat}, ${startLng}], 12);
+  var map = L.map('map',{zoomControl:false}).setView([${startLat}, ${startLng}], ${momentMode ? 15 : 12});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(map);
   var marker = L.marker([${startLat}, ${startLng}],{draggable:true}).addTo(map);
   function send(ll){ window.ReactNativeWebView.postMessage(JSON.stringify({lat:ll.lat,lng:ll.lng})); }
   map.on('click', function(e){ marker.setLatLng(e.latlng); send(e.latlng); });
   marker.on('dragend', function(){ send(marker.getLatLng()); });
+${
+      momentMode
+        ? `
+  // Google-Maps-style POI pins (HHHHH): on pan/zoom, query OpenStreetMap
+  // Overpass for the visible bbox and drop a pin per named shop / eatery /
+  // landmark. Keyless + CORS-friendly (same as Nominatim). circleMarker needs
+  // no icon images, so it renders reliably under the unpkg baseUrl.
+  var pois = L.layerGroup().addTo(map);
+  var poiTok = 0, poiTimer = null;
+  function loadPois(){
+    if(map.getZoom() < 15){ pois.clearLayers(); return; }
+    var b = map.getBounds(), s=b.getSouth(), w=b.getWest(), n=b.getNorth(), e=b.getEast();
+    var bbox='('+s+','+w+','+n+','+e+')';
+    var q='[out:json][timeout:25];(node["shop"]'+bbox+';node["amenity"~"restaurant|cafe|bar|pub|fast_food"]'+bbox+';node["leisure"]'+bbox+';node["tourism"]'+bbox+';);out body 60;';
+    var my=++poiTok;
+    fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(my!==poiTok) return;
+        pois.clearLayers();
+        var els=(d&&d.elements)||[];
+        for(var i=0;i<els.length;i++){
+          (function(el){
+            if(!el.tags||!el.tags.name||typeof el.lat!=='number') return;
+            var m=L.circleMarker([el.lat,el.lon],{radius:7,color:'#ffffff',weight:2,fillColor:'#E25CAE',fillOpacity:1}).addTo(pois);
+            m.bindTooltip(el.tags.name,{direction:'top'});
+            m.on('click',function(){ window.ReactNativeWebView.postMessage(JSON.stringify({lat:el.lat,lng:el.lon,name:el.tags.name})); });
+          })(els[i]);
+        }
+      })
+      .catch(function(){});
+  }
+  map.on('moveend',function(){ if(poiTimer) clearTimeout(poiTimer); poiTimer=setTimeout(loadPois,600); });
+  loadPois();
+`
+        : ''
+    }
 </script>
 </body></html>`,
-    [startLat, startLng],
+    [startLat, startLng, momentMode],
   );
 
   const onSave = async () => {
     if (busy) return;
     setBusy(true);
     try {
+      // Moment mode with a tapped POI / searched place: it already carries a
+      // real name — hand it straight back, no reverse-geocode needed (HHHHH).
+      if (momentMode && picked.name) {
+        resolveMomentLocation({ lat: picked.lat, lng: picked.lng, label: picked.name });
+        nav.goBack();
+        return;
+      }
       let label = '';
       try {
         const geo = await Location.reverseGeocodeAsync({ latitude: picked.lat, longitude: picked.lng });
@@ -235,7 +284,7 @@ export function MapPickerScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder={t('virtualLocation.searchPlaceholder')}
+            placeholder={momentMode ? t('moments.compose.searchPlace') : t('virtualLocation.searchPlaceholder')}
             placeholderTextColor={theme.colors.muted}
             style={{ flex: 1, fontSize: 14, color: theme.colors.text, padding: 0 }}
             returnKeyType="search"
@@ -248,7 +297,7 @@ export function MapPickerScreen() {
             {results.map((r, i) => (
               <Pressable
                 key={`${r.lat},${r.lng},${i}`}
-                onPress={() => pickResult(r.lat, r.lng)}
+                onPress={() => pickResult(r.lat, r.lng, r.label)}
                 style={({ pressed }) => [
                   styles.resultRow,
                   { borderTopColor: theme.colors.line, opacity: pressed ? 0.6 : 1, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
@@ -301,13 +350,43 @@ export function MapPickerScreen() {
           style={{ flex: 1 }}
           onMessage={(e) => {
             try {
-              const { lat, lng } = JSON.parse(e.nativeEvent.data);
-              if (typeof lat === 'number' && typeof lng === 'number') setPicked({ lat, lng });
+              const { lat, lng, name } = JSON.parse(e.nativeEvent.data);
+              if (typeof lat === 'number' && typeof lng === 'number') {
+                const poiName = typeof name === 'string' ? name : undefined;
+                setPicked({ lat, lng, name: poiName });
+                // POI tap: move the draggable pin onto the selected place so the
+                // selection is visible on the map.
+                if (poiName) {
+                  webRef.current?.injectJavaScript(
+                    `try{marker.setLatLng([${lat}, ${lng}]);}catch(e){};true;`,
+                  );
+                }
+              }
             } catch {
               // ignore malformed messages
             }
           }}
         />
+
+        {/* Moment mode: floating confirm chip — shows the picked place name, or
+            a "tap a pin" hint until one is chosen (HHHHH). Save is in the header. */}
+        {momentMode && (
+          <View
+            style={[styles.confirmChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}
+            pointerEvents="none"
+          >
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 13,
+                color: picked.name ? theme.colors.text : theme.colors.muted,
+                fontWeight: picked.name ? '700' : '400',
+              }}
+            >
+              {picked.name ? `📍 ${picked.name}` : t('moments.compose.tapPinToSelect')}
+            </Text>
+          </View>
+        )}
 
         {/* Reset-to-GPS overlay — virtual-location only; hidden in moment mode. */}
         {!momentMode && (isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
@@ -366,6 +445,23 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
+  },
+  // Floating place-confirmation chip at the bottom of the map (HHHHH).
+  confirmChip: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   // Floating reset-to-GPS button over the map (TTTT).
   mapOverlayBtn: {

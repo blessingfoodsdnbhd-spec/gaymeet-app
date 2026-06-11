@@ -5,8 +5,8 @@ export interface WorldChatReplyPreview {
   messageId: string;
   userId: string;
   displayName: string;
-  type?: 'text' | 'photo';
-  body: string; // one-line preview (caption / '📷' for photos)
+  type?: 'text' | 'photo' | 'voice';
+  body: string; // one-line preview (caption / '📷' for photos / '🎙️' for voice)
 }
 
 /** A World Chat message. No anonymous identities — always a real user. */
@@ -20,9 +20,12 @@ export interface WorldChatMessage {
   countryCode?: string | null;
   city?: string | null;
   body: string;
-  type?: 'text' | 'photo';
+  type?: 'text' | 'photo' | 'voice';
   photoUrl?: string | null;
   caption?: string | null;
+  voiceUrl?: string | null;
+  voiceDurationMs?: number | null;
+  voiceWaveform?: number[] | null;
   replyTo?: WorldChatReplyPreview | null;
   createdAt: string;
 }
@@ -66,6 +69,27 @@ export const sendWorldChatPhoto = (
 ) =>
   unwrap<WorldChatMessage>(
     api.post('/world-chat/send', { type: 'photo', photoUrl, caption, roomId, replyToMessageId }),
+  );
+
+/** Send a voice message. The audio is uploaded first (reuse `uploadChatVoice`
+ *  from api/chats — the /conversations/voice-upload endpoint is generic), then
+ *  this posts the resulting URL + clip length. Optional waveform peaks (0–1). */
+export const sendWorldChatVoice = (
+  voiceUrl: string,
+  voiceDurationMs: number,
+  roomId = 'world',
+  replyToMessageId?: string,
+  voiceWaveform?: number[],
+) =>
+  unwrap<WorldChatMessage>(
+    api.post('/world-chat/send', {
+      type: 'voice',
+      voiceUrl,
+      voiceDurationMs,
+      voiceWaveform,
+      roomId,
+      replyToMessageId,
+    }),
   );
 
 export const reportWorldChat = (messageId: string, reason?: string) =>

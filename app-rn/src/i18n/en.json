@@ -424,6 +424,8 @@
       "location": "Add Location",
       "taggedCount": "{{n}} tagged",
       "chooseOnMap": "Choose on Map",
+      "searchPlace": "Search places...",
+      "tapPinToSelect": "Tap a pin to select a place",
       "currentLocation": "My current location",
       "removeLocation": "Remove location",
       "noFriends": "No friends to tag yet",
@@ -479,7 +481,7 @@
   },
   "chat": {
     "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
-    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message"},
+    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message", "slideToCancel": "Slide to cancel", "locked": "Locked", "tapToDelete": "Tap to delete"},
     "icebreakers": {"header": "👋 Break the ice — say hello!", "askInterest": "You're into {{interest}} too — how did you get started?", "generic1": "Any plans this weekend?", "generic2": "Got any good recommendations lately? 🎵📺", "generic3": "Hey! How's your day going?"},
     "scamWarning": "Caution: mentions off-platform contact or money. Never send money or move to another app with strangers.",
     "composer": {
@@ -578,6 +580,7 @@
     "aboutSection": "About",
     "interestsSection": "Interests",
     "loadFailed": "Couldn't load profile",
+    "userUnavailable": "User unavailable",
     "sendMessage": "Send a message",
     "sendMessagePremiumOnly": "Premium feature",
     "lockedPhotosCount": "🔒 {{n}} locked photos",
@@ -637,6 +640,8 @@
       "privatePhotos": "Private"
     },
     "editProfile": "Edit profile",
+    "previewMyProfile": "Preview as others see me",
+    "previewBanner": "🔍 Preview mode — this is how others see your profile",
     "publicPhotos": "Public photos",
     "publicPhotosLimit": "Public photos · {{count}} / 5",
     "privatePhotos": "Private photos 🔒",
@@ -916,6 +921,7 @@
   },
   "likedMe": {
     "title": "Who Liked You",
+    "count": "{{n}} liked you",
     "empty": "No one yet",
     "upgradeCta": "Upgrade to see who they are",
     "loadFailed": "Couldn't load"

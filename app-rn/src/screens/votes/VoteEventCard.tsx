@@ -111,7 +111,7 @@ export function VoteEventCard({
     return (
       <Pressable onPress={onPress} style={({ pressed }) => [{ width: cardW, height: cardH, opacity: pressed ? 0.94 : 1 }]}>
         {photos.length > 0 ? (
-          <ExpoImage source={{ uri: photos[0] }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={150} placeholder={theme.colors.surface2} />
+          <ExpoImage source={{ uri: photos[0] }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={150} placeholder={theme.colors.surface2} allowDownscaling={false} priority="high" />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.surface2 }]} />
         )}
@@ -151,7 +151,10 @@ export function VoteEventCard({
     const canVote = event.status === 'active' && !mine;
     return (
       <View style={{ width: cardW, height: cardH }}>
-        <ExpoImage source={{ uri: item.photoUrl }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={150} placeholder={theme.colors.surface2} />
+        {/* VVVVV/MMMM — allowDownscaling=false forces a full-res decode so expo-image
+            never reuses a grid-sized bitmap of this same url (→ 格子). recyclingKey ties
+            the decode to its url so a recycled FlatList page can't show the prior entry. */}
+        <ExpoImage source={{ uri: item.photoUrl }} recyclingKey={item.photoUrl} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={150} placeholder={theme.colors.surface2} allowDownscaling={false} priority="high" />
 
         {/* Medal for podium ranks — every page */}
         {item.rank <= 3 && (

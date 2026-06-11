@@ -14,10 +14,15 @@ const worldChatMessageSchema = new mongoose.Schema(
     // Text body. Empty for photo messages (validated per-type in the route).
     body: { type: String, default: '', maxlength: 500 },
     // Message kind. Legacy docs without the field are treated as 'text'.
-    type: { type: String, enum: ['text', 'photo'], default: 'text' },
+    type: { type: String, enum: ['text', 'photo', 'voice'], default: 'text' },
     // Photo messages: B2 public URL + optional caption.
     photoUrl: { type: String, default: null },
     caption: { type: String, default: null, maxlength: 500 },
+    // Voice messages: uploaded audio URL + clip length (ms) + optional waveform
+    // peaks for the bubble. Mirrors the private-chat voice flow (PR HH).
+    voiceUrl: { type: String, default: null },
+    voiceDurationMs: { type: Number, default: null },
+    voiceWaveform: { type: [Number], default: undefined },
     // Optional quoted reply → the original message in the same room.
     replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorldChatMessage', default: null },
   },

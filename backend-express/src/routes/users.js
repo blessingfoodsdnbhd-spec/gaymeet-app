@@ -5,6 +5,7 @@ const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { computeAge } = require('../utils/zodiac');
 const { NOT_OFFICIAL, isNotOfficial } = require('../utils/discovery');
+const { blockedIdSet } = require('../utils/blocking');
 const ProfileView = require('../models/ProfileView');
 
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
@@ -492,11 +493,13 @@ router.get('/discover', auth, async (req, res, next) => {
 // IMPORTANT: must stay before GET /:id to avoid "locations" being cast as ObjectId.
 router.get('/locations', auth, async (req, res, next) => {
   try {
+    const blockedArr = [...(await blockedIdSet(req.user))];
     const users = await User.find(
       {
         'location.coordinates': { $exists: true, $ne: null },
         'preferences.stealthMode':    { $ne: true },
         'preferences.hideFromNearby': { $ne: true },
+        _id: { $nin: blockedArr },
         ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from the globe
       },
       { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
@@ -526,6 +529,7 @@ router.get('/likes', auth, async (req, res, next) => {
     const Swipe = require('../models/Swipe');
     const me = req.user;
 
+    const blocked = await blockedIdSet(me);
     const swipes = await Swipe.find({
       toUser: me._id,
       direction: { $in: ['like', 'super_like'] },
@@ -537,8 +541,12 @@ router.get('/likes', auth, async (req, res, next) => {
     // Drop null entries — populate('fromUser') returns null when the liker
     // has been deleted, but the Swipe row stays behind. Including those as
     // nulls in the wire array crashes mobile clients that key/render off
-    // user._id, and makes the count disagree with the array length.
-    const likers = swipes.map((s) => s.fromUser).filter(isNotOfficial);
+    // user._id, and makes the count disagree with the array length. Also drop
+    // anyone in a mutual block with the viewer.
+    const likers = swipes
+      .map((s) => s.fromUser)
+      .filter(isNotOfficial)
+      .filter((u) => !blocked.has(String(u._id)));
 
     const { isPremiumActive } = require('../utils/premium');
     if (isPremiumActive(me)) {
@@ -638,6 +646,13 @@ router.get('/widget-data', auth, async (req, res, next) => {
 // ── GET /api/users/:id ────────────────────────────────────────────────────────
 router.get('/:id', auth, async (req, res, next) => {
   try {
+    // Mutual block: a blocked user's profile is "unavailable" to the viewer
+    // (and the viewer's to them). 404 + code so the client shows 用户不可用.
+    const blocked = await blockedIdSet(req.user);
+    if (blocked.has(String(req.params.id))) {
+      return res.status(404).json({ error: 'User unavailable', code: 'BLOCKED' });
+    }
+
     const user = await User.findById(req.params.id).select(
       '-password -fcmToken -blockedUsers -dailySwipes -dailySwipesDate'
     );

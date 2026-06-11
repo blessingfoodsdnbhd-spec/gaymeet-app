@@ -7,6 +7,7 @@ const { sendPushToUser } = require('../utils/push');
 const { notify } = require('../services/notificationService');
 const { isPremiumActive } = require('../utils/premium');
 const PremiumGift = require('../models/PremiumGift');
+const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
 
 // ── POST /api/users/:id/follow — toggle follow / unfollow ─────────────────────
 router.post('/:id/follow', auth, async (req, res, next) => {
@@ -18,6 +19,11 @@ router.post('/:id/follow', auth, async (req, res, next) => {
 
     const target = await User.findById(targetId);
     if (!target) return err(res, 'User not found', 404);
+
+    // Mutual block: can't follow someone in a block with you.
+    if (await isBlockedBetween(req.user, targetId)) {
+      return res.status(403).json({ error: 'User unavailable', code: 'BLOCKED' });
+    }
 
     const existing = await Follow.findOne({
       follower: req.user._id,
@@ -82,12 +88,15 @@ router.get('/:id/followers', auth, async (req, res, next) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const follows = await Follow.find({ following: req.params.id })
+    const blocked = await blockedIdSet(req.user);
+    const follows = (await Follow.find({ following: req.params.id })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .populate('follower', 'nickname avatarUrl isOnline level isPremium isVerified')
-      .lean();
+      .lean())
+      // Mutual block: drop blocked users from the follower list.
+      .filter((f) => f.follower && !blocked.has(f.follower._id.toString()));
 
     // Check which of these users the current viewer already follows
     const ids = follows.map((f) => f.follower._id);
@@ -116,7 +125,8 @@ router.get('/:id/following', auth, async (req, res, next) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const follows = await Follow.find({ follower: req.params.id })
+    const blocked = await blockedIdSet(req.user);
+    const follows = (await Follow.find({ follower: req.params.id })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -124,7 +134,9 @@ router.get('/:id/following', auth, async (req, res, next) => {
         'following',
         'nickname avatarUrl isOnline level isPremium isVerified dob lastActiveAt location vipLevel vipExpiresAt premiumExpiresAt',
       )
-      .lean();
+      .lean())
+      // Mutual block: drop blocked users from the following list.
+      .filter((f) => f.following && !blocked.has(f.following._id.toString()));
 
     const ids = follows.map((f) => f.following._id);
     const myFollows = await Follow.find({

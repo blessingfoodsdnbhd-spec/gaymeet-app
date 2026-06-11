@@ -424,6 +424,8 @@
       "location": "添加位置",
       "taggedCount": "{{n}} 人",
       "chooseOnMap": "在地图上选择",
+      "searchPlace": "搜索地点...",
+      "tapPinToSelect": "点击地图上的标记选择地点",
       "currentLocation": "我的当前位置",
       "removeLocation": "移除位置",
       "noFriends": "还没有可标记的朋友",
@@ -479,7 +481,7 @@
   },
   "chat": {
     "photoConfirm": {"captionPlaceholder": "添加说明…", "send": "发送"},
-    "voice": {"title": "语音消息", "tapToStart": "点击录制", "recording": "录音中…", "tooShort": "再长一点", "send": "发送", "sendFailed": "语音消息发送失败"},
+    "voice": {"title": "语音消息", "tapToStart": "点击录制", "recording": "录音中…", "tooShort": "再长一点", "send": "发送", "sendFailed": "语音消息发送失败", "slideToCancel": "滑动取消", "locked": "已锁定", "tapToDelete": "点击删除"},
     "icebreakers": {"header": "👋 来打个招呼吧！", "askInterest": "你也喜欢{{interest}}？是怎么入坑的？", "generic1": "周末有什么计划吗？", "generic2": "最近有什么好推荐吗？🎵📺", "generic3": "嗨！今天过得怎么样？"},
     "scamWarning": "注意：涉及站外联系或金钱。切勿向陌生人转账或转移到其他应用。",
     "composer": {
@@ -578,6 +580,7 @@
     "aboutSection": "关于",
     "interestsSection": "兴趣",
     "loadFailed": "无法加载资料",
+    "userUnavailable": "用户不可用",
     "sendMessage": "发送消息",
     "sendMessagePremiumOnly": "Premium 功能",
     "lockedPhotosCount": "🔒 {{n}} 张私密照",
@@ -637,6 +640,8 @@
       "privatePhotos": "密照"
     },
     "editProfile": "编辑资料",
+    "previewMyProfile": "预览我的资料",
+    "previewBanner": "🔍 预览模式 — 这是其他用户看到的样子",
     "publicPhotos": "公开照片",
     "publicPhotosLimit": "公开照片 · {{count}} / 5",
     "privatePhotos": "私密照片 🔒",
@@ -916,6 +921,7 @@
   },
   "likedMe": {
     "title": "想认识你的人",
+    "count": "{{n}} 人想认识你",
     "empty": "还没有人想认识你",
     "upgradeCta": "升级看清楚是谁",
     "loadFailed": "无法加载"

@@ -11,6 +11,8 @@ interface Props {
   status: PhotoRequestStatus | 'none';
   busy: boolean;
   onRequest: () => void;
+  /** Force the CTA inert (e.g. self-preview mode — can't request own photos). */
+  disabled?: boolean;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * Approved is intentionally NOT handled here — parents render the
  * actual photos inline above this component when status === 'approved'.
  */
-export function LockedPhotosBlock({ status, busy, onRequest }: Props) {
+export function LockedPhotosBlock({ status, busy, onRequest, disabled }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
 
@@ -34,7 +36,7 @@ export function LockedPhotosBlock({ status, busy, onRequest }: Props) {
   // one stays as audit). Rejected gets a muted visual tone so the user
   // still understands the prior denial without it looking like a fresh
   // primary CTA.
-  const isDisabled = status === 'pending';
+  const isDisabled = disabled || status === 'pending';
   const isMutedTone = status === 'rejected';
   const label =
     status === 'pending'

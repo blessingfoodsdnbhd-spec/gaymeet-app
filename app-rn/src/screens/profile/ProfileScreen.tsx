@@ -16,6 +16,7 @@ import {
   Bell,
   ChevronRight,
   Crown,
+  Eye,
   Gift,
   Mic,
   Pencil,
@@ -34,6 +35,7 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
+import { PremiumBadge } from '../../components/PremiumBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
@@ -191,6 +193,11 @@ export function ProfileScreen() {
               <PopularityBadge value={(user as any).popularity} size="md" />
             </View>
           )}
+          {(user as any).isPremium && (
+            <View style={{ marginTop: 6 }}>
+              <PremiumBadge isPremium size={20} />
+            </View>
+          )}
           {!official && <View style={{ height: 12 }} />}
           <Pressable
             onPress={goEdit}
@@ -202,6 +209,19 @@ export function ProfileScreen() {
             <Pencil size={15} color={theme.colors.primary} strokeWidth={2} />
             <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
               {t('editProfile.title')}
+            </Text>
+          </Pressable>
+          {/* Preview own profile exactly as other users see it (stranger view). */}
+          <Pressable
+            onPress={() => nav.navigate('UserDetail', { userId: user.id, previewMode: true })}
+            style={({ pressed }) => [
+              styles.previewBtn,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Eye size={14} color={theme.colors.text2} strokeWidth={2} />
+            <Text style={{ color: theme.colors.text2, fontSize: 13, fontWeight: '600' }}>
+              {t('profile.previewMyProfile')}
             </Text>
           </Pressable>
         </View>
@@ -295,13 +315,18 @@ export function ProfileScreen() {
         {/* Settings. */}
         <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
         <Card flat style={{ paddingVertical: 4 }}>
-          <SettingsRow
-            icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-            label={t('profile.rows.premium')}
-            detail={(user as any).isPremium ? t('profile.rows.premiumActive') : t('profile.rows.premiumUpgrade')}
-            onPress={() => nav.navigate('Premium')}
-          />
-          <Divider />
+          {/* Active Premium users get the name badge instead — the row is redundant (SSSSS). */}
+          {!(user as any).isPremium && (
+            <>
+              <SettingsRow
+                icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.premium')}
+                detail={t('profile.rows.premiumUpgrade')}
+                onPress={() => nav.navigate('Premium')}
+              />
+              <Divider />
+            </>
+          )}
           <SettingsRow
             icon={<Gift size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.giftPremium')}
@@ -406,6 +431,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
+  },
+  previewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   statsRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

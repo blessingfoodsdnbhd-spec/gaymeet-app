@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -44,6 +44,7 @@ function idxFor(id: string) {
  */
 export function MessageBanner() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const me = useAuth((s) => s.user);
@@ -168,7 +169,11 @@ export function MessageBanner() {
 
   return (
     <Animated.View style={[styles.wrap, aStyle]} pointerEvents="box-none">
-      <SafeAreaView edges={['top']} style={{ width: '100%' }}>
+      {/* Use the inset hook directly (not SafeAreaView) — this overlay is an
+          absolutely-positioned sibling of the navigator, where SafeAreaView's
+          self-measurement is unreliable and lets the Dynamic Island clip the
+          banner. paddingTop: insets.top + banner.marginTop gives the gap. */}
+      <View style={{ width: '100%', paddingTop: insets.top }}>
         <Pressable
           onPress={onTap}
           style={({ pressed }) => [
@@ -210,7 +215,7 @@ export function MessageBanner() {
             </Text>
           </View>
         </Pressable>
-      </SafeAreaView>
+      </View>
     </Animated.View>
   );
 }
