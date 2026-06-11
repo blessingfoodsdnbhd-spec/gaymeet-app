@@ -103,7 +103,24 @@ export function RootNavigator() {
           <Stack.Screen name="PromptsEdit" component={PromptsEditScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MyMoments" component={MyMomentsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="FriendsList" component={FriendsListScreen} options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="MapPicker" component={MapPickerScreen} options={{ animation: 'slide_from_right' }} />
+          {/* Moment mode opens the map from INSIDE the Composer modal. Pushing a
+              default card on top of a `presentation: 'modal'` screen makes iOS
+              react-native-screens group them, so dismissing the card (Save →
+              goBack) collapses the whole modal group — popping the Composer too,
+              dumping the user back to home with the location lost. Presenting it
+              as its own modal (modal-over-modal) lets goBack dismiss ONLY the map
+              and reveal the still-mounted Composer so the bridge writes the place
+              back. Virtual-location/Discover/Privacy open it from a card context,
+              where the normal slide_from_right is correct. */}
+          <Stack.Screen
+            name="MapPicker"
+            component={MapPickerScreen}
+            options={({ route }) =>
+              route.params?.mode === 'moment'
+                ? { presentation: 'fullScreenModal', animation: 'slide_from_bottom' }
+                : { animation: 'slide_from_right' }
+            }
+          />
           <Stack.Screen name="Search" component={SearchScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MomentLikers" component={MomentLikersScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="MatchesList" component={MatchesListScreen} options={{ animation: 'slide_from_right' }} />
