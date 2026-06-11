@@ -59,6 +59,26 @@ function verifyPassword(pw, stored) {
 
 const sameId = (a, b) => String(a?._id ?? a) === String(b?._id ?? b);
 
+// Membership = creator OR in memberIds. Powers who may invite/see invitable.
+const isRoomMember = (room, userId) =>
+  sameId(room.creatorId, userId) || (room.memberIds || []).some((m) => sameId(m, userId));
+
+// In-memory per-user daily invite quota (resets on UTC day rollover). Matches
+// the in-process rate-limit philosophy used elsewhere — best-effort anti-spam,
+// not a hard distributed guarantee.
+const inviteQuota = new Map(); // userId -> { day, count }
+function takeInviteQuota(userId, n) {
+  const day = new Date().toISOString().slice(0, 10);
+  const rec = inviteQuota.get(userId);
+  if (!rec || rec.day !== day) {
+    inviteQuota.set(userId, { day, count: n });
+    return n <= INVITE_PER_DAY;
+  }
+  if (rec.count + n > INVITE_PER_DAY) return false;
+  rec.count += n;
+  return true;
+}
+
 /** Public room shape. Never leaks passwordHash. */
 function serializeRoom(room, userId, onlineCount) {
   const c = room.creatorId;
@@ -387,13 +407,15 @@ router.get('/rooms/by-country/:countryCode', auth, async (req, res, next) => {
   }
 });
 
-// Friends invitable to a room (creator's follows ∪ followers, minus members).
+// Friends invitable to a room (my follows ∪ followers, minus members). Any
+// member — not just the creator — can pull friends in (viral growth). Online
+// friends are surfaced first so the picker leads with who's reachable now.
 router.get('/rooms/:id/invitable', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
     const room = await ChatRoom.findById(req.params.id).select('creatorId memberIds');
     if (!room) return err(res, 'Room not found', 404);
-    if (!sameId(room.creatorId, req.user._id)) return err(res, 'Only the creator can invite', 403);
+    if (!isRoomMember(room, req.user._id)) return err(res, 'Join the room first', 403);
     const links = await Follow.find({ $or: [{ follower: req.user._id }, { following: req.user._id }] })
       .select('follower following')
       .lean();
@@ -405,11 +427,22 @@ router.get('/rooms/:id/invitable', auth, async (req, res, next) => {
     }
     const users = await require('../models/User')
       .find({ _id: { $in: [...friendIds] } })
-      .select('nickname avatarUrl')
+      .select('nickname avatarUrl isOnline lastActiveAt')
       .lean();
-    ok(res, {
-      friends: users.map((u) => ({ id: u._id.toString(), displayName: u.nickname, avatarUrl: u.avatarUrl ?? null })),
-    });
+    const friends = users
+      .map((u) => ({
+        id: u._id.toString(),
+        displayName: u.nickname,
+        avatarUrl: u.avatarUrl ?? null,
+        isOnline: !!u.isOnline,
+        lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
+      }))
+      // Online first, then most-recently-active.
+      .sort((a, b) => {
+        if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+        return (b.lastActiveAt || '').localeCompare(a.lastActiveAt || '');
+      });
+    ok(res, { friends });
   } catch (e) {
     next(e);
   }
@@ -486,15 +519,23 @@ router.post('/rooms/:id/leave', auth, async (req, res, next) => {
   }
 });
 
-// Creator invites friends (people they follow or who follow them).
+// Any member invites friends (people they follow or who follow them). Invitees
+// are added to the room and pinged with a localized push that deep-links in.
+const INVITE_PER_REQUEST = 20; // matches the client's multi-select cap
+const INVITE_PER_DAY = 60; // soft anti-spam ceiling per inviter per day
 router.post('/rooms/:id/invite', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const room = await ChatRoom.findById(req.params.id).select('creatorId title');
+    const room = await ChatRoom.findById(req.params.id).select('creatorId memberIds title status');
     if (!room) return err(res, 'Room not found', 404);
-    if (!sameId(room.creatorId, req.user._id)) return err(res, 'Only the creator can invite', 403);
-    const ids = Array.isArray(req.body?.userIds) ? req.body.userIds.filter((x) => mongoose.isValidObjectId(x)) : [];
+    if (room.status === 'closed') return err(res, 'This room is closed', 403);
+    if (!isRoomMember(room, req.user._id)) return err(res, 'Join the room first', 403);
+    let ids = Array.isArray(req.body?.userIds) ? req.body.userIds.filter((x) => mongoose.isValidObjectId(x)) : [];
+    ids = [...new Set(ids.map(String))].slice(0, INVITE_PER_REQUEST);
     if (!ids.length) return err(res, 'No users to invite');
+    if (!takeInviteQuota(req.user._id.toString(), ids.length)) {
+      return err(res, 'Daily invite limit reached — try again tomorrow', 429);
+    }
     const links = await Follow.find({
       $or: [
         { follower: req.user._id, following: { $in: ids } },
@@ -506,16 +547,22 @@ router.post('/rooms/:id/invite', auth, async (req, res, next) => {
     const toAdd = ids.filter((id) => friendIds.has(String(id)));
     if (!toAdd.length) return err(res, 'None of those users are your friends', 400);
     await ChatRoom.updateOne({ _id: room._id }, { $addToSet: { memberIds: { $each: toAdd } } });
+    const inviter = req.user.nickname || 'A friend';
     for (const uid of toAdd) {
       broadcastToUser(uid, 'world-chat:room-invited', { roomId: room._id.toString(), title: room.title });
       notify(uid, 'room_invite', {
-        title: '你被邀请加入聊天室 💬',
-        body: room.title,
+        body: '点击加入聊天',
         data: {
           roomId: room._id.toString(),
           custom: '1',
           fromUserName: req.user.nickname || '',
           fromUserAvatarUrl: req.user.avatarUrl || '',
+        },
+        i18n: {
+          en: { title: `${inviter} invited you to “${room.title}”`, body: 'Tap to join the chat' },
+          zh: { title: `${inviter} 邀请你进入「${room.title}」`, body: '点击加入聊天' },
+          ko: { title: `${inviter}님이 “${room.title}” 채팅방에 초대했어요`, body: '탭하여 참여하기' },
+          ja: { title: `${inviter}さんが「${room.title}」に招待しました`, body: 'タップして参加' },
         },
       }).catch(() => {});
     }

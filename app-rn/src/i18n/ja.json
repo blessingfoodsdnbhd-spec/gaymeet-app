@@ -662,6 +662,8 @@
       "saved": "保存しました",
       "saveFailed": "保存できませんでした",
       "invite": "招待",
+      "share": "ルームを共有",
+      "shareMessage": "Meyouで「{{name}}」チャットに参加 → {{link}}",
       "inviteFriends": "友達を招待",
       "inviteCta": "招待 ({{n}})",
       "invited": "友達{{n}}人を招待しました",

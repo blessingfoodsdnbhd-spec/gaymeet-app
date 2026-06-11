@@ -269,6 +269,8 @@
       "saved": "已保存",
       "saveFailed": "保存失败",
       "invite": "邀请",
+      "share": "分享房间",
+      "shareMessage": "加入「{{name}}」聊天 → {{link}}",
       "inviteFriends": "邀请好友",
       "inviteCta": "邀请 ({{n}})",
       "invited": "已邀请 {{n}} 位好友",
