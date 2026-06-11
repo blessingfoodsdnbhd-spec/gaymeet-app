@@ -97,6 +97,9 @@ router.post('/private-photos', auth, uploadMem.single('photo'), async (req, res,
   try {
     if (!req.file) return err(res, 'No file uploaded');
 
+    // Admin photo-upload ban.
+    if (req.user.photoUploadBanned) return err(res, '你已被禁止上传照片', 403);
+
     const user = await User.findById(req.user._id);
     if (user.privatePhotos.length >= MAX_PRIVATE_PHOTOS) {
       return err(res, `Maximum ${MAX_PRIVATE_PHOTOS} private photos allowed`);

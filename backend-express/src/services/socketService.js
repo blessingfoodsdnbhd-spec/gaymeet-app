@@ -240,6 +240,10 @@ function initSocket(server) {
           }
         }
 
+        // Admin chat-send ban — silently drop (WS has no response channel; the
+        // HTTP path returns 403). One indexed lookup per send.
+        if (await User.exists({ _id: userId, chatBanned: true })) return;
+
         // Verify sender is in the match
         const match = await Match.findOne({
           _id: matchId,

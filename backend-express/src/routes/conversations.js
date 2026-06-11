@@ -214,6 +214,10 @@ router.post('/voice-upload', auth, voiceUpload.single('file'), async (req, res, 
 // Also emits via Socket.io so the receiver gets real-time delivery if online.
 router.post('/:matchId/send', auth, async (req, res, next) => {
   try {
+    // Admin chat-send ban: account stays usable but can't send messages.
+    if (req.user.chatBanned) {
+      return err(res, '你已被禁止发送消息', 403);
+    }
     const { content, type = 'text', mediaUrl, location, duration } = req.body;
 
     const ALLOWED = ['text', 'sticker', 'image', 'location', 'voice'];
