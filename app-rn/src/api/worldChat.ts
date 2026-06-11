@@ -184,6 +184,8 @@ export interface ChatRoomSummary {
   countryCode: string;
   title: string;
   description: string;
+  /** 自建房卡片背景色 — a hex from roomColors PALETTE (spec 等级解锁). */
+  cardColor?: string;
   isPrivate: boolean;
   status: 'open' | 'closed';
   creator: { id: string; displayName?: string; avatarUrl?: string | null };
@@ -227,6 +229,8 @@ export const createChatRoom = (input: {
   channelId: string;
   title: string;
   description?: string;
+  /** A roomColors PALETTE hex the creator has unlocked (defaults to Lv1). */
+  cardColor?: string;
   isPrivate: boolean;
   password?: string;
 }) => unwrap<ChatRoomSummary>(api.post('/world-chat/rooms', input));

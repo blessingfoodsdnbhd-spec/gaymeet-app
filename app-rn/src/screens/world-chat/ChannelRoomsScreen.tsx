@@ -11,7 +11,12 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { getChannelRooms, joinChatRoom, type ChatRoomSummary } from '../../api/worldChat';
 import { on as wsOn } from '../../api/ws';
 import { subBoardRoomId } from '../../utils/plazaIdentity';
+import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
+import { RoomCardShell } from './RoomCardShell';
 import type { RootStackParamList } from '../../navigation/types';
+
+// Secondary text on a colored card — black per readability rules, slightly faded.
+const CARD_SUBTEXT = 'rgba(0,0,0,0.62)';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Rt = RouteProp<RootStackParamList, 'ChannelRooms'>;
@@ -155,35 +160,30 @@ export function ChannelRoomsScreen() {
             </View>
           }
           renderItem={({ item: r }) => (
-            <Pressable
-              onPress={() => openRoom(r)}
-              style={({ pressed }) => [
-                styles.card,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1 },
-              ]}
-            >
-              {r.isPrivate ? <Lock size={18} color={theme.colors.muted} /> : <Hash size={18} color={theme.colors.muted} />}
+            // 自建房 cards wear their unlocked color; text stays black (§readability).
+            <RoomCardShell hex={r.cardColor ?? DEFAULT_HEX} onPress={() => openRoom(r)} style={[styles.card, { borderColor: 'rgba(0,0,0,0.12)' }]}>
+              {r.isPrivate ? <Lock size={18} color={CARD_TEXT} /> : <Hash size={18} color={CARD_TEXT} />}
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15.5, fontWeight: '700', color: theme.colors.text }}>
+                  <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15.5, fontWeight: '700', color: CARD_TEXT }}>
                     {r.title}
                   </Text>
-                  {r.isCreator && <Crown size={13} color={theme.colors.primary} />}
+                  {r.isCreator && <Crown size={13} color={CARD_TEXT} />}
                   {r.status === 'closed' && (
-                    <Text style={{ fontSize: 10.5, color: theme.colors.muted, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
+                    <Text style={{ fontSize: 10.5, color: CARD_SUBTEXT, fontWeight: '700' }}>· {t('worldChat.rooms.closed')}</Text>
                   )}
                 </View>
                 {!!r.description && (
-                  <Text numberOfLines={1} style={{ fontSize: 12.5, color: theme.colors.muted, marginTop: 2 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 12.5, color: CARD_SUBTEXT, marginTop: 2 }}>
                     {r.description}
                   </Text>
                 )}
-                <Text style={{ fontSize: 11.5, color: theme.colors.muted, marginTop: 4 }}>
+                <Text style={{ fontSize: 11.5, color: CARD_SUBTEXT, marginTop: 4 }}>
                   {t('worldChat.rooms.memberCount', { n: r.memberCount })} · 🟢 {r.onlineCount}
                 </Text>
               </View>
-              <ChevronRight size={20} color={theme.colors.muted} />
-            </Pressable>
+              <ChevronRight size={20} color={CARD_TEXT} />
+            </RoomCardShell>
           )}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListEmptyComponent={

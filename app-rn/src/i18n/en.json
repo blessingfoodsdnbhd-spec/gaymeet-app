@@ -444,7 +444,12 @@
     "online": "{{n}} online",
     "onlineList": "Online",
     "levelUp": "🎖️ {{name}} reached Lv{{level}} {{title}}!",
-    "voiceTextNotice": "🎤 Voice is coming soon — this is a text room for now."
+    "voiceTextNotice": "🎤 Voice is coming soon — this is a text room for now.",
+    "color": {
+      "title": "Room Color",
+      "hint": "More colors unlock as you level up",
+      "locked": "This color isn't unlocked yet"
+    }
   },
   "chatTranslation": {
     "title": "Chat Translation",

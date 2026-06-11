@@ -698,7 +698,12 @@
     "online": "オンライン {{n}}人",
     "onlineList": "オンライン一覧",
     "levelUp": "🎖️ {{name}} がLv{{level}} {{title}} に昇格！",
-    "voiceTextNotice": "🎤 ボイス機能は近日公開。今はテキストルームです。"
+    "voiceTextNotice": "🎤 ボイス機能は近日公開。今はテキストルームです。",
+    "color": {
+      "title": "ルームの色",
+      "hint": "レベルアップで色が解放されます",
+      "locked": "この色はまだ解放されていません"
+    }
   },
   "chatTranslation": {
     "title": "チャット翻訳",

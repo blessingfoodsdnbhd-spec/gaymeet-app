@@ -19,6 +19,9 @@ const chatRoomSchema = new mongoose.Schema(
     countryCode: { type: String, index: true },
     title: { type: String, required: true, maxlength: 80 },
     description: { type: String, default: '', maxlength: 300 },
+    // Card background color (Plaza §自建房颜色). A hex from config/roomColors
+    // PALETTE the creator has unlocked by level. Defaults to Lv1 灰白.
+    cardColor: { type: String, default: '#F5F5F5' },
     isPrivate: { type: Boolean, default: false },
     // scrypt "salt:hash" (set only when isPrivate). Never returned to clients.
     passwordHash: { type: String, default: null },

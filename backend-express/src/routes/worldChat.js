@@ -23,7 +23,8 @@ const {
 const { blockedIdSet } = require('../utils/blocking');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
-const { identityOf } = require('../utils/identity');
+const { identityOf, levelOf } = require('../utils/identity');
+const roomColors = require('../config/roomColors');
 const { titleKeyForLevel } = require('../config/xpTable');
 const xpService = require('../services/xpService');
 const translateService = require('../services/translateService');
@@ -99,6 +100,7 @@ function serializeRoom(room, userId, onlineCount) {
     countryCode: room.countryCode,
     title: room.title,
     description: room.description || '',
+    cardColor: room.cardColor || roomColors.DEFAULT_HEX,
     isPrivate: room.isPrivate,
     status: room.status,
     creator,
@@ -423,6 +425,13 @@ router.post('/rooms', auth, async (req, res, next) => {
     const priv = !!isPrivate;
     if (priv && !String(password ?? '').trim()) return err(res, 'Private rooms need a password');
 
+    // 自建房颜色 — must be a palette color the creator has unlocked by level
+    // (defaults to Lv1 灰白 when omitted). Reject locked/unknown colors.
+    const cardColor = String(req.body?.cardColor ?? '').trim() || roomColors.DEFAULT_HEX;
+    if (!roomColors.isUnlocked(cardColor, levelOf(req.user))) {
+      return res.status(403).json({ error: 'Color not unlocked yet', code: 'COLOR_LOCKED' });
+    }
+
     const owned = await ChatRoom.countDocuments({ creatorId: req.user._id, status: 'open' });
     const cap = maxRoomsFor(req.user);
     if (owned >= cap) {
@@ -436,6 +445,7 @@ router.post('/rooms', auth, async (req, res, next) => {
       countryCode: isCountryChannel(channel) ? channel : undefined,
       title: ttl,
       description: desc,
+      cardColor,
       isPrivate: priv,
       passwordHash: priv ? hashPassword(String(password).trim()) : null,
       memberIds: [req.user._id],
@@ -726,6 +736,13 @@ router.patch('/rooms/:id', auth, async (req, res, next) => {
       room.title = ttl;
     }
     if (b.description !== undefined) room.description = String(b.description).trim().slice(0, DESC_MAX);
+    if (b.cardColor !== undefined) {
+      const hex = String(b.cardColor).trim();
+      if (!roomColors.isUnlocked(hex, levelOf(req.user))) {
+        return res.status(403).json({ error: 'Color not unlocked yet', code: 'COLOR_LOCKED' });
+      }
+      room.cardColor = hex;
+    }
     if (b.isPrivate !== undefined) {
       room.isPrivate = !!b.isPrivate;
       if (room.isPrivate) {

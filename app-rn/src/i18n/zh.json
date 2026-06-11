@@ -444,7 +444,12 @@
     "online": "在线 {{n}} 人",
     "onlineList": "在线名单",
     "levelUp": "🎖️ {{name}} 升级到了 Lv{{level}} {{title}}！",
-    "voiceTextNotice": "🎤 语音功能即将推出，当前为文字房"
+    "voiceTextNotice": "🎤 语音功能即将推出，当前为文字房",
+    "color": {
+      "title": "房间颜色",
+      "hint": "随等级提升解锁更多颜色",
+      "locked": "该颜色尚未解锁"
+    }
   },
   "chatTranslation": {
     "title": "聊天翻译",

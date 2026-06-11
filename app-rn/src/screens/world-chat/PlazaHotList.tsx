@@ -14,6 +14,8 @@ import {
   type WorldChatRoom,
   type ChatRoomSummary,
 } from '../../api/worldChat';
+import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
+import { RoomCardShell } from './RoomCardShell';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -129,24 +131,22 @@ export function PlazaHotList() {
             </Text>
           ) : (
             mine.map((r) => (
-              <Pressable
+              <RoomCardShell
                 key={r.id}
+                hex={r.cardColor ?? DEFAULT_HEX}
                 onPress={() => openMine(r)}
-                style={({ pressed }) => [
-                  styles.card,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1, marginTop: 10 },
-                ]}
+                style={[styles.card, { borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', marginTop: 10 }]}
               >
-                {r.isPrivate ? <Lock size={17} color={theme.colors.muted} /> : <Crown size={16} color={theme.colors.primary} />}
-                <Text numberOfLines={1} style={{ flex: 1, fontSize: 15, fontWeight: '700', color: theme.colors.text }}>
+                {r.isPrivate ? <Lock size={17} color={CARD_TEXT} /> : <Crown size={16} color={CARD_TEXT} />}
+                <Text numberOfLines={1} style={{ flex: 1, fontSize: 15, fontWeight: '700', color: CARD_TEXT }}>
                   {r.title}
                 </Text>
                 <View style={styles.countRow}>
                   <View style={[styles.dot, { backgroundColor: theme.colors.online }]} />
-                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: theme.colors.muted }}>{r.onlineCount}</Text>
+                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: 'rgba(0,0,0,0.62)' }}>{r.onlineCount}</Text>
                 </View>
-                <ChevronRight size={18} color={theme.colors.muted} />
-              </Pressable>
+                <ChevronRight size={18} color={CARD_TEXT} />
+              </RoomCardShell>
             ))
           )}
           {mineQ.data && (

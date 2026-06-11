@@ -66,6 +66,10 @@ export interface User {
   isOfficial?: boolean;
   isPremium?: boolean;
   premiumExpiresAt?: string | null;
+  /** Plaza chat level (Lv1–20) + lifetime XP — drives room-color unlocks + level
+   *  badges (Phase 4). */
+  level?: number;
+  currentExp?: number;
   /** Daily-login streak (STREAK1). */
   streak?: { current: number; longest: number; lastActiveDate: string | null };
   isBoosted?: boolean;
