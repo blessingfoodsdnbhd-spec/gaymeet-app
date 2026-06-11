@@ -24,13 +24,12 @@ const LIMITS = {
     free: [['plaza-msg-min', 5, 60], ['plaza-msg-hr', 20, 3600]],
     premium: [['plaza-msg-min', 10, 60], ['plaza-msg-hr', 60, 3600]],
   },
-  plazaRoomCreate: {
-    free: [['room-create-day', 1, 86400], ['room-create-life', 5, null]],
-    premium: [['room-create-day', 3, 86400], ['room-create-life', 30, null]],
-  },
+  // NB: UGC room creation is a *concurrent active* cap (Free 3 / Premium 10),
+  // not a rate window — enforced directly in routes/worldChat.js POST /rooms
+  // against the live open-room count, so closing a room frees a slot.
   photo: {
-    free: [['photo-hr', 3, 3600], ['photo-day', 20, 86400]],
-    premium: [['photo-hr', 6, 3600], ['photo-day', 60, 86400]],
+    free: [['photo-hr', 20, 3600], ['photo-day', 60, 86400]],
+    premium: [['photo-hr', 40, 3600], ['photo-day', 100, 86400]],
   },
   moment: {
     free: [['moment-hr', 3, 3600], ['moment-day', 10, 86400]],

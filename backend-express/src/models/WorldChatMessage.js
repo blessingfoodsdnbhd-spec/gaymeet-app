@@ -25,6 +25,16 @@ const worldChatMessageSchema = new mongoose.Schema(
     voiceWaveform: { type: [Number], default: undefined },
     // Optional quoted reply → the original message in the same room.
     replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorldChatMessage', default: null },
+    // Auto-moderation (anti-spam Phase 1): hidden from everyone but the author
+    // and admins once N distinct users report it. See services/autoModeration.js.
+    hidden: { type: Boolean, default: false },
+    autoHiddenAt: { type: Date, default: null },
+    autoHiddenReason: { type: String, default: null },
+    moderationStatus: {
+      type: String,
+      enum: ['none', 'auto_hidden', 'confirmed', 'restored'],
+      default: 'none',
+    },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

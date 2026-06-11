@@ -77,7 +77,14 @@
     "rateLimited": "너무 빠릅니다 — {{retryAfter}}초 후 다시 시도하세요",
     "accountTooYoung": "새 계정은 {{waitHours}}시간 후에 이 기능이 열립니다",
     "duplicateMessage": "중복된 메시지가 감지되었습니다",
-    "tooManySignups": "이 네트워크에서 가입이 너무 많습니다 — 나중에 다시 시도하세요"
+    "tooManySignups": "이 네트워크에서 가입이 너무 많습니다 — 나중에 다시 시도하세요",
+    "roomLimitReached": "새 방을 만들기 전에 기존 방을 닫으세요"
+  },
+  "report": {
+    "autoHidden": {
+      "poster": "회원님의 콘텐츠가 여러 건의 신고로 검토 중입니다",
+      "viewer": "여러 건의 신고로 숨겨진 콘텐츠입니다"
+    }
   },
   "verified": {
     "tooltip": "인증된 공식 계정"

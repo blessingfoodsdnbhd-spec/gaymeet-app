@@ -106,6 +106,9 @@ api.interceptors.response.use(
       case 'TOO_MANY_SIGNUPS_FROM_IP':
         showToast(i18n.t('errors.tooManySignups'), 'error');
         break;
+      case 'ROOM_LIMIT_REACHED':
+        showToast(i18n.t('errors.roomLimitReached'), 'error');
+        break;
     }
     return Promise.reject(err);
   },

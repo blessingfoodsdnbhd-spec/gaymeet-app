@@ -9,7 +9,8 @@ const VoteReport = require('../models/VoteReport');
 const VoteEventUpdate = require('../models/VoteEventUpdate');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
-const { requireAdminAuth } = require('../middleware/adminAuth');
+const { requireAdminAuth, isAdminUser } = require('../middleware/adminAuth');
+const { evaluateReport } = require('../services/autoModeration');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { notify, coalesceOk } = require('../services/notificationService');
@@ -91,7 +92,7 @@ async function attachFeedEntries(events, viewerId, blockedSet) {
   const ids = events.map((e) => new mongoose.Types.ObjectId(e.id));
 
   const [allEntries, myVoteEntryIds, readStates] = await Promise.all([
-    VoteEntry.find({ eventId: { $in: ids } })
+    VoteEntry.find({ eventId: { $in: ids }, hidden: { $ne: true } }) // auto-hidden entries never appear in feed previews
       .sort({ voteCount: -1, createdAt: 1 }) // ranked leaderboard order
       .populate('submitterId', 'nickname avatarUrl')
       .lean(),
@@ -444,6 +445,9 @@ router.get('/', auth, async (req, res, next) => {
     if (status && status !== 'all' && ['pending', 'active', 'ended'].includes(status)) q.status = status;
     if (category && CATEGORIES.includes(category)) q.category = category;
     if (before && mongoose.isValidObjectId(before)) q._id = { $lt: new mongoose.Types.ObjectId(before) };
+    // Auto-hidden events stay out of the public feed. The creator still sees
+    // them under scope=mine (flagged "under review"); admins see everything.
+    if (!isAdminUser(req.user) && scope !== 'mine') q.hidden = { $ne: true };
 
     // Mutual block: hide contests created by — and entries submitted by — anyone
     // in a block with the viewer. Resolved once; the `$nin` is composed into
@@ -494,6 +498,13 @@ router.get('/:id', auth, async (req, res, next) => {
     const creatorIdStr = ev.creatorId?._id?.toString() ?? ev.creatorId?.toString();
     if (blockedSet.has(creatorIdStr)) return err(res, 'Not found', 404);
 
+    // Auto-hidden event: invisible except to its creator (flagged "under
+    // review") and admins.
+    const meId = req.user._id.toString();
+    const isAdmin = isAdminUser(req.user);
+    const isCreator = creatorIdStr === meId;
+    if (ev.hidden && !isCreator && !isAdmin) return err(res, 'Not found', 404);
+
     const entriesRaw = await VoteEntry.find({ eventId: ev._id })
       .sort({ voteCount: -1, createdAt: 1 })
       .populate('submitterId', 'nickname avatarUrl')
@@ -512,10 +523,13 @@ router.get('/:id', auth, async (req, res, next) => {
 
     ok(res, {
       event: serializeEvent(ev, ev.creatorId),
-      isCreator: ev.creatorId?._id?.toString() === req.user._id.toString(),
+      isCreator,
+      ...(ev.hidden ? { eventHidden: true, myContentHidden: isCreator } : {}),
       myEntryId: myEntry ? myEntry._id.toString() : null,
       entries: entries
         .filter((e) => e.submitterId && !blockedSet.has(e.submitterId._id.toString()))
+        // Auto-hidden entries: only the submitter (flagged) and admins see them.
+        .filter((e) => !e.hidden || isAdmin || e.submitterId._id.toString() === meId)
         .map((e) => ({
           id: e._id.toString(),
           submitter: {
@@ -529,6 +543,7 @@ router.get('/:id', auth, async (req, res, next) => {
           votedByMe: votedSet.has(e._id.toString()),
           status: e.status ?? 'active',
           eliminatedAtRoundIndex: e.eliminatedAtRoundIndex ?? null,
+          ...(e.hidden ? { hidden: true, myContentHidden: e.submitterId._id.toString() === meId } : {}),
         })),
     });
   } catch (e) {
@@ -787,6 +802,13 @@ router.post('/:id/report', auth, async (req, res, next) => {
       eventId: req.params.id,
       reason: String(req.body?.reason ?? '').slice(0, 300),
     });
+    // Auto-hide once 3 distinct users report the same event (best-effort).
+    evaluateReport({
+      ReportModel: VoteReport,
+      reportMatch: { targetType: 'event', eventId: req.params.id },
+      ContentModel: VoteEvent,
+      contentId: req.params.id,
+    }).catch(() => {});
     ok(res, { ok: true });
   } catch (e) {
     next(e);
@@ -804,6 +826,13 @@ router.post('/:id/entries/:entryId/report', auth, async (req, res, next) => {
       entryId,
       reason: String(req.body?.reason ?? '').slice(0, 300),
     });
+    // Auto-hide once 3 distinct users report the same entry (best-effort).
+    evaluateReport({
+      ReportModel: VoteReport,
+      reportMatch: { targetType: 'entry', entryId },
+      ContentModel: VoteEntry,
+      contentId: entryId,
+    }).catch(() => {});
     ok(res, { ok: true });
   } catch (e) {
     next(e);
