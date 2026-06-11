@@ -475,23 +475,9 @@
       "emptySubtitle": "说说你对这条动态的看法",
       "author": "作者",
       "reply": "回复",
-      "reaction": {
-        "like": "赞",
-        "love": "爱",
-        "haha": "哈哈",
-        "wow": "哇",
-        "sad": "难过",
-        "angry": "生气"
-      },
       "viewReplies": "查看 {{n}} 条回复",
       "hideReplies": "收起回复",
-      "replyingTo": "回复 @{{name}}",
-      "cancelReply": "取消回复",
-      "sort": {
-        "relevant": "最相关",
-        "newest": "最新",
-        "oldest": "最早"
-      }
+      "cancelReply": "取消回复"
     },
     "delete": {
       "title": "删除这条动态?",

@@ -203,23 +203,9 @@
       "emptySubtitle": "この投稿への感想をシェアしよう",
       "author": "投稿者",
       "reply": "返信",
-      "reaction": {
-        "like": "いいね",
-        "love": "超いいね",
-        "haha": "うける",
-        "wow": "すごいね",
-        "sad": "悲しいね",
-        "angry": "ひどいね"
-      },
       "viewReplies": "返信 {{n}} 件を表示",
       "hideReplies": "返信を隠す",
-      "replyingTo": "@{{name}} に返信",
-      "cancelReply": "返信をキャンセル",
-      "sort": {
-        "relevant": "関連性が高い順",
-        "newest": "新しい順",
-        "oldest": "古い順"
-      }
+      "cancelReply": "返信をキャンセル"
     },
     "delete": {
       "title": "このモーメントを削除しますか？",

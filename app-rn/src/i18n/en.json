@@ -475,23 +475,9 @@
       "emptySubtitle": "Share your thoughts on this moment",
       "author": "Author",
       "reply": "Reply",
-      "reaction": {
-        "like": "Like",
-        "love": "Love",
-        "haha": "Haha",
-        "wow": "Wow",
-        "sad": "Sad",
-        "angry": "Angry"
-      },
       "viewReplies": "View {{n}} replies",
       "hideReplies": "Hide replies",
-      "replyingTo": "Replying to @{{name}}",
-      "cancelReply": "Cancel reply",
-      "sort": {
-        "relevant": "Most relevant",
-        "newest": "Newest",
-        "oldest": "Oldest"
-      }
+      "cancelReply": "Cancel reply"
     },
     "delete": {
       "title": "Delete this moment?",

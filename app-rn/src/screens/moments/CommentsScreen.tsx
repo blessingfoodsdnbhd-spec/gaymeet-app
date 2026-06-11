@@ -1,8 +1,7 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   FlatList,
   ActivityIndicator,
@@ -12,8 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, ChevronDown, Send, Image as ImageIcon, X } from 'lucide-react-native';
-import { Image as ExpoImage } from 'expo-image';
+import { ChevronLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,20 +19,14 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { EmptyState } from '../../components/EmptyState';
-import { Sheet } from '../../components/Sheet';
+import { ChatComposer } from '../../components/ChatComposer';
+import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { CommentCard } from '../../components/comments/CommentCard';
 import { uploadFile } from '../../api/upload';
-import {
-  getComments,
-  postComment,
-  type Comment,
-  type CommentSort,
-} from '../../api/moments';
+import { getComments, postComment, type Comment } from '../../api/moments';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Rt = RouteProp<RootStackParamList, 'Comments'>;
-
-const SORTS: CommentSort[] = ['relevant', 'newest', 'oldest'];
 
 export function CommentsScreen() {
   const theme = useTheme();
@@ -44,20 +36,17 @@ export function CommentsScreen() {
   const { momentId, authorId } = route.params;
   const queryClient = useQueryClient();
 
-  const [sort, setSort] = useState<CommentSort>('relevant');
-  const [sortOpen, setSortOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const inputRef = useRef<TextInput>(null);
 
   const commentsQ = useQuery({
-    queryKey: ['moments', 'comments', momentId, sort],
-    queryFn: () => getComments(momentId, sort),
+    queryKey: ['moments', 'comments', momentId],
+    queryFn: () => getComments(momentId),
   });
 
-  // Group the flat list into top-level comments + replies (one level deep).
+  // Group the flat (newest-first) list into top-level comments + replies.
   const { topLevel, repliesByParent } = useMemo(() => {
     const all = commentsQ.data ?? [];
     const replies = new Map<string, Comment[]>();
@@ -74,6 +63,7 @@ export function CommentsScreen() {
         tops.push(withAuthor);
       }
     }
+    // Replies read oldest→newest within a thread.
     for (const arr of replies.values()) {
       arr.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
     }
@@ -95,11 +85,10 @@ export function CommentsScreen() {
       });
     },
     onSuccess: (real, vars) => {
-      // Append to every cached sort variant so it shows immediately.
-      queryClient.setQueriesData<Comment[]>({ queryKey: ['moments', 'comments', momentId] }, (prev) =>
-        prev ? [...prev, real] : [real],
+      // Backend is newest-first → prepend.
+      queryClient.setQueryData<Comment[]>(['moments', 'comments', momentId], (prev) =>
+        prev ? [real, ...prev] : [real],
       );
-      // Auto-expand the parent thread so a new reply is visible.
       if (vars.parentCommentId) {
         setExpanded((s) => new Set(s).add(vars.parentCommentId!));
       }
@@ -114,9 +103,9 @@ export function CommentsScreen() {
       });
     },
     onError: (e: any, vars) => {
-      // Restore draft + photo so the user can retry without re-entering.
-      setDraft(vars.content);
-      setPendingPhoto(vars.photoUri);
+      // Restore draft / photo so the user can retry.
+      if (!vars.photoUri) setDraft(vars.content);
+      else setPendingPhoto(vars.photoUri);
       const status = e?.response?.status;
       const detail =
         e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
@@ -124,18 +113,19 @@ export function CommentsScreen() {
     },
   });
 
-  const onSend = () => {
-    const text = draft.trim();
-    if (!text && !pendingPhoto) return;
-    // Replies flatten to one level: anchor to the top-level ancestor.
-    const parentCommentId = replyTo ? replyTo.parentComment || replyTo._id : undefined;
+  // Resolve the top-level ancestor so replies stay one level deep.
+  const parentIdOf = (c: Comment | null) => (c ? c.parentComment || c._id : undefined);
+
+  const onSendText = (text: string) => {
+    const v = text.trim();
+    if (!v) return;
+    const parentCommentId = parentIdOf(replyTo);
     setDraft('');
-    setPendingPhoto(null);
     setReplyTo(null);
-    postMut.mutate({ content: text, photoUri: pendingPhoto, parentCommentId });
+    postMut.mutate({ content: v, photoUri: null, parentCommentId });
   };
 
-  const pickPhoto = async () => {
+  const pickFromLibrary = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
       Alert.alert(t('profile.edit.photoPermTitle'), t('profile.edit.photoPermBody'));
@@ -146,18 +136,33 @@ export function CommentsScreen() {
       allowsEditing: Platform.OS === 'android',
       quality: 0.85,
     });
-    if (res.canceled) return;
-    setPendingPhoto(res.assets[0].uri);
+    if (!res.canceled) setPendingPhoto(res.assets[0].uri);
   };
 
-  const startReply = (c: Comment) => {
-    setReplyTo(c);
-    inputRef.current?.focus();
+  const takePhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert(t('chat.composer.cameraPermTitle'), t('chat.composer.cameraPermBody'));
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: Platform.OS === 'android',
+      quality: 0.85,
+    });
+    if (!res.canceled) setPendingPhoto(res.assets[0].uri);
+  };
+
+  const confirmSendPhoto = (caption: string) => {
+    const uri = pendingPhoto;
+    setPendingPhoto(null);
+    if (!uri) return;
+    const parentCommentId = parentIdOf(replyTo);
+    setReplyTo(null);
+    postMut.mutate({ content: caption.trim(), photoUri: uri, parentCommentId });
   };
 
   const onTapAuthor = (userId: string) => (nav as any).navigate('UserDetail', { userId });
-
-  const canSend = (!!draft.trim() || !!pendingPhoto) && !postMut.isPending;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
@@ -174,20 +179,6 @@ export function CommentsScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        {/* Sort chip */}
-        <View style={styles.sortBar}>
-          <Pressable
-            onPress={() => setSortOpen(true)}
-            style={[styles.sortChip, { backgroundColor: theme.colors.surface2 }]}
-            hitSlop={6}
-          >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text2 }}>
-              {t(`moments.comments.sort.${sort}`)}
-            </Text>
-            <ChevronDown size={15} color={theme.colors.text2} />
-          </Pressable>
-        </View>
-
         {commentsQ.isLoading ? (
           <View style={styles.centerFill}>
             <ActivityIndicator color={theme.colors.primary} />
@@ -229,12 +220,7 @@ export function CommentsScreen() {
               const isOpen = expanded.has(item._id);
               return (
                 <View>
-                  <CommentCard
-                    comment={item}
-                    momentId={momentId}
-                    onReply={startReply}
-                    onTapAuthor={onTapAuthor}
-                  />
+                  <CommentCard comment={item} onReply={setReplyTo} onTapAuthor={onTapAuthor} />
                   {replies.length > 0 && (
                     <Pressable
                       onPress={() =>
@@ -260,9 +246,8 @@ export function CommentsScreen() {
                       <CommentCard
                         key={r._id}
                         comment={r}
-                        momentId={momentId}
                         isReply
-                        onReply={startReply}
+                        onReply={setReplyTo}
                         onTapAuthor={onTapAuthor}
                       />
                     ))}
@@ -272,115 +257,31 @@ export function CommentsScreen() {
           />
         )}
 
-        {/* Composer */}
-        <View
-          style={[
-            styles.composerWrap,
-            { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
-          ]}
-        >
-          {replyTo && (
-            <View style={[styles.replyChip, { backgroundColor: theme.colors.surface2 }]}>
-              <Text style={{ fontSize: 12.5, color: theme.colors.text2, flex: 1 }} numberOfLines={1}>
-                {t('moments.comments.replyingTo', { name: replyTo.user.nickname })}
-              </Text>
-              <Pressable onPress={() => setReplyTo(null)} hitSlop={8}>
-                <X size={16} color={theme.colors.muted} />
-              </Pressable>
-            </View>
-          )}
-          {pendingPhoto && (
-            <View style={styles.photoPreview}>
-              <ExpoImage source={{ uri: pendingPhoto }} style={styles.previewImg} contentFit="cover" />
-              <Pressable
-                onPress={() => setPendingPhoto(null)}
-                style={[styles.previewX, { backgroundColor: theme.colors.text }]}
-                hitSlop={8}
-              >
-                <X size={13} color="#FFFFFF" strokeWidth={2.5} />
-              </Pressable>
-            </View>
-          )}
-          <View style={styles.composer}>
-            <Pressable onPress={pickPhoto} hitSlop={8} style={{ padding: 4 }}>
-              <ImageIcon size={24} color={theme.colors.primary} />
-            </Pressable>
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: theme.colors.surface,
-                borderRadius: 24,
-                borderWidth: 1,
-                borderColor: theme.colors.line,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                minHeight: 40,
-              }}
-            >
-              <TextInput
-                ref={inputRef}
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={t('moments.comments.placeholder')}
-                placeholderTextColor={theme.colors.muted}
-                multiline
-                maxLength={200}
-                style={{
-                  fontSize: 14,
-                  color: theme.colors.text,
-                  paddingVertical: 4,
-                  minHeight: 24,
-                  maxHeight: 100,
-                }}
-              />
-            </View>
-            <Pressable
-              onPress={onSend}
-              disabled={!canSend}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: canSend ? theme.colors.primary : theme.colors.surface2,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {postMut.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Send size={18} color={canSend ? '#FFFFFF' : theme.colors.muted} strokeWidth={2} />
-              )}
-            </Pressable>
-          </View>
-        </View>
+        {/* WhatsApp-style composer (mic hidden — no voice handlers passed) */}
+        <ChatComposer
+          value={draft}
+          onChangeText={setDraft}
+          onSend={onSendText}
+          onPickPhotoFromLibrary={pickFromLibrary}
+          onTakePhoto={takePhoto}
+          placeholder={t('moments.comments.placeholder')}
+          maxLength={200}
+          replyTo={
+            replyTo
+              ? { id: replyTo._id, text: replyTo.content || '📷', name: replyTo.user.nickname }
+              : null
+          }
+          onCancelReply={() => setReplyTo(null)}
+        />
       </KeyboardAvoidingView>
 
-      {/* Sort menu */}
-      <Sheet open={sortOpen} onClose={() => setSortOpen(false)} maxHeight="40%">
-        <View style={{ paddingBottom: 8 }}>
-          {SORTS.map((s) => (
-            <Pressable
-              key={s}
-              onPress={() => {
-                setSort(s);
-                setSortOpen(false);
-              }}
-              style={styles.sortRow}
-            >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: s === sort ? '700' : '400',
-                  color: s === sort ? theme.colors.primary : theme.colors.text,
-                }}
-              >
-                {t(`moments.comments.sort.${s}`)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Sheet>
+      <PhotoConfirmModal
+        uri={pendingPhoto}
+        open={!!pendingPhoto}
+        sending={postMut.isPending}
+        onCancel={() => setPendingPhoto(null)}
+        onSend={confirmSendPhoto}
+      />
     </SafeAreaView>
   );
 }
@@ -393,16 +294,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  sortBar: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 2 },
-  sortChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   repliesToggle: {
     flexDirection: 'row',
@@ -412,29 +303,4 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   replyDash: { width: 22, height: StyleSheet.hairlineWidth },
-  composerWrap: { borderTopWidth: StyleSheet.hairlineWidth },
-  composer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  replyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 14,
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-  },
-  photoPreview: { marginHorizontal: 14, marginTop: 8, width: 72, height: 72 },
-  previewImg: { width: 72, height: 72, borderRadius: 12 },
-  previewX: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sortRow: { paddingVertical: 14, paddingHorizontal: 20 },
 });

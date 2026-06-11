@@ -16,15 +16,6 @@ const momentCommentSchema = new mongoose.Schema(
       ref: 'MomentComment',
       default: null,
     },
-    // FB-style reactions: emoji → [userId]. One reaction per user (enforced in
-    // the route). `likes` is kept as a migration source only — new writes go to
-    // `reactions['👍']`.
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    reactions: {
-      type: Map,
-      of: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-      default: () => ({}),
-    },
   },
   { timestamps: true }
 );

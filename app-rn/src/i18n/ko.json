@@ -203,23 +203,9 @@
       "emptySubtitle": "이 모먼트에 대한 생각을 공유해보세요",
       "author": "작성자",
       "reply": "답글",
-      "reaction": {
-        "like": "좋아요",
-        "love": "최고예요",
-        "haha": "웃겨요",
-        "wow": "멋져요",
-        "sad": "슬퍼요",
-        "angry": "화나요"
-      },
       "viewReplies": "답글 {{n}}개 보기",
       "hideReplies": "답글 숨기기",
-      "replyingTo": "@{{name}}님에게 답글",
-      "cancelReply": "답글 취소",
-      "sort": {
-        "relevant": "관련성순",
-        "newest": "최신순",
-        "oldest": "오래된순"
-      }
+      "cancelReply": "답글 취소"
     },
     "delete": {
       "title": "이 모먼트를 삭제할까요?",

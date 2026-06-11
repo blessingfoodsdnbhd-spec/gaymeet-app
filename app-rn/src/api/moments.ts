@@ -103,22 +103,6 @@ export const postMoment = (body: {
 }) => unwrap<Moment>(api.post('/moments', body));
 
 // ── Comments ──────────────────────────────────────────────────────────────────
-
-/** FB-style comment reactions. `key` maps to i18n `moments.comments.reaction.*`. */
-export const REACTIONS = [
-  { emoji: '👍', key: 'like' },
-  { emoji: '❤️', key: 'love' },
-  { emoji: '😂', key: 'haha' },
-  { emoji: '😮', key: 'wow' },
-  { emoji: '😢', key: 'sad' },
-  { emoji: '😡', key: 'angry' },
-] as const;
-
-/** Quick-tap default reaction (used by the one-tap like). */
-export const DEFAULT_REACTION = '👍';
-
-export type CommentSort = 'relevant' | 'newest' | 'oldest';
-
 export interface Comment {
   _id: string;
   moment: string;
@@ -130,18 +114,14 @@ export interface Comment {
   content: string;
   photoUrl?: string | null;
   parentComment?: string | null;
-  /** emoji → count, non-empty buckets only. */
-  reactions: Record<string, number>;
-  /** the current viewer's reaction emoji, or null. */
-  myReaction?: string | null;
-  reactionCount: number;
   /** true when the commenter is the moment's author (→ 作者 badge). */
   isAuthor: boolean;
   createdAt: string;
 }
 
-export const getComments = (momentId: string, sort: CommentSort = 'relevant') =>
-  unwrap<Comment[]>(api.get(`/moments/${momentId}/comments`, { params: { sort } }));
+/** Full flat comment list, newest first. The client groups into threads. */
+export const getComments = (momentId: string) =>
+  unwrap<Comment[]>(api.get(`/moments/${momentId}/comments`));
 
 export const postComment = (
   momentId: string,
@@ -150,11 +130,3 @@ export const postComment = (
 
 export const deleteComment = (momentId: string, commentId: string) =>
   unwrap<{ success: true }>(api.delete(`/moments/${momentId}/comments/${commentId}`));
-
-/** Toggle the viewer's reaction on a comment (one per user; same emoji = off). */
-export const reactToComment = (momentId: string, commentId: string, emoji: string) =>
-  unwrap<Comment>(api.post(`/moments/${momentId}/comments/${commentId}/reaction`, { emoji }));
-
-/** Remove the viewer's reaction entirely. */
-export const removeCommentReaction = (momentId: string, commentId: string) =>
-  unwrap<Comment>(api.delete(`/moments/${momentId}/comments/${commentId}/reaction`));
