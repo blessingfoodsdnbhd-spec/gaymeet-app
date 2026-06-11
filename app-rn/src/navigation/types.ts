@@ -63,6 +63,8 @@ export type RootStackParamList = {
   /** A World Chat room (广场). roomId 'world' = global; a country code; or a
    *  24-hex custom ChatRoom id. `custom` flags a user-created room. */
   WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
+  /** Plaza search — rooms / messages / users across 广场. */
+  PlazaSearch: undefined;
   /** Room list inside one country (general + user-created rooms). */
   CountryRooms: { countryCode: string; title: string };
   /** Create a user room inside a country. */

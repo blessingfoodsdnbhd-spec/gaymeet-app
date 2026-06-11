@@ -191,6 +191,15 @@
   "plaza": {
     "tab": { "hot": "🔥 热门", "match": "❤️ 交友", "voice": "🎤 语音", "interest": "🎮 兴趣", "country": "🌏 国家" },
     "switcher": { "hot": "热门聊天室", "country": "选择国家" },
+    "search": {
+      "placeholder": "搜索消息、房间、用户",
+      "tabs": { "rooms": "房间", "messages": "消息", "users": "用户" },
+      "hintTitle": "搜索广场",
+      "hintSubtitle": "按名称找房间、搜任何人发过的消息，或查找用户。",
+      "empty": "没有找到“{{q}}”",
+      "recent": "最近搜索",
+      "clear": "清除"
+    },
     "comingSoon": "即将推出",
     "notifyMe": "通知我",
     "notified": "我们会通知你",

@@ -191,6 +191,15 @@
   "plaza": {
     "tab": { "hot": "🔥 Hot", "match": "❤️ Chat", "voice": "🎤 Voice", "interest": "🎮 Channels", "country": "🌏 Countries" },
     "switcher": { "hot": "Hot rooms", "country": "Choose a country" },
+    "search": {
+      "placeholder": "Search messages, rooms, people",
+      "tabs": { "rooms": "Rooms", "messages": "Messages", "users": "People" },
+      "hintTitle": "Search the Plaza",
+      "hintSubtitle": "Find rooms by name, messages anyone has sent, or people.",
+      "empty": "No results for “{{q}}”",
+      "recent": "Recent",
+      "clear": "Clear"
+    },
     "comingSoon": "Coming Soon",
     "notifyMe": "Notify me",
     "notified": "We'll let you know",

@@ -39,6 +39,7 @@ import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { CountryRoomsScreen } from '../screens/world-chat/CountryRoomsScreen';
+import { PlazaSearchScreen } from '../screens/world-chat/PlazaSearchScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
@@ -161,6 +162,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="NotesInbox"
             component={NotesInboxScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="PlazaSearch"
+            component={PlazaSearchScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

@@ -583,6 +583,15 @@
   "plaza": {
     "tab": { "hot": "🔥 인기", "match": "❤️ 대화", "voice": "🎤 음성", "interest": "🎮 채널", "country": "🌏 국가" },
     "switcher": { "hot": "인기 채팅방", "country": "국가 선택" },
+    "search": {
+      "placeholder": "메시지, 방, 사용자 검색",
+      "tabs": { "rooms": "방", "messages": "메시지", "users": "사용자" },
+      "hintTitle": "광장 검색",
+      "hintSubtitle": "이름으로 방을 찾거나, 누군가 보낸 메시지나 사용자를 검색하세요.",
+      "empty": "“{{q}}”에 대한 결과가 없습니다",
+      "recent": "최근 검색",
+      "clear": "지우기"
+    },
     "comingSoon": "출시 예정",
     "notifyMe": "알림 받기",
     "notified": "알려드릴게요",

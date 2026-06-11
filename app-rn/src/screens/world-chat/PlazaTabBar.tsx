@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, Search } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -22,6 +22,8 @@ interface Props {
   onChange: (k: PlazaTab) => void;
   /** Current-room switcher pill (only on tabs that switch rooms). */
   pill?: PlazaPill | null;
+  /** Opens Plaza search (rooms / messages / users). */
+  onSearch?: () => void;
 }
 
 /**
@@ -30,17 +32,19 @@ interface Props {
  * switcher sheet. Replaces the old hot-rooms strip + hamburger drawer — there
  * is exactly one way to switch, and no duplicate navigation.
  */
-export function PlazaTabBar({ tabs, active, onChange, pill }: Props) {
+export function PlazaTabBar({ tabs, active, onChange, pill, onSearch }: Props) {
   const theme = useTheme();
 
   return (
     <View style={{ borderBottomColor: theme.colors.line, borderBottomWidth: StyleSheet.hairlineWidth }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsRow}
-      >
-        {tabs.map((tab) => {
+      <View style={styles.topRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsRow}
+          style={{ flex: 1 }}
+        >
+          {tabs.map((tab) => {
           const isActive = tab.key === active;
           return (
             <Pressable
@@ -60,12 +64,23 @@ export function PlazaTabBar({ tabs, active, onChange, pill }: Props) {
                   color: isActive ? '#FFFFFF' : theme.colors.text2,
                 }}
               >
-                {tab.label}
+                  {tab.label}
               </Text>
             </Pressable>
-          );
-        })}
-      </ScrollView>
+            );
+          })}
+        </ScrollView>
+
+        {onSearch && (
+          <Pressable
+            onPress={onSearch}
+            hitSlop={8}
+            style={({ pressed }) => [styles.searchBtn, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Search size={20} color={theme.colors.text} strokeWidth={1.8} />
+          </Pressable>
+        )}
+      </View>
 
       {pill && (
         <Pressable
@@ -92,6 +107,8 @@ export function PlazaTabBar({ tabs, active, onChange, pill }: Props) {
 }
 
 const styles = StyleSheet.create({
+  topRow: { flexDirection: 'row', alignItems: 'center' },
+  searchBtn: { paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   tabsRow: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   tab: { paddingHorizontal: 14, height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   pill: {

@@ -583,6 +583,15 @@
   "plaza": {
     "tab": { "hot": "🔥 人気", "match": "❤️ 交流", "voice": "🎤 音声", "interest": "🎮 チャンネル", "country": "🌏 国別" },
     "switcher": { "hot": "人気のチャット", "country": "国を選ぶ" },
+    "search": {
+      "placeholder": "メッセージ・ルーム・ユーザーを検索",
+      "tabs": { "rooms": "ルーム", "messages": "メッセージ", "users": "ユーザー" },
+      "hintTitle": "広場を検索",
+      "hintSubtitle": "名前でルームを探したり、誰かが送ったメッセージやユーザーを検索できます。",
+      "empty": "「{{q}}」の結果はありません",
+      "recent": "最近の検索",
+      "clear": "クリア"
+    },
     "comingSoon": "近日公開",
     "notifyMe": "通知を受け取る",
     "notified": "お知らせします",

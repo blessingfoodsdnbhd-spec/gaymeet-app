@@ -2,7 +2,8 @@ import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -12,6 +13,7 @@ import { WorldChatScreen } from './WorldChatScreen';
 import { PlazaTabBar, type PlazaTab } from './PlazaTabBar';
 import { PlazaSwitcherSheet, type SwitchRoom } from './PlazaSwitcherSheet';
 import { PlazaComingSoon } from './PlazaComingSoon';
+import type { RootStackParamList } from '../../navigation/types';
 
 /**
  * 广场 tab — a tab controller, not a hub or a landing page. Five section pills
@@ -27,6 +29,7 @@ import { PlazaComingSoon } from './PlazaComingSoon';
 export function PlazaScreen() {
   const theme = useTheme();
   const { t, i18n } = useTranslation();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [tab, setTab] = React.useState<PlazaTab>('hot');
   const [hotRoom, setHotRoom] = React.useState<SwitchRoom | null>(null);
@@ -120,7 +123,13 @@ export function PlazaScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
-      <PlazaTabBar tabs={tabs} active={tab} onChange={setTab} pill={pill} />
+      <PlazaTabBar
+        tabs={tabs}
+        active={tab}
+        onChange={setTab}
+        pill={pill}
+        onSearch={() => nav.navigate('PlazaSearch')}
+      />
 
       <View style={{ flex: 1 }}>
         {(tab === 'hot' || tab === 'country') &&
