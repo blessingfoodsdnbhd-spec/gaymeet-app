@@ -173,23 +173,31 @@ ${
     if (busy) return;
     setBusy(true);
     try {
-      // Moment mode with a tapped POI / searched place: it already carries a
-      // real name — hand it straight back, no reverse-geocode needed (HHHHH).
-      if (momentMode && picked.name) {
-        resolveMomentLocation({ lat: picked.lat, lng: picked.lng, label: picked.name });
-        nav.goBack();
-        return;
-      }
-      let label = '';
-      try {
-        const geo = await Location.reverseGeocodeAsync({ latitude: picked.lat, longitude: picked.lng });
-        const g = geo[0];
-        label = [g?.city || g?.subregion, g?.region].filter(Boolean).join(', ');
-      } catch {
-        // label is optional — the indicator keys off coords, not the label
+      // Resolve a display label. reverseGeocodeAsync is a NATIVE Core Location
+      // call that hard-crashes iOS when no location permission has been granted
+      // — and a user composing a moment usually hasn't granted it (they just
+      // drop a pin; they never hit 我的当前位置, the only flow that requests it).
+      // That uncatchable native crash is the "tap 保存 → app exits" bug: it's the
+      // only native call in this handler, so the surrounding JS try/catch can't
+      // intercept it. Fix: prefer a tapped POI / searched name, and only reverse-
+      // geocode when permission is ALREADY granted (never request it here — a
+      // permission *check* is always safe; the geocode itself is what crashes).
+      let label = picked.name || '';
+      if (!label) {
+        try {
+          const perm = await Location.getForegroundPermissionsAsync();
+          if (perm.status === 'granted') {
+            const geo = await Location.reverseGeocodeAsync({ latitude: picked.lat, longitude: picked.lng });
+            const g = geo[0];
+            label = [g?.city || g?.subregion, g?.region].filter(Boolean).join(', ');
+          }
+        } catch {
+          // label is optional — the indicator keys off coords, not the label
+        }
       }
       // Moment mode: hand the place back to the composer and return — no
-      // virtual-location write.
+      // virtual-location write. Coordinates are the final fallback so a plain
+      // map tap (no POI name, no location permission) still gets a label.
       if (momentMode) {
         resolveMomentLocation({
           lat: picked.lat,
