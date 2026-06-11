@@ -55,14 +55,16 @@ export function PlazaDrawer({
   const tx = React.useRef(new Animated.Value(-WIDTH)).current;
   const backdrop = React.useRef(new Animated.Value(0)).current;
 
+  // On open we only MOUNT the Modal — the slide-in runs in onShow (below), once
+  // the native modal view exists. Starting the native-driven entrance here, in
+  // the same tick as setVisible(true) and before the Modal has presented, drops
+  // the animation; and since both the backdrop (opacity 0) and panel (translateX
+  // -WIDTH) rest fully hidden, the drawer would then present completely invisible
+  // — the hamburger looks dead. On close we animate out, then unmount.
   React.useEffect(() => {
     if (open) {
       setVisible(true);
-      Animated.parallel([
-        Animated.timing(tx, { toValue: 0, duration: 220, useNativeDriver: true }),
-        Animated.timing(backdrop, { toValue: 1, duration: 220, useNativeDriver: true }),
-      ]).start();
-    } else {
+    } else if (visible) {
       Animated.parallel([
         Animated.timing(tx, { toValue: -WIDTH, duration: 200, useNativeDriver: true }),
         Animated.timing(backdrop, { toValue: 0, duration: 200, useNativeDriver: true }),
@@ -70,7 +72,19 @@ export function PlazaDrawer({
         if (finished) setVisible(false);
       });
     }
-  }, [open, tx, backdrop]);
+  }, [open, visible, tx, backdrop]);
+
+  // Slide in once the Modal's native view is on screen (onShow), so the
+  // native-driven animation is guaranteed to run. Snap to the hidden start
+  // first in case the values drifted from a prior open/close cycle.
+  const animateIn = React.useCallback(() => {
+    tx.setValue(-WIDTH);
+    backdrop.setValue(0);
+    Animated.parallel([
+      Animated.timing(tx, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(backdrop, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
+  }, [tx, backdrop]);
 
   const roomsQ = useQuery({
     queryKey: ['worldChat', 'rooms'],
@@ -108,7 +122,14 @@ export function PlazaDrawer({
   }, [roomsQ.data, liveCounts, myCountry]);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      animationType="none"
+      onShow={animateIn}
+      onRequestClose={onClose}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)', opacity: backdrop }]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} />

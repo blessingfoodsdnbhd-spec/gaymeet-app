@@ -45,7 +45,7 @@ import {
 import { uploadFile } from '../../api/upload';
 import { blockUser } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
-import { on as wsOn, emit as wsEmit } from '../../api/ws';
+import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
@@ -146,10 +146,27 @@ export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
   const messages = msgsQ.data ?? []; // newest-first
 
   // Tell the server which room we're in (scopes broadcasts + presence to it).
-  // Switching in-place just re-emits for the new room; the server handles the
-  // leave-prev/join-next + the 🎉/👋 presence lines.
+  // `emit` no-ops until the socket is connected, so firing this synchronously
+  // on a cold start would drop the join — the user would never actually enter
+  // the room (no live messages, "1 在线" presence). Await the connection, then
+  // emit, and re-emit on every (re)connect so a dropped/reconnected socket
+  // re-joins the right room. Switching in-place just re-runs this for the new
+  // room; the server handles leave-prev/join-next + the 🎉/👋 presence lines.
   React.useEffect(() => {
-    wsEmit('world-chat:join-room', { roomId });
+    let cancelled = false;
+    let sock: Awaited<ReturnType<typeof wsConnect>> | null = null;
+    const rejoin = () => wsEmit('world-chat:join-room', { roomId });
+    (async () => {
+      const s = await wsConnect();
+      if (cancelled) return;
+      sock = s;
+      rejoin();
+      s.on('connect', rejoin);
+    })();
+    return () => {
+      cancelled = true;
+      sock?.off('connect', rejoin);
+    };
   }, [roomId]);
   // On unmount, fall back to the world room so counts/visibility stay correct.
   React.useEffect(
@@ -158,6 +175,22 @@ export function WorldChatScreen({ lobby = false }: { lobby?: boolean } = {}) {
     },
     [],
   );
+
+  // Lobby mode switches rooms in-place — this component never unmounts, so the
+  // per-room transient state must be reset by hand on every roomId change.
+  // Without it the previous room's online count lingers and, switching from a
+  // busy room (hasMore=true) into a quiet one, the "load older" footer spinner
+  // can stay up — the screen looks stuck. (No-op for the pushed single-room
+  // view, where roomId is fixed for the screen's lifetime.)
+  React.useEffect(() => {
+    setOnline(null);
+    setHasMore(true);
+    setLoadingOlder(false);
+    setDraft('');
+    setReplyingTo(null);
+    setHighlightedId(null);
+    setSelected(null);
+  }, [roomId]);
 
   // mIRC-style join/leave system lines. Synthesize an ephemeral `system`
   // message and prepend it to the feed (capped at MAX_SYS_MSGS so a busy room
