@@ -32,7 +32,8 @@
     "appleFailedRetry": "다시 시도해 주세요",
     "appleErrorTitle": "Apple 로그인 실패",
     "googleErrorTitle": "Google 로그인",
-    "appleNoCredential": "Apple이 유효한 자격 증명을 반환하지 않았습니다. 다시 시도해 주세요"
+    "appleNoCredential": "Apple이 유효한 자격 증명을 반환하지 않았습니다. 다시 시도해 주세요",
+    "serverWaking": "서버를 깨우는 중…"
   },
   "onboarding": {
     "1": {
