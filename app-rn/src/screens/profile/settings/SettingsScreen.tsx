@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Crown,
   Globe,
+  Languages,
   Lock,
   Megaphone,
   ShieldCheck,
@@ -60,6 +61,12 @@ export function SettingsScreen() {
             label={t('profile.rows.language')}
             detail={i18n.language.startsWith('zh') ? t('profile.rows.languageValueZh') : t('profile.rows.languageValueEn')}
             onPress={() => nav.navigate('LanguageSettings')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={<Languages size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.chatTranslation')}
+            onPress={() => nav.navigate('ChatTranslation')}
           />
           <Divider />
           <SettingsRow

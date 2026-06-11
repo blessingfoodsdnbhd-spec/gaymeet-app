@@ -66,4 +66,8 @@ module.exports = {
   MAINTENANCE_MODE:     process.env.MAINTENANCE_MODE === 'true',
   MAINTENANCE_MESSAGE:  process.env.MAINTENANCE_MESSAGE || '',
   MIN_APP_VERSION:      process.env.MIN_APP_VERSION || '1.0.0',
+  // ── Chat auto-translate (Google Cloud Translation v2) ────────────────────────
+  // Optional: when unset, the translate endpoint returns 503 and the client
+  // silently skips translation — no other feature is affected.
+  GOOGLE_TRANSLATE_API_KEY: process.env.GOOGLE_TRANSLATE_API_KEY || null,
 };

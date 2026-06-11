@@ -236,6 +236,7 @@
       "premiumUpgrade": "업그레이드",
       "languageValueZh": "중국어",
       "languageValueEn": "영어",
+      "chatTranslation": "채팅 번역",
       "photoRequests": "사진 요청",
       "adminReports": "신고 관리",
       "adminStats": "데이터 분석",
@@ -597,9 +598,24 @@
     "userLeft": "👋 {{name}}님이 퇴장했습니다",
     "onlineCount": "{{count}}명 접속 중"
   },
+  "chatTranslation": {
+    "title": "채팅 번역",
+    "enable": "메시지 자동 번역",
+    "enableHint": "월드 로비와 국가 채널에서 다른 언어로 작성된 메시지에 번역을 표시합니다.",
+    "translateTo": "번역 언어",
+    "auto": "앱 언어 따르기",
+    "autoHint": "현재 앱 언어로 번역합니다",
+    "quota": "오늘 번역 할당량의 {{percent}}% 사용",
+    "quotaDetail": "오늘 {{used}} / {{limit}}자"
+  },
   "worldChat": {
     "title": "광장",
     "online": "{{n}}명 온라인",
+    "translation": {
+      "label": "번역",
+      "translating": "번역 중…",
+      "show": "번역 보기"
+    },
     "reply": {
       "label": "답장",
       "banner": "{{name}}님에게 답장",

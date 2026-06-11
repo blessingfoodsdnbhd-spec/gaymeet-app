@@ -205,9 +205,24 @@
     "userLeft": "👋 {{name}} left",
     "onlineCount": "{{count}} online"
   },
+  "chatTranslation": {
+    "title": "Chat Translation",
+    "enable": "Auto-translate messages",
+    "enableHint": "In the world lobby and country rooms, show a translation under messages written in another language.",
+    "translateTo": "TRANSLATE TO",
+    "auto": "Follow app language",
+    "autoHint": "Translate into your current app language",
+    "quota": "{{percent}}% of today's translation quota used",
+    "quotaDetail": "{{used}} / {{limit}} characters today"
+  },
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",
+    "translation": {
+      "label": "Translation",
+      "translating": "Translating…",
+      "show": "Show translation"
+    },
     "reply": {
       "label": "Reply",
       "banner": "Replying to {{name}}",
@@ -740,6 +755,7 @@
       "language": "Language",
       "languageValueZh": "Chinese",
       "languageValueEn": "English",
+      "chatTranslation": "Chat translation",
       "account": "Account & security",
       "photoRequests": "Photo requests",
       "adminReports": "Reports",

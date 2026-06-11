@@ -40,8 +40,10 @@ import {
   reportWorldChat,
   deleteWorldChatMessage,
   getChatRoom,
+  translateWorldChatMessage,
   type WorldChatMessage,
 } from '../../api/worldChat';
+import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { uploadFile } from '../../api/upload';
 import { blockUser } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
@@ -66,6 +68,10 @@ function idxFor(id: string) {
 
 type Cache = { messages: WorldChatMessage[] };
 type Rt = RouteProp<RootStackParamList, 'WorldChatRoom'>;
+
+// Per-message auto-translate state. 'same' = already in the target language
+// (no line shown); 'error' = failed/over-quota (silently hidden).
+type TransEntry = { status: 'loading' | 'done' | 'same' | 'error'; text?: string };
 
 /**
  * 世界聊天室 / World Chat — a real-time public room. Reframes Meyou as a
@@ -138,6 +144,49 @@ export function WorldChatScreen({
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
   const listRef = React.useRef<FlatList<WorldChatMessage>>(null);
   const highlightTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Auto-translate ──────────────────────────────────────────────────────────
+  // Break the country-room language barrier: foreign-language messages get a
+  // translated line below the bubble. Lazy + per-row — a Row requests its
+  // translation on mount, so the inverted FlatList only translates what's near
+  // the viewport. Results cache on the server, so paging back is free.
+  const autoTranslate = useTranslatePrefs((s) => s.enabled);
+  const targetPref = useTranslatePrefs((s) => s.target);
+  const targetLang = resolveTarget(targetPref, i18n.language);
+  const [trans, setTrans] = React.useState<Record<string, TransEntry>>({});
+  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
+  // Ensures each message is requested at most once per (room, target language).
+  const requestedRef = React.useRef<Set<string>>(new Set());
+
+  // Reset translations when the room or target language changes (re-translate
+  // into the new language; drop the previous room's cache).
+  React.useEffect(() => {
+    requestedRef.current = new Set();
+    setTrans({});
+    setCollapsed({});
+  }, [roomId, targetLang, autoTranslate]);
+
+  const requestTranslation = React.useCallback(
+    (m: WorldChatMessage) => {
+      const id = m.messageId;
+      if (requestedRef.current.has(id)) return;
+      requestedRef.current.add(id);
+      setTrans((p) => ({ ...p, [id]: { status: 'loading' } }));
+      translateWorldChatMessage(id, targetLang)
+        .then((r) =>
+          setTrans((p) => ({
+            ...p,
+            [id]: r.translated == null ? { status: 'same' } : { status: 'done', text: r.translated },
+          })),
+        )
+        .catch(() => setTrans((p) => ({ ...p, [id]: { status: 'error' } })));
+    },
+    [targetLang],
+  );
+
+  const toggleTranslation = React.useCallback((id: string) => {
+    setCollapsed((p) => ({ ...p, [id]: !p[id] }));
+  }, []);
 
   const msgsQ = useQuery({
     queryKey: KEY,
@@ -596,6 +645,11 @@ export function WorldChatScreen({
                   }
                   onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
                   onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
+                  autoTranslate={autoTranslate}
+                  translation={trans[item.messageId]}
+                  collapsed={!!collapsed[item.messageId]}
+                  onRequestTranslation={requestTranslation}
+                  onToggleTranslation={() => toggleTranslation(item.messageId)}
                 />
               </SwipeToReply>
               )
@@ -748,6 +802,11 @@ function Row({
   onOpenUser,
   onReplyJump,
   onOpenPhoto,
+  autoTranslate,
+  translation,
+  collapsed,
+  onRequestTranslation,
+  onToggleTranslation,
 }: {
   msg: WorldChatMessage;
   mine: boolean;
@@ -757,8 +816,20 @@ function Row({
   onOpenUser: () => void;
   onReplyJump?: () => void;
   onOpenPhoto: () => void;
+  autoTranslate: boolean;
+  translation?: TransEntry;
+  collapsed: boolean;
+  onRequestTranslation: (m: WorldChatMessage) => void;
+  onToggleTranslation: () => void;
 }) {
   const theme = useTheme();
+  const isTextMsg = (!msg.type || msg.type === 'text') && !!msg.body?.trim();
+
+  // Lazily request a translation when this (foreign) row mounts. Own messages
+  // are skipped — you wrote them. The parent dedupes repeat requests.
+  React.useEffect(() => {
+    if (autoTranslate && !mine && isTextMsg) onRequestTranslation(msg);
+  }, [autoTranslate, mine, isTextMsg, msg, onRequestTranslation]);
   // "🇲🇾 吉隆坡 · jacky teh" — location prefix when known, else just the name.
   const loc = [countryCodeToFlag(msg.countryCode), msg.city || ''].filter(Boolean).join(' ');
   const senderLabel = loc ? `${loc} · ${msg.displayName}` : msg.displayName;
@@ -889,23 +960,92 @@ function Row({
             </Text>
           </View>
         ) : (
-          <View
-            style={{
-              maxWidth: '92%',
-              backgroundColor: mine ? theme.colors.primary : theme.colors.surface,
-              borderWidth: mine ? 0 : 1,
-              borderColor: theme.colors.line,
-              borderRadius: 16,
-              paddingHorizontal: 13,
-              paddingVertical: 9,
-            }}
-          >
-            <Text style={{ fontSize: 16, lineHeight: 22, color: mine ? '#FFFFFF' : theme.colors.text }}>
-              {msg.body}
-            </Text>
-          </View>
+          <>
+            <View
+              style={{
+                maxWidth: '92%',
+                backgroundColor: mine ? theme.colors.primary : theme.colors.surface,
+                borderWidth: mine ? 0 : 1,
+                borderColor: theme.colors.line,
+                borderRadius: 16,
+                paddingHorizontal: 13,
+                paddingVertical: 9,
+              }}
+            >
+              <Text style={{ fontSize: 16, lineHeight: 22, color: mine ? '#FFFFFF' : theme.colors.text }}>
+                {msg.body}
+              </Text>
+            </View>
+            {autoTranslate && !mine && (
+              <TranslationBlock entry={translation} collapsed={collapsed} onToggle={onToggleTranslation} />
+            )}
+          </>
         )}
       </View>
+    </Pressable>
+  );
+}
+
+/** Translated line under a foreign-language bubble. Tap to hide/show the
+ *  translation. Hidden while loading the source itself, and for messages
+ *  already in the reader's language ('same') or that failed ('error'). */
+function TranslationBlock({
+  entry,
+  collapsed,
+  onToggle,
+}: {
+  entry?: TransEntry;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  if (!entry || entry.status === 'same' || entry.status === 'error') return null;
+
+  if (entry.status === 'loading') {
+    return (
+      <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <ActivityIndicator size="small" color={theme.colors.muted} />
+        <Text style={{ fontSize: 12, color: theme.colors.muted }}>{t('worldChat.translation.translating')}</Text>
+      </View>
+    );
+  }
+
+  if (collapsed) {
+    return (
+      <Pressable onPress={onToggle} hitSlop={6} style={{ marginTop: 3 }}>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.secondary }}>
+          🌐 {t('worldChat.translation.show')}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onToggle}
+      hitSlop={4}
+      style={{
+        marginTop: 4,
+        maxWidth: '92%',
+        borderLeftWidth: 2,
+        borderLeftColor: theme.colors.secondary,
+        paddingLeft: 8,
+        paddingVertical: 1,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 10.5,
+          fontWeight: '700',
+          letterSpacing: 0.3,
+          color: theme.colors.secondary,
+          marginBottom: 1,
+        }}
+      >
+        🌐 {t('worldChat.translation.label')}
+      </Text>
+      <Text style={{ fontSize: 14.5, lineHeight: 20, color: theme.colors.text2 }}>{entry.text}</Text>
     </Pressable>
   );
 }

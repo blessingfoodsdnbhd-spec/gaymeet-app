@@ -205,9 +205,24 @@
     "userLeft": "👋 {{name}} 离开了房间",
     "onlineCount": "在线 {{count}} 人"
   },
+  "chatTranslation": {
+    "title": "聊天翻译",
+    "enable": "自动翻译消息",
+    "enableHint": "在世界大厅和国家频道，为其他语言的消息显示翻译。",
+    "translateTo": "翻译为",
+    "auto": "跟随应用语言",
+    "autoHint": "翻译为你当前的应用语言",
+    "quota": "今日翻译额度已用 {{percent}}%",
+    "quotaDetail": "今日 {{used}} / {{limit}} 个字符"
+  },
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",
+    "translation": {
+      "label": "翻译",
+      "translating": "翻译中…",
+      "show": "显示翻译"
+    },
     "reply": {
       "label": "回复",
       "banner": "回复 {{name}}",
@@ -740,6 +755,7 @@
       "language": "语言",
       "languageValueZh": "中文",
       "languageValueEn": "English",
+      "chatTranslation": "聊天翻译",
       "account": "账户与安全",
       "photoRequests": "私密照申请",
       "adminReports": "举报管理",
