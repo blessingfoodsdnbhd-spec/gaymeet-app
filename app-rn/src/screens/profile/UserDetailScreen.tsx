@@ -332,8 +332,8 @@ export function UserDetailScreen() {
               ) : (user as any).isVerified ? (
                 <PhotoVerifiedBadge size={16} />
               ) : null}
-              <PremiumBadge isPremium={(user as any).isPremium} size={18} />
               <PopularityBadge value={(user as any).popularity} size="md" />
+              <PremiumBadge isPremium={(user as any).isPremium} size={18} />
             </View>
             {user.countryCode && (
               <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 4 }}>
