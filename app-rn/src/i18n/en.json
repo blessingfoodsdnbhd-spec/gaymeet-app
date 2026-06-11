@@ -874,6 +874,8 @@
     "title": "Account & security",
     "emailLabel": "Email",
     "signOut": "Sign out",
+    "restorePurchases": "Restore Purchases",
+    "restoring": "Restoring…",
     "exportData": "Download My Data",
     "exporting": "Preparing…",
     "exportFailed": "Couldn't prepare your data, please try again.",

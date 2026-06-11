@@ -874,6 +874,8 @@
     "title": "账户与安全",
     "emailLabel": "邮箱",
     "signOut": "退出登录",
+    "restorePurchases": "恢复购买",
+    "restoring": "正在恢复…",
     "exportData": "下载我的数据",
     "exporting": "正在准备…",
     "exportFailed": "无法导出数据,请重试。",
