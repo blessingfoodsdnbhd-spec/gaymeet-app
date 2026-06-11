@@ -46,6 +46,9 @@ router.get('/me/viewers', auth, async (req, res, next) => {
           dob: u.dob ? u.dob.toISOString() : null,
           lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
           distanceM: haversineMeters(myCoords, u.location?.coordinates),
+          isOfficial: u.isOfficial ?? false,
+          isVerified: u.isVerified ?? false,
+          isPremium: u.isPremium ?? false,
           isBlurred: false,
         };
       }

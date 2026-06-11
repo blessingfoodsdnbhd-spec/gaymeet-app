@@ -28,7 +28,7 @@ router.get('/me/stats', auth, async (req, res, next) => {
     const recent = await InviteUsage.find({ inviterId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(20)
-      .populate('inviteeId', 'nickname avatarUrl')
+      .populate('inviteeId', 'nickname avatarUrl isOfficial isVerified isPremium')
       .lean();
     ok(res, {
       invitedCount: doc.usedCount,
@@ -38,6 +38,9 @@ router.get('/me/stats', auth, async (req, res, next) => {
           id: r.inviteeId._id.toString(),
           displayName: r.inviteeId.nickname,
           avatarUrl: r.inviteeId.avatarUrl ?? null,
+          isOfficial: !!r.inviteeId.isOfficial,
+          isVerified: !!r.inviteeId.isVerified,
+          isPremium: !!r.inviteeId.isPremium,
           redeemedAt: r.redeemedAt,
         })),
     });

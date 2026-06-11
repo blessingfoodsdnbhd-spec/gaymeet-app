@@ -93,7 +93,7 @@ router.get('/:id/followers', auth, async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('follower', 'nickname avatarUrl isOnline level isPremium isVerified')
+      .populate('follower', 'nickname avatarUrl isOnline level isPremium isVerified isOfficial')
       .lean())
       // Mutual block: drop blocked users from the follower list.
       .filter((f) => f.follower && !blocked.has(f.follower._id.toString()));
@@ -132,7 +132,7 @@ router.get('/:id/following', auth, async (req, res, next) => {
       .limit(parseInt(limit))
       .populate(
         'following',
-        'nickname avatarUrl isOnline level isPremium isVerified dob lastActiveAt location vipLevel vipExpiresAt premiumExpiresAt',
+        'nickname avatarUrl isOnline level isPremium isVerified isOfficial dob lastActiveAt location vipLevel vipExpiresAt premiumExpiresAt',
       )
       .lean())
       // Mutual block: drop blocked users from the following list.

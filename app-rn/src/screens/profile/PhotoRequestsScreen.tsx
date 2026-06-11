@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { Button } from '../../components/Button';
 import {
   getInbox,
@@ -218,9 +219,15 @@ function RequestRow({
         />
       </Pressable>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}>
-          {r.nickname}
-        </Text>
+        <NameWithBadge
+          name={r.nickname}
+          official={r.isOfficial}
+          verified={r.isVerified}
+          premium={r.isPremium}
+          textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
+          numberOfLines={1}
+          badgeSize={14}
+        />
         <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2 }}>
           {shortTime(req.createdAt)}
         </Text>

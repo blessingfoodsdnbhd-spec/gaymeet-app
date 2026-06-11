@@ -12,6 +12,7 @@ import { useAuth } from '../../store/auth';
 import { castVote, retractVote, saveVoteProgress, type VoteEventSummary, type FeedVoteEntry } from '../../api/votes';
 import { categoryEmoji, timeRemaining } from './voteHelpers';
 import { RankMedal } from '../../components/RankMedal';
+import { NameWithBadge } from '../../components/NameWithBadge';
 
 const RATIO = 5 / 4; // 4:5 portrait — IG/Pinterest-style impact
 const MIN_H = 380;
@@ -208,7 +209,15 @@ export function VoteEventCard({
                 hitSlop={8}
                 style={{ alignSelf: 'flex-start' }}
               >
-                <Text numberOfLines={1} style={styles.submitter}>{item.submitter.displayName}</Text>
+                <NameWithBadge
+                  name={item.submitter.displayName}
+                  official={item.submitter.isOfficial}
+                  verified={item.submitter.isVerified}
+                  premium={item.submitter.isPremium}
+                  textStyle={styles.submitter}
+                  numberOfLines={1}
+                  badgeSize={13}
+                />
               </Pressable>
             )}
           </View>

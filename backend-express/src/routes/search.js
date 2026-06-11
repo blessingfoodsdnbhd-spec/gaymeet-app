@@ -5,6 +5,7 @@ const User = require('../models/User');
 const VoteEvent = require('../models/VoteEvent');
 const ChatRoom = require('../models/ChatRoom');
 const { blockedIdArray } = require('../utils/blocking');
+const { isPremiumActive } = require('../utils/premium');
 
 // Escape user input before building a RegExp so "." / "*" etc. are literal and
 // a crafted query can't ReDoS or match unexpectedly.
@@ -38,7 +39,7 @@ router.get('/', auth, async (req, res, next) => {
             _id: { $ne: meId, $nin: blocked },
             isDeleted: { $ne: true },
           })
-            .select('nickname avatarUrl photos isOfficial isVerified')
+            .select('nickname avatarUrl photos isOfficial isVerified isPremium premiumExpiresAt vipLevel vipExpiresAt')
             .limit(20)
             .lean()
         : [],
@@ -64,6 +65,9 @@ router.get('/', auth, async (req, res, next) => {
         avatarUrl: u.avatarUrl || (u.photos && u.photos[0]) || null,
         isOfficial: !!u.isOfficial,
         isVerified: !!u.isVerified,
+        // Expiry/vipLevel-aware so the M badge matches the rest of the app
+        // (raw u.isPremium ignores expiry and the vipLevel tier).
+        isPremium: isPremiumActive(u),
       })),
       votes: votes.map((v) => ({
         id: String(v._id),

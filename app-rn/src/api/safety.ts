@@ -54,6 +54,7 @@ export interface BlockedUser {
   avatarUrl: string | null;
   isOfficial?: boolean;
   isVerified?: boolean;
+  isPremium?: boolean;
 }
 
 /** List the users the current account has blocked. */

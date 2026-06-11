@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { FollowBadge } from '../../components/FollowBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -152,7 +153,14 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           #FFFFFF — never an rgba — so nothing behind can bleed in. */}
       <View style={[styles.info, { backgroundColor: theme.colors.surface }]}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-          <Text style={[styles.name, { color: theme.colors.text }]}>{user.nickname}</Text>
+          <NameWithBadge
+            name={user.nickname}
+            official={user.isOfficial}
+            verified={user.isVerified}
+            premium={user.isPremium}
+            textStyle={[styles.name, { color: theme.colors.text }]}
+            badgeSize={16}
+          />
           <FollowBadge status={user.followStatus} size={16} />
           {(() => {
             const age = computeAge(user.dob) ?? user.age;

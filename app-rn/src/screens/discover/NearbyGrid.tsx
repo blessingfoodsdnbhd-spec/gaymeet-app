@@ -10,6 +10,7 @@ import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
 import { prefetchMany } from '../../utils/voiceCache';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
 
 interface Props {
@@ -202,7 +203,15 @@ function Tile({
           colors={['rgba(20,10,5,0)', 'rgba(20,10,5,0.65)']}
           style={styles.tileOverlay}
         >
-          <Text style={styles.tileName} numberOfLines={1}>{user.nickname}</Text>
+          <NameWithBadge
+            name={user.nickname}
+            official={user.isOfficial}
+            verified={user.isVerified}
+            premium={user.isPremium}
+            textStyle={styles.tileName}
+            numberOfLines={1}
+            badgeSize={14}
+          />
           {user.distance && (
             <Text style={styles.tileDist}>{user.distance}</Text>
           )}

@@ -7,6 +7,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { RankMedal } from '../../components/RankMedal';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import type { VoteEntry } from '../../api/votes';
 
 /**
@@ -86,9 +87,15 @@ export function EntryDetailModal({
           >
             <Avatar name={entry.submitter.displayName} uri={entry.submitter.avatarUrl} size={28} />
             {winnerRank ? <RankMedal rank={winnerRank} size={16} /> : null}
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
-              {entry.submitter.displayName}
-            </Text>
+            <NameWithBadge
+              name={entry.submitter.displayName}
+              official={entry.submitter.isOfficial}
+              verified={entry.submitter.isVerified}
+              premium={entry.submitter.isPremium}
+              textStyle={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}
+              numberOfLines={1}
+              badgeSize={16}
+            />
             {eliminated && (
               <View style={styles.elimBadge}>
                 <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '700' }}>{t('votes.eliminated')}</Text>

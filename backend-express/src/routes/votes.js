@@ -52,7 +52,7 @@ function serializeEvent(ev, creator) {
     id: ev._id.toString(),
     creatorId: ev.creatorId?._id?.toString?.() ?? ev.creatorId.toString(),
     creator: creator
-      ? { id: creator._id.toString(), displayName: creator.nickname, avatarUrl: creator.avatarUrl ?? null, isOfficial: creator.isOfficial ?? false }
+      ? { id: creator._id.toString(), displayName: creator.nickname, avatarUrl: creator.avatarUrl ?? null, isOfficial: creator.isOfficial ?? false, isVerified: creator.isVerified ?? false, isPremium: creator.isPremium ?? false }
       : undefined,
     title: ev.title,
     description: ev.description,
@@ -93,7 +93,7 @@ async function attachFeedEntries(events, viewerId, blockedSet) {
   const [allEntries, myVoteEntryIds, readStates] = await Promise.all([
     VoteEntry.find({ eventId: { $in: ids } })
       .sort({ voteCount: -1, createdAt: 1 }) // ranked leaderboard order
-      .populate('submitterId', 'nickname avatarUrl')
+      .populate('submitterId', 'nickname avatarUrl isOfficial isVerified isPremium')
       .lean(),
     Vote.find({ voterId: viewerId, eventId: { $in: ids } }).distinct('entryId'),
     VoteReadState.find({ userId: viewerId, voteEventId: { $in: ids } }).lean(),
@@ -155,6 +155,9 @@ async function attachFeedEntries(events, viewerId, blockedSet) {
         id: entry.submitterId._id.toString(),
         displayName: entry.submitterId.nickname,
         avatarUrl: entry.submitterId.avatarUrl ?? null,
+        isOfficial: entry.submitterId.isOfficial ?? false,
+        isVerified: entry.submitterId.isVerified ?? false,
+        isPremium: entry.submitterId.isPremium ?? false,
       },
       voteCount: entry.voteCount ?? 0,
       votedByMe: votedSet.has(entry._id.toString()),
@@ -468,7 +471,7 @@ router.get('/', auth, async (req, res, next) => {
 
     // Active first, then newest. ($near already imposes distance order when used.)
     const sort = q.location ? undefined : { status: 1, _id: -1 };
-    let cursor = VoteEvent.find(q).limit(limit).populate('creatorId', 'nickname avatarUrl isOfficial');
+    let cursor = VoteEvent.find(q).limit(limit).populate('creatorId', 'nickname avatarUrl isOfficial isVerified isPremium');
     if (sort) cursor = cursor.sort(sort);
     const rows = await cursor.lean();
     // 'active' sorts before 'ended'/'pending' alphabetically — good enough; the
@@ -485,7 +488,7 @@ router.get('/', auth, async (req, res, next) => {
 router.get('/:id', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl isOfficial').lean();
+    const ev = await VoteEvent.findById(req.params.id).populate('creatorId', 'nickname avatarUrl isOfficial isVerified isPremium').lean();
     if (!ev) return err(res, 'Not found', 404);
 
     // Mutual block: a blocked creator's contest is "not found"; blocked
@@ -496,7 +499,7 @@ router.get('/:id', auth, async (req, res, next) => {
 
     const entriesRaw = await VoteEntry.find({ eventId: ev._id })
       .sort({ voteCount: -1, createdAt: 1 })
-      .populate('submitterId', 'nickname avatarUrl')
+      .populate('submitterId', 'nickname avatarUrl isOfficial isVerified isPremium')
       .lean();
     // Multi-round: surviving/winner entries first, eliminated last (each already
     // ordered by voteCount desc from the query above).
@@ -522,6 +525,9 @@ router.get('/:id', auth, async (req, res, next) => {
             id: e.submitterId._id.toString(),
             displayName: e.submitterId.nickname,
             avatarUrl: e.submitterId.avatarUrl ?? null,
+            isOfficial: e.submitterId.isOfficial ?? false,
+            isVerified: e.submitterId.isVerified ?? false,
+            isPremium: e.submitterId.isPremium ?? false,
           },
           photoUrl: e.photoUrl,
           caption: e.caption ?? '',

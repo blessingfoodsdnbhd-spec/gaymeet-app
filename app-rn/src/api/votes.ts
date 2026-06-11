@@ -18,7 +18,7 @@ export interface VoteRound {
 export interface FeedVoteEntry {
   entryId: string;
   photoUrl: string;
-  submitter: { id: string; displayName: string; avatarUrl: string | null };
+  submitter: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean; isVerified?: boolean; isPremium?: boolean };
   voteCount: number;
   votedByMe: boolean;
   rank: number;
@@ -35,7 +35,7 @@ export interface VoteProgress {
 export interface VoteEventSummary {
   id: string;
   creatorId: string;
-  creator?: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean };
+  creator?: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean; isVerified?: boolean; isPremium?: boolean };
   title: string;
   description: string;
   category: VoteCategory;
@@ -61,7 +61,7 @@ export interface VoteEventSummary {
 
 export interface VoteEntry {
   id: string;
-  submitter: { id: string; displayName: string; avatarUrl: string | null };
+  submitter: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean; isVerified?: boolean; isPremium?: boolean };
   photoUrl: string;
   caption: string;
   voteCount: number;

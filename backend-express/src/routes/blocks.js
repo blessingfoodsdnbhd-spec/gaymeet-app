@@ -70,7 +70,7 @@ router.delete('/:id/block', auth, async (req, res, next) => {
 router.get('/me/blocked', auth, async (req, res, next) => {
   try {
     const me = await User.findById(req.user._id)
-      .populate({ path: 'blockedUsers', select: 'nickname avatarUrl photos isOfficial isVerified' })
+      .populate({ path: 'blockedUsers', select: 'nickname avatarUrl photos isOfficial isVerified isPremium' })
       .lean();
     const blocked = (me?.blockedUsers || [])
       .filter(Boolean)
@@ -80,6 +80,7 @@ router.get('/me/blocked', auth, async (req, res, next) => {
         avatarUrl: u.avatarUrl || (u.photos && u.photos[0]) || null,
         isOfficial: !!u.isOfficial,
         isVerified: !!u.isVerified,
+        isPremium: !!u.isPremium,
       }));
     ok(res, { blocked });
   } catch (e) {

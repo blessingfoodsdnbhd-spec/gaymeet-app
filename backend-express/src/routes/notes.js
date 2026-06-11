@@ -140,7 +140,7 @@ router.get('/sent', auth, async (req, res, next) => {
     const notes = await Note.find({ senderId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(100)
-      .populate('recipientId', 'nickname avatarUrl')
+      .populate('recipientId', 'nickname avatarUrl isOfficial isVerified isPremium premiumExpiresAt vipLevel vipExpiresAt')
       .lean();
     ok(res, {
       notes: notes
@@ -150,6 +150,10 @@ router.get('/sent', auth, async (req, res, next) => {
             _id: n.recipientId._id,
             nickname: n.recipientId.nickname,
             avatarUrl: n.recipientId.avatarUrl ?? null,
+            isOfficial: !!n.recipientId.isOfficial,
+            isVerified: !!n.recipientId.isVerified,
+            // Expiry/vipLevel-aware (raw isPremium ignores expiry + vipLevel tier).
+            isPremium: isPremiumActive(n.recipientId),
           };
           return {
             _id: n._id,

@@ -14,7 +14,7 @@ router.get('/', auth, async (req, res, next) => {
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .populate(
         'users',
-        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode'
+        'nickname avatarUrl isOnline lastActiveAt isPremium isBoosted countryCode isOfficial isVerified'
       )
       .lean();
 

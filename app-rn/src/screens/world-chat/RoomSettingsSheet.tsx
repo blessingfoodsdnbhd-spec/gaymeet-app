@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { Avatar } from '../../components/Avatar';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   getRoomMembers,
@@ -232,9 +233,15 @@ export function RoomSettingsSheet({
                 style={[styles.memberRow, { borderColor: theme.colors.line }]}
               >
                 <Avatar name={m.displayName} uri={m.avatarUrl} size={38} />
-                <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
-                  {m.displayName}
-                </Text>
+                <NameWithBadge
+                  name={m.displayName}
+                  official={m.isOfficial}
+                  verified={m.isVerified}
+                  premium={m.isPremium}
+                  badgeSize={14}
+                  containerStyle={{ flex: 1 }}
+                  textStyle={{ flex: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}
+                />
                 {m.isCreator && <Crown size={15} color={theme.colors.primary} strokeWidth={2} />}
               </Pressable>
             ))}
@@ -313,7 +320,15 @@ export function RoomSettingsSheet({
                     {f.isOnline && (
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.success ?? theme.colors.online ?? '#3CC479' }} />
                     )}
-                    <Text style={{ flexShrink: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>{f.displayName}</Text>
+                    <NameWithBadge
+                      name={f.displayName}
+                      official={f.isOfficial}
+                      verified={f.isVerified}
+                      premium={f.isPremium}
+                      badgeSize={14}
+                      containerStyle={{ flexShrink: 1 }}
+                      textStyle={{ flexShrink: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}
+                    />
                   </View>
                   <View
                     style={[
@@ -395,7 +410,15 @@ export function RoomSettingsSheet({
           members.map((m) => (
             <View key={m.id} style={[styles.memberRow, { borderColor: theme.colors.line }]}>
               <Avatar name={m.displayName} uri={m.avatarUrl} size={36} />
-              <Text style={{ flex: 1, fontSize: 14.5, color: theme.colors.text, fontWeight: '600' }}>{m.displayName}</Text>
+              <NameWithBadge
+                name={m.displayName}
+                official={m.isOfficial}
+                verified={m.isVerified}
+                premium={m.isPremium}
+                badgeSize={13}
+                containerStyle={{ flex: 1 }}
+                textStyle={{ flex: 1, fontSize: 14.5, color: theme.colors.text, fontWeight: '600' }}
+              />
               {m.isCreator ? (
                 <Crown size={16} color={theme.colors.primary} />
               ) : (

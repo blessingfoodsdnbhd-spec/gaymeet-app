@@ -95,6 +95,9 @@ export interface PhotoRequestUser {
   avatarUrl?: string | null;
   level?: number;
   isOnline?: boolean;
+  isOfficial?: boolean;
+  isVerified?: boolean;
+  isPremium?: boolean;
 }
 
 export interface PhotoRequest {

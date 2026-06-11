@@ -17,7 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
-import { VerifiedBadge } from '../../components/NameWithBadge';
+import { NameWithBadge } from '../../components/NameWithBadge';
 import { EmptyState } from '../../components/EmptyState';
 import { getMomentLikers, type MomentLiker } from '../../api/moments';
 import { toggleFollow } from '../../api/follows';
@@ -102,11 +102,16 @@ export function MomentLikersScreen() {
               })}
             >
               <Avatar name={item.nickname} uri={item.avatarUrl} avatarIdx={idxFor(item._id)} size={48} />
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }} numberOfLines={1}>
-                  {item.nickname}
-                </Text>
-                {item.isOfficial && <VerifiedBadge size={14} />}
+              <View style={{ flex: 1 }}>
+                <NameWithBadge
+                  name={item.nickname}
+                  official={item.isOfficial}
+                  verified={item.isVerified}
+                  premium={item.isPremium}
+                  textStyle={{ fontSize: 15, fontWeight: '600', color: theme.colors.text }}
+                  numberOfLines={1}
+                  badgeSize={14}
+                />
               </View>
               <Pressable
                 onPress={() => onTogglePill(item)}
