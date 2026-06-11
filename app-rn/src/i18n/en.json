@@ -1,24 +1,66 @@
 {
-  "popularity": {"label": "Popular"},
+  "popularity": {
+    "label": "Popular"
+  },
   "empty": {
-    "viewers": { "subtitle": "Share your profile to get more eyes on you.", "cta": "Share my profile" },
-    "votes": { "subtitle": "Start a contest and invite people to join." },
-    "notes": { "subtitle": "Write a little note to someone nearby.", "cta": "Find people" },
-    "friends": { "title": "You're not following anyone yet", "subtitle": "Meet people in the Plaza or in Discover.", "cta": "Go to Plaza", "cta2": "Discover" },
-    "matches": { "title": "No matches yet", "subtitle": "Tap “Match” on someone's profile in Discover.", "cta": "Go to Discover", "cta2": "Plaza" },
-    "moments": { "cta": "Post a moment" },
-    "discoverEnd": { "cta": "Chat in the Plaza" },
-    "chats": { "subtitle": "Meet new people in the Plaza.", "cta": "Go to Plaza" }
+    "viewers": {
+      "subtitle": "Share your profile to get more eyes on you.",
+      "cta": "Share my profile"
+    },
+    "votes": {
+      "subtitle": "Start a contest and invite people to join."
+    },
+    "notes": {
+      "subtitle": "Write a little note to someone nearby.",
+      "cta": "Find people"
+    },
+    "friends": {
+      "title": "You're not following anyone yet",
+      "subtitle": "Meet people in the Plaza or in Discover.",
+      "cta": "Go to Plaza",
+      "cta2": "Discover"
+    },
+    "matches": {
+      "title": "No matches yet",
+      "subtitle": "Tap “Match” on someone's profile in Discover.",
+      "cta": "Go to Discover",
+      "cta2": "Plaza"
+    },
+    "moments": {
+      "cta": "Post a moment"
+    },
+    "discoverEnd": {
+      "cta": "Chat in the Plaza"
+    },
+    "chats": {
+      "subtitle": "Meet new people in the Plaza.",
+      "cta": "Go to Plaza"
+    }
   },
   "onboarding": {
+    "1": {
+      "title": "Contests — win badges",
+      "subtitle": "Enter your work and the top 3 win a permanent “Highlight” badge."
+    },
+    "2": {
+      "title": "World Plaza — chat globally",
+      "subtitle": "15 country rooms to chat with people around the world in real time."
+    },
+    "3": {
+      "title": "Nearby — connect by interest",
+      "subtitle": "Find people around you and click through shared interests."
+    },
+    "4": {
+      "title": "Voice intro — be heard in 5s",
+      "subtitle": "Record a 1–5 second voice intro so others instantly get your vibe."
+    },
+    "5": {
+      "title": "Welcome to Meyou",
+      "subtitle": "Let's finish your profile and start meeting people."
+    },
     "skip": "Skip",
     "next": "Next",
-    "done": "Get Started",
-    "1": { "title": "Contests — win badges", "subtitle": "Enter your work and the top 3 win a permanent “Highlight” badge." },
-    "2": { "title": "World Plaza — chat globally", "subtitle": "15 country rooms to chat with people around the world in real time." },
-    "3": { "title": "Nearby — connect by interest", "subtitle": "Find people around you and click through shared interests." },
-    "4": { "title": "Voice intro — be heard in 5s", "subtitle": "Record a 1–5 second voice intro so others instantly get your vibe." },
-    "5": { "title": "Welcome to Meyou", "subtitle": "Let's finish your profile and start meeting people." }
+    "done": "Get Started"
   },
   "invite": {
     "title": "Invite Friends",
@@ -44,7 +86,9 @@
     "invalidCode": "That invite code isn't valid.",
     "cantUseSelf": "You can't use your own invite code.",
     "alreadyRedeemed": "You've already redeemed an invite code.",
-    "card": { "invitedBy": "{{name}} invited you to Meyou" }
+    "card": {
+      "invitedBy": "{{name}} invited you to Meyou"
+    }
   },
   "sort": {
     "matchTime": "Match time",
@@ -56,7 +100,9 @@
     "active": "Active"
   },
   "system": {
-    "match": { "created": "You're now Meyou ✨ Say hi 👋" }
+    "match": {
+      "created": "You're now Meyou ✨ Say hi 👋"
+    }
   },
   "announcement": {
     "dontShowAgain": "Don't show again",
@@ -130,13 +176,110 @@
     "title": "Edit Profile",
     "done": "Done"
   },
-  "search": {"placeholder": "Search users, votes, rooms", "hintTitle": "Search Meyou", "hintSubtitle": "Find people, vote events, and chat rooms.", "empty": "No results for “{{q}}”", "tabs": {"users": "Users", "votes": "Votes", "rooms": "Rooms"}},
-  "adminReports": {"title": "Reports", "empty": "No open reports 🎉", "resolve": "Resolve", "noReason": "(no reason given)", "kind": {"worldChat": "Plaza", "vote": "Vote", "scamMessage": "Scam?", "nsfwImage": "NSFW?", "user": "User"}},
-  "adminStats": {"title": "Analytics", "loadFailed": "Couldn't load stats", "totalUsers": "Total users", "dau": "DAU", "mau": "MAU", "signupsToday": "Signups today", "signups7d": "Signups 7d", "signups30d": "Signups 30d", "premium": "Premium", "moments24h": "Moments 24h", "totalMoments": "Total moments", "totalVotes": "Vote events", "totalMatches": "Matches"},
-  "verification": {"title": "Photo verification", "intro": "Record a quick selfie doing the pose below so we can confirm you're a real person. Once approved you'll earn a green verified badge.", "poseLabel": "Your pose", "recordSelfie": "Record selfie", "recordVideo": "Record video", "recordVideoPremium": "Record video (Premium)", "submit": "Submit for review", "submitting": "Submitting…", "submitFailed": "Couldn't submit", "retake": "Retake", "videoReady": "Video ready to submit", "permTitle": "Camera access needed", "permBody": "Enable camera access to record your verification.", "pendingTitle": "Under review", "pendingBody": "We're reviewing your submission. This usually takes under 24 hours.", "approvedTitle": "You're verified!", "approvedBody": "Your profile now shows the green verified badge.", "rejectedTitle": "Verification wasn't approved", "verified": "Verified"},
-  "adminVerifications": {"title": "Verifications", "empty": "No pending verifications 🎉", "photo": "Photo", "video": "Video", "poseLabel": "Pose", "approve": "Approve", "reject": "Reject", "rejectConfirmTitle": "Reject verification?", "rejectConfirmBody": "The user will need to submit again."},
-  "myData": {"title": "My Data", "streak": "Login streak", "streakCurrent": "Current", "streakLongest": "Longest", "views": "Profile views", "viewsUnique": "Unique viewers", "last7d": "Last 7 days", "last30d": "Last 30 days", "likes": "Likes received", "likesTotal": "Total", "popularity": "Popularity", "popularityScore": "Score", "popularityRank": "Rank", "topPct": "Top {{pct}}%", "upsell": "Unlock 7/30-day trends + popularity rank with Premium"},
-  "premiumGift": {"title": "Gift Premium", "send": "Gift", "confirmTitle": "Gift Premium to {{name}}?", "confirmBody": "They'll get 7 days of Premium.", "sentTitle": "Gift sent 🎁", "sentBody": "They received {{days}} days of Premium!", "needPremium": "Gifting Premium is a Premium feature — tap to upgrade", "rateLimited": "You've hit the gift limit. Try again later.", "failed": "Couldn't send gift", "emptyTitle": "No friends yet", "emptySubtitle": "Follow people to gift them Premium.", "monthlyQuota": "{{remaining}} of {{total}} gifts this month", "alreadyPremium": "Already Premium", "alreadyGifted": "Already gifted"},
+  "search": {
+    "placeholder": "Search users, votes, rooms",
+    "hintTitle": "Search Meyou",
+    "hintSubtitle": "Find people, vote events, and chat rooms.",
+    "empty": "No results for “{{q}}”",
+    "tabs": {
+      "users": "Users",
+      "votes": "Votes",
+      "rooms": "Rooms"
+    }
+  },
+  "adminReports": {
+    "title": "Reports",
+    "empty": "No open reports 🎉",
+    "resolve": "Resolve",
+    "noReason": "(no reason given)",
+    "kind": {
+      "worldChat": "Plaza",
+      "vote": "Vote",
+      "scamMessage": "Scam?",
+      "nsfwImage": "NSFW?",
+      "user": "User"
+    }
+  },
+  "adminStats": {
+    "title": "Analytics",
+    "loadFailed": "Couldn't load stats",
+    "totalUsers": "Total users",
+    "dau": "DAU",
+    "mau": "MAU",
+    "signupsToday": "Signups today",
+    "signups7d": "Signups 7d",
+    "signups30d": "Signups 30d",
+    "premium": "Premium",
+    "moments24h": "Moments 24h",
+    "totalMoments": "Total moments",
+    "totalVotes": "Vote events",
+    "totalMatches": "Matches"
+  },
+  "verification": {
+    "title": "Photo verification",
+    "intro": "Record a quick selfie doing the pose below so we can confirm you're a real person. Once approved you'll earn a green verified badge.",
+    "poseLabel": "Your pose",
+    "recordSelfie": "Record selfie",
+    "recordVideo": "Record video",
+    "recordVideoPremium": "Record video (Premium)",
+    "submit": "Submit for review",
+    "submitting": "Submitting…",
+    "submitFailed": "Couldn't submit",
+    "retake": "Retake",
+    "videoReady": "Video ready to submit",
+    "permTitle": "Camera access needed",
+    "permBody": "Enable camera access to record your verification.",
+    "pendingTitle": "Under review",
+    "pendingBody": "We're reviewing your submission. This usually takes under 24 hours.",
+    "approvedTitle": "You're verified!",
+    "approvedBody": "Your profile now shows the green verified badge.",
+    "rejectedTitle": "Verification wasn't approved",
+    "verified": "Verified"
+  },
+  "adminVerifications": {
+    "title": "Verifications",
+    "empty": "No pending verifications 🎉",
+    "photo": "Photo",
+    "video": "Video",
+    "poseLabel": "Pose",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectConfirmTitle": "Reject verification?",
+    "rejectConfirmBody": "The user will need to submit again."
+  },
+  "myData": {
+    "title": "My Data",
+    "streak": "Login streak",
+    "streakCurrent": "Current",
+    "streakLongest": "Longest",
+    "views": "Profile views",
+    "viewsUnique": "Unique viewers",
+    "last7d": "Last 7 days",
+    "last30d": "Last 30 days",
+    "likes": "Likes received",
+    "likesTotal": "Total",
+    "popularity": "Popularity",
+    "popularityScore": "Score",
+    "popularityRank": "Rank",
+    "topPct": "Top {{pct}}%",
+    "upsell": "Unlock 7/30-day trends + popularity rank with Premium"
+  },
+  "premiumGift": {
+    "title": "Gift Premium",
+    "send": "Gift",
+    "confirmTitle": "Gift Premium to {{name}}?",
+    "confirmBody": "They'll get 7 days of Premium.",
+    "sentTitle": "Gift sent 🎁",
+    "sentBody": "They received {{days}} days of Premium!",
+    "needPremium": "Gifting Premium is a Premium feature — tap to upgrade",
+    "rateLimited": "You've hit the gift limit. Try again later.",
+    "failed": "Couldn't send gift",
+    "emptyTitle": "No friends yet",
+    "emptySubtitle": "Follow people to gift them Premium.",
+    "monthlyQuota": "{{remaining}} of {{total}} gifts this month",
+    "alreadyPremium": "Already Premium",
+    "alreadyGifted": "Already gifted"
+  },
   "blocked": {
     "title": "Blocked Users",
     "emptyTitle": "No blocked users",
@@ -189,24 +332,119 @@
     "profile": "Me"
   },
   "plaza": {
-    "tab": { "hot": "🔥 Hot", "match": "❤️ Chat", "voice": "🎤 Voice", "interest": "🎮 Channels", "country": "🌏 Countries" },
-    "switcher": { "hot": "Hot rooms", "country": "Choose a country" },
-    "channel": { "food": "Food", "photo": "Photography", "games": "Games", "ai": "AI", "realestate": "Real Estate", "pets": "Pets" },
-    "topic": { "lateNight": "Late Night", "singles": "Singles", "aiDiscuss": "AI Discussion" },
+    "tab": {
+      "hot": "🔥 Hot",
+      "match": "❤️ Chat",
+      "voice": "🎤 Voice",
+      "interest": "🎮 Channels",
+      "country": "🌏 Countries"
+    },
+    "switcher": {
+      "hot": "Hot rooms",
+      "country": "Choose a country"
+    },
+    "channel": {
+      "food": "Food",
+      "photo": "Photography",
+      "games": "Games",
+      "ai": "AI",
+      "realestate": "Real Estate",
+      "pets": "Pets",
+      "lateNight": "Late Night",
+      "startup": "Startup",
+      "invest": "Investing",
+      "movies": "Movies",
+      "music": "Music",
+      "travel": "Travel",
+      "cars": "Cars",
+      "fitness": "Fitness",
+      "study": "Study",
+      "design": "Design",
+      "fashion": "Fashion",
+      "baking": "Baking",
+      "coffee": "Coffee"
+    },
+    "topic": {
+      "lateNight": "Late Night",
+      "singles": "Singles",
+      "aiDiscuss": "AI Discussion"
+    },
     "comingSoon": "Coming Soon",
     "notifyMe": "Notify me",
     "notified": "We'll let you know",
-    "match": { "title": "Random Chat", "desc": "Get matched with someone new to chat with. We'll pair you up — coming soon." },
-    "voice": { "title": "Voice Rooms", "desc": "Drop into a live voice room and talk in real time. Coming soon.", "lateNight": "Late Night", "cantonese": "Cantonese Room", "myChinese": "Malaysian Chinese", "entrepreneurs": "Entrepreneurs" },
-    "interest": { "title": "Interest Channels", "desc": "Find your people by what you love — photography, food, gaming & more. Coming soon." },
-    "country": { "subchannel": { "general": "General", "social": "Social", "newcomers": "Newcomers", "events": "Events" } },
+    "match": {
+      "title": "Random Chat",
+      "desc": "Get matched with someone new to chat with. We'll pair you up — coming soon."
+    },
+    "voice": {
+      "title": "Voice Rooms",
+      "desc": "Drop into a live voice room and talk in real time. Coming soon.",
+      "lateNight": "Late Night",
+      "cantonese": "Cantonese",
+      "myChinese": "Malaysian Chinese",
+      "entrepreneurs": "Entrepreneurs",
+      "randomMatch": "Random Match",
+      "singles": "Singles",
+      "mandarin": "Mandarin",
+      "english": "English",
+      "karaoke": "Karaoke",
+      "gaming": "Gaming",
+      "bosses": "Bosses",
+      "ai": "AI Talk",
+      "feelings": "Feelings"
+    },
+    "interest": {
+      "title": "Interest Channels",
+      "desc": "Find your people by what you love — photography, food, gaming & more. Coming soon."
+    },
+    "country": {
+      "subchannel": {
+        "general": "Main",
+        "social": "Social",
+        "newcomers": "Newcomers",
+        "events": "Events",
+        "chitchat": "Chit-Chat"
+      }
+    },
     "worldLobby": "World Lobby",
     "hotRooms": "🔥 Hot",
     "rooms": "Rooms",
     "browse": "Browse rooms",
     "userJoined": "🎉 {{name}} joined",
     "userLeft": "👋 {{name}} left",
-    "onlineCount": "{{count}} online"
+    "onlineCount": "{{count}} online",
+    "friend": {
+      "lateNight": "Late Night Chat",
+      "singles": "Singles",
+      "overseas": "Overseas Chinese",
+      "voiceMatch": "Voice Match",
+      "buddies": "Find a Buddy",
+      "mealMates": "Meal Mates",
+      "travelMates": "Travel Mates",
+      "bizPartners": "Startup Partners",
+      "overseasRoom": "Overseas Chinese Room"
+    },
+    "level": {
+      "title": {
+        "lv1": "Newcomer",
+        "lv5": "Regular",
+        "lv10": "Veteran",
+        "lv20": "Legend"
+      }
+    },
+    "hot": {
+      "topics": "Hot Topics",
+      "myRooms": "My Rooms",
+      "noRooms": "You haven't created any rooms yet — tap ＋ to make one.",
+      "quota": "{{used}}/{{cap}} rooms"
+    },
+    "create": {
+      "limitReached": "Limit reached — upgrade to Premium for up to {{cap}} rooms."
+    },
+    "online": "{{n}} online",
+    "onlineList": "Online",
+    "levelUp": "🎖️ {{name}} reached Lv{{level}} {{title}}!",
+    "voiceTextNotice": "🎤 Voice is coming soon — this is a text room for now."
   },
   "chatTranslation": {
     "title": "Chat Translation",
@@ -290,7 +528,11 @@
       "leaveConfirmTitle": "Leave this room?",
       "leaveConfirmBody": "You'll no longer be a member of this room.",
       "roomDeleted": "This room was deleted.",
-      "kicked": "You were removed from this room."
+      "kicked": "You were removed from this room.",
+      "sectionUgc": "User Rooms",
+      "ugcEmpty": "No user rooms yet — tap ＋ to create one.",
+      "roomCount": "{{n}} rooms",
+      "inChannel": "Create in {{channel}}"
     },
     "empty": "Be the first to say hi 👋",
     "placeholder": "Chat with the world…",
@@ -457,7 +699,7 @@
   },
   "moments": {
     "compose": {
-        "ephemeral": "Disappears after 24h",
+      "ephemeral": "Disappears after 24h",
       "tag": "Tag Friends",
       "addPhoto": "Add photo",
       "maxPhotos": "Maximum {{max}} photos",
@@ -475,7 +717,10 @@
       "locationFailed": "Couldn't get location"
     },
     "viewOnMap": "View on map",
-    "likers": { "title": "Likes", "empty": "No likes yet" },
+    "likers": {
+      "title": "Likes",
+      "empty": "No likes yet"
+    },
     "filters": {
       "all": "All",
       "friends": "Following",
@@ -528,9 +773,28 @@
     }
   },
   "chat": {
-    "photoConfirm": {"captionPlaceholder": "Add a caption…", "send": "Send"},
-    "voice": {"title": "Voice message", "tapToStart": "Tap to record", "recording": "Recording…", "tooShort": "Hold a bit longer", "send": "Send", "sendFailed": "Couldn't send voice message", "slideToCancel": "Slide to cancel", "locked": "Locked", "tapToDelete": "Tap to delete"},
-    "icebreakers": {"header": "👋 Break the ice — say hello!", "askInterest": "You're into {{interest}} too — how did you get started?", "generic1": "Any plans this weekend?", "generic2": "Got any good recommendations lately? 🎵📺", "generic3": "Hey! How's your day going?"},
+    "photoConfirm": {
+      "captionPlaceholder": "Add a caption…",
+      "send": "Send"
+    },
+    "voice": {
+      "title": "Voice message",
+      "tapToStart": "Tap to record",
+      "recording": "Recording…",
+      "tooShort": "Hold a bit longer",
+      "send": "Send",
+      "sendFailed": "Couldn't send voice message",
+      "slideToCancel": "Slide to cancel",
+      "locked": "Locked",
+      "tapToDelete": "Tap to delete"
+    },
+    "icebreakers": {
+      "header": "👋 Break the ice — say hello!",
+      "askInterest": "You're into {{interest}} too — how did you get started?",
+      "generic1": "Any plans this weekend?",
+      "generic2": "Got any good recommendations lately? 🎵📺",
+      "generic3": "Hey! How's your day going?"
+    },
     "scamWarning": "Caution: mentions off-platform contact or money. Never send money or move to another app with strangers.",
     "composer": {
       "camera": "Camera",
@@ -766,12 +1030,12 @@
       "account": "Account & security",
       "photoRequests": "Photo requests",
       "adminReports": "Reports",
-        "adminStats": "Analytics",
-        "announcementAdmin": "Announcement manager",
-        "verification": "Get verified",
-        "adminVerifications": "Verifications",
-        "myData": "My Data 📊",
-        "giftPremium": "Gift Premium 🎁"
+      "adminStats": "Analytics",
+      "announcementAdmin": "Announcement manager",
+      "verification": "Get verified",
+      "adminVerifications": "Verifications",
+      "myData": "My Data 📊",
+      "giftPremium": "Gift Premium 🎁"
     },
     "edit": {
       "title": "Edit profile",
@@ -779,9 +1043,9 @@
       "nickname": "Nickname",
       "bio": "Bio",
       "addPhotosHint": "Add photos to your profile",
-    "aboutYou": "About you",
-    "notSet": "Not set",
-    "bioPlaceholder": "A line or two about you",
+      "aboutYou": "About you",
+      "notSet": "Not set",
+      "bioPlaceholder": "A line or two about you",
       "age": "Age",
       "dob": "Date of birth",
       "dobHint": "YYYY-MM-DD",
@@ -862,8 +1126,14 @@
     "enNative": "English"
   },
   "privacySettings": {
-    "hidePopularity": {"label": "Hide popularity", "subtitle": "Others won't see your 🔥 popularity score"},
-    "ghostMode": {"label": "Ghost mode 👻", "subtitle": "Appear offline & 'last seen' hours ago — fully invisible"},
+    "hidePopularity": {
+      "label": "Hide popularity",
+      "subtitle": "Others won't see your 🔥 popularity score"
+    },
+    "ghostMode": {
+      "label": "Ghost mode 👻",
+      "subtitle": "Appear offline & 'last seen' hours ago — fully invisible"
+    },
     "title": "Privacy",
     "showInNearby": "Show me in Nearby",
     "showInNearbyHint": "When off, you won't appear in other people's Nearby grid",
@@ -885,9 +1155,18 @@
   },
   "notifications": {
     "title": "Notifications",
-    "follow": { "title": "Someone started following you", "body": "Tap to view their profile" },
-    "viewers": { "title": "Profile views", "body": "{{count}} people viewed your profile today" },
-    "wants": { "title": "New admirers", "body": "{{count}} people want to know you today" },
+    "follow": {
+      "title": "Someone started following you",
+      "body": "Tap to view their profile"
+    },
+    "viewers": {
+      "title": "Profile views",
+      "body": "{{count}} people viewed your profile today"
+    },
+    "wants": {
+      "title": "New admirers",
+      "body": "{{count}} people want to know you today"
+    },
     "empty": "No notifications yet",
     "markAllRead": "Mark all read"
   },
@@ -1081,12 +1360,24 @@
       "profile80": "Your profile looks great — go Premium for 3× the visibility."
     },
     "testimonials": {
+      "1": {
+        "name": "小美 · 25 · 吉隆坡",
+        "quote": "Met so many photography friends through Meyou — the contests are addictive!"
+      },
+      "2": {
+        "name": "Jay · 28 · Singapore",
+        "quote": "The plaza rooms are great for meeting people without the dating pressure."
+      },
+      "3": {
+        "name": "阿哲 · 23 · 台北",
+        "quote": "Voice intros are such a nice touch — you get a real feel for people."
+      },
+      "4": {
+        "name": "Nina · 26 · 香港",
+        "quote": "Premium's profile viewers + incognito are 100% worth it."
+      },
       "section": "What members say",
-      "disclaimer": "*Anonymized samples.",
-      "1": { "name": "小美 · 25 · 吉隆坡", "quote": "Met so many photography friends through Meyou — the contests are addictive!" },
-      "2": { "name": "Jay · 28 · Singapore", "quote": "The plaza rooms are great for meeting people without the dating pressure." },
-      "3": { "name": "阿哲 · 23 · 台北", "quote": "Voice intros are such a nice touch — you get a real feel for people." },
-      "4": { "name": "Nina · 26 · 香港", "quote": "Premium's profile viewers + incognito are 100% worth it." }
+      "disclaimer": "*Anonymized samples."
     },
     "benefits": {
       "hideOnline": "Hide your online status",

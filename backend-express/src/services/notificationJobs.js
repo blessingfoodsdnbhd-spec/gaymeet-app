@@ -164,16 +164,17 @@ async function dailyTick() {
 }
 
 /**
- * Every 10 min: delete custom World-Chat rooms that have gone cold — no activity
- * for ≥3h AND nobody currently connected. `lastActiveAt` (bumped on every
- * message) is the reliable persisted signal; the live socket count guards
- * against deleting a room people are sitting in; the createdAt guard avoids
- * nuking brand-new empty rooms. Broadcasts world-chat:room-deleted so any
- * lingering client in the room is bounced back to the world room.
+ * Every 10 min: delete custom World-Chat rooms that have gone cold — Phase 4
+ * spec §7.2: no activity for ≥3 days (72h) AND nobody currently connected.
+ * `lastActiveAt` (bumped on every message) is the reliable persisted signal;
+ * the live socket count guards against deleting a room people are sitting in;
+ * the createdAt guard avoids nuking brand-new empty rooms. Broadcasts
+ * world-chat:room-deleted so any lingering client is bounced to the world room.
+ * TODO (P3 §7.2): push the creator a "closing in 24h" reminder before deletion.
  */
 async function emptyRoomSweep() {
   try {
-    const cutoff = new Date(Date.now() - 3 * HOUR);
+    const cutoff = new Date(Date.now() - 3 * DAY);
     const stale = await ChatRoom.find({
       lastActiveAt: { $lt: cutoff },
       createdAt: { $lt: cutoff },

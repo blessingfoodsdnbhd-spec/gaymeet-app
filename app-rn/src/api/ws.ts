@@ -153,6 +153,20 @@ export type WsWorldChatDeleted = { messageId: string };
 export type WsWorldChatRoomClosed = { roomId: string };
 export type WsWorldChatRoomDeleted = { roomId: string };
 export type WsWorldChatKicked = { roomId: string };
+/** mIRC online roster for a room (spec §9.1) — pushed on request + every join/leave. */
+export type WsWorldChatRoster = {
+  roomId: string;
+  online: number;
+  users: { userId: string; name: string; avatarUrl: string | null; tier: string; level: number }[];
+};
+/** A user leveled up in a room (spec §9.2.6) — rendered as a system line. */
+export type WsWorldChatLevelUp = {
+  roomId: string;
+  userId: string;
+  userName: string;
+  newLevel: number;
+  titleKey?: string | null;
+};
 
 export interface WsEventMap {
   'match:new': WsMatchNew;
@@ -166,6 +180,8 @@ export interface WsEventMap {
   'world-chat:room-closed': WsWorldChatRoomClosed;
   'world-chat:room-deleted': WsWorldChatRoomDeleted;
   'world-chat:kicked': WsWorldChatKicked;
+  'world-chat:roster': WsWorldChatRoster;
+  'world-chat:level-up': WsWorldChatLevelUp;
   'chat:typing': WsChatTyping;
   'chat:read': WsChatRead;
   'chat:edited': WsChatEdited;

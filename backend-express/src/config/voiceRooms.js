@@ -1,15 +1,22 @@
 /**
- * Plaza voice rooms (🎤 语音) — DISPLAY-ONLY placeholders. Voice infrastructure
- * (Phase 4) isn't built yet, so these are NOT real chat rooms: they're not in
- * VALID_ROOM_IDS and can't be joined or posted to. The 🎤 tab lists them with a
- * "即将推出" badge. Shape mirrors topicRooms.js / interestChannels.js.
+ * Plaza 语音频道 (voice channels) — grouped under the 🎤 语音 tab. Order = Plaza
+ * display order (Phase 4 spec §3.2). Ids are namespaced `voice:<slug>`.
  *
- * Note: 深夜吹水 intentionally also exists as a text topic room — same name,
- * different room type (text vs voice).
+ * NOTE (Phase 4): real-time audio infrastructure is NOT built yet. These are now
+ * navigable channels (so the 二级频道 list + 总聊天室 + 用户自建房 structure matches the
+ * other categories), but until voice/WebRTC ships they behave as TEXT rooms with
+ * a "语音功能即将推出" banner in the room. They ARE in VALID_ROOM_IDS so users can
+ * chat in text. TODO: wire up live audio (mic, mixing) and flip these to voice.
  */
 module.exports = [
-  { id: 'voice:late-night', emoji: '🎤', name: '深夜吹水', i18nKey: 'plaza.voice.lateNight' },
-  { id: 'voice:cantonese', emoji: '🎤', name: '广东话房', i18nKey: 'plaza.voice.cantonese' },
-  { id: 'voice:my-chinese', emoji: '🎤', name: '马来西亚华人', i18nKey: 'plaza.voice.myChinese' },
-  { id: 'voice:entrepreneurs', emoji: '🎤', name: '创业老板', i18nKey: 'plaza.voice.entrepreneurs' },
+  { id: 'voice:random-match', emoji: '🎲', name: '随机配对', i18nKey: 'plaza.voice.randomMatch' },
+  { id: 'voice:singles', emoji: '💘', name: '单身交友', i18nKey: 'plaza.voice.singles' },
+  { id: 'voice:cantonese', emoji: '🗣️', name: '广东话房', i18nKey: 'plaza.voice.cantonese' },
+  { id: 'voice:mandarin', emoji: '🀄', name: '普通话房', i18nKey: 'plaza.voice.mandarin' },
+  { id: 'voice:english', emoji: '🔤', name: '英语交流', i18nKey: 'plaza.voice.english' },
+  { id: 'voice:karaoke', emoji: '🎤', name: '唱歌房', i18nKey: 'plaza.voice.karaoke' },
+  { id: 'voice:gaming', emoji: '🎮', name: '游戏开黑', i18nKey: 'plaza.voice.gaming' },
+  { id: 'voice:bosses', emoji: '💼', name: '创业老板房', i18nKey: 'plaza.voice.bosses' },
+  { id: 'voice:ai', emoji: '🤖', name: 'AI 讨论房', i18nKey: 'plaza.voice.ai' },
+  { id: 'voice:feelings', emoji: '🕳️', name: '情感树洞', i18nKey: 'plaza.voice.feelings' },
 ];

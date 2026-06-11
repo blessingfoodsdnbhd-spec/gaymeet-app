@@ -35,7 +35,7 @@ export function CreateRoomScreen() {
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const qc = useQueryClient();
-  const { countryCode, title: countryTitle } = route.params;
+  const { channelId, title: channelTitle } = route.params;
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -50,16 +50,22 @@ export function CreateRoomScreen() {
     setSaving(true);
     try {
       const room = await createChatRoom({
-        countryCode,
+        channelId,
         title: title.trim(),
         description: description.trim() || undefined,
         isPrivate,
         password: isPrivate ? password.trim() : undefined,
       });
-      qc.invalidateQueries({ queryKey: ['worldChat', 'countryRooms', countryCode] });
+      qc.invalidateQueries({ queryKey: ['worldChat', 'channelRooms', channelId] });
+      qc.invalidateQueries({ queryKey: ['worldChat', 'myRooms'] });
       nav.replace('WorldChatRoom', { roomId: room.id, title: room.title, custom: true });
     } catch (e: any) {
-      Alert.alert(t('worldChat.rooms.createFailed'), e?.response?.data?.error ?? '');
+      // §7.1 — quota reached returns 429 ROOM_LIMIT with a cap.
+      if (e?.response?.data?.code === 'ROOM_LIMIT') {
+        Alert.alert(t('worldChat.rooms.createFailed'), t('plaza.create.limitReached', { cap: e.response.data.cap }));
+      } else {
+        Alert.alert(t('worldChat.rooms.createFailed'), e?.response?.data?.error ?? '');
+      }
     } finally {
       setSaving(false);
     }
@@ -88,7 +94,7 @@ export function CreateRoomScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }} keyboardShouldPersistTaps="handled">
           <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>
-            {t('worldChat.rooms.inCountry', { country: countryTitle })}
+            {t('worldChat.rooms.inChannel', { channel: channelTitle })}
           </Text>
 
           <View style={{ gap: 8 }}>

@@ -9,6 +9,15 @@ export interface WorldChatReplyPreview {
   body: string; // one-line preview (caption / '📷' for photos / '🎙️' for voice)
 }
 
+/** Plaza identity tier (spec §9.3). Drives the username color + emoji badge. */
+export type PlazaTier = 'admin' | 'vip' | 'legend' | 'old' | 'normal' | 'new';
+
+/** Compact identity attached to chat senders + roster entries (spec §9.2/§9.3). */
+export interface PlazaIdentity {
+  tier: PlazaTier;
+  level: number;
+}
+
 /** A World Chat message. No anonymous identities — always a real user. */
 export interface WorldChatMessage {
   messageId: string;
@@ -17,13 +26,16 @@ export interface WorldChatMessage {
   displayName: string;
   avatarUrl: string | null;
   isOfficial?: boolean;
+  /** Plaza identity tier + level (§9.2/§9.3). Absent on legacy/system rows. */
+  identity?: PlazaIdentity;
   countryCode?: string | null;
   city?: string | null;
   body: string;
   type?: 'text' | 'photo' | 'voice' | 'system';
-  /** Client-only ephemeral join/leave line (mIRC-style). Never persisted nor
-   *  returned by the server — synthesized from world-chat:user-joined/left. */
-  system?: { kind: 'join' | 'leave'; name: string };
+  /** Client-only ephemeral system line (mIRC-style). Never persisted nor
+   *  returned by the server — synthesized from world-chat:user-joined/left and
+   *  world-chat:level-up. */
+  system?: { kind: 'join' | 'leave'; name: string } | { kind: 'levelup'; name: string; level: number; titleKey?: string | null };
   photoUrl?: string | null;
   caption?: string | null;
   voiceUrl?: string | null;
@@ -44,8 +56,8 @@ export interface WorldChatRoom {
   id: string; // 'world' | 'MY' | 'topic:late-night' | 'country:my:general' | …
   flag: string;
   label: { en: string; zh: string; native: string };
-  /** Room category. 'country-sub' = a country's sub-channel (general/social/…). */
-  kind?: 'topic' | 'country' | 'interest' | 'country-sub';
+  /** Room category. 'country-sub' = a country's sub-board (general/social/…). */
+  kind?: 'topic' | 'country' | 'friend' | 'interest' | 'voice' | 'country-sub';
   /** Present for topic/interest/sub-channel rooms — resolve the name with t(). */
   i18nKey?: string;
   /** country-sub only: parent country code + sub-channel key. */
@@ -167,6 +179,8 @@ export const deleteWorldChatMessage = (messageId: string) =>
 
 export interface ChatRoomSummary {
   id: string;
+  /** Parent 二级频道 — country code or friend:/voice:/interest: id (Phase 4). */
+  channelId?: string | null;
   countryCode: string;
   title: string;
   description: string;
@@ -192,11 +206,25 @@ export interface RoomFriend {
 export const getCountryRooms = (countryCode: string) =>
   unwrap<{ rooms: ChatRoomSummary[] }>(api.get(`/world-chat/rooms/by-country/${countryCode}`));
 
+/** The user-created (UGC) rooms inside any 二级频道 (country code or
+ *  friend:/voice:/interest: id), sorted by live online count desc (spec §5.4). */
+export const getChannelRooms = (channelId: string) =>
+  unwrap<{ rooms: ChatRoomSummary[] }>(
+    api.get(`/world-chat/rooms/by-channel/${encodeURIComponent(channelId)}`),
+  );
+
+/** 我开的房间 — the current user's own open rooms + their create-quota cap. */
+export const getMyRooms = () =>
+  unwrap<{ rooms: ChatRoomSummary[]; cap: number; isPremium: boolean }>(
+    api.get('/world-chat/rooms/mine'),
+  );
+
 export const getChatRoom = (id: string) =>
   unwrap<{ room: ChatRoomSummary }>(api.get(`/world-chat/rooms/${id}`));
 
 export const createChatRoom = (input: {
-  countryCode: string;
+  /** Parent 二级频道. Country code OR friend:/voice:/interest: id (Phase 4). */
+  channelId: string;
   title: string;
   description?: string;
   isPrivate: boolean;
@@ -233,3 +261,24 @@ export const getInvitableFriends = (id: string) =>
 
 export const inviteToRoom = (id: string, userIds: string[]) =>
   unwrap<{ invited: number; memberCount: number }>(api.post(`/world-chat/rooms/${id}/invite`, { userIds }));
+
+// ── Online roster (mIRC 在线名单, spec §9.1) ───────────────────────────────────
+// Pushed over the socket, not REST. Request with emit('world-chat:request-roster',
+// { roomId }); listen on 'world-chat:roster'. Also broadcast to a room on every
+// join/leave so the sidebar stays live.
+
+/** One person in a room's online roster. */
+export interface PlazaRosterUser {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  tier: PlazaTier;
+  level: number;
+}
+
+export interface PlazaRoster {
+  roomId: string;
+  online: number;
+  /** Sorted by identity tier → level desc → join order (spec §9.1). */
+  users: PlazaRosterUser[];
+}

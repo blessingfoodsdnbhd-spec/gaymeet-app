@@ -1,24 +1,66 @@
 {
-  "popularity": {"label": "人气"},
+  "popularity": {
+    "label": "人气"
+  },
   "empty": {
-    "viewers": { "subtitle": "分享你的 profile,邀请朋友来看看。", "cta": "分享我的 profile" },
-    "votes": { "subtitle": "发起一个活动,邀请大家来参加。" },
-    "notes": { "subtitle": "给附近的人写一张小纸条吧。", "cta": "去发现" },
-    "friends": { "title": "你还没关注任何人", "subtitle": "去广场或附近认识新朋友。", "cta": "去广场", "cta2": "去发现" },
-    "matches": { "title": "还没有同频", "subtitle": "在对方 profile 上点『成为同频』。", "cta": "去发现", "cta2": "去广场" },
-    "moments": { "cta": "发布动态" },
-    "discoverEnd": { "cta": "去广场聊天" },
-    "chats": { "subtitle": "在广场认识新朋友。", "cta": "去广场" }
+    "viewers": {
+      "subtitle": "分享你的 profile,邀请朋友来看看。",
+      "cta": "分享我的 profile"
+    },
+    "votes": {
+      "subtitle": "发起一个活动,邀请大家来参加。"
+    },
+    "notes": {
+      "subtitle": "给附近的人写一张小纸条吧。",
+      "cta": "去发现"
+    },
+    "friends": {
+      "title": "你还没关注任何人",
+      "subtitle": "去广场或附近认识新朋友。",
+      "cta": "去广场",
+      "cta2": "去发现"
+    },
+    "matches": {
+      "title": "还没有同频",
+      "subtitle": "在对方 profile 上点『成为同频』。",
+      "cta": "去发现",
+      "cta2": "去广场"
+    },
+    "moments": {
+      "cta": "发布动态"
+    },
+    "discoverEnd": {
+      "cta": "去广场聊天"
+    },
+    "chats": {
+      "subtitle": "在广场认识新朋友。",
+      "cta": "去广场"
+    }
   },
   "onboarding": {
+    "1": {
+      "title": "投票活动 — 创意比赛赢徽章",
+      "subtitle": "上传你的作品参加比赛,头三名获得永久『高光时刻』徽章。"
+    },
+    "2": {
+      "title": "世界广场 — 与全球朋友聊天",
+      "subtitle": "15 个国家专属聊天室,实时与各地朋友交流。"
+    },
+    "3": {
+      "title": "附近的人 — 用兴趣连接",
+      "subtitle": "发现身边同好,通过兴趣找到聊得来的朋友。"
+    },
+    "4": {
+      "title": "语音介绍 — 5 秒让人听见真实的你",
+      "subtitle": "录制 1-5 秒语音介绍,让别人秒懂你的个性。"
+    },
+    "5": {
+      "title": "欢迎加入 Meyou",
+      "subtitle": "现在让我们完善你的 profile,开始认识朋友吧。"
+    },
     "skip": "跳过",
     "next": "下一步",
-    "done": "开始",
-    "1": { "title": "投票活动 — 创意比赛赢徽章", "subtitle": "上传你的作品参加比赛,头三名获得永久『高光时刻』徽章。" },
-    "2": { "title": "世界广场 — 与全球朋友聊天", "subtitle": "15 个国家专属聊天室,实时与各地朋友交流。" },
-    "3": { "title": "附近的人 — 用兴趣连接", "subtitle": "发现身边同好,通过兴趣找到聊得来的朋友。" },
-    "4": { "title": "语音介绍 — 5 秒让人听见真实的你", "subtitle": "录制 1-5 秒语音介绍,让别人秒懂你的个性。" },
-    "5": { "title": "欢迎加入 Meyou", "subtitle": "现在让我们完善你的 profile,开始认识朋友吧。" }
+    "done": "开始"
   },
   "invite": {
     "title": "邀请朋友",
@@ -44,7 +86,9 @@
     "invalidCode": "邀请码无效。",
     "cantUseSelf": "不能使用自己的邀请码。",
     "alreadyRedeemed": "你已经使用过邀请码了。",
-    "card": { "invitedBy": "{{name}} 邀请你加入 Meyou" }
+    "card": {
+      "invitedBy": "{{name}} 邀请你加入 Meyou"
+    }
   },
   "sort": {
     "matchTime": "同频时间",
@@ -56,7 +100,9 @@
     "active": "活跃时间"
   },
   "system": {
-    "match": { "created": "你们已成为同频朋友 ✨ 来打个招呼吧 👋" }
+    "match": {
+      "created": "你们已成为同频朋友 ✨ 来打个招呼吧 👋"
+    }
   },
   "announcement": {
     "dontShowAgain": "今後不顯示",
@@ -130,13 +176,110 @@
     "title": "编辑资料",
     "done": "完成"
   },
-  "search": {"placeholder": "搜索用户、投票、房间", "hintTitle": "搜索 Meyou", "hintSubtitle": "查找用户、投票活动和聊天室。", "empty": "没有找到“{{q}}”", "tabs": {"users": "用户", "votes": "投票", "rooms": "房间"}},
-  "adminReports": {"title": "举报管理", "empty": "没有待处理举报 🎉", "resolve": "已处理", "noReason": "(未填写原因)", "kind": {"worldChat": "广场", "vote": "投票", "scamMessage": "可疑", "nsfwImage": "可疑图", "user": "用户"}},
-  "adminStats": {"title": "数据分析", "loadFailed": "加载失败", "totalUsers": "总用户", "dau": "日活", "mau": "月活", "signupsToday": "今日注册", "signups7d": "7日注册", "signups30d": "30日注册", "premium": "会员", "moments24h": "24h动态", "totalMoments": "动态总数", "totalVotes": "投票活动", "totalMatches": "同频数"},
-  "verification": {"title": "照片认证", "intro": "按下方动作录制一段自拍，确认你是真人。通过后将获得绿色认证标识。", "poseLabel": "你的动作", "recordSelfie": "录制自拍", "recordVideo": "录制视频", "recordVideoPremium": "录制视频（会员）", "submit": "提交审核", "submitting": "提交中…", "submitFailed": "提交失败", "retake": "重拍", "videoReady": "视频已就绪", "permTitle": "需要相机权限", "permBody": "请开启相机权限以录制认证。", "pendingTitle": "审核中", "pendingBody": "我们正在审核你的提交，通常不超过 24 小时。", "approvedTitle": "认证成功！", "approvedBody": "你的资料现已显示绿色认证标识。", "rejectedTitle": "认证未通过", "verified": "已认证"},
-  "adminVerifications": {"title": "认证审核", "empty": "没有待审核的认证 🎉", "photo": "照片", "video": "视频", "poseLabel": "动作", "approve": "通过", "reject": "驳回", "rejectConfirmTitle": "驳回认证？", "rejectConfirmBody": "用户需要重新提交。"},
-  "myData": {"title": "我的数据", "streak": "连续登录", "streakCurrent": "当前", "streakLongest": "最长", "views": "主页访客", "viewsUnique": "访客数", "last7d": "近 7 天", "last30d": "近 30 天", "likes": "收到的喜欢", "likesTotal": "总计", "popularity": "人气", "popularityScore": "人气值", "popularityRank": "排名", "topPct": "前 {{pct}}%", "upsell": "开通会员解锁 7/30 天趋势和人气排名"},
-  "premiumGift": {"title": "赠送 Premium", "send": "赠送", "confirmTitle": "送 Premium 给 {{name}}？", "confirmBody": "对方将获得 7 天 Premium。", "sentTitle": "已送出 🎁", "sentBody": "对方获得了 {{days}} 天 Premium！", "needPremium": "赠送 Premium 是会员功能——点击升级", "rateLimited": "已达赠送上限，请稍后再试。", "failed": "赠送失败", "emptyTitle": "还没有好友", "emptySubtitle": "关注好友即可赠送 Premium。", "monthlyQuota": "本月剩余 {{remaining}} / {{total}} 次", "alreadyPremium": "已是 Premium 会员", "alreadyGifted": "已送过"},
+  "search": {
+    "placeholder": "搜索用户、投票、房间",
+    "hintTitle": "搜索 Meyou",
+    "hintSubtitle": "查找用户、投票活动和聊天室。",
+    "empty": "没有找到“{{q}}”",
+    "tabs": {
+      "users": "用户",
+      "votes": "投票",
+      "rooms": "房间"
+    }
+  },
+  "adminReports": {
+    "title": "举报管理",
+    "empty": "没有待处理举报 🎉",
+    "resolve": "已处理",
+    "noReason": "(未填写原因)",
+    "kind": {
+      "worldChat": "广场",
+      "vote": "投票",
+      "scamMessage": "可疑",
+      "nsfwImage": "可疑图",
+      "user": "用户"
+    }
+  },
+  "adminStats": {
+    "title": "数据分析",
+    "loadFailed": "加载失败",
+    "totalUsers": "总用户",
+    "dau": "日活",
+    "mau": "月活",
+    "signupsToday": "今日注册",
+    "signups7d": "7日注册",
+    "signups30d": "30日注册",
+    "premium": "会员",
+    "moments24h": "24h动态",
+    "totalMoments": "动态总数",
+    "totalVotes": "投票活动",
+    "totalMatches": "同频数"
+  },
+  "verification": {
+    "title": "照片认证",
+    "intro": "按下方动作录制一段自拍，确认你是真人。通过后将获得绿色认证标识。",
+    "poseLabel": "你的动作",
+    "recordSelfie": "录制自拍",
+    "recordVideo": "录制视频",
+    "recordVideoPremium": "录制视频（会员）",
+    "submit": "提交审核",
+    "submitting": "提交中…",
+    "submitFailed": "提交失败",
+    "retake": "重拍",
+    "videoReady": "视频已就绪",
+    "permTitle": "需要相机权限",
+    "permBody": "请开启相机权限以录制认证。",
+    "pendingTitle": "审核中",
+    "pendingBody": "我们正在审核你的提交，通常不超过 24 小时。",
+    "approvedTitle": "认证成功！",
+    "approvedBody": "你的资料现已显示绿色认证标识。",
+    "rejectedTitle": "认证未通过",
+    "verified": "已认证"
+  },
+  "adminVerifications": {
+    "title": "认证审核",
+    "empty": "没有待审核的认证 🎉",
+    "photo": "照片",
+    "video": "视频",
+    "poseLabel": "动作",
+    "approve": "通过",
+    "reject": "驳回",
+    "rejectConfirmTitle": "驳回认证？",
+    "rejectConfirmBody": "用户需要重新提交。"
+  },
+  "myData": {
+    "title": "我的数据",
+    "streak": "连续登录",
+    "streakCurrent": "当前",
+    "streakLongest": "最长",
+    "views": "主页访客",
+    "viewsUnique": "访客数",
+    "last7d": "近 7 天",
+    "last30d": "近 30 天",
+    "likes": "收到的喜欢",
+    "likesTotal": "总计",
+    "popularity": "人气",
+    "popularityScore": "人气值",
+    "popularityRank": "排名",
+    "topPct": "前 {{pct}}%",
+    "upsell": "开通会员解锁 7/30 天趋势和人气排名"
+  },
+  "premiumGift": {
+    "title": "赠送 Premium",
+    "send": "赠送",
+    "confirmTitle": "送 Premium 给 {{name}}？",
+    "confirmBody": "对方将获得 7 天 Premium。",
+    "sentTitle": "已送出 🎁",
+    "sentBody": "对方获得了 {{days}} 天 Premium！",
+    "needPremium": "赠送 Premium 是会员功能——点击升级",
+    "rateLimited": "已达赠送上限，请稍后再试。",
+    "failed": "赠送失败",
+    "emptyTitle": "还没有好友",
+    "emptySubtitle": "关注好友即可赠送 Premium。",
+    "monthlyQuota": "本月剩余 {{remaining}} / {{total}} 次",
+    "alreadyPremium": "已是 Premium 会员",
+    "alreadyGifted": "已送过"
+  },
   "blocked": {
     "title": "已屏蔽用户",
     "emptyTitle": "没有已屏蔽的用户",
@@ -189,24 +332,119 @@
     "profile": "我"
   },
   "plaza": {
-    "tab": { "hot": "🔥 热门", "match": "❤️ 交友", "voice": "🎤 语音", "interest": "🎮 兴趣", "country": "🌏 国家" },
-    "switcher": { "hot": "热门聊天室", "country": "选择国家" },
-    "channel": { "food": "美食", "photo": "摄影", "games": "游戏", "ai": "AI", "realestate": "房产", "pets": "宠物" },
-    "topic": { "lateNight": "深夜吹水", "singles": "单身交友", "aiDiscuss": "AI 讨论" },
+    "tab": {
+      "hot": "🔥 热门",
+      "match": "❤️ 交友",
+      "voice": "🎤 语音",
+      "interest": "🎮 兴趣",
+      "country": "🌏 国家"
+    },
+    "switcher": {
+      "hot": "热门聊天室",
+      "country": "选择国家"
+    },
+    "channel": {
+      "food": "美食",
+      "photo": "摄影",
+      "games": "游戏",
+      "ai": "AI",
+      "realestate": "房地产",
+      "pets": "宠物",
+      "lateNight": "深夜吹水房",
+      "startup": "创业",
+      "invest": "投资",
+      "movies": "电影",
+      "music": "音乐",
+      "travel": "旅游",
+      "cars": "汽车",
+      "fitness": "健身",
+      "study": "学习",
+      "design": "设计",
+      "fashion": "穿搭",
+      "baking": "烘焙",
+      "coffee": "咖啡"
+    },
+    "topic": {
+      "lateNight": "深夜吹水",
+      "singles": "单身交友",
+      "aiDiscuss": "AI 讨论"
+    },
     "comingSoon": "即将推出",
     "notifyMe": "通知我",
     "notified": "我们会通知你",
-    "match": { "title": "随机交友", "desc": "随机匹配新朋友一起聊天，我们会帮你配对 — 即将推出。" },
-    "voice": { "title": "语音房", "desc": "进入实时语音房间，一起开麦聊天 — 即将推出。", "lateNight": "深夜吹水", "cantonese": "广东话房", "myChinese": "马来西亚华人", "entrepreneurs": "创业老板" },
-    "interest": { "title": "兴趣频道", "desc": "按爱好找到同好 — 摄影、美食、游戏等 — 即将推出。" },
-    "country": { "subchannel": { "general": "总聊天室", "social": "交友区", "newcomers": "新人区", "events": "活动区" } },
+    "match": {
+      "title": "随机交友",
+      "desc": "随机匹配新朋友一起聊天，我们会帮你配对 — 即将推出。"
+    },
+    "voice": {
+      "title": "语音房",
+      "desc": "进入实时语音房间，一起开麦聊天 — 即将推出。",
+      "lateNight": "深夜吹水",
+      "cantonese": "广东话房",
+      "myChinese": "马来西亚华人",
+      "entrepreneurs": "创业老板",
+      "randomMatch": "随机配对",
+      "singles": "单身交友",
+      "mandarin": "普通话房",
+      "english": "英语交流",
+      "karaoke": "唱歌房",
+      "gaming": "游戏开黑",
+      "bosses": "创业老板房",
+      "ai": "AI 讨论房",
+      "feelings": "情感树洞"
+    },
+    "interest": {
+      "title": "兴趣频道",
+      "desc": "按爱好找到同好 — 摄影、美食、游戏等 — 即将推出。"
+    },
+    "country": {
+      "subchannel": {
+        "general": "总聊天室",
+        "social": "交友区",
+        "newcomers": "新人报到",
+        "events": "活动区",
+        "chitchat": "吹水区"
+      }
+    },
     "worldLobby": "世界大厅",
     "hotRooms": "🔥 热门",
     "rooms": "聊天室",
     "browse": "浏览房间",
     "userJoined": "🎉 {{name}} 加入了房间",
     "userLeft": "👋 {{name}} 离开了房间",
-    "onlineCount": "在线 {{count}} 人"
+    "onlineCount": "在线 {{count}} 人",
+    "friend": {
+      "lateNight": "深夜聊天",
+      "singles": "单身交友",
+      "overseas": "海外华人",
+      "voiceMatch": "语音速配",
+      "buddies": "找搭子",
+      "mealMates": "找饭友",
+      "travelMates": "找旅行伙伴",
+      "bizPartners": "找创业伙伴",
+      "overseasRoom": "海外华人房"
+    },
+    "level": {
+      "title": {
+        "lv1": "新人",
+        "lv5": "常客",
+        "lv10": "资深成员",
+        "lv20": "传奇吹水王"
+      }
+    },
+    "hot": {
+      "topics": "热门话题",
+      "myRooms": "我开的房间",
+      "noRooms": "你还没创建房间，点右下角『＋』新建一个",
+      "quota": "{{used}}/{{cap}} 个房间"
+    },
+    "create": {
+      "limitReached": "已达上限，升级 Premium 可创建最多 {{cap}} 个房间。"
+    },
+    "online": "在线 {{n}} 人",
+    "onlineList": "在线名单",
+    "levelUp": "🎖️ {{name}} 升级到了 Lv{{level}} {{title}}！",
+    "voiceTextNotice": "🎤 语音功能即将推出，当前为文字房"
   },
   "chatTranslation": {
     "title": "聊天翻译",
@@ -290,7 +528,11 @@
       "leaveConfirmTitle": "退出聊天室?",
       "leaveConfirmBody": "你将不再是此聊天室的成员。",
       "roomDeleted": "此聊天室已被删除。",
-      "kicked": "你已被移出此聊天室。"
+      "kicked": "你已被移出此聊天室。",
+      "sectionUgc": "用户聊天室",
+      "ugcEmpty": "还没有用户聊天室，点右下角创建一个",
+      "roomCount": "{{n}} 个房间",
+      "inChannel": "在「{{channel}}」中创建"
     },
     "empty": "来打个招呼吧 👋",
     "placeholder": "和世界聊聊…",
@@ -457,7 +699,7 @@
   },
   "moments": {
     "compose": {
-        "ephemeral": "24 小时后消失",
+      "ephemeral": "24 小时后消失",
       "tag": "标记朋友",
       "addPhoto": "添加照片",
       "maxPhotos": "最多添加 {{max}} 张照片",
@@ -475,7 +717,10 @@
       "locationFailed": "无法获取位置"
     },
     "viewOnMap": "在地图中查看",
-    "likers": { "title": "点赞", "empty": "还没有人点赞" },
+    "likers": {
+      "title": "点赞",
+      "empty": "还没有人点赞"
+    },
     "filters": {
       "all": "全部",
       "friends": "关注",
@@ -528,9 +773,28 @@
     }
   },
   "chat": {
-    "photoConfirm": {"captionPlaceholder": "添加说明…", "send": "发送"},
-    "voice": {"title": "语音消息", "tapToStart": "点击录制", "recording": "录音中…", "tooShort": "再长一点", "send": "发送", "sendFailed": "语音消息发送失败", "slideToCancel": "滑动取消", "locked": "已锁定", "tapToDelete": "点击删除"},
-    "icebreakers": {"header": "👋 来打个招呼吧！", "askInterest": "你也喜欢{{interest}}？是怎么入坑的？", "generic1": "周末有什么计划吗？", "generic2": "最近有什么好推荐吗？🎵📺", "generic3": "嗨！今天过得怎么样？"},
+    "photoConfirm": {
+      "captionPlaceholder": "添加说明…",
+      "send": "发送"
+    },
+    "voice": {
+      "title": "语音消息",
+      "tapToStart": "点击录制",
+      "recording": "录音中…",
+      "tooShort": "再长一点",
+      "send": "发送",
+      "sendFailed": "语音消息发送失败",
+      "slideToCancel": "滑动取消",
+      "locked": "已锁定",
+      "tapToDelete": "点击删除"
+    },
+    "icebreakers": {
+      "header": "👋 来打个招呼吧！",
+      "askInterest": "你也喜欢{{interest}}？是怎么入坑的？",
+      "generic1": "周末有什么计划吗？",
+      "generic2": "最近有什么好推荐吗？🎵📺",
+      "generic3": "嗨！今天过得怎么样？"
+    },
     "scamWarning": "注意：涉及站外联系或金钱。切勿向陌生人转账或转移到其他应用。",
     "composer": {
       "camera": "拍照",
@@ -766,12 +1030,12 @@
       "account": "账户与安全",
       "photoRequests": "私密照申请",
       "adminReports": "举报管理",
-        "adminStats": "数据分析",
-        "announcementAdmin": "公告管理",
-        "verification": "申请照片认证",
-        "adminVerifications": "认证审核",
-        "myData": "我的数据 📊",
-        "giftPremium": "送 Premium 给朋友 🎁"
+      "adminStats": "数据分析",
+      "announcementAdmin": "公告管理",
+      "verification": "申请照片认证",
+      "adminVerifications": "认证审核",
+      "myData": "我的数据 📊",
+      "giftPremium": "送 Premium 给朋友 🎁"
     },
     "edit": {
       "title": "编辑资料",
@@ -779,9 +1043,9 @@
       "nickname": "昵称",
       "bio": "简介",
       "addPhotosHint": "添加照片到你的资料",
-    "aboutYou": "关于你",
-    "notSet": "未设置",
-    "bioPlaceholder": "一两句介绍自己",
+      "aboutYou": "关于你",
+      "notSet": "未设置",
+      "bioPlaceholder": "一两句介绍自己",
       "age": "年龄",
       "dob": "出生日期",
       "dobHint": "YYYY-MM-DD",
@@ -862,8 +1126,14 @@
     "enNative": "英文"
   },
   "privacySettings": {
-    "hidePopularity": {"label": "隐藏人气", "subtitle": "其他人看不到你的 🔥 人气分数"},
-    "ghostMode": {"label": "完全隐身 👻", "subtitle": "显示为离线，“最近活跃”显示为数小时前——完全隐身"},
+    "hidePopularity": {
+      "label": "隐藏人气",
+      "subtitle": "其他人看不到你的 🔥 人气分数"
+    },
+    "ghostMode": {
+      "label": "完全隐身 👻",
+      "subtitle": "显示为离线，“最近活跃”显示为数小时前——完全隐身"
+    },
     "title": "隐私",
     "showInNearby": "在「附近」显示我",
     "showInNearbyHint": "关闭后,你不会出现在其他人的「附近」网格中",
@@ -885,9 +1155,18 @@
   },
   "notifications": {
     "title": "通知",
-    "follow": { "title": "有人关注了你", "body": "点击查看资料" },
-    "viewers": { "title": "谁看过你", "body": "今天有 {{count}} 人看了你的资料" },
-    "wants": { "title": "想认识你", "body": "今天有 {{count}} 人想认识你" },
+    "follow": {
+      "title": "有人关注了你",
+      "body": "点击查看资料"
+    },
+    "viewers": {
+      "title": "谁看过你",
+      "body": "今天有 {{count}} 人看了你的资料"
+    },
+    "wants": {
+      "title": "想认识你",
+      "body": "今天有 {{count}} 人想认识你"
+    },
     "empty": "暂无通知",
     "markAllRead": "全部已读"
   },
@@ -1081,12 +1360,24 @@
       "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。"
     },
     "testimonials": {
+      "1": {
+        "name": "小美 · 25 · 吉隆坡",
+        "quote": "用 Meyou 认识了很多摄影同好 — 投票活动太上瘾了!"
+      },
+      "2": {
+        "name": "Jay · 28 · 新加坡",
+        "quote": "广场聊天室很适合认识新朋友,没有交友的压力。"
+      },
+      "3": {
+        "name": "阿哲 · 23 · 台北",
+        "quote": "语音介绍很贴心 — 一下子就能感受到对方的个性。"
+      },
+      "4": {
+        "name": "Nina · 26 · 香港",
+        "quote": "Premium 的访客和隐身功能,完全值得。"
+      },
       "section": "用户评价",
-      "disclaimer": "*匿名示例。",
-      "1": { "name": "小美 · 25 · 吉隆坡", "quote": "用 Meyou 认识了很多摄影同好 — 投票活动太上瘾了!" },
-      "2": { "name": "Jay · 28 · 新加坡", "quote": "广场聊天室很适合认识新朋友,没有交友的压力。" },
-      "3": { "name": "阿哲 · 23 · 台北", "quote": "语音介绍很贴心 — 一下子就能感受到对方的个性。" },
-      "4": { "name": "Nina · 26 · 香港", "quote": "Premium 的访客和隐身功能,完全值得。" }
+      "disclaimer": "*匿名示例。"
     },
     "benefits": {
       "hideOnline": "隐藏在线状态",

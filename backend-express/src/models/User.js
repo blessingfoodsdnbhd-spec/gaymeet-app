@@ -181,10 +181,21 @@ const userSchema = new mongoose.Schema(
       chars: { type: Number, default: 0 },
     },
 
-    // Energy / Level system
+    // Energy / Level system. Plaza Phase 4 repurposes `level` + `currentExp` as
+    // the chat-XP level + lifetime cumulative chat XP (see services/xpService).
     level: { type: Number, default: 1 },
     currentExp: { type: Number, default: 0 },
     totalExpReceived: { type: Number, default: 0 },
+
+    // Plaza chat-XP daily counters (anti-grind + daily caps; resets at UTC day).
+    chatXp: {
+      date: { type: String, default: null }, // 'YYYY-MM-DD' the counters belong to
+      total: { type: Number, default: 0 }, // XP earned today (cap 300)
+      msgCount: { type: Number, default: 0 }, // scoring messages today (cap 100)
+      lastBody: { type: String, default: '' }, // last scored text (repeat guard)
+      lastMs: { type: Number, default: 0 }, // last scored ms (same-second guard)
+      loginDate: { type: String, default: null }, // day the login bonus was claimed
+    },
 
     // Private photos (locked, require request to view)
     privatePhotos: [{ type: String }],

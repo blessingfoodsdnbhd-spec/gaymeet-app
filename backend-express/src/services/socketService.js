@@ -9,8 +9,58 @@ const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
 const { ALL_ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
+const { identityOf } = require('../utils/identity');
+const xpService = require('./xpService');
 
 let io;
+
+// Plaza §9.1 — in-room online roster sort:身份等级 → 用户等级 → 加入顺序.
+const TIER_RANK = { admin: 0, vip: 1, legend: 2, old: 3, normal: 4, new: 5 };
+
+/**
+ * Build the mIRC-style online roster for a World Chat room from the socket
+ * adapter. Dedups multi-socket users (keeps the earliest join), sorts by
+ * identity tier → level desc → join order. Each entry: { userId, name,
+ * avatarUrl, tier, level }.
+ */
+async function buildRoster(roomId) {
+  if (!io || !roomId) return { roomId, online: 0, users: [] };
+  let sockets = [];
+  try {
+    sockets = await io.in(socketRoom(roomId)).fetchSockets();
+  } catch (_) {
+    return { roomId, online: 0, users: [] };
+  }
+  const byUser = new Map();
+  for (const s of sockets) {
+    const d = s.data || {};
+    const id = d.userId;
+    if (!id) continue;
+    const joinedMs = d.wcJoinedMs || 0;
+    const prev = byUser.get(id);
+    if (!prev || joinedMs < prev.joinedMs) {
+      byUser.set(id, { ...(d.identitySnapshot || {}), userId: id, joinedMs });
+    }
+  }
+  const users = [...byUser.values()].sort(
+    (a, b) =>
+      (TIER_RANK[a.tier] ?? 9) - (TIER_RANK[b.tier] ?? 9) ||
+      (b.level || 1) - (a.level || 1) ||
+      a.joinedMs - b.joinedMs,
+  );
+  return {
+    roomId,
+    online: users.length,
+    users: users.map((u) => ({ userId: u.userId, name: u.name, avatarUrl: u.avatarUrl ?? null, tier: u.tier, level: u.level })),
+  };
+}
+
+/** Push the fresh roster to everyone currently in a room. */
+async function emitRoster(roomId) {
+  if (!io || !roomId) return;
+  const roster = await buildRoster(roomId);
+  io.to(socketRoom(roomId)).emit('world-chat:roster', roster);
+}
 
 /** Live online count per World Chat room (from the socket.io adapter). */
 function getRoomCounts() {
@@ -101,13 +151,30 @@ function initSocket(server) {
       lastActiveAt: new Date(),
     });
 
+    // Plaza §9.2 — daily first-login XP bonus (+10, 1×/day; service no-ops if
+    // already claimed or over the daily cap). Best-effort, never blocks connect.
+    try {
+      xpService.awardLoginXp(socket.user);
+    } catch (_) {
+      /* best effort */
+    }
+
+    // Identity snapshot used by the in-room roster (RemoteSocket only exposes
+    // .data, so we stash what the roster needs there).
+    const identitySnapshot = {
+      name: socket.user?.nickname || 'Someone',
+      avatarUrl: socket.user?.avatarUrl || null,
+      ...identityOf(socket.user),
+    };
+
     // Join a personal room so server can push to this user directly
     socket.join(`user:${userId}`);
 
     // World Chat: join the default 'world' room until the client switches.
-    socket.data = { ...(socket.data || {}), wcRoom: 'world' };
+    socket.data = { ...(socket.data || {}), wcRoom: 'world', wcJoinedMs: Date.now(), userId, identitySnapshot };
     socket.join(socketRoom('world'));
     emitPresenceEvent('join', 'world', socket.user);
+    emitRoster('world');
 
     // Notify matches that this user came online
     _notifyOnlineStatus(userId, true);
@@ -492,13 +559,23 @@ function initSocket(server) {
         emitPresenceEvent('leave', prev, socket.user);
         socket.leave(socketRoom(prev));
         socket.join(socketRoom(next));
-        socket.data = { ...(socket.data || {}), wcRoom: next };
+        socket.data = { ...(socket.data || {}), wcRoom: next, wcJoinedMs: Date.now() };
         emitPresenceEvent('join', next, socket.user);
         // Custom rooms aren't in the periodic ROOMS snapshot — push their counts.
         if (isCustomRoomId(prev)) emitRoomCount(prev);
         if (isCustomRoomId(next)) emitRoomCount(next);
+        // Refresh the online roster for both the room left and the room entered.
+        emitRoster(prev);
+        emitRoster(next);
       }
       emitRoomsState();
+    });
+
+    // World Chat: on-demand online roster for the room the client just opened
+    // (the right-sidebar 在线名单). Falls back to the socket's current room.
+    socket.on('world-chat:request-roster', async ({ roomId } = {}) => {
+      const rid = roomId || socket.data?.wcRoom || 'world';
+      socket.emit('world-chat:roster', await buildRoster(rid));
     });
 
     // Give the freshly-connected client (and everyone) the current snapshot.
@@ -509,7 +586,9 @@ function initSocket(server) {
       console.log(`🔌 Socket disconnected: ${userId}`);
       // Announce the part to whichever World Chat room they were in. The socket
       // has already left its rooms, so the broadcast reaches the people staying.
-      emitPresenceEvent('leave', socket.data?.wcRoom || 'world', socket.user);
+      const wcRoom = socket.data?.wcRoom || 'world';
+      emitPresenceEvent('leave', wcRoom, socket.user);
+      emitRoster(wcRoom);
       // Only mark offline if no other sockets for this user remain
       const sockets = await io.in(`user:${userId}`).fetchSockets();
       if (sockets.length === 0) {

@@ -1,5 +1,7 @@
 {
-  "popularity": {"label": "인기"},
+  "popularity": {
+    "label": "인기"
+  },
   "common": {
     "back": "뒤로",
     "search": "검색",
@@ -33,9 +35,6 @@
     "appleNoCredential": "Apple이 유효한 자격 증명을 반환하지 않았습니다. 다시 시도해 주세요"
   },
   "onboarding": {
-    "skip": "건너뛰기",
-    "next": "다음",
-    "done": "시작하기",
     "1": {
       "title": "콘테스트 — 배지를 획득하세요",
       "subtitle": "작품을 출품하면 상위 3명이 영구 ‘하이라이트’ 배지를 받아요."
@@ -55,7 +54,10 @@
     "5": {
       "title": "Meyou에 오신 것을 환영합니다",
       "subtitle": "프로필을 완성하고 사람들을 만나기 시작해요."
-    }
+    },
+    "skip": "건너뛰기",
+    "next": "다음",
+    "done": "시작하기"
   },
   "email": {
     "title": "이메일을 입력해 주세요",
@@ -584,24 +586,119 @@
     "saveFailed": "저장 실패"
   },
   "plaza": {
-    "tab": { "hot": "🔥 인기", "match": "❤️ 대화", "voice": "🎤 음성", "interest": "🎮 채널", "country": "🌏 국가" },
-    "switcher": { "hot": "인기 채팅방", "country": "국가 선택" },
-    "channel": { "food": "음식", "photo": "사진", "games": "게임", "ai": "AI", "realestate": "부동산", "pets": "반려동물" },
-    "topic": { "lateNight": "심야 수다", "singles": "싱글 만남", "aiDiscuss": "AI 토론" },
+    "tab": {
+      "hot": "🔥 인기",
+      "match": "❤️ 대화",
+      "voice": "🎤 음성",
+      "interest": "🎮 채널",
+      "country": "🌏 국가"
+    },
+    "switcher": {
+      "hot": "인기 채팅방",
+      "country": "국가 선택"
+    },
+    "channel": {
+      "food": "음식",
+      "photo": "사진",
+      "games": "게임",
+      "ai": "AI",
+      "realestate": "부동산",
+      "pets": "반려동물",
+      "lateNight": "심야 수다방",
+      "startup": "창업",
+      "invest": "투자",
+      "movies": "영화",
+      "music": "음악",
+      "travel": "여행",
+      "cars": "자동차",
+      "fitness": "헬스",
+      "study": "공부",
+      "design": "디자인",
+      "fashion": "패션",
+      "baking": "베이킹",
+      "coffee": "커피"
+    },
+    "topic": {
+      "lateNight": "심야 수다",
+      "singles": "싱글 만남",
+      "aiDiscuss": "AI 토론"
+    },
     "comingSoon": "출시 예정",
     "notifyMe": "알림 받기",
     "notified": "알려드릴게요",
-    "match": { "title": "랜덤 대화", "desc": "새로운 사람과 대화하도록 연결해 드려요. 곧 출시됩니다." },
-    "voice": { "title": "음성 방", "desc": "실시간 음성 방에 입장해 함께 이야기해요. 곧 출시됩니다.", "lateNight": "심야 수다", "cantonese": "광동어 방", "myChinese": "말레이시아 중국인", "entrepreneurs": "기업가" },
-    "interest": { "title": "관심사 채널", "desc": "좋아하는 것으로 친구를 찾아보세요 — 사진, 음식, 게임 등. 곧 출시됩니다." },
-    "country": { "subchannel": { "general": "일반", "social": "소셜", "newcomers": "신입", "events": "이벤트" } },
+    "match": {
+      "title": "랜덤 대화",
+      "desc": "새로운 사람과 대화하도록 연결해 드려요. 곧 출시됩니다."
+    },
+    "voice": {
+      "title": "음성 방",
+      "desc": "실시간 음성 방에 입장해 함께 이야기해요. 곧 출시됩니다.",
+      "lateNight": "심야 수다",
+      "cantonese": "광둥어방",
+      "myChinese": "말레이시아 중국인",
+      "entrepreneurs": "기업가",
+      "randomMatch": "랜덤 매칭",
+      "singles": "싱글 만남",
+      "mandarin": "표준어방",
+      "english": "영어 교류",
+      "karaoke": "노래방",
+      "gaming": "게임",
+      "bosses": "사장님방",
+      "ai": "AI 토론",
+      "feelings": "감정 나눔"
+    },
+    "interest": {
+      "title": "관심사 채널",
+      "desc": "좋아하는 것으로 친구를 찾아보세요 — 사진, 음식, 게임 등. 곧 출시됩니다."
+    },
+    "country": {
+      "subchannel": {
+        "general": "메인 채팅",
+        "social": "친목",
+        "newcomers": "신입 인사",
+        "events": "이벤트",
+        "chitchat": "잡담"
+      }
+    },
     "worldLobby": "월드 로비",
     "hotRooms": "🔥 인기",
     "rooms": "채팅방",
     "browse": "방 둘러보기",
     "userJoined": "🎉 {{name}}님이 입장했습니다",
     "userLeft": "👋 {{name}}님이 퇴장했습니다",
-    "onlineCount": "{{count}}명 접속 중"
+    "onlineCount": "{{count}}명 접속 중",
+    "friend": {
+      "lateNight": "심야 수다",
+      "singles": "싱글 만남",
+      "overseas": "해외 화교",
+      "voiceMatch": "음성 매칭",
+      "buddies": "친구 찾기",
+      "mealMates": "밥친구 찾기",
+      "travelMates": "여행 메이트",
+      "bizPartners": "창업 파트너",
+      "overseasRoom": "해외 화교방"
+    },
+    "level": {
+      "title": {
+        "lv1": "신입",
+        "lv5": "단골",
+        "lv10": "베테랑",
+        "lv20": "전설의 수다왕"
+      }
+    },
+    "hot": {
+      "topics": "인기 토픽",
+      "myRooms": "내 방",
+      "noRooms": "아직 만든 방이 없습니다 — ＋를 눌러 만들어 보세요.",
+      "quota": "{{used}}/{{cap}}개 방"
+    },
+    "create": {
+      "limitReached": "한도 도달 — Premium은 최대 {{cap}}개 방을 만들 수 있습니다."
+    },
+    "online": "온라인 {{n}}명",
+    "onlineList": "온라인 목록",
+    "levelUp": "🎖️ {{name}}님이 Lv{{level}} {{title}} 달성!",
+    "voiceTextNotice": "🎤 음성 기능은 곧 출시됩니다. 현재는 텍스트 방입니다."
   },
   "chatTranslation": {
     "title": "채팅 번역",
@@ -685,7 +782,11 @@
       "leaveConfirmTitle": "이 방을 나갈까요?",
       "leaveConfirmBody": "더 이상 이 방의 멤버가 아니게 됩니다.",
       "roomDeleted": "이 방은 삭제되었습니다.",
-      "kicked": "이 방에서 내보내졌습니다."
+      "kicked": "이 방에서 내보내졌습니다.",
+      "sectionUgc": "사용자 채팅방",
+      "ugcEmpty": "아직 사용자 방이 없습니다 — ＋로 만들어 보세요.",
+      "roomCount": "{{n}}개 방",
+      "inChannel": "{{channel}}에 만들기"
     },
     "empty": "가장 먼저 인사해보세요 👋",
     "placeholder": "세계와 채팅…",
@@ -1205,8 +1306,6 @@
       "profile80": "프로필이 멋져요 — 프리미엄으로 3배의 노출을 얻으세요."
     },
     "testimonials": {
-      "section": "회원들의 이야기",
-      "disclaimer": "*익명 처리된 샘플입니다.",
       "1": {
         "name": "샤오메이 · 25 · 쿠알라룸푸르",
         "quote": "Meyou로 사진 친구를 정말 많이 만났어요 — 콘테스트가 중독성 있어요!"
@@ -1222,7 +1321,9 @@
       "4": {
         "name": "Nina · 26 · 홍콩",
         "quote": "프리미엄의 프로필 방문자 + 시크릿 모드는 100% 가치 있어요."
-      }
+      },
+      "section": "회원들의 이야기",
+      "disclaimer": "*익명 처리된 샘플입니다."
     },
     "benefits": {
       "hideOnline": "온라인 상태 숨기기",
