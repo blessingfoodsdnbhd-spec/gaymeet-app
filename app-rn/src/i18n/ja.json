@@ -236,6 +236,7 @@
       "premiumUpgrade": "アップグレード",
       "languageValueZh": "中国語",
       "languageValueEn": "英語",
+      "chatTranslation": "チャット翻訳",
       "photoRequests": "写真リクエスト",
       "adminReports": "通報管理",
       "adminStats": "データ分析",
@@ -600,9 +601,24 @@
     "userLeft": "👋 {{name}}さんが退室しました",
     "onlineCount": "{{count}}人オンライン"
   },
+  "chatTranslation": {
+    "title": "チャット翻訳",
+    "enable": "メッセージを自動翻訳",
+    "enableHint": "ワールドロビーと国別ルームで、他言語のメッセージに翻訳を表示します。",
+    "translateTo": "翻訳先",
+    "auto": "アプリの言語に従う",
+    "autoHint": "現在のアプリ言語に翻訳します",
+    "quota": "本日の翻訳上限の {{percent}}% を使用",
+    "quotaDetail": "本日 {{used}} / {{limit}} 文字"
+  },
   "worldChat": {
     "title": "広場",
     "online": "{{n}}人オンライン",
+    "translation": {
+      "label": "翻訳",
+      "translating": "翻訳中…",
+      "show": "翻訳を表示"
+    },
     "reply": {
       "label": "返信",
       "banner": "{{name}}に返信",

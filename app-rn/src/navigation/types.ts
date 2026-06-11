@@ -46,6 +46,7 @@ export type RootStackParamList = {
   BlockedList: undefined;
   NotificationSettings: undefined;
   LanguageSettings: undefined;
+  ChatTranslation: undefined;
   AccountSettings: undefined;
   Comments: { momentId: string; authorId?: string };
   Composer: undefined;

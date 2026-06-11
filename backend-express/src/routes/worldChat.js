@@ -18,6 +18,19 @@ const {
   socketRoom,
 } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
+const User = require('../models/User');
+const { isPremiumActive } = require('../utils/premium');
+const translateService = require('../services/translateService');
+
+// Auto-translate daily character caps (cost management).
+const TRANSLATE_LIMIT_FREE = 10000;
+const TRANSLATE_LIMIT_PREMIUM = 100000;
+const utcDay = () => new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+const translateLimitFor = (user) => (isPremiumActive(user) ? TRANSLATE_LIMIT_PREMIUM : TRANSLATE_LIMIT_FREE);
+const usedTodayFor = (user) => {
+  const u = user.translateUsage || {};
+  return u.date === utcDay() ? u.chars || 0 : 0;
+};
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -671,6 +684,88 @@ router.get('/recent', auth, async (req, res, next) => {
       });
 
     ok(res, { messages });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/world-chat/translate/quota ───────────────────────────────────────
+// Current user's daily auto-translate usage. Drives the Settings quota bar.
+router.get('/translate/quota', auth, (req, res) => {
+  const limit = translateLimitFor(req.user);
+  const used = usedTodayFor(req.user);
+  ok(res, {
+    used,
+    limit,
+    percent: limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0,
+    isPremium: isPremiumActive(req.user),
+  });
+});
+
+// ── POST /api/world-chat/translate  { messageId, to } ─────────────────────────
+// Lazily translate one world-chat message into `to` (en/zh/ko/ja), caching the
+// result on the message doc so repeat reads are free. Country rooms + world
+// lobby only — private DMs are never translated.
+router.post('/translate', auth, async (req, res, next) => {
+  try {
+    const { messageId } = req.body || {};
+    const to = String(req.body?.to || '').toLowerCase();
+    if (!mongoose.isValidObjectId(messageId)) return err(res, 'Invalid messageId');
+    if (!translateService.SUPPORTED.has(to)) return err(res, 'Unsupported target language');
+    if (!translateService.isConfigured()) return err(res, 'Translation unavailable', 503);
+
+    const msg = await WorldChatMessage.findById(messageId);
+    if (!msg) return err(res, 'Message not found', 404);
+
+    const original = (msg.body || '').trim();
+    // Nothing to translate (photo/voice/empty) — answer without touching the API.
+    if (!original || (msg.type && msg.type !== 'text')) {
+      return ok(res, { original: msg.body || '', detectedLang: msg.detectedLang || null, translated: null, to });
+    }
+
+    // Cache hit — '' means "source already equals target" (no line to show).
+    const cached = msg.translations && msg.translations.get(to);
+    if (cached != null) {
+      return ok(res, { original, detectedLang: msg.detectedLang || null, translated: cached || null, to });
+    }
+    // Known-same language from a prior call (different target detected the source).
+    if (msg.detectedLang && msg.detectedLang === to) {
+      return ok(res, { original, detectedLang: to, translated: null, to });
+    }
+
+    // Daily quota gate (chars actually sent to Google).
+    const today = utcDay();
+    const used = usedTodayFor(req.user);
+    const limit = translateLimitFor(req.user);
+    if (used + original.length > limit) {
+      return res.status(429).json({ error: 'Daily translation limit reached', code: 'TRANSLATE_QUOTA' });
+    }
+
+    let result;
+    try {
+      result = await translateService.translate(original, to);
+    } catch (_) {
+      return err(res, 'Translation failed', 502);
+    }
+
+    msg.detectedLang = result.detectedSourceLanguage || msg.detectedLang || null;
+    const sameLang = msg.detectedLang === to;
+    if (!msg.translations) msg.translations = new Map();
+    msg.translations.set(to, sameLang ? '' : result.translatedText);
+    await msg.save();
+
+    // Charge quota only on a real API call.
+    await User.updateOne(
+      { _id: req.user._id },
+      { $set: { 'translateUsage.date': today, 'translateUsage.chars': used + original.length } },
+    );
+
+    ok(res, {
+      original,
+      detectedLang: msg.detectedLang,
+      translated: sameLang ? null : result.translatedText,
+      to,
+    });
   } catch (e) {
     next(e);
   }

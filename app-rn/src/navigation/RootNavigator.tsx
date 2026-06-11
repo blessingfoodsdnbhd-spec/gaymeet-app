@@ -21,6 +21,7 @@ import { PrivacySettings } from '../screens/profile/settings/PrivacySettings';
 import { BlockedListScreen } from '../screens/profile/settings/BlockedListScreen';
 import { NotificationSettings } from '../screens/profile/settings/NotificationSettings';
 import { LanguageSettings } from '../screens/profile/settings/LanguageSettings';
+import { ChatTranslationSettings } from '../screens/profile/settings/ChatTranslationSettings';
 import { AccountSettings } from '../screens/profile/settings/AccountSettings';
 import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScreen';
 import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
@@ -111,6 +112,7 @@ export function RootNavigator() {
           <Stack.Screen name="BlockedList" component={BlockedListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="LanguageSettings" component={LanguageSettings} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="ChatTranslation" component={ChatTranslationSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AccountSettings" component={AccountSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="Comments" component={CommentsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen

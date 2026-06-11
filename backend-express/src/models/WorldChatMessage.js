@@ -25,6 +25,12 @@ const worldChatMessageSchema = new mongoose.Schema(
     voiceWaveform: { type: [Number], default: undefined },
     // Optional quoted reply → the original message in the same room.
     replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorldChatMessage', default: null },
+    // ── Auto-translate cache ──────────────────────────────────────────────────
+    // Source language, detected once on the first translation request.
+    detectedLang: { type: String, default: null },
+    // Lazy per-target-language cache: { 'en': '…', 'ja': '…' }. An empty string
+    // marks "source already equals this target" so we never re-detect/re-call.
+    translations: { type: Map, of: String, default: undefined },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
