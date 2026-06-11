@@ -180,3 +180,105 @@ export async function approveVerification(id: string): Promise<void> {
 export async function rejectVerification(id: string, reason?: string): Promise<void> {
   await api.post(`/admin/verifications/${id}/reject`, reason ? { reason } : {});
 }
+
+// ── User moderation (ADMIN1) ─────────────────────────────────────────────────
+
+export interface AdminModUser {
+  id: string;
+  nickname: string;
+  email: string;
+  avatarUrl: string | null;
+  photos: string[];
+  privatePhotos: string[];
+  isVerified: boolean;
+  isOfficial: boolean;
+  createdAt: string;
+  isBanned: boolean;
+  bannedAt: string | null;
+  banReason: string | null;
+  chatBanned: boolean;
+  photoUploadBanned: boolean;
+}
+
+export interface AdminModMoment {
+  id: string;
+  content: string;
+  images: string[];
+  visibility: string;
+  createdAt: string;
+}
+
+export interface AdminModVoteEntry {
+  id: string;
+  eventId: string | null;
+  eventTitle: string;
+  photoUrl: string;
+  caption: string;
+  voteCount: number;
+  createdAt: string;
+}
+
+export interface AdminModView {
+  user: AdminModUser;
+  moments: AdminModMoment[];
+  voteEntries: AdminModVoteEntry[];
+}
+
+export async function getAdminUserModeration(userId: string): Promise<AdminModView> {
+  const r = await api.get(`/admin/users/${userId}`);
+  return unwrap<AdminModView>(r.data);
+}
+
+export async function banUser(userId: string, reason?: string): Promise<void> {
+  await api.post(`/admin/users/${userId}/ban`, reason ? { reason } : {});
+}
+
+export async function unbanUser(userId: string): Promise<void> {
+  await api.post(`/admin/users/${userId}/unban`);
+}
+
+/** Toggle the chat-send capability ban. */
+export async function setChatBan(userId: string, banned: boolean, reason?: string): Promise<void> {
+  await api.post(`/admin/users/${userId}/${banned ? 'chat-ban' : 'chat-unban'}`, reason ? { reason } : {});
+}
+
+/** Toggle the photo-upload capability ban. */
+export async function setPhotoBan(userId: string, banned: boolean, reason?: string): Promise<void> {
+  await api.post(`/admin/users/${userId}/${banned ? 'photo-ban' : 'photo-unban'}`, reason ? { reason } : {});
+}
+
+export async function deleteUserPhoto(
+  userId: string,
+  url: string,
+  kind: 'public' | 'private' | 'avatar',
+): Promise<void> {
+  await api.delete(`/admin/users/${userId}/photos`, { data: { url, kind } });
+}
+
+export async function deleteUserMoment(momentId: string): Promise<void> {
+  await api.delete(`/admin/moments/${momentId}`);
+}
+
+export async function deleteUserVoteEntry(entryId: string): Promise<void> {
+  await api.delete(`/admin/vote-entries/${entryId}`);
+}
+
+export interface AdminAuditAction {
+  id: string;
+  action: string;
+  admin: string;
+  targetUser: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  reason: string;
+  meta: Record<string, unknown>;
+  createdAt: string;
+}
+
+export async function getAuditLog(
+  targetUser?: string,
+  limit = 100,
+): Promise<{ actions: AdminAuditAction[]; count: number }> {
+  const r = await api.get('/admin/audit-log', { params: { targetUser, limit } });
+  return unwrap<{ actions: AdminAuditAction[]; count: number }>(r.data);
+}

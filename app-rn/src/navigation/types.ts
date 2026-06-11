@@ -29,6 +29,7 @@ export type RootStackParamList = {
   AdminReports: undefined;
   AdminStats: undefined;
   AdminVerifications: undefined;
+  AdminUserModeration: { userId: string };
   Verification: undefined;
   MyAnalytics: undefined;
   PremiumGift: undefined;
