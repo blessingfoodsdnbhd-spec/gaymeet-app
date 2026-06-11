@@ -285,6 +285,8 @@
       "privatePhotos": "비공개"
     },
     "editProfile": "프로필 편집",
+    "previewMyProfile": "다른 사람이 보는 내 프로필",
+    "previewBanner": "🔍 미리보기 모드 — 다른 사람에게 보이는 모습입니다",
     "publicPhotos": "공개 사진",
     "publicPhotosLimit": "공개 사진 · {{count}} / 5",
     "privatePhotos": "비공개 사진 🔒",

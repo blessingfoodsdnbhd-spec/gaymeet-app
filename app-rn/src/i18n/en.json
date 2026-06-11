@@ -640,6 +640,8 @@
       "privatePhotos": "Private"
     },
     "editProfile": "Edit profile",
+    "previewMyProfile": "Preview as others see me",
+    "previewBanner": "🔍 Preview mode — this is how others see your profile",
     "publicPhotos": "Public photos",
     "publicPhotosLimit": "Public photos · {{count}} / 5",
     "privatePhotos": "Private photos 🔒",
