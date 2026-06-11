@@ -24,7 +24,7 @@ export interface ProfileCompletion {
  * Profile completion score (0–100). Weights:
  *   photos ≥1 (20) · voice intro (15) · interests ≥3 (15) ·
  *   demographic ≥3 of dob/mbti/relationship/intents (20) ·
- *   prompts ≥1 (15) · bio ≥10 chars (15).
+ *   prompts ≥1 (15) · bio non-empty (15).
  */
 export function useProfileCompletion(user: User | null): ProfileCompletion {
   const { t } = useTranslation();
@@ -45,7 +45,9 @@ export function useProfileCompletion(user: User | null): ProfileCompletion {
     { key: 'interests', label: t('profile.completion.items.interests'), done: interests >= 3, weight: 15 },
     { key: 'demographic', label: t('profile.completion.items.demographic'), done: demoCount >= 3, weight: 20 },
     { key: 'prompts', label: t('profile.completion.items.prompts'), done: prompts >= 1, weight: 15 },
-    { key: 'bio', label: t('profile.completion.items.bio'), done: bio.length >= 10, weight: 15 },
+    // Any non-empty (trimmed) bio counts — "写一段简介" means "wrote a bio", not a length quota.
+    // A char minimum wrongly excluded short CJK bios (e.g. an 8-char one-liner). Whitespace trims to 0.
+    { key: 'bio', label: t('profile.completion.items.bio'), done: bio.length > 0, weight: 15 },
   ];
   const percent = items.reduce((s, i) => s + (i.done ? i.weight : 0), 0);
   const missing = items.filter((i) => !i.done);
