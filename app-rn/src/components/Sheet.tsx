@@ -148,7 +148,27 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onD
     .onEnd((e) => onDragEnd(e.translationY, e.velocityY));
 
   return (
-    <Modal visible={open} transparent onRequestClose={onClose} animationType="none" onDismiss={onDismiss}>
+    <Modal
+      visible={open}
+      transparent
+      onRequestClose={onClose}
+      animationType="none"
+      onDismiss={onDismiss}
+      // statusBarTranslucent is REQUIRED under Android 15 forced edge-to-edge
+      // (targetSdk 35). Without it the Modal opens its own window that does NOT
+      // draw under the status bar, while the host activity (edge-to-edge) does —
+      // so the Modal's window is offset by the status-bar height and its content
+      // shifts/jumps up ("flies to the top", overlapping the header) whenever the
+      // window re-measures (a long-press sheet mounting, the soft keyboard
+      // raising). Every OTHER full-screen Modal in the app already sets this
+      // (SafetyMenuSheet, PhotoViewer, PhotoConfirmModal…); the shared <Sheet>
+      // was the one that missed it — which is why #220/#221's keyboard-dismiss
+      // band-aids couldn't stop the fly-to-top: the window offset was the real
+      // cause, not the keyboard. (navigationBarTranslucent would round this out
+      // but it's RN 0.77+; on RN 0.76.5 the modal still stops above the nav bar,
+      // so the existing paddingBottom is correct — no safe-area change needed.)
+      statusBarTranslucent
+    >
       {/* GestureHandlerRootView MUST use flex-based layout, not absolute fill.
           On the New Architecture (Fabric) + Android, the native root view only
           establishes its touch-target bounds from normal flow layout; given
