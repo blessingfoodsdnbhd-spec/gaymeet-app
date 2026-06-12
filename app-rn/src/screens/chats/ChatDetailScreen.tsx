@@ -6,6 +6,7 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -243,14 +244,22 @@ export function ChatDetailScreen() {
   }, []);
   const closeActionsThen = useCallback(
     (next: () => void) => {
-      if (Platform.OS === 'ios') {
-        pendingActionRef.current = next;
-        setActionsFor(null);
-        pendingTimerRef.current = setTimeout(runPending, 320);
-      } else {
-        setActionsFor(null);
-        next();
-      }
+      // Both platforms now defer through the same pending mechanism, only the
+      // delay differs:
+      //   iOS — the present-while-dismissing race above needs ~320ms.
+      //   Android — there is no present race, but if we open the edit sheet in
+      //     the SAME tick the actions Modal is torn down, the edit input's
+      //     keyboard rises WHILE the actions Modal is still on screen. Under
+      //     edge-to-edge (Build 53) Android pans that still-present Modal to the
+      //     top of the window — this is the "action sheet flies to the top"
+      //     glitch. Waiting ~160ms lets the actions Modal (animationType="none",
+      //     near-instant) fully unmount first, so only the edit sheet is present
+      //     when its keyboard appears. (Pre-#218 the Android keyboard often
+      //     didn't rise — autoFocus was dropped — so the pan never showed; #218
+      //     hardened focus(), which is why this surfaced in Build 54.)
+      pendingActionRef.current = next;
+      setActionsFor(null);
+      pendingTimerRef.current = setTimeout(runPending, Platform.OS === 'ios' ? 320 : 160);
     },
     [runPending],
   );
@@ -1076,7 +1085,15 @@ export function ChatDetailScreen() {
               }
               const mine = !!myId && senderIdOf(msg) === myId;
               const failed = msg.status === 'failed';
-              const onLongPress = () => setActionsFor(msg);
+              const onLongPress = () => {
+                // Drop the composer keyboard first. If it's up when the actions
+                // Modal opens, edge-to-edge Android pans the new Modal window up
+                // to clear the keyboard, throwing the actions sheet to the top
+                // of the screen (overlapping the header). No-op when nothing is
+                // focused; harmless on iOS.
+                Keyboard.dismiss();
+                setActionsFor(msg);
+              };
 
               let bubble: React.ReactNode;
               if (msg.type === 'image') {
