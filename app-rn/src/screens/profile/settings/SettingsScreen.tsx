@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import {
   BarChart3,
   Bell,
@@ -10,6 +10,7 @@ import {
   Languages,
   Lock,
   Megaphone,
+  RotateCcw,
   ShieldCheck,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -18,7 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../../theme/ThemeProvider';
-import { fetchIsAdmin } from '../../../api/admin';
+import { useToast } from '../../../components/ToastProvider';
+import { fetchIsAdmin, resetDiscoverAll } from '../../../api/admin';
 import { SettingsShell, SettingsCard, Divider } from './SettingsShell';
 
 type AnyNav = NativeStackNavigationProp<any>;
@@ -39,6 +41,40 @@ export function SettingsScreen() {
     queryFn: fetchIsAdmin,
   });
   const isAdmin = isAdminQ.data === true;
+  const toast = useToast();
+
+  // Global Discover reset — double-confirm (irreversible, affects everyone).
+  const onResetDiscoverAll = () => {
+    Alert.alert(
+      '全局重置 Discover 历史',
+      '确定清掉所有用户的 swipe 历史？这无法撤销。被跳过的用户会对所有人重新出现（Like 和已有匹配不受影响）。',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '继续',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation before such a destructive, irreversible op.
+            Alert.alert('再次确认', '这会重置全部用户的跳过记录，确定执行？', [
+              { text: '取消', style: 'cancel' },
+              {
+                text: '确定重置',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    const removed = await resetDiscoverAll();
+                    toast.success(`已重置 ${removed} 条记录`);
+                  } catch (e: any) {
+                    toast.error(e?.response?.data?.error || '重置失败');
+                  }
+                },
+              },
+            ]);
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SettingsShell title={t('profile.settingsTitle')}>
@@ -105,6 +141,12 @@ export function SettingsScreen() {
                 icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
                 label={t('profile.rows.adminStats')}
                 onPress={() => nav.navigate('AdminStats')}
+              />
+              <Divider />
+              <SettingsRow
+                icon={<RotateCcw size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label="全局重置 Discover 历史"
+                onPress={onResetDiscoverAll}
               />
             </>
           )}

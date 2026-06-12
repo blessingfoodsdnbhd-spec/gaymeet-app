@@ -259,6 +259,25 @@ export async function deleteUserMoment(momentId: string): Promise<void> {
   await api.delete(`/admin/moments/${momentId}`);
 }
 
+/**
+ * Reset EVERY user's passed/skipped Discover swipes so skipped profiles
+ * reappear in the deck. Likes / super-likes (and Matches) are preserved.
+ * Returns the number of swipe rows removed. Irreversible.
+ */
+export async function resetDiscoverAll(): Promise<number> {
+  const r = await api.post('/admin/discover/reset-all');
+  return unwrap<{ removed?: number }>(r.data)?.removed ?? 0;
+}
+
+/**
+ * Reset a single user's passed/skipped Discover swipes (customer support).
+ * Their Likes / Matches are preserved. Returns rows removed.
+ */
+export async function resetDiscoverUser(userId: string): Promise<number> {
+  const r = await api.post(`/admin/discover/reset-user/${userId}`);
+  return unwrap<{ removed?: number }>(r.data)?.removed ?? 0;
+}
+
 export async function deleteUserVoteEntry(entryId: string): Promise<void> {
   await api.delete(`/admin/vote-entries/${entryId}`);
 }

@@ -4,11 +4,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { ChevronLeft, Trash2, Ban, MessageSquareOff, ImageOff, ShieldCheck } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Ban, MessageSquareOff, ImageOff, ShieldCheck, RotateCcw } from 'lucide-react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '../../theme/ThemeProvider';
+import { useToast } from '../../components/ToastProvider';
 import { EmptyState } from '../../components/EmptyState';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { resolveMediaUrl } from '../../api/verification';
@@ -16,7 +17,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import {
   getAdminUserModeration, getAuditLog,
   banUser, unbanUser, setChatBan, setPhotoBan,
-  deleteUserPhoto, deleteUserMoment, deleteUserVoteEntry,
+  deleteUserPhoto, deleteUserMoment, deleteUserVoteEntry, resetDiscoverUser,
   type AdminModView,
 } from '../../api/admin';
 
@@ -37,6 +38,7 @@ export function AdminUserModerationScreen() {
   const userId = params.userId;
   const qc = useQueryClient();
   const photoViewer = usePhotoViewer();
+  const toast = useToast();
 
   const q = useQuery({
     queryKey: ['admin', 'moderation', userId],
@@ -82,6 +84,25 @@ export function AdminUserModerationScreen() {
         { text: confirmLabel, style: destructive ? 'destructive' : 'default', onPress: () => onConfirm(undefined) },
       ]);
     }
+  };
+
+  // Reset this user's passed/skipped Discover swipes. Surfaces the removed
+  // count via toast (the generic `run` mutation discards the result).
+  const onResetDiscover = (nickname: string) => {
+    confirm(
+      '重置 Discover 历史',
+      `确定清掉 ${nickname} 跳过/划走的记录？被 ta 跳过的用户会重新出现在卡堆里（不影响已有的 Like 和匹配）。`,
+      '重置',
+      async () => {
+        try {
+          const removed = await resetDiscoverUser(userId);
+          toast.success(`已重置 ${removed} 条记录`);
+        } catch (e: any) {
+          toast.error(e?.response?.data?.error || '重置失败');
+        }
+      },
+      false,
+    );
   };
 
   const view: AdminModView | undefined = q.data;
@@ -160,6 +181,11 @@ export function AdminUserModerationScreen() {
                   );
                 }
               }}
+            />
+            <ActionRow
+              c={c} icon={<RotateCcw size={18} color={c.primary} />}
+              label="重置该用户 Discover 历史"
+              onPress={() => onResetDiscover(u.nickname)}
             />
           </View>
 
