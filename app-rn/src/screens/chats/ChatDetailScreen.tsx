@@ -207,13 +207,16 @@ export function ChatDetailScreen() {
   // Edit sheet state
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const [editDraft, setEditDraft] = useState('');
-  // autoFocus can be dropped on iOS when the edit Modal mounts right after the
-  // actions Modal dismissed (focus arrives mid-transition and is ignored), so
-  // the keyboard never rises. Re-focus explicitly once the sheet has settled.
+  // The edit TextInput has NO autoFocus (it raced the sheet's open animation —
+  // see the note at that TextInput). Focus is driven solely here, once the
+  // sheet has settled, on BOTH platforms.
   const editInputRef = useRef<TextInput>(null);
   useEffect(() => {
     if (!editingMsg) return;
-    const id = setTimeout(() => editInputRef.current?.focus(), 250);
+    // 350ms clears the Sheet's 320ms open animation (Sheet.tsx ty 320ms) so the
+    // keyboard rises only after the card has fully settled — never mid-slide,
+    // which is what made the edit sheet fly to the top on Android edge-to-edge.
+    const id = setTimeout(() => editInputRef.current?.focus(), 350);
     return () => clearTimeout(id);
   }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
@@ -1603,7 +1606,14 @@ export function ChatDetailScreen() {
               placeholder={t('chat.message.editPlaceholder')}
               placeholderTextColor={theme.colors.muted}
               multiline
-              autoFocus
+              // NO autoFocus: it fires on mount, raising the keyboard WHILE this
+              // sheet's 320ms open animation is still running. Under Android
+              // edge-to-edge (Build 53) the Modal window then pans/resizes
+              // mid-animation and the sheet "flies to the top". The useEffect at
+              // editInputRef instead focuses 250ms after open — once the sheet
+              // has settled — so the keyboard only rises against a stationary
+              // window. The editInputRef comment already said autoFocus "can be
+              // dropped"; it was a leftover, and removing it is the actual fix.
               style={{
                 backgroundColor: theme.colors.surface,
                 borderRadius: 14,
