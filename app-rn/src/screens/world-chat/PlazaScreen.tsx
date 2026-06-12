@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -112,8 +112,15 @@ export function PlazaScreen() {
       {/* Page title — matches every other tab header (h1, left-aligned). */}
       <TopBar title={t('tabs.worldChat')} />
 
-      {/* Fixed top tabs — always visible, click to switch (no scroll, §8.1). */}
-      <View style={[styles.tabBar, { borderBottomColor: theme.colors.line }]}>
+      {/* Top tabs — always visible, click to switch. The row grows to fill the
+          screen when the labels fit (even distribution) and scrolls horizontally
+          when a locale's labels are too wide to share one line (§8.1). */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.tabBar, { borderBottomColor: theme.colors.line }]}
+        contentContainerStyle={styles.tabBarContent}
+      >
         {tabs.map((tb) => {
           const active = tb.key === tab;
           return (
@@ -134,7 +141,7 @@ export function PlazaScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View style={{ flex: 1 }}>
         {tab === 'hot' && <PlazaHotList />}
@@ -155,8 +162,11 @@ export function PlazaScreen() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 4 },
-  tab: { flex: 1, alignItems: 'center', paddingTop: 12, paddingBottom: 0 },
+  // flexGrow:0 keeps the scroller hugging its row height instead of filling the column.
+  tabBar: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth },
+  // flexGrow:1 spreads the tabs to fill the row when they fit; content overflows → scroll.
+  tabBarContent: { flexGrow: 1, paddingHorizontal: 4 },
+  tab: { flexGrow: 1, alignItems: 'center', paddingTop: 12, paddingBottom: 0, paddingHorizontal: 10 },
   underline: { height: 3, borderRadius: 2, width: '60%', marginTop: 8 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
