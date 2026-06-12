@@ -363,10 +363,24 @@ export function ComposerScreen() {
         current={place}
         onPick={setPlace}
         onChooseMap={() => {
-          setLocOpen(false);
-          // One-shot bridge — MapPicker resolves it on Save (HHHHH).
+          // One-shot bridge — MapPicker resolves the picked place on Save (HHHHH).
           setMomentLocationHandler(setPlace);
-          (nav as any).navigate('MapPicker', { mode: 'moment' });
+          setLocOpen(false);
+          if (Platform.OS === 'android') {
+            // The location Sheet is a RN <Modal> (an Android Dialog). Pushing
+            // the MapPicker in the SAME tick we close it made Android drop the
+            // push mid-Dialog-teardown — the map opened only after 4–5 taps.
+            // (#190's card push fixed the *total* failure but not this timing
+            // race.) Defer the navigate until the Sheet's slide-out (~220ms) is
+            // done, so the push lands on the now-focused root activity. Mirrors
+            // AboutUserSheet's Android sheet→follow-up fix.
+            setTimeout(() => (nav as any).navigate('MapPicker', { mode: 'moment' }), 250);
+          } else {
+            // iOS: same-tick close + fullScreenModal present works here, and
+            // goBack reveals the still-mounted Composer for the bridge.
+            // Unchanged — preserves #185 / #190 iOS intent exactly.
+            (nav as any).navigate('MapPicker', { mode: 'moment' });
+          }
         }}
       />
     </SafeAreaView>
