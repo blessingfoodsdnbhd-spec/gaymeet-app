@@ -12,3 +12,8 @@ android/app/build/
 .env
 .env.*
 !.env.example
+
+# App Store Connect API key (.p8) — used by `eas submit` for non-interactive
+# TestFlight uploads. SECRET: never commit. Lives at app-rn/asc-api-key.p8.
+asc-api-key.p8
+*.p8
