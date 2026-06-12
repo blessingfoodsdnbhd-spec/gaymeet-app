@@ -12,7 +12,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView, KeyboardController } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -216,8 +216,23 @@ export function ChatDetailScreen() {
     // 350ms clears the Sheet's 320ms open animation (Sheet.tsx ty 320ms) so the
     // keyboard rises only after the card has fully settled — never mid-slide,
     // which is what made the edit sheet fly to the top on Android edge-to-edge.
-    const id = setTimeout(() => editInputRef.current?.focus(), 350);
-    return () => clearTimeout(id);
+    const t1 = setTimeout(() => editInputRef.current?.focus(), 350);
+    // Android Fabric + nested <Modal>: the first focus() inside a freshly-mounted
+    // Modal window is frequently DROPPED — the cursor lands but the soft keyboard
+    // never rises, so the input "needs a second tap" (Build 59 report). Perform
+    // that second tap programmatically: if the keyboard still isn't up shortly
+    // after, re-focus. iOS raises the keyboard on the first focus(), so this guard
+    // is a no-op there (keyboard already visible) — iOS behaviour is unchanged.
+    let t2: ReturnType<typeof setTimeout> | null = null;
+    if (Platform.OS === 'android') {
+      t2 = setTimeout(() => {
+        if (!KeyboardController.isVisible()) editInputRef.current?.focus();
+      }, 650);
+    }
+    return () => {
+      clearTimeout(t1);
+      if (t2) clearTimeout(t2);
+    };
   }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
   // sheet. On iOS a Modal can't be presented while another is still dismissing,
@@ -262,7 +277,18 @@ export function ChatDetailScreen() {
       //     hardened focus(), which is why this surfaced in Build 54.)
       pendingActionRef.current = next;
       setActionsFor(null);
-      pendingTimerRef.current = setTimeout(runPending, Platform.OS === 'ios' ? 320 : 160);
+      // Defer the follow-up sheet until the actions <Modal> has both COMMITTED
+      // its close (the requestAnimationFrame flushes the setActionsFor(null)
+      // render) AND its native Android Dialog window has fully torn down (the
+      // timeout). Build 59 report: 160ms wasn't enough headroom for the Dialog
+      // teardown, so opening the edit Modal raced it — the new Dialog landed
+      // behind the dying one and "编辑" did nothing until you long-pressed /
+      // backed out several times. 360ms reliably clears the teardown; it's still
+      // sub-perceptible after the sheet's slide-down. iOS keeps its 320ms
+      // present-while-dismissing guard (#211) — unchanged.
+      requestAnimationFrame(() => {
+        pendingTimerRef.current = setTimeout(runPending, Platform.OS === 'ios' ? 320 : 360);
+      });
     },
     [runPending],
   );
