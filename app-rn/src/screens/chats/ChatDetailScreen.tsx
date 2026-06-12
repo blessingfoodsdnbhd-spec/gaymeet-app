@@ -209,18 +209,45 @@ export function ChatDetailScreen() {
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
   // sheet. On iOS a Modal can't be presented while another is still dismissing,
   // so opening one in the same tick we close the actions sheet makes it
-  // silently fail to appear (the "edit does nothing" bug). Queue the follow-up
-  // here and run it from the actions sheet's onDismiss. Android has no such
-  // race, so it runs the follow-up immediately.
+  // silently fail to appear (the "edit does nothing" bug).
+  //
+  // #181 queued the follow-up and ran it from the actions <Modal onDismiss>.
+  // That callback is UNRELIABLE on the New Architecture (Fabric, this app runs
+  // newArchEnabled) + RN 0.76 — it frequently never fires, so the queued edit
+  // stayed parked in the ref and "编辑" did nothing again on Build 61. Don't
+  // depend on onDismiss: close the actions sheet, then present the follow-up
+  // after a fixed delay long enough for the native modal to finish tearing
+  // down (its animationType is "none", so dismissal is near-instant; ~320ms is
+  // comfortably safe and barely perceptible). Android has no race — run now.
   const pendingActionRef = useRef<(() => void) | null>(null);
-  const closeActionsThen = useCallback((next: () => void) => {
-    if (Platform.OS === 'ios') {
-      pendingActionRef.current = next;
-      setActionsFor(null);
-    } else {
-      setActionsFor(null);
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runPending = useCallback(() => {
+    if (pendingTimerRef.current) {
+      clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+    const next = pendingActionRef.current;
+    if (next) {
+      pendingActionRef.current = null;
       next();
     }
+  }, []);
+  const closeActionsThen = useCallback(
+    (next: () => void) => {
+      if (Platform.OS === 'ios') {
+        pendingActionRef.current = next;
+        setActionsFor(null);
+        pendingTimerRef.current = setTimeout(runPending, 320);
+      } else {
+        setActionsFor(null);
+        next();
+      }
+    },
+    [runPending],
+  );
+  // Don't leave a queued sheet to pop after the screen is gone.
+  useEffect(() => () => {
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
   }, []);
   // Image viewer Modal
   const [viewerImage, setViewerImage] = useState<Message | null>(null);
@@ -1318,15 +1345,6 @@ export function ChatDetailScreen() {
       <Sheet
         open={!!actionsFor}
         onClose={() => setActionsFor(null)}
-        onDismiss={() => {
-          // iOS: now that the actions Modal has dismissed, it's safe to present
-          // whichever sheet was queued (edit / full emoji picker).
-          const next = pendingActionRef.current;
-          if (next) {
-            pendingActionRef.current = null;
-            next();
-          }
-        }}
         maxHeight="40%"
       >
         {actionsFor && (
