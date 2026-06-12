@@ -19,6 +19,7 @@ import { Sheet } from '../../components/Sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopicPersona } from '../../api/topics';
+import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
 import { TopicUnlockRequestSheet } from './TopicUnlockRequestSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -80,12 +81,15 @@ export function TopicPersonaSheet({
 
   const goEditPhotos = () => {
     if (!persona) return;
-    onClose();
-    nav.navigate('TopicPersonaEdit', {
-      topicSlug: persona.topicSlug,
-      topicName: topicName ?? persona.topicSlug,
-      topicIcon,
-    });
+    // Defer the push past this Sheet's Android Dialog teardown — same-tick close
+    // + navigate is dropped on Android. See navigateAfterSheetClose.
+    navigateAfterSheetClose(onClose, () =>
+      nav.navigate('TopicPersonaEdit', {
+        topicSlug: persona.topicSlug,
+        topicName: topicName ?? persona.topicSlug,
+        topicIcon,
+      }),
+    );
   };
 
   // Reset viewer/carousel state when the sheet's target persona changes —

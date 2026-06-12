@@ -9,6 +9,7 @@ import { Sheet } from './Sheet';
 import { useTheme } from '../theme/ThemeProvider';
 import { brandGradient } from '../theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
+import { navigateAfterSheetClose } from '../utils/keyboardSheet';
 import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -61,10 +62,11 @@ export function PremiumGateSheet({ open, title, body, onClose }: Props) {
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => {
-            onClose();
-            nav.navigate('Premium');
-          }}
+          onPress={() =>
+            // Defer past the Sheet's Android Dialog teardown — same-tick
+            // close+navigate is dropped on Android. navigateAfterSheetClose.
+            navigateAfterSheetClose(onClose, () => nav.navigate('Premium'))
+          }
           style={({ pressed }) => [
             styles.btn,
             {

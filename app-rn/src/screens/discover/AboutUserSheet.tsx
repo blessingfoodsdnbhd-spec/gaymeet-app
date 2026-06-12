@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { Sheet } from '../../components/Sheet';
+import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
@@ -203,8 +204,9 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const onOpenMatchChat = () => {
     const mid = matchQ.data?.matchId;
     if (mid) {
-      onClose();
-      nav.navigate('ChatDetail', { chatId: mid });
+      // Defer the push past the Sheet's Android Dialog teardown (else dropped on
+      // Android until tapped several times). See navigateAfterSheetClose.
+      navigateAfterSheetClose(onClose, () => nav.navigate('ChatDetail', { chatId: mid }));
     } else {
       onMessage(); // fallback: resolve/open the conversation
     }
@@ -261,14 +263,12 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     try {
       const res = await openConversation(user.id);
       queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
-      onClose();
-      nav.navigate('ChatDetail', { chatId: res.matchId });
+      navigateAfterSheetClose(onClose, () => nav.navigate('ChatDetail', { chatId: res.matchId }));
     } catch (e: any) {
       const status = e?.response?.status;
       const body = e?.response?.data;
       if (status === 402 && body?.reason === 'premium_required') {
-        onClose();
-        nav.navigate('Premium');
+        navigateAfterSheetClose(onClose, () => nav.navigate('Premium'));
       } else {
         Alert.alert(
           t('about.messageFailed'),
