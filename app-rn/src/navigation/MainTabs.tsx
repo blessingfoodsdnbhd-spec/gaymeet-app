@@ -1,7 +1,11 @@
 import React, { useEffect } from 'react';
-import { Text, View, Alert } from 'react-native';
+import { Text, View, Alert, Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  type BottomTabBarButtonProps,
+} from '@react-navigation/bottom-tabs';
 import { Compass, Globe, MessageCircle, Newspaper, Trophy, User } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,9 +27,45 @@ import { on as wsOn } from '../api/ws';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+/**
+ * Android-only bottom-tab button. The stock button (@react-navigation/elements'
+ * PlatformPressable) wraps an Animated.Pressable + web-hover layer; on the New
+ * Architecture (Fabric) + Android that path intermittently DROPS the first tap,
+ * so a tab needed 2–4 presses before it switched (most visible on the centre
+ * tabs like Moments). A plain RN Pressable filling the whole cell registers the
+ * first tap reliably. We forward exactly the props react-navigation hands the
+ * button (its flex/layout `style`, a11y role/label/state, onPress, the icon +
+ * badge `children`) and drop only the web/hover-only extras. iOS keeps the
+ * stock button untouched (it never had the drop) — this is wired up Android-only.
+ */
+function TabBarButton({
+  href: _href,
+  pressColor: _pressColor,
+  pressOpacity: _pressOpacity,
+  hoverEffect: _hoverEffect,
+  ref,
+  style,
+  children,
+  ...rest
+}: BottomTabBarButtonProps) {
+  return (
+    <Pressable
+      {...rest}
+      ref={ref as React.Ref<View>}
+      style={({ pressed }) => [style, pressed && { opacity: 0.7 }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 export function MainTabs() {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  // Only Android needs the gesture-bar clearance (see tabBarStyle below); on
+  // iOS this stays 0 so the bar keeps its original 84 / 24 metrics exactly.
+  const androidInset = Platform.OS === 'android' ? insets.bottom : 0;
   const queryClient = useQueryClient();
 
   // After onboarding finishes we mount fresh here — land on Profile once so the
@@ -171,10 +211,24 @@ export function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
+        // Android-only: swap the stock PlatformPressable for a plain Pressable
+        // that doesn't drop the first Fabric tap. iOS uses the default button
+        // (undefined) so nothing changes there.
+        ...(Platform.OS === 'android'
+          ? { tabBarButton: (props: BottomTabBarButtonProps) => <TabBarButton {...props} /> }
+          : null),
         tabBarStyle: {
-          height: theme.layout.tabBarHeight,
+          // We target Android 15 (targetSdk 35), where edge-to-edge is enforced
+          // by the OS: the tab bar draws UNDER the system gesture nav bar. The
+          // old hardcoded paddingBottom:24 left the lower band of the centre
+          // tabs sitting inside the gesture strip, where the OS swallows taps —
+          // the "Moments needs 2-4 taps" report. Pad by the real bottom inset on
+          // Android so every button clears the gesture zone, and grow the height
+          // by the same overflow so the icons aren't squished. iOS is untouched:
+          // androidInset is 0 there, so this resolves to the original 84 / 24.
+          height: theme.layout.tabBarHeight + Math.max(androidInset - 24, 0),
           paddingTop: 8,
-          paddingBottom: 24,
+          paddingBottom: Math.max(androidInset, 24),
           backgroundColor: theme.colors.bg,
           borderTopColor: theme.colors.line,
           borderTopWidth: 1,
