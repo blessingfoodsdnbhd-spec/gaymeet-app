@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
@@ -121,6 +122,13 @@ export function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* KeyboardProvider drives react-native-keyboard-controller's
+          KeyboardAvoidingView. Required app-wide so the chat/plaza composers
+          track the keyboard via the native keyboard animation instead of RN's
+          KeyboardAvoidingView, whose behavior="height" double-compensated under
+          Android 15 forced edge-to-edge (targetSdk 35) + adjustResize and shoved
+          the message list to the top of the screen ("fly-to-top"). */}
+      <KeyboardProvider>
       {/* initialWindowMetrics seeds correct, synchronous safe-area insets on
           first render — required for native-stack modals (e.g. the moment map
           picker's fullScreenModal) to clear the status bar / Dynamic Island
@@ -157,6 +165,7 @@ export function App() {
         </QueryClientProvider>
     </ErrorBoundary>
       </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

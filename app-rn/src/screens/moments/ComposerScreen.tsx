@@ -5,12 +5,12 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   StyleSheet,
   ActionSheetIOS,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -222,7 +222,8 @@ export function ComposerScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // keyboard-controller KAV — "padding" both platforms (Android edge-to-edge safe)
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
