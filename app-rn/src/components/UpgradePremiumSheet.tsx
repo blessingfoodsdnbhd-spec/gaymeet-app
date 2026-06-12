@@ -10,6 +10,7 @@ import { Sheet } from './Sheet';
 import { Button } from './Button';
 import { useTheme } from '../theme/ThemeProvider';
 import { brandGradient } from '../theme/tokens';
+import { navigateAfterSheetClose } from '../utils/keyboardSheet';
 import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -64,10 +65,11 @@ export function UpgradePremiumSheet({
         <View style={{ alignSelf: 'stretch', marginTop: 22 }}>
           <Button
             label={t('premium.upsell.cta')}
-            onPress={() => {
-              onClose();
-              nav.navigate('Premium');
-            }}
+            onPress={() =>
+              // Defer past the Sheet's Android Dialog teardown — same-tick
+              // close+navigate is dropped on Android. navigateAfterSheetClose.
+              navigateAfterSheetClose(onClose, () => nav.navigate('Premium'))
+            }
             fullWidth
           />
         </View>

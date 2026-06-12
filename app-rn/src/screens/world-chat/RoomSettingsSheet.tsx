@@ -20,6 +20,7 @@ import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { Avatar } from '../../components/Avatar';
 import { NameWithBadge } from '../../components/NameWithBadge';
+import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   getRoomMembers,
@@ -226,10 +227,13 @@ export function RoomSettingsSheet({
             {list.map((m) => (
               <Pressable
                 key={m.id}
-                onPress={() => {
-                  onClose();
-                  nav.navigate('UserDetail', { userId: m.id });
-                }}
+                onPress={() =>
+                  // Defer past the Sheet's Android Dialog teardown (same-tick
+                  // close+navigate is dropped on Android). navigateAfterSheetClose.
+                  navigateAfterSheetClose(onClose, () =>
+                    nav.navigate('UserDetail', { userId: m.id }),
+                  )
+                }
                 style={[styles.memberRow, { borderColor: theme.colors.line }]}
               >
                 <Avatar name={m.displayName} uri={m.avatarUrl} size={38} />

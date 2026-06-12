@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafetyMenu } from '../store/safetyMenu';
 import { useTheme } from '../theme/ThemeProvider';
 import { blockUser, invalidateAfterBlock } from '../api/safety';
+import { navigateAfterSheetClose } from '../utils/keyboardSheet';
 
 /**
  * Android Safety menu sheet — replaces the broken Alert.alert(title, undefined,
@@ -36,8 +37,9 @@ export function SafetyMenuSheet() {
 
   const handleReport = () => {
     const { nav, userId, userName } = options;
-    close();
-    nav.navigate('Report', { userId, userName });
+    // This sheet is a RN <Modal> (Android-only). Closing it and pushing Report
+    // in the same tick let Android drop the push mid-Dialog-teardown.
+    navigateAfterSheetClose(close, () => nav.navigate('Report', { userId, userName }));
   };
 
   const handleBlock = () => {
