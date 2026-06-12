@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "60",
+      "buildNumber": "61",
       "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:meyou.uk",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 50,
+      "versionCode": 51,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/logo.png",
