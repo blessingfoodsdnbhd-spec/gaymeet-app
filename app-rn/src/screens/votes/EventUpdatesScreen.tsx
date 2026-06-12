@@ -118,7 +118,8 @@ export function EventUpdatesScreen() {
         </Text>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      {/* Android: undefined — root KeyboardProvider emulates adjustResize (no double-shift). */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <FlatList
           data={updates}
           keyExtractor={(u) => u.id}

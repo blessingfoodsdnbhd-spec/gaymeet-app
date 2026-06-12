@@ -7,12 +7,12 @@ import {
   FlatList,
   ActivityIndicator,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -1008,11 +1008,12 @@ export function ChatDetailScreen() {
       </View>
 
       <KeyboardAvoidingView
-        // Android (esp. tablets under the forced edge-to-edge of API 35) drifted
-        // the composer out of place with behavior=undefined + a fixed 24px
-        // offset. Use "height" on Android and drop the offset — the system
-        // adjustResize then positions the input correctly across phone/tablet.
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // keyboard-controller's KeyboardAvoidingView (driven by KeyboardProvider
+        // in App.tsx) tracks the native keyboard animation on BOTH platforms, so
+        // "padding" is correct everywhere — it does NOT double-compensate against
+        // Android's adjustResize the way RN's behavior="height" did under API 35
+        // forced edge-to-edge (the "fly-to-top" bug). iOS behaviour is unchanged.
+        behavior="padding"
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >

@@ -6,7 +6,6 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Alert,
@@ -14,6 +13,7 @@ import {
   Animated,
   Share,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -668,7 +668,9 @@ export function WorldChatScreen({
       )}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // keyboard-controller KAV — "padding" works on both platforms and avoids
+        // the Android edge-to-edge "fly-to-top" that RN's behavior="height" hit.
+        behavior="padding"
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >

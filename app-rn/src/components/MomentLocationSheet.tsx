@@ -92,6 +92,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
         <Pressable
           onPressIn={() => { if (__DEV__) console.log('LOCATION_MAP_PRESS_IN', Date.now()); }}
           onPress={() => { if (__DEV__) console.log('LOCATION_MAP_CLICK', Date.now()); onChooseMap(); }}
+          hitSlop={10}
           style={[styles.row, { borderBottomColor: theme.colors.line }]}
         >
           <Map size={18} color={theme.colors.primary} strokeWidth={2} />
