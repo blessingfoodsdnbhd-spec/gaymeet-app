@@ -206,6 +206,15 @@ export function ChatDetailScreen() {
   // Edit sheet state
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  // autoFocus can be dropped on iOS when the edit Modal mounts right after the
+  // actions Modal dismissed (focus arrives mid-transition and is ignored), so
+  // the keyboard never rises. Re-focus explicitly once the sheet has settled.
+  const editInputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!editingMsg) return;
+    const id = setTimeout(() => editInputRef.current?.focus(), 250);
+    return () => clearTimeout(id);
+  }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
   // sheet. On iOS a Modal can't be presented while another is still dismissing,
   // so opening one in the same tick we close the actions sheet makes it
@@ -1548,11 +1557,15 @@ export function ChatDetailScreen() {
         )}
       </Sheet>
 
-      {/* Edit sheet — TextInput prefilled with the message content */}
+      {/* Edit sheet — TextInput prefilled with the message content.
+          avoidKeyboard lifts this short, bottom-anchored sheet above the iOS
+          keyboard; without it the input renders BEHIND the keyboard and looks
+          uneditable ("edit opens but you can't change the text"). */}
       <Sheet
         open={!!editingMsg}
         onClose={() => setEditingMsg(null)}
         maxHeight="50%"
+        avoidKeyboard
       >
         {editingMsg && (
           <View style={{ paddingHorizontal: 4 }}>
@@ -1567,6 +1580,7 @@ export function ChatDetailScreen() {
               {t('chat.message.editTitle')}
             </Text>
             <TextInput
+              ref={editInputRef}
               value={editDraft}
               onChangeText={setEditDraft}
               placeholder={t('chat.message.editPlaceholder')}

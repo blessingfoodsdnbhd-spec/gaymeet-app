@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, View, StyleSheet, useWindowDimensions, Keyboard, Platform } from 'react-native';
 import {
   Gesture,
   GestureDetector,
@@ -48,13 +48,25 @@ interface Props {
    * present-while-dismissing race.)
    */
   onDismiss?: () => void;
+  /**
+   * iOS-only: lift the sheet card above the software keyboard when it opens.
+   * The card is `position:absolute; bottom:0`, so a focused TextInput inside a
+   * short (e.g. 50%) sheet sits BEHIND the keyboard — visible but uneditable
+   * (the "edit message opens but you can't change the text" bug). Opt in for
+   * any sheet that contains a TextInput. Off by default; no-op on Android,
+   * where the Modal window already resizes for the keyboard.
+   */
+  avoidKeyboard?: boolean;
 }
 
-export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onDismiss }: Props) {
+export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onDismiss, avoidKeyboard }: Props) {
   const theme = useTheme();
   const { height: winH } = useWindowDimensions();
   const ty = useSharedValue(winH);
   const opacity = useSharedValue(0);
+  // Keyboard height to lift the card by (iOS only). Animated so the card rides
+  // up/down with the keyboard instead of jumping.
+  const kb = useSharedValue(0);
 
   useEffect(() => {
     if (open) {
@@ -66,8 +78,35 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onD
     }
   }, [open, winH, ty, opacity]);
 
+  // Track the keyboard and lift the absolutely-positioned card clear of it.
+  // KeyboardAvoidingView can't help here — it adjusts its own flow layout, not
+  // an absolutely-positioned sibling — so we drive the transform directly.
+  useEffect(() => {
+    if (!avoidKeyboard || Platform.OS !== 'ios' || !open) {
+      kb.value = withTiming(0, { duration: 180 });
+      return;
+    }
+    const onShow = (e: any) => {
+      const h = e?.endCoordinates?.height ?? 0;
+      const dur = e?.duration && e.duration > 0 ? e.duration : 250;
+      kb.value = withTiming(h, { duration: dur });
+    };
+    const onHide = (e: any) => {
+      const dur = e?.duration && e.duration > 0 ? e.duration : 200;
+      kb.value = withTiming(0, { duration: dur });
+    };
+    const showSub = Keyboard.addListener('keyboardWillShow', onShow);
+    const hideSub = Keyboard.addListener('keyboardWillHide', onHide);
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+      kb.value = withTiming(0, { duration: 150 });
+    };
+  }, [avoidKeyboard, open, kb]);
+
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: ty.value }] }));
+  // Lift by keyboard height (kb) on top of the dismiss transform (ty).
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: ty.value - kb.value }] }));
 
   // Swipe-down-to-dismiss. Drag follows the finger and fades the backdrop;
   // release past distance OR velocity → close, else spring back. The worklet
