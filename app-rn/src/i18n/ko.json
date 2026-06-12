@@ -712,9 +712,7 @@
     "enableHint": "월드 로비와 국가 채널에서 다른 언어로 작성된 메시지에 번역을 표시합니다.",
     "translateTo": "번역 언어",
     "auto": "앱 언어 따르기",
-    "autoHint": "현재 앱 언어로 번역합니다",
-    "quota": "오늘 번역 할당량의 {{percent}}% 사용",
-    "quotaDetail": "오늘 {{used}} / {{limit}}자"
+    "autoHint": "현재 앱 언어로 번역합니다"
   },
   "worldChat": {
     "title": "광장",

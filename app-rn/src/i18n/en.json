@@ -458,9 +458,7 @@
     "enableHint": "In the world lobby and country rooms, show a translation under messages written in another language.",
     "translateTo": "TRANSLATE TO",
     "auto": "Follow app language",
-    "autoHint": "Translate into your current app language",
-    "quota": "{{percent}}% of today's translation quota used",
-    "quotaDetail": "{{used}} / {{limit}} characters today"
+    "autoHint": "Translate into your current app language"
   },
   "worldChat": {
     "title": "Plaza",

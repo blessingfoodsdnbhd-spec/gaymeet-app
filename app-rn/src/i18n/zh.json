@@ -458,9 +458,7 @@
     "enableHint": "在世界大厅和国家频道，为其他语言的消息显示翻译。",
     "translateTo": "翻译为",
     "auto": "跟随应用语言",
-    "autoHint": "翻译为你当前的应用语言",
-    "quota": "今日翻译额度已用 {{percent}}%",
-    "quotaDetail": "今日 {{used}} / {{limit}} 个字符"
+    "autoHint": "翻译为你当前的应用语言"
   },
   "worldChat": {
     "title": "广场",

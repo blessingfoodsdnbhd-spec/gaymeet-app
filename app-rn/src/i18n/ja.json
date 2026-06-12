@@ -712,9 +712,7 @@
     "enableHint": "ワールドロビーと国別ルームで、他言語のメッセージに翻訳を表示します。",
     "translateTo": "翻訳先",
     "auto": "アプリの言語に従う",
-    "autoHint": "現在のアプリ言語に翻訳します",
-    "quota": "本日の翻訳上限の {{percent}}% を使用",
-    "quotaDetail": "本日 {{used}} / {{limit}} 文字"
+    "autoHint": "現在のアプリ言語に翻訳します"
   },
   "worldChat": {
     "title": "広場",

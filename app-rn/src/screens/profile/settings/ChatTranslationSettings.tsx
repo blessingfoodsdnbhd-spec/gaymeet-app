@@ -2,12 +2,10 @@ import React from 'react';
 import { ScrollView, Text, View, Pressable } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 
 import { useTheme } from '../../../theme/ThemeProvider';
 import { SettingsShell, SettingsCard, Divider, ToggleRow } from './SettingsShell';
 import { useTranslatePrefs, type TranslateTarget } from '../../../store/translatePrefs';
-import { getTranslateQuota } from '../../../api/worldChat';
 
 const TARGETS: { id: TranslateTarget; label: string; subtitle?: string }[] = [
   { id: 'auto', label: '' /* localized below */ },
@@ -19,20 +17,12 @@ const TARGETS: { id: TranslateTarget; label: string; subtitle?: string }[] = [
 
 /**
  * 聊天翻译 / Chat Translation — toggle auto-translate in the world lobby and
- * country rooms, pick the language to translate into, and see daily quota use.
+ * country rooms and pick the language to translate into.
  */
 export function ChatTranslationSettings() {
   const theme = useTheme();
   const { t } = useTranslation();
   const { enabled, target, setEnabled, setTarget } = useTranslatePrefs();
-
-  const quotaQ = useQuery({
-    queryKey: ['translate', 'quota'],
-    queryFn: getTranslateQuota,
-    staleTime: 30_000,
-    enabled,
-  });
-  const quota = quotaQ.data;
 
   return (
     <SettingsShell title={t('chatTranslation.title')}>
@@ -90,26 +80,6 @@ export function ChatTranslationSettings() {
                 </View>
               );
             })}
-          </SettingsCard>
-        )}
-
-        {enabled && quota && (
-          <SettingsCard flat style={{ padding: 14, gap: 8 }}>
-            <Text style={{ fontSize: 13, color: theme.colors.text2 }}>
-              {t('chatTranslation.quota', { percent: quota.percent })}
-            </Text>
-            <View style={{ height: 6, borderRadius: 999, backgroundColor: theme.colors.surface2, overflow: 'hidden' }}>
-              <View
-                style={{
-                  width: `${Math.min(100, quota.percent)}%`,
-                  height: '100%',
-                  backgroundColor: quota.percent >= 100 ? theme.colors.error : theme.colors.primary,
-                }}
-              />
-            </View>
-            <Text style={{ fontSize: 11, color: theme.colors.muted }}>
-              {t('chatTranslation.quotaDetail', { used: quota.used, limit: quota.limit })}
-            </Text>
           </SettingsCard>
         )}
       </ScrollView>

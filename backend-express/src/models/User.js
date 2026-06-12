@@ -173,9 +173,9 @@ const userSchema = new mongoose.Schema(
     // server-sent push notifications. null → fall back to English templates.
     preferredLanguage: { type: String, enum: ['en', 'zh', 'ko', 'ja', null], default: null },
 
-    // Chat auto-translate daily usage (cost cap). `date` is a 'YYYY-MM-DD' string
-    // in UTC; `chars` resets to 0 the first request of a new day. Limit is
-    // enforced in routes/worldChat.js (free vs Premium).
+    // DEPRECATED — chat auto-translate is no longer daily-quota capped. Field
+    // retained (never read/written) to avoid a migration; abuse is now bounded
+    // by a per-user rate limit in routes/worldChat.js.
     translateUsage: {
       date: { type: String, default: null },
       chars: { type: Number, default: 0 },
