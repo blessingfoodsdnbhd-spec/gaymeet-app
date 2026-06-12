@@ -50,6 +50,14 @@ interface Props {
    */
   onDismiss?: () => void;
   /**
+   * DIAGNOSTIC (Build 60): when set, logs `SHEET_SHOW <tag> <ts>` (native Modal
+   * onShow) and `SHEET_CLOSE <tag> <ts>` so we can measure the actions→edit
+   * handoff gap from real-device console output (adb logcat -s ReactNativeJS:V).
+   * No behavioural effect; safe to leave in. Only wired on the chat actions/edit
+   * sheets for now.
+   */
+  debugTag?: string;
+  /**
    * @deprecated Keyboard avoidance is now AUTOMATIC on both platforms — the
    * card always rides above the soft keyboard via react-native-keyboard-controller
    * (see SheetSurface). The prop is kept so existing call sites keep type-checking;
@@ -59,13 +67,18 @@ interface Props {
   avoidKeyboard?: boolean;
 }
 
-export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }: Props) {
+export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss, debugTag }: Props) {
+  const handleClose = React.useCallback(() => {
+    if (debugTag) console.log('SHEET_CLOSE', debugTag, Date.now());
+    onClose();
+  }, [debugTag, onClose]);
   return (
     <Modal
       visible={open}
       transparent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       animationType="none"
+      onShow={debugTag ? () => console.log('SHEET_SHOW', debugTag, Date.now()) : undefined}
       onDismiss={onDismiss}
       // statusBarTranslucent is REQUIRED under Android 15 forced edge-to-edge
       // (targetSdk 35). Without it the Modal opens its own window that does NOT
@@ -87,7 +100,7 @@ export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }
           useReanimatedKeyboardAnimation reads below (React context crosses the
           Modal boundary). iOS keyboard notifications are global, so the height
           updates there without the watcher. */}
-      <SheetSurface open={open} onClose={onClose} maxHeight={maxHeight} overlay={overlay}>
+      <SheetSurface open={open} onClose={handleClose} maxHeight={maxHeight} overlay={overlay}>
         {children}
       </SheetSurface>
     </Modal>

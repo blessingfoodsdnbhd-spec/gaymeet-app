@@ -229,9 +229,25 @@ export function ChatDetailScreen() {
         if (!KeyboardController.isVisible()) editInputRef.current?.focus();
       }, 650);
     }
+    // DIAG (Build 60): sample the input's focus state + keyboard visibility over
+    // the first ~1.2s after the edit sheet mounts. On device (adb logcat -s
+    // ReactNativeJS:V) watch when isFocused flips false→true and whether the
+    // keyboard follows — tells us if focus lands but the IME doesn't rise, vs
+    // focus never landing at all.
+    const probes = [100, 300, 500, 800, 1200].map((ms) =>
+      setTimeout(() => {
+        console.log(
+          `TEXTINPUT_FOCUS_${ms}ms`,
+          editInputRef.current?.isFocused(),
+          'kbVisible',
+          KeyboardController.isVisible(),
+        );
+      }, ms),
+    );
     return () => {
       clearTimeout(t1);
       if (t2) clearTimeout(t2);
+      probes.forEach(clearTimeout);
     };
   }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
@@ -1411,6 +1427,7 @@ export function ChatDetailScreen() {
       {/* Long-press action sheet for an individual message */}
       <Sheet
         open={!!actionsFor}
+        debugTag="actions"
         onClose={() => setActionsFor(null)}
         maxHeight="40%"
       >
@@ -1461,6 +1478,11 @@ export function ChatDetailScreen() {
                 icon={<Edit2 size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
                 label={t('chat.message.actions.edit')}
                 onPress={() => {
+                  // DIAG (Build 60): one line per tap. On device (adb logcat -s
+                  // ReactNativeJS:V): a line EVERY tap → the button receives the
+                  // event and the fault is the Modal handoff; a line only every
+                  // few taps → the tap itself is being intercepted upstream.
+                  console.log('EDIT_BUTTON_TAP', Date.now());
                   const m = actionsFor;
                   closeActionsThen(() => {
                     setEditingMsg(m);
@@ -1610,6 +1632,7 @@ export function ChatDetailScreen() {
           uneditable ("edit opens but you can't change the text"). */}
       <Sheet
         open={!!editingMsg}
+        debugTag="edit"
         onClose={() => setEditingMsg(null)}
         maxHeight="50%"
         avoidKeyboard
