@@ -23,6 +23,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Button } from '../../components/Button';
 import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSheet';
 import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
+import { openSheetAfterKeyboardDismiss } from '../../utils/keyboardSheet';
 import { postMoment } from '../../api/moments';
 import { uploadFile } from '../../api/upload';
 import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
@@ -294,7 +295,7 @@ export function ComposerScreen() {
           </ScrollView>
 
           {/* Tag friends + add location (FB/IG-style). */}
-          <Pressable onPress={() => setTagOpen(true)} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
+          <Pressable onPress={() => openSheetAfterKeyboardDismiss(() => setTagOpen(true))} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
             <Users size={18} color={theme.colors.primary} strokeWidth={2} />
             <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
               {t('moments.compose.tag')}
@@ -311,7 +312,7 @@ export function ComposerScreen() {
             </Text>
           )}
 
-          <Pressable onPress={() => setLocOpen(true)} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
+          <Pressable onPress={() => openSheetAfterKeyboardDismiss(() => setLocOpen(true))} style={[styles.actionRow, { borderTopColor: theme.colors.line }]}>
             <MapPin size={18} color={theme.colors.primary} strokeWidth={2} />
             <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
               {place ? place.label : t('moments.compose.location')}
