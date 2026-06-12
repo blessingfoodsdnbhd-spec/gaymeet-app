@@ -32,9 +32,14 @@ interface Props {
   /** Open the full map picker with POI search (HHHHH). Parent closes the sheet
    *  + navigates; restored after the DDDDD removal stripped this entry. */
   onChooseMap?: () => void;
+  /** iOS-only: fires after this Sheet's Modal has fully dismissed. The composer
+   *  chains the MapPicker fullScreenModal present off this so it never presents
+   *  while the Sheet's Modal is still dismissing (which tangles the iOS VC chain
+   *  and makes Save → goBack collapse the Composer too). Forwarded to Sheet. */
+  onDismiss?: () => void;
 }
 
-export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMap }: Props) {
+export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMap, onDismiss }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -68,7 +73,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
   };
 
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="70%">
+    <Sheet open={open} onClose={onClose} onDismiss={onDismiss} maxHeight="70%">
       <Text style={[styles.title, { color: theme.colors.text }]}>
         {t('moments.compose.location')}
       </Text>
