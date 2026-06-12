@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Text, View, Alert } from 'react-native';
+import { Text, View, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Compass, Globe, MessageCircle, Newspaper, Trophy, User } from 'lucide-react-native';
@@ -27,6 +28,20 @@ export function MainTabs() {
   const theme = useTheme();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+
+  // Android API 35 (targetSdk 35) FORCES edge-to-edge: the system navigation
+  // bar draws OVER the app's bottom edge. 3-button nav is ~48px tall; the tab
+  // bar's baked-in 24px bottom padding wasn't enough to clear it, so the lower
+  // strip of every tab's touch target sat BEHIND the nav bar — Android handed
+  // those taps to the system, not the tab. Symptom: the bottom tabs needed
+  // 2-4 presses before switching (first taps "did nothing"). Same class of
+  // Fabric/Android hit-region bug as the Sheet fix in #207, here on the tab
+  // bar. Grow the bar by however much the real bottom inset exceeds the 24px
+  // baseline so the icons sit fully above the nav bar. iOS (and Android
+  // gesture nav, inset ≈ 24) keep extraBottom = 0 → geometry is byte-identical.
+  const extraBottom =
+    Platform.OS === 'android' ? Math.max(insets.bottom - 24, 0) : 0;
 
   // After onboarding finishes we mount fresh here — land on Profile once so the
   // completion card greets the new user, then clear the one-shot.
@@ -172,9 +187,9 @@ export function MainTabs() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          height: theme.layout.tabBarHeight,
+          height: theme.layout.tabBarHeight + extraBottom,
           paddingTop: 8,
-          paddingBottom: 24,
+          paddingBottom: 24 + extraBottom,
           backgroundColor: theme.colors.bg,
           borderTopColor: theme.colors.line,
           borderTopWidth: 1,
