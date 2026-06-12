@@ -6,6 +6,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { TopBar } from '../../components/TopBar';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getWorldChatRooms, type WorldChatRoom } from '../../api/worldChat';
 import { on as wsOn } from '../../api/ws';
@@ -108,6 +109,9 @@ export function PlazaScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={['top']}>
+      {/* Page title — matches every other tab header (h1, left-aligned). */}
+      <TopBar title={t('tabs.worldChat')} />
+
       {/* Fixed top tabs — always visible, click to switch (no scroll, §8.1). */}
       <View style={[styles.tabBar, { borderBottomColor: theme.colors.line }]}>
         {tabs.map((tb) => {
