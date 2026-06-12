@@ -886,6 +886,24 @@ export function ChatDetailScreen() {
   const invItems = useMemo(() => items.slice().reverse(), [items]);
   invItemsRef.current = invItems;
 
+  // maintainVisibleContentPosition — iOS ONLY. It keeps the inverted list from
+  // "jumping" when a new row inserts (#127). But on the New Architecture
+  // (Fabric, RN 0.76.5) + Android it mis-anchors and SNAPS the inverted list to
+  // the top whenever the underlying ScrollView is re-measured — which a <Modal>
+  // mount does. So on Android, long-pressing a bubble (opening the actions
+  // sheet) or opening the edit sheet made every message "fly to the top" and
+  // overlap the header (Build 52, Android only). WorldChatScreen is an inverted
+  // chat list with NO maintainVisibleContentPosition and never jumps on Android
+  // — an inverted list already keeps position on insert there natively — so we
+  // simply omit the prop on Android to match. (undefined === prop disabled.)
+  const keepVisiblePosition = useMemo(
+    () =>
+      Platform.OS === 'ios'
+        ? { minIndexForVisible: 0, autoscrollToTopThreshold: 10 }
+        : undefined,
+    [],
+  );
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
@@ -1004,18 +1022,11 @@ export function ChatDetailScreen() {
                 }
               }, 300);
             }}
-            // Keep the chat CONTENT from jumping. Without this, every new row —
-            // a message either side sends, the optimistic→real swap, a WS echo —
-            // is prepended to the inverted data and shoves whatever the user was
-            // reading. maintainVisibleContentPosition pins the on-screen rows in
-            // place when content is inserted; autoscrollToTopThreshold lets the
-            // list still follow new messages when the user is already pinned to
-            // the bottom (within 10px of the newest), i.e. normal chat behaviour,
-            // while leaving them undisturbed when scrolled up reading history.
-            maintainVisibleContentPosition={{
-              minIndexForVisible: 0,
-              autoscrollToTopThreshold: 10,
-            }}
+            // Keep the chat CONTENT from jumping when a new row inserts (a
+            // message either side sends, the optimistic→real swap, a WS echo).
+            // iOS-only — see `keepVisiblePosition` above for why this is off on
+            // Android (Fabric mis-anchors it to the top when a Modal opens).
+            maintainVisibleContentPosition={keepVisiblePosition}
             keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
             renderItem={({ item }) => {
