@@ -21,7 +21,6 @@ const {
   isValidChannel,
 } = require('../config/worldChatRooms');
 const { blockedIdSet } = require('../utils/blocking');
-const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { identityOf, levelOf } = require('../utils/identity');
 const roomColors = require('../config/roomColors');
@@ -29,15 +28,31 @@ const { titleKeyForLevel } = require('../config/xpTable');
 const xpService = require('../services/xpService');
 const translateService = require('../services/translateService');
 
-// Auto-translate daily character caps (cost management).
-const TRANSLATE_LIMIT_FREE = 10000;
-const TRANSLATE_LIMIT_PREMIUM = 100000;
-const utcDay = () => new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-const translateLimitFor = (user) => (isPremiumActive(user) ? TRANSLATE_LIMIT_PREMIUM : TRANSLATE_LIMIT_FREE);
-const usedTodayFor = (user) => {
-  const u = user.translateUsage || {};
-  return u.date === utcDay() ? u.chars || 0 : 0;
-};
+// Auto-translate is no longer daily-quota capped. Abuse is bounded by a
+// per-user sliding-window rate limit (see takeTranslateRate below). The legacy
+// `User.translateUsage` field is retained in the schema but never read/written.
+const TRANSLATE_WINDOW_MS = 60_000; // 1-minute window
+const TRANSLATE_MAX_PER_WINDOW = 60; // 60 translate calls / user / minute
+const translateHits = new Map(); // userId -> epoch-ms timestamps within the window
+function takeTranslateRate(userId) {
+  const now = Date.now();
+  const arr = (translateHits.get(userId) || []).filter((t) => now - t < TRANSLATE_WINDOW_MS);
+  if (arr.length >= TRANSLATE_MAX_PER_WINDOW) {
+    translateHits.set(userId, arr);
+    return false;
+  }
+  arr.push(now);
+  translateHits.set(userId, arr);
+  return true;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, arr] of translateHits) {
+    const live = arr.filter((t) => now - t < TRANSLATE_WINDOW_MS);
+    if (live.length) translateHits.set(k, live);
+    else translateHits.delete(k);
+  }
+}, 120_000).unref?.();
 
 const BODY_MAX = 500;
 const RATE_MS = 3000; // 1 message / 3s / user
@@ -878,23 +893,11 @@ router.get('/recent', auth, async (req, res, next) => {
   }
 });
 
-// ── GET /api/world-chat/translate/quota ───────────────────────────────────────
-// Current user's daily auto-translate usage. Drives the Settings quota bar.
-router.get('/translate/quota', auth, (req, res) => {
-  const limit = translateLimitFor(req.user);
-  const used = usedTodayFor(req.user);
-  ok(res, {
-    used,
-    limit,
-    percent: limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0,
-    isPremium: isPremiumActive(req.user),
-  });
-});
-
 // ── POST /api/world-chat/translate  { messageId, to } ─────────────────────────
 // Lazily translate one world-chat message into `to` (en/zh/ko/ja), caching the
 // result on the message doc so repeat reads are free. Country rooms + world
-// lobby only — private DMs are never translated.
+// lobby only — private DMs are never translated. No daily quota — only the
+// per-user rate limit guards against abuse.
 router.post('/translate', auth, async (req, res, next) => {
   try {
     const { messageId } = req.body || {};
@@ -902,6 +905,13 @@ router.post('/translate', auth, async (req, res, next) => {
     if (!mongoose.isValidObjectId(messageId)) return err(res, 'Invalid messageId');
     if (!translateService.SUPPORTED.has(to)) return err(res, 'Unsupported target language');
     if (!translateService.isConfigured()) return err(res, 'Translation unavailable', 503);
+
+    // Anti-abuse: bound how often one user can hit the endpoint (replaces the
+    // old daily character cap). Cheap cache hits below still count, so a client
+    // can't hammer the route.
+    if (!takeTranslateRate(req.user._id.toString())) {
+      return res.status(429).json({ error: 'Too many translation requests — slow down', code: 'RATE_LIMIT' });
+    }
 
     const msg = await WorldChatMessage.findById(messageId);
     if (!msg) return err(res, 'Message not found', 404);
@@ -922,14 +932,6 @@ router.post('/translate', auth, async (req, res, next) => {
       return ok(res, { original, detectedLang: to, translated: null, to });
     }
 
-    // Daily quota gate (chars actually sent to Google).
-    const today = utcDay();
-    const used = usedTodayFor(req.user);
-    const limit = translateLimitFor(req.user);
-    if (used + original.length > limit) {
-      return res.status(429).json({ error: 'Daily translation limit reached', code: 'TRANSLATE_QUOTA' });
-    }
-
     let result;
     try {
       result = await translateService.translate(original, to);
@@ -942,12 +944,6 @@ router.post('/translate', auth, async (req, res, next) => {
     if (!msg.translations) msg.translations = new Map();
     msg.translations.set(to, sameLang ? '' : result.translatedText);
     await msg.save();
-
-    // Charge quota only on a real API call.
-    await User.updateOne(
-      { _id: req.user._id },
-      { $set: { 'translateUsage.date': today, 'translateUsage.chars': used + original.length } },
-    );
 
     ok(res, {
       original,

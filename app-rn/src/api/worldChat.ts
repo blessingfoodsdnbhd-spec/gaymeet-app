@@ -161,19 +161,10 @@ export interface MessageTranslation {
 
 /** Lazily translate one world-chat message into `to` (en/zh/ko/ja). Backend
  *  caches the result on the message, so repeat calls are free. Throws 503 when
- *  translation isn't configured, 429 (`code: 'TRANSLATE_QUOTA'`) over the daily
- *  cap. */
+ *  translation isn't configured, 429 (`code: 'RATE_LIMIT'`) when the per-user
+ *  rate limit is hit. */
 export const translateWorldChatMessage = (messageId: string, to: string) =>
   unwrap<MessageTranslation>(api.post('/world-chat/translate', { messageId, to }));
-
-export interface TranslateQuota {
-  used: number;
-  limit: number;
-  percent: number;
-  isPremium: boolean;
-}
-export const getTranslateQuota = () =>
-  unwrap<TranslateQuota>(api.get('/world-chat/translate/quota'));
 
 /** Delete your OWN message. Backend is owner-only (403 otherwise) and
  *  broadcasts world-chat:message-deleted so every client drops it live. */
