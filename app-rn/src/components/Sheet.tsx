@@ -110,7 +110,14 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onD
 
   return (
     <Modal visible={open} transparent onRequestClose={onClose} animationType="none" onDismiss={onDismiss}>
-      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      {/* GestureHandlerRootView MUST use flex-based layout, not absolute fill.
+          On the New Architecture (Fabric) + Android, the native root view only
+          establishes its touch-target bounds from normal flow layout; given
+          `position:absolute` it ends up with a broken hit region and SWALLOWS
+          every touch to the children — making the whole sheet (all Pressable
+          rows) dead while still rendering. `flex:1` fills the Modal window
+          identically and restores taps. iOS is unaffected either way. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30,15,5,0.35)' }, backdropStyle]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
