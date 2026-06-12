@@ -74,12 +74,26 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
 
   return (
     <Sheet open={open} onClose={onClose} onDismiss={onDismiss} maxHeight="70%">
+      {/* __DEV__-only tap diagnostics (stripped from release builds). On a dev
+          build, watch Metro logs while tapping the map button on a real device:
+            • SHEET_TOUCH every tap + MAP_PRESS_IN every tap + MAP_CLICK every tap
+              → the tap fully works; any "needs N taps" is a DOWNSTREAM nav/anim
+                race, not interception (this is the expected case — see #224).
+            • SHEET_TOUCH/PRESS_IN fire but MAP_CLICK is dropped
+              → the press is being cancelled mid-gesture (a parent responder).
+            • SHEET_TOUCH does not fire on every tap
+              → an overlay is intercepting above the sheet (statically: none found). */}
+      <View onTouchStart={() => { if (__DEV__) console.log('LOCATION_SHEET_TOUCH', Date.now()); }}>
       <Text style={[styles.title, { color: theme.colors.text }]}>
         {t('moments.compose.location')}
       </Text>
 
       {onChooseMap ? (
-        <Pressable onPress={onChooseMap} style={[styles.row, { borderBottomColor: theme.colors.line }]}>
+        <Pressable
+          onPressIn={() => { if (__DEV__) console.log('LOCATION_MAP_PRESS_IN', Date.now()); }}
+          onPress={() => { if (__DEV__) console.log('LOCATION_MAP_CLICK', Date.now()); onChooseMap(); }}
+          style={[styles.row, { borderBottomColor: theme.colors.line }]}
+        >
           <Map size={18} color={theme.colors.primary} strokeWidth={2} />
           <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
             🗺 {t('moments.compose.chooseOnMap')}
@@ -120,6 +134,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
           </Pressable>
         ))}
       </ScrollView>
+      </View>
     </Sheet>
   );
 }
