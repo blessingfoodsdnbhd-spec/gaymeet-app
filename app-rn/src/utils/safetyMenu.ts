@@ -1,4 +1,4 @@
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Alert, Keyboard, Platform } from 'react-native';
 
 import i18n from '../i18n';
 import { blockUser, invalidateAfterBlock } from '../api/safety';
@@ -15,6 +15,14 @@ import { useSafetyMenu, type SafetyMenuOptions } from '../store/safetyMenu';
  * back, and an always-visible Cancel.
  */
 export function showSafetyMenu(options: SafetyMenuOptions) {
+  // Drop any live keyboard first. This menu is fired by long-pressing a comment
+  // / message / profile while a composer or search input may still be focused;
+  // on Android the Modal-based <SafetyMenuSheet/> would otherwise mount with the
+  // keyboard up and get panned to the top of the screen by edge-to-edge
+  // soft-input (Build 53). Centralising it here covers every safety-menu caller.
+  // Harmless before the iOS ActionSheetIOS path too.
+  Keyboard.dismiss();
+
   if (Platform.OS === 'android') {
     useSafetyMenu.getState().open(options);
     return;

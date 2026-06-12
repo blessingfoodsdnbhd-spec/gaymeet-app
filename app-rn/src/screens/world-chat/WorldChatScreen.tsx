@@ -32,6 +32,7 @@ import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { ChatVoiceRecorderSheet } from '../chats/ChatVoiceRecorderSheet';
+import { openSheetAfterKeyboardDismiss } from '../../utils/keyboardSheet';
 import { useAuth } from '../../store/auth';
 import {
   getRecentWorldChat,
@@ -658,7 +659,7 @@ export function WorldChatScreen({
               </Pressable>
             )}
             {isCustom && room && (
-              <Pressable onPress={() => { setSettingsTab('main'); setSettingsOpen(true); }} hitSlop={8} style={styles.headerBtn}>
+              <Pressable onPress={() => openSheetAfterKeyboardDismiss(() => { setSettingsTab('main'); setSettingsOpen(true); })} hitSlop={8} style={styles.headerBtn}>
                 <MoreVertical size={22} color={theme.colors.text} />
               </Pressable>
             )}
@@ -717,7 +718,7 @@ export function WorldChatScreen({
                   mine={item.userId === myId}
                   isCreator={!!creatorId && item.userId === creatorId}
                   highlighted={item.messageId === highlightedId}
-                  onLongPress={() => setSelected(item)}
+                  onLongPress={() => openSheetAfterKeyboardDismiss(() => setSelected(item))}
                   onOpenUser={() =>
                     item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
                   }
