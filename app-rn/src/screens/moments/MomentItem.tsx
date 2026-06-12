@@ -23,6 +23,20 @@ function idxFor(id: string) {
   return h % 10;
 }
 
+// Geocoded labels are long, comma-separated chains
+// ("泰有福, Jalan Jambu Gajus, 增江新村南区, …, 吉隆坡, 52000, 马来西亚").
+// Show the meaningful head (POI + street + area) and let numberOfLines
+// ellipsize anything past that — never the bare postcode/country tail.
+function shortAddress(label?: string | null): string {
+  if (!label) return '';
+  const parts = label
+    .split(/\s*[,，]\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return label.trim();
+  return parts.slice(0, 3).join(', ');
+}
+
 interface Props {
   moment: Moment;
   onToggleLike: (m: Moment) => void;
@@ -156,9 +170,18 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
               if (url) Linking.openURL(url).catch(() => {});
             }}
             hitSlop={6}
+            // Tapping the address still opens the map; keep "View on map" as the
+            // a11y label / fallback when no human-readable label was saved.
+            accessibilityRole="link"
+            accessibilityLabel={t('moments.viewOnMap')}
+            style={styles.locRow}
           >
-            <Text style={{ fontSize: 12.5, color: theme.colors.primaryDeep }}>
-              📍 {t('moments.viewOnMap')}
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[styles.locText, { color: theme.colors.primaryDeep }]}
+            >
+              📍 {shortAddress(moment.locationLabel) || t('moments.viewOnMap')}
             </Text>
           </Pressable>
         </View>
@@ -369,6 +392,16 @@ const styles = StyleSheet.create({
   metaRow: {
     paddingHorizontal: 20,
     marginTop: 6,
+  },
+  // Constrain to a single row so a long address truncates with an ellipsis
+  // instead of pushing the card taller.
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locText: {
+    flexShrink: 1,
+    fontSize: 12.5,
   },
   content: {
     fontSize: 15,
