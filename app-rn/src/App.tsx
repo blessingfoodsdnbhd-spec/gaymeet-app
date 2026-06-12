@@ -128,7 +128,7 @@ export function App() {
           KeyboardAvoidingView, whose behavior="height" double-compensated under
           Android 15 forced edge-to-edge (targetSdk 35) + adjustResize and shoved
           the message list to the top of the screen ("fly-to-top"). */}
-      <KeyboardProvider>
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
       {/* initialWindowMetrics seeds correct, synchronous safe-area insets on
           first render — required for native-stack modals (e.g. the moment map
           picker's fullScreenModal) to clear the status bar / Dynamic Island

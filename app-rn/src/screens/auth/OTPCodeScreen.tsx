@@ -104,7 +104,9 @@ export function OTPCodeScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Android: undefined — the root KeyboardProvider emulates adjustResize, so
+        // a non-undefined behavior would double-shift the content up.
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

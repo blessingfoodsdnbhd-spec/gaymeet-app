@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, Pressable, View, StyleSheet, useWindowDimensions, Keyboard, Platform } from 'react-native';
+import { Modal, Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   Gesture,
   GestureDetector,
@@ -13,6 +13,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import { useTheme } from '../theme/ThemeProvider';
 
 const DISMISS_DISTANCE = 100;
@@ -49,24 +50,68 @@ interface Props {
    */
   onDismiss?: () => void;
   /**
-   * iOS-only: lift the sheet card above the software keyboard when it opens.
-   * The card is `position:absolute; bottom:0`, so a focused TextInput inside a
-   * short (e.g. 50%) sheet sits BEHIND the keyboard — visible but uneditable
-   * (the "edit message opens but you can't change the text" bug). Opt in for
-   * any sheet that contains a TextInput. Off by default; no-op on Android,
-   * where the Modal window already resizes for the keyboard.
+   * @deprecated Keyboard avoidance is now AUTOMATIC on both platforms — the
+   * card always rides above the soft keyboard via react-native-keyboard-controller
+   * (see SheetSurface). The prop is kept so existing call sites keep type-checking;
+   * it has no effect. When no input is focused the keyboard height is 0, so a
+   * sheet without a TextInput is unaffected.
    */
   avoidKeyboard?: boolean;
 }
 
-export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onDismiss, avoidKeyboard }: Props) {
+export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }: Props) {
+  return (
+    <Modal
+      visible={open}
+      transparent
+      onRequestClose={onClose}
+      animationType="none"
+      onDismiss={onDismiss}
+      // statusBarTranslucent is REQUIRED under Android 15 forced edge-to-edge
+      // (targetSdk 35). Without it the Modal opens its own window that does NOT
+      // draw under the status bar, while the host activity (edge-to-edge) does —
+      // so the Modal's window is offset by the status-bar height and its content
+      // shifts/jumps up ("flies to the top", overlapping the header) whenever the
+      // window re-measures. Pairs with the KeyboardProvider below for the
+      // keyboard-raise case. Every OTHER full-screen Modal in the app already
+      // sets this (SafetyMenuSheet, PhotoViewer, PhotoConfirmModal…).
+      statusBarTranslucent
+    >
+      {/* No nested KeyboardProvider needed: the ROOT provider (App.tsx) ships a
+          ModalAttachedWatcher that detects RN <Modal> shows, attaches the
+          WindowInsetsAnimation callback to the Modal's own window, and sets it to
+          SOFT_INPUT_ADJUST_NOTHING — so Android no longer PANS the whole
+          translucent Modal upward to reveal a focused TextInput (that pan was the
+          edit/Premium/location "sheet flies to the top" bug). It also syncs the
+          Modal's keyboard height into the SAME reanimated value that
+          useReanimatedKeyboardAnimation reads below (React context crosses the
+          Modal boundary). iOS keyboard notifications are global, so the height
+          updates there without the watcher. */}
+      <SheetSurface open={open} onClose={onClose} maxHeight={maxHeight} overlay={overlay}>
+        {children}
+      </SheetSurface>
+    </Modal>
+  );
+}
+
+function SheetSurface({
+  open,
+  onClose,
+  children,
+  maxHeight = '85%',
+  overlay,
+}: Pick<Props, 'open' | 'onClose' | 'children' | 'maxHeight' | 'overlay'>) {
   const theme = useTheme();
   const { height: winH } = useWindowDimensions();
   const ty = useSharedValue(winH);
   const opacity = useSharedValue(0);
-  // Keyboard height to lift the card by (iOS only). Animated so the card rides
-  // up/down with the keyboard instead of jumping.
-  const kb = useSharedValue(0);
+  // Native keyboard animation (both platforms). `height` is 0 when the keyboard
+  // is hidden and goes NEGATIVE (−keyboardHeight) as it opens, so adding it to
+  // the card's translateY lifts the card by exactly the keyboard height, in sync
+  // with the IME animation. KeyboardProvider sets decorFitsSystemWindows(false)
+  // so the window itself does NOT resize/pan for the keyboard — this transform is
+  // the sole compensation (no double-shift).
+  const { height: kbHeight } = useReanimatedKeyboardAnimation();
 
   useEffect(() => {
     if (open) {
@@ -78,35 +123,11 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onD
     }
   }, [open, winH, ty, opacity]);
 
-  // Track the keyboard and lift the absolutely-positioned card clear of it.
-  // KeyboardAvoidingView can't help here — it adjusts its own flow layout, not
-  // an absolutely-positioned sibling — so we drive the transform directly.
-  useEffect(() => {
-    if (!avoidKeyboard || Platform.OS !== 'ios' || !open) {
-      kb.value = withTiming(0, { duration: 180 });
-      return;
-    }
-    const onShow = (e: any) => {
-      const h = e?.endCoordinates?.height ?? 0;
-      const dur = e?.duration && e.duration > 0 ? e.duration : 250;
-      kb.value = withTiming(h, { duration: dur });
-    };
-    const onHide = (e: any) => {
-      const dur = e?.duration && e.duration > 0 ? e.duration : 200;
-      kb.value = withTiming(0, { duration: dur });
-    };
-    const showSub = Keyboard.addListener('keyboardWillShow', onShow);
-    const hideSub = Keyboard.addListener('keyboardWillHide', onHide);
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-      kb.value = withTiming(0, { duration: 150 });
-    };
-  }, [avoidKeyboard, open, kb]);
-
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  // Lift by keyboard height (kb) on top of the dismiss transform (ty).
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: ty.value - kb.value }] }));
+  // Lift by keyboard height (kbHeight, negative) on top of the dismiss transform.
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: ty.value + kbHeight.value }],
+  }));
 
   // Swipe-down-to-dismiss. Drag follows the finger and fades the backdrop;
   // release past distance OR velocity → close, else spring back. The worklet
@@ -148,75 +169,53 @@ export function Sheet({ open, onClose, children, maxHeight = '85%', overlay, onD
     .onEnd((e) => onDragEnd(e.translationY, e.velocityY));
 
   return (
-    <Modal
-      visible={open}
-      transparent
-      onRequestClose={onClose}
-      animationType="none"
-      onDismiss={onDismiss}
-      // statusBarTranslucent is REQUIRED under Android 15 forced edge-to-edge
-      // (targetSdk 35). Without it the Modal opens its own window that does NOT
-      // draw under the status bar, while the host activity (edge-to-edge) does —
-      // so the Modal's window is offset by the status-bar height and its content
-      // shifts/jumps up ("flies to the top", overlapping the header) whenever the
-      // window re-measures (a long-press sheet mounting, the soft keyboard
-      // raising). Every OTHER full-screen Modal in the app already sets this
-      // (SafetyMenuSheet, PhotoViewer, PhotoConfirmModal…); the shared <Sheet>
-      // was the one that missed it — which is why #220/#221's keyboard-dismiss
-      // band-aids couldn't stop the fly-to-top: the window offset was the real
-      // cause, not the keyboard. (navigationBarTranslucent would round this out
-      // but it's RN 0.77+; on RN 0.76.5 the modal still stops above the nav bar,
-      // so the existing paddingBottom is correct — no safe-area change needed.)
-      statusBarTranslucent
-    >
-      {/* GestureHandlerRootView MUST use flex-based layout, not absolute fill.
-          On the New Architecture (Fabric) + Android, the native root view only
-          establishes its touch-target bounds from normal flow layout; given
-          `position:absolute` it ends up with a broken hit region and SWALLOWS
-          every touch to the children — making the whole sheet (all Pressable
-          rows) dead while still rendering. `flex:1` fills the Modal window
-          identically and restores taps. iOS is unaffected either way. */}
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30,15,5,0.35)' }, backdropStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={onClose} />
-        </Animated.View>
-        <Animated.View
-          style={[
-            {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: theme.colors.surface,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              paddingHorizontal: 20,
-              paddingTop: 14,
-              paddingBottom: 28,
-              maxHeight,
-            },
-            theme.shadows.pop,
-            sheetStyle,
-          ]}
-        >
-          {/* Grab handle — drag down to dismiss. Generous touch strip around
-              the visible pill so it's easy to grab. */}
-          <GestureDetector gesture={dragHandle}>
-            <View style={{ alignItems: 'center', paddingTop: 2, paddingBottom: 12, marginTop: -2 }}>
-              <View
-                style={{
-                  width: 36,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: theme.colors.line,
-                }}
-              />
-            </View>
-          </GestureDetector>
-          {typeof children === 'function' ? children(dragArea) : children}
-        </Animated.View>
-        {overlay}
-      </GestureHandlerRootView>
-    </Modal>
+    // GestureHandlerRootView MUST use flex-based layout, not absolute fill.
+    // On the New Architecture (Fabric) + Android, the native root view only
+    // establishes its touch-target bounds from normal flow layout; given
+    // `position:absolute` it ends up with a broken hit region and SWALLOWS
+    // every touch to the children — making the whole sheet (all Pressable
+    // rows) dead while still rendering. `flex:1` fills the Modal window
+    // identically and restores taps. iOS is unaffected either way.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30,15,5,0.35)' }, backdropStyle]}>
+        <Pressable style={{ flex: 1 }} onPress={onClose} />
+      </Animated.View>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 20,
+            paddingTop: 14,
+            paddingBottom: 28,
+            maxHeight,
+          },
+          theme.shadows.pop,
+          sheetStyle,
+        ]}
+      >
+        {/* Grab handle — drag down to dismiss. Generous touch strip around
+            the visible pill so it's easy to grab. */}
+        <GestureDetector gesture={dragHandle}>
+          <View style={{ alignItems: 'center', paddingTop: 2, paddingBottom: 12, marginTop: -2 }}>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: theme.colors.line,
+              }}
+            />
+          </View>
+        </GestureDetector>
+        {typeof children === 'function' ? children(dragArea) : children}
+      </Animated.View>
+      {overlay}
+    </GestureHandlerRootView>
   );
 }

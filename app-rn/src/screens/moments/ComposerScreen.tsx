@@ -390,7 +390,11 @@ export function ComposerScreen() {
             // done, so the push lands on the now-focused root activity. Mirrors
             // AboutUserSheet's Android sheet→follow-up fix.
             setLocOpen(false);
-            setTimeout(() => (nav as any).navigate('MapPicker', { mode: 'moment' }), 250);
+            // 250ms wasn't always enough on slower devices — the push still landed
+            // mid-Dialog-teardown and was dropped (map "needs several taps"). Give
+            // the teardown more headroom; a dropped push is the only failure mode
+            // here, so erring longer is safe (the map just opens a beat later).
+            setTimeout(() => (nav as any).navigate('MapPicker', { mode: 'moment' }), 400);
           } else {
             // iOS: the MapPicker is `presentation: 'fullScreenModal'` (#185, to
             // keep Save → goBack from collapsing the Composer modal group). But

@@ -158,7 +158,8 @@ export function CreateVoteScreen() {
         </View>
       ) : (
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Android: undefined — root KeyboardProvider emulates adjustResize (no double-shift).
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
       <ScrollView
