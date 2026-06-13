@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { Modal, Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   Gesture,
@@ -14,6 +14,12 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
 import { useTheme } from '../theme/ThemeProvider';
 
 const DISMISS_DISTANCE = 100;
@@ -57,9 +63,31 @@ interface Props {
    * sheet without a TextInput is unaffected.
    */
   avoidKeyboard?: boolean;
+  /**
+   * Android edge-to-edge escape hatch. When true this Sheet renders via
+   * @gorhom/bottom-sheet (BottomSheetModal) INSTEAD of an RN <Modal>. Gorhom
+   * portals its content into the app's single window (BottomSheetModalProvider
+   * in App.tsx) — it never opens a second Android window, so when a focused
+   * TextInput raises the soft keyboard the OS cannot PAN the sheet to the top
+   * of the screen the way it does an RN Modal under forced edge-to-edge. This
+   * is the root fix for the chat "编辑/edit" sheet flying to the top on real
+   * Android devices (emulators often don't force edge-to-edge, so they never
+   * reproduced it). Opt in ONLY for sheets with a focused input that must ride
+   * the keyboard (currently just the edit-message sheet); every other Sheet
+   * keeps the battle-tested RN Modal path untouched, so the blast radius of a
+   * gorhom render glitch is this one sheet, not the whole app.
+   *
+   * Caveats for the gorhom path: `overlay` and the render-prop (drag-area)
+   * child form are not supported (gorhom owns its own backdrop + pan-to-close).
+   * Pass a plain node child. Sizing is dynamic (fits content), capped at
+   * `maxHeight`.
+   */
+  useGorhom?: boolean;
 }
 
-export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }: Props) {
+export function Sheet(props: Props) {
+  if (props.useGorhom) return <GorhomSheet {...props} />;
+  const { open, onClose, children, maxHeight, overlay, onDismiss } = props;
   return (
     <Modal
       visible={open}
@@ -91,6 +119,77 @@ export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }
         {children}
       </SheetSurface>
     </Modal>
+  );
+}
+
+/**
+ * Gorhom-backed Sheet body (see `useGorhom` on Props). A BottomSheetModal lives
+ * in the app's single window via the root BottomSheetModalProvider, so a focused
+ * TextInput's keyboard rises WITHOUT Android edge-to-edge panning the sheet to
+ * the top. Always mounted (open toggles present/dismiss), matching the RN-Modal
+ * path's controlled-by-prop contract.
+ */
+function GorhomSheet({ open, onClose, children, maxHeight, onDismiss }: Props) {
+  const theme = useTheme();
+  const { height: winH } = useWindowDimensions();
+  const ref = useRef<BottomSheetModal>(null);
+
+  // Drive present/dismiss from the controlled `open` prop.
+  useEffect(() => {
+    if (open) ref.current?.present();
+    else ref.current?.dismiss();
+  }, [open]);
+
+  // Cap dynamic content height. maxHeight may be a number or a `${n}%` string.
+  const maxContent =
+    typeof maxHeight === 'number'
+      ? maxHeight
+      : winH * (parseFloat(String(maxHeight ?? '85%')) / 100);
+
+  const renderBackdrop = useCallback(
+    (p: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...p}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+        opacity={0.35}
+      />
+    ),
+    [],
+  );
+
+  // gorhom's onDismiss fires for BOTH user-driven (backdrop/swipe) close and our
+  // own dismiss(). Route it through onClose so parent state clears; onClose then
+  // sets open=false which re-calls dismiss() on an already-dismissed sheet — a
+  // harmless no-op. The onDismiss prop (iOS sheet-chaining) also fires here.
+  const handleDismiss = useCallback(() => {
+    onClose();
+    onDismiss?.();
+  }, [onClose, onDismiss]);
+
+  return (
+    <BottomSheetModal
+      ref={ref}
+      onDismiss={handleDismiss}
+      enableDynamicSizing
+      maxDynamicContentSize={maxContent}
+      enablePanDownToClose
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      backdropComponent={renderBackdrop}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.line, width: 36, height: 4 }}
+      backgroundStyle={{
+        backgroundColor: theme.colors.surface,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+    >
+      <BottomSheetView style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 28 }}>
+        {typeof children === 'function' ? children(Gesture.Pan()) : children}
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 

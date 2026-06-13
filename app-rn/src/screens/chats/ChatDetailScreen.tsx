@@ -11,7 +11,11 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { KeyboardAvoidingView, KeyboardController } from 'react-native-keyboard-controller';
+import {
+  KeyboardAvoidingView,
+  KeyboardController,
+  AndroidSoftInputModes,
+} from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -212,11 +216,24 @@ export function ChatDetailScreen() {
   const editInputRef = useRef<TextInput>(null);
   useEffect(() => {
     if (!editingMsg) return;
-    // 350ms clears the Sheet's 320ms open animation (Sheet.tsx ty 320ms) so the
-    // keyboard rises only after the card has fully settled — never mid-slide,
-    // which is what made the edit sheet fly to the top on Android edge-to-edge.
+    // PLAN A (belt) — force the soft-input mode to ADJUST_NOTHING while the edit
+    // sheet is up. This tells Android NOT to pan/resize the window when the
+    // keyboard rises, which is the proximate cause of the "fly to the top"
+    // glitch on real edge-to-edge devices. NOTE: setInputMode targets the host
+    // Activity's window, so on its own it may NOT reach the (now gorhom, same-
+    // window) sheet — but the edit sheet now renders via @gorhom/bottom-sheet
+    // (PLAN B, the real fix: useGorhom on the <Sheet> below), which lives IN the
+    // host window, so this mode now actually governs it. Restored on close.
+    if (Platform.OS === 'android') {
+      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_NOTHING);
+    }
+    // 350ms clears the sheet's open animation so the keyboard rises only after
+    // the card has fully settled — never mid-slide.
     const id = setTimeout(() => editInputRef.current?.focus(), 350);
-    return () => clearTimeout(id);
+    return () => {
+      clearTimeout(id);
+      if (Platform.OS === 'android') KeyboardController.setDefaultMode();
+    };
   }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
   // sheet. On iOS a Modal can't be presented while another is still dismissing,
@@ -1586,6 +1603,11 @@ export function ChatDetailScreen() {
         onClose={() => setEditingMsg(null)}
         maxHeight="50%"
         avoidKeyboard
+        // PLAN B (real fix): render this ONE sheet via @gorhom/bottom-sheet so it
+        // lives in the host window (no second Android window) and the soft
+        // keyboard can't pan it to the top under forced edge-to-edge. Every other
+        // Sheet keeps the RN Modal path — blast radius is just the edit sheet.
+        useGorhom
       >
         {editingMsg && (
           <View style={{ paddingHorizontal: 4 }}>

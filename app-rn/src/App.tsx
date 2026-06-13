@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
 import { ensureAudioMode } from './utils/voiceCache';
@@ -134,6 +135,14 @@ export function App() {
           picker's fullScreenModal) to clear the status bar / Dynamic Island
           instead of reporting a 0 top inset. */}
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        {/* BottomSheetModalProvider hosts @gorhom/bottom-sheet's portal. Unlike
+            RN <Modal>, a gorhom BottomSheetModal renders INTO this host inside
+            the app's single Android window — it never opens a second window, so
+            Android edge-to-edge can't PAN it to the top when the soft keyboard
+            rises (the chat edit-sheet "flies to the top" bug). Sheets opt in
+            via <Sheet useGorhom>. Must sit inside GestureHandlerRootView +
+            SafeAreaProvider, above everything that may present a sheet. */}
+        <BottomSheetModalProvider>
         <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
           <ThemeProvider>
@@ -164,6 +173,7 @@ export function App() {
           </ThemeProvider>
         </QueryClientProvider>
     </ErrorBoundary>
+        </BottomSheetModalProvider>
       </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
