@@ -84,18 +84,54 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
     },
   });
 
+  // Delete keeps its own confirm step (destructive, irreversible) rather than
+  // firing straight from the action menu.
+  const confirmDelete = () => {
+    Alert.alert(
+      t('moments.delete.title'),
+      t('moments.delete.body'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('moments.delete.action'),
+          style: 'destructive',
+          onPress: () => deleteMut.mutate(),
+        },
+      ],
+    );
+  };
+
+  // Open the composer in edit mode, prefilled with this moment's text, photos,
+  // location and tagged friends. Save → PATCH /moments/:id (24h window).
+  const goEdit = () => {
+    (nav as any).navigate('Composer', {
+      edit: {
+        momentId: moment._id,
+        content: moment.content ?? '',
+        images: moment.images ?? [],
+        tagged: (moment.taggedUserIds ?? []).map((f) => ({ _id: f._id, nickname: f.nickname })),
+        place:
+          moment.location?.coordinates && moment.location.coordinates.length === 2
+            ? {
+                lat: moment.location.coordinates[1],
+                lng: moment.location.coordinates[0],
+                label: moment.locationLabel ?? '',
+              }
+            : null,
+      },
+    });
+  };
+
   const onMore = () => {
     if (isMine) {
+      // Own moment → 编辑 / 删除 / 取消.
       Alert.alert(
-        t('moments.delete.title'),
-        t('moments.delete.body'),
+        t('moments.more.title'),
+        undefined,
         [
+          { text: t('moments.edit.action'), onPress: goEdit },
+          { text: t('moments.delete.action'), style: 'destructive', onPress: confirmDelete },
           { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('moments.delete.action'),
-            style: 'destructive',
-            onPress: () => deleteMut.mutate(),
-          },
         ],
       );
     } else {

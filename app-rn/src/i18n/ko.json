@@ -190,6 +190,7 @@
     "publishFailed": "게시 실패",
     "composer": {
       "headerTitle": "새 모먼트",
+      "editTitle": "모먼트 수정",
       "publish": "게시",
       "publishCta": "모먼트 게시",
       "contentPlaceholder": "무언가를 공유해보세요...",
@@ -220,6 +221,12 @@
       "body": "되돌릴 수 없습니다.",
       "action": "삭제",
       "failed": "삭제 실패"
+    },
+    "edit": {
+      "action": "수정"
+    },
+    "more": {
+      "title": "게시물 옵션"
     }
   },
   "languageSettings": {

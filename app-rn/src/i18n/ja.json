@@ -190,6 +190,7 @@
     "publishFailed": "投稿に失敗しました",
     "composer": {
       "headerTitle": "新しいモーメント",
+      "editTitle": "モーメントを編集",
       "publish": "公開",
       "publishCta": "モーメントを投稿",
       "contentPlaceholder": "何かをシェア...",
@@ -220,6 +221,12 @@
       "body": "元に戻せません。",
       "action": "削除",
       "failed": "削除に失敗しました"
+    },
+    "edit": {
+      "action": "編集"
+    },
+    "more": {
+      "title": "投稿の操作"
     }
   },
   "languageSettings": {

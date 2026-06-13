@@ -50,7 +50,19 @@ export type RootStackParamList = {
   ChatTranslation: undefined;
   AccountSettings: undefined;
   Comments: { momentId: string; authorId?: string };
-  Composer: undefined;
+  Composer:
+    | {
+        /** Edit-mode: prefill the composer with an existing moment and PATCH
+         *  it on save instead of creating a new one. */
+        edit: {
+          momentId: string;
+          content: string;
+          images: string[];
+          tagged: { _id: string; nickname: string }[];
+          place: { lat: number; lng: number; label: string } | null;
+        };
+      }
+    | undefined;
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string; previewMode?: boolean };
   Premium: undefined;

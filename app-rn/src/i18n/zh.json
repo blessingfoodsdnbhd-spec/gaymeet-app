@@ -753,6 +753,7 @@
     "publishFailed": "发布失败",
     "composer": {
       "headerTitle": "新动态",
+      "editTitle": "编辑动态",
       "publish": "发布",
       "publishCta": "发布动态",
       "contentPlaceholder": "分享一些什么...",
@@ -783,6 +784,12 @@
       "body": "删除后无法恢复。",
       "action": "删除",
       "failed": "删除失败"
+    },
+    "edit": {
+      "action": "编辑"
+    },
+    "more": {
+      "title": "动态选项"
     }
   },
   "chat": {

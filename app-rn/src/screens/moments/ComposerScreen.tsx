@@ -15,7 +15,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, ImagePlus, X, Users, MapPin, Clock } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +24,8 @@ import { Button } from '../../components/Button';
 import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSheet';
 import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
 import { openSheetAfterKeyboardDismiss } from '../../utils/keyboardSheet';
-import { postMoment } from '../../api/moments';
+import { postMoment, updateMoment } from '../../api/moments';
+import type { RootStackParamList } from '../../navigation/types';
 import { uploadFile } from '../../api/upload';
 import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
 
@@ -35,11 +36,15 @@ export function ComposerScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation();
+  // Edit-mode: arrives with an existing moment to prefill + PATCH on save.
+  const route = useRoute<RouteProp<RootStackParamList, 'Composer'>>();
+  const edit = route.params?.edit;
+  const isEditing = !!edit;
   const queryClient = useQueryClient();
-  const [content, setContent] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [tagged, setTagged] = useState<TagPick[]>([]);
-  const [place, setPlace] = useState<MomentPlace | null>(null);
+  const [content, setContent] = useState(edit?.content ?? '');
+  const [photos, setPhotos] = useState<string[]>(edit?.images ?? []);
+  const [tagged, setTagged] = useState<TagPick[]>(edit?.tagged ?? []);
+  const [place, setPlace] = useState<MomentPlace | null>(edit?.place ?? null);
   const [tagOpen, setTagOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
   // iOS: the MapPicker navigate is queued here and fired from the location
@@ -75,6 +80,19 @@ export function ComposerScreen() {
           wrapped.response = e?.response;
           throw wrapped;
         }
+      }
+      // Edit mode → PATCH the existing moment. Full-replace of the editable
+      // fields from the composer's current state; lat/lng:null clears location.
+      // expiresAt is intentionally left untouched (no ephemeral toggle here).
+      if (isEditing) {
+        return updateMoment(edit!.momentId, {
+          content: content.trim(),
+          images: uploadedUrls,
+          taggedUserIds: tagged.map((p) => p._id),
+          ...(place
+            ? { lat: place.lat, lng: place.lng, locationLabel: place.label }
+            : { lat: null, lng: null, locationLabel: null }),
+        });
       }
       return postMoment({
         content: content.trim(),
@@ -202,7 +220,7 @@ export function ComposerScreen() {
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
         <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
-          {t('moments.composer.headerTitle')}
+          {t(isEditing ? 'moments.composer.editTitle' : 'moments.composer.headerTitle')}
         </Text>
         <Pressable
           onPress={() => canSubmit && submitMut.mutate()}
@@ -216,7 +234,7 @@ export function ComposerScreen() {
               fontWeight: '600',
             }}
           >
-            {t('moments.composer.publish')}
+            {t(isEditing ? 'common.save' : 'moments.composer.publish')}
           </Text>
         </Pressable>
       </View>
@@ -320,7 +338,9 @@ export function ComposerScreen() {
             </Text>
           </Pressable>
 
-          {/* 24h ephemeral toggle (STORY1). */}
+          {/* 24h ephemeral toggle (STORY1). Hidden in edit mode — PATCH never
+              changes a moment's expiry. */}
+          {!isEditing && (
           <Pressable
             onPress={() => setEphemeral((v) => !v)}
             style={[styles.actionRow, { borderTopColor: theme.colors.line }]}
@@ -343,12 +363,13 @@ export function ComposerScreen() {
               <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF' }} />
             </View>
           </Pressable>
+          )}
 
         </ScrollView>
 
         <View style={{ padding: 20 }}>
           <Button
-            label={t('moments.composer.publishCta')}
+            label={t(isEditing ? 'common.save' : 'moments.composer.publishCta')}
             onPress={() => submitMut.mutate()}
             disabled={!canSubmit}
             loading={submitMut.isPending}

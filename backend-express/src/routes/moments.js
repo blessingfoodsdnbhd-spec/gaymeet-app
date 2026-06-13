@@ -269,6 +269,88 @@ router.post('/', auth, async (req, res, next) => {
   }
 });
 
+// ── PATCH /api/moments/:id ────────────────────────────────────────────────────
+// Edit your own moment within a 24h window (mirrors the chat-message edit
+// window). Full-replace of the editable fields (content / images / location /
+// tagged friends) from the composer's current state. No socket broadcast —
+// moments aren't realtime; clients refetch via query invalidation.
+const MOMENT_EDIT_WINDOW_MS = 24 * 3600 * 1000;
+router.patch('/:id', auth, async (req, res, next) => {
+  try {
+    const moment = await Moment.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+      isActive: true,
+    });
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    // 24h edit window — same constraint as chat-message edit.
+    if (Date.now() - new Date(moment.createdAt).getTime() > MOMENT_EDIT_WINDOW_MS) {
+      return err(res, 'Edit window expired (24h)', 403);
+    }
+
+    const {
+      content = '', images = [], visibility, lat, lng,
+      locationLabel, taggedUserIds,
+    } = req.body;
+
+    const imgs = Array.isArray(images) ? images : [];
+    if (!content && imgs.length === 0) return err(res, 'content or images required');
+    if (content.length > 500) return err(res, 'content max 500 chars');
+    if (imgs.length > 3) return err(res, 'max 3 images');
+    if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
+
+    moment.content = content;
+    moment.images = imgs;
+    if (visibility) moment.visibility = visibility;
+
+    // Location — full replace. lat/lng present → set; absent/null → clear.
+    if (lat != null && lng != null) {
+      moment.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
+      moment.hasLocation = true;
+      moment.locationLabel = locationLabel ? String(locationLabel).slice(0, 120) : null;
+    } else {
+      moment.location = undefined;
+      moment.hasLocation = false;
+      moment.locationLabel = null;
+    }
+
+    // Tagged friends — full replace, same anti-spam follow/follower gate as POST.
+    let taggedIds = [];
+    if (Array.isArray(taggedUserIds) && taggedUserIds.length) {
+      const ids = [...new Set(taggedUserIds.map(String))].filter(
+        (id) => mongoose.isValidObjectId(id) && id !== req.user._id.toString(),
+      );
+      if (ids.length) {
+        const Follow = require('../models/Follow');
+        const rels = await Follow.find({
+          $or: [
+            { follower: req.user._id, following: { $in: ids } },
+            { following: req.user._id, follower: { $in: ids } },
+          ],
+        }).select('follower following').lean();
+        const allowed = new Set();
+        rels.forEach((r) => {
+          allowed.add(r.follower.toString());
+          allowed.add(r.following.toString());
+        });
+        taggedIds = ids.filter((id) => allowed.has(id));
+      }
+    }
+    moment.taggedUserIds = taggedIds;
+
+    await moment.save();
+    const populated = await moment.populate([
+      { path: 'user', select: 'nickname avatarUrl isPremium' },
+      { path: 'taggedUserIds', select: 'nickname avatarUrl' },
+    ]);
+
+    ok(res, populated.toObject());
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── DELETE /api/moments/:id ───────────────────────────────────────────────────
 router.delete('/:id', auth, async (req, res, next) => {
   try {

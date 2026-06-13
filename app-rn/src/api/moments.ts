@@ -104,6 +104,25 @@ export const postMoment = (body: {
   expiresInHours?: number;
 }) => unwrap<Moment>(api.post('/moments', body));
 
+/**
+ * Edit your own moment within the 24h window (backend mirrors the chat-edit
+ * window). Full-replace of content / images / location / tagged friends — pass
+ * the composer's complete current state. lat/lng omitted (or null) clears the
+ * location. Backend rejects with 403 once the window has passed.
+ */
+export const updateMoment = (
+  id: string,
+  body: {
+    content: string;
+    images?: string[];
+    visibility?: 'public' | 'friends' | 'private';
+    taggedUserIds?: string[];
+    lat?: number | null;
+    lng?: number | null;
+    locationLabel?: string | null;
+  },
+) => unwrap<Moment>(api.patch(`/moments/${id}`, body));
+
 // ── Comments ──────────────────────────────────────────────────────────────────
 export interface Comment {
   _id: string;
