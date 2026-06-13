@@ -68,8 +68,6 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
     return q ? all.filter((u) => u.nickname.toLowerCase().includes(q)) : all;
   }, [friendsQ.data, query]);
 
-  const count = Object.keys(picked).length;
-
   const toggle = (u: FollowedUser) => {
     setPicked((prev) => {
       const next = { ...prev };
@@ -99,8 +97,8 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
           {t('moments.compose.tag')}
         </Text>
         <Pressable onPress={confirm} hitSlop={8}>
-          <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
-            {t('moments.compose.taggedCount', { n: count })}
+          <Text style={{ color: theme.colors.primary, fontSize: 15, fontWeight: '600' }}>
+            {t('common.confirm')}
           </Text>
         </Pressable>
       </View>

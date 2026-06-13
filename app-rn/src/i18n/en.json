@@ -1481,6 +1481,7 @@
     "retry": "Retry",
     "save": "Save",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "ok": "OK"
   },
   "admin": {
