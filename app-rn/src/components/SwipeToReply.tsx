@@ -13,7 +13,8 @@ import * as Haptics from 'expo-haptics';
 import { Pencil, Reply } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
-const TRIGGER = 60; // drag this far (pt) to arm an action
+const TRIGGER = 45; // drag this far (pt) to arm an action — lowered so short,
+// narrow bubbles (你好 / hi) arm without a long pull.
 const MAX_DRAG = 80; // bubble can't slide further than this
 
 /**
@@ -58,8 +59,8 @@ export function SwipeToReply({
     () =>
       Gesture.Pan()
         .enabled(enabled)
-        .activeOffsetX([-12, 12]) // engage on either horizontal direction
-        .failOffsetY([-12, 12]) // yield to vertical scroll
+        .activeOffsetX([-8, 8]) // engage sooner horizontally (short bubbles)
+        .failOffsetY([-22, 22]) // tolerate vertical drift before yielding to scroll
         .onUpdate((e) => {
           // Right (positive) → edit, but only if an edit handler exists.
           const lo = -MAX_DRAG;
@@ -119,7 +120,9 @@ export function SwipeToReply({
         </View>
       </Animated.View>
       <GestureDetector gesture={pan}>
-        <Animated.View style={rowStyle}>{children}</Animated.View>
+        {/* width:100% so the swipe hit area is the WHOLE row, not just the
+            (possibly narrow) bubble — short messages were hard to grab. */}
+        <Animated.View style={[rowStyle, { width: '100%' }]}>{children}</Animated.View>
       </GestureDetector>
     </View>
   );

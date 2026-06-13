@@ -1386,7 +1386,8 @@
       "viewers": "看清楚究竟是谁看了你的 profile。",
       "likes": "看看所有想认识你的人。",
       "privacy": "隐藏在线状态,隐身浏览。",
-      "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。"
+      "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。",
+      "deleteMsgReason": "升级到 Premium 即可删除你发送的消息。"
     },
     "testimonials": {
       "1": {

@@ -1386,7 +1386,8 @@
       "viewers": "See exactly who viewed your profile.",
       "likes": "See everyone who wants to know you.",
       "privacy": "Hide your online status and browse incognito.",
-      "profile80": "Your profile looks great — go Premium for 3× the visibility."
+      "profile80": "Your profile looks great — go Premium for 3× the visibility.",
+      "deleteMsgReason": "Upgrade to Premium to delete your messages."
     },
     "testimonials": {
       "1": {
