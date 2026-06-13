@@ -104,6 +104,24 @@ export const postMoment = (body: {
   expiresInHours?: number;
 }) => unwrap<Moment>(api.post('/moments', body));
 
+/**
+ * Edit one of the author's own moments (text / photos / location / tagged
+ * friends) within the backend's 24h edit window. Pass `lat: null, lng: null`
+ * to clear an existing location. Returns the updated, re-populated moment.
+ */
+export const patchMoment = (
+  id: string,
+  body: {
+    content?: string;
+    images?: string[];
+    taggedUserIds?: string[];
+    /** number → set location · null → clear location. */
+    lat?: number | null;
+    lng?: number | null;
+    locationLabel?: string | null;
+  },
+) => unwrap<Moment>(api.patch(`/moments/${id}`, body));
+
 // ── Comments ──────────────────────────────────────────────────────────────────
 export interface Comment {
   _id: string;

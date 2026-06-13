@@ -269,6 +269,107 @@ router.post('/', auth, async (req, res, next) => {
   }
 });
 
+// ── PATCH /api/moments/:id ────────────────────────────────────────────────────
+// Edit one of the author's OWN moments (text / photos / location / tagged
+// friends) within a 24h window — mirrors the chat-message edit limit
+// (conversations.js EDIT_WINDOW_MS). Only fields present in the body are
+// touched; location accepts lat/lng:null to clear. Re-populates and broadcasts
+// a `moment:updated` event so any listening client can invalidate its feed.
+const MOMENT_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+router.patch('/:id', auth, async (req, res, next) => {
+  try {
+    const moment = await Moment.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+      isActive: true,
+    });
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    // 24h edit window (from creation).
+    if (Date.now() - new Date(moment.createdAt).getTime() > MOMENT_EDIT_WINDOW_MS) {
+      return err(res, 'Edit window expired', 410);
+    }
+
+    const { content, images, taggedUserIds, lat, lng, locationLabel } = req.body;
+
+    // Validate the post-edit content/images combination is still non-empty.
+    const nextContent = content !== undefined ? String(content) : moment.content;
+    const nextImages = images !== undefined ? images : moment.images;
+    if (!nextContent && (!Array.isArray(nextImages) || nextImages.length === 0)) {
+      return err(res, 'content or images required');
+    }
+    if (nextContent.length > 500) return err(res, 'content max 500 chars');
+    if (Array.isArray(nextImages) && nextImages.length > 3) return err(res, 'max 3 images');
+    if (content !== undefined && hasProfanity(nextContent)) {
+      return err(res, 'Inappropriate content', 422);
+    }
+
+    if (content !== undefined) moment.content = nextContent;
+    if (images !== undefined) moment.images = nextImages;
+
+    // Location: lat & lng numbers → set; explicit null → clear; absent → leave.
+    if (lat === null || lng === null) {
+      moment.location = undefined;
+      moment.hasLocation = false;
+      moment.locationLabel = null;
+    } else if (lat != null && lng != null) {
+      moment.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
+      moment.hasLocation = true;
+      moment.locationLabel = locationLabel ? String(locationLabel).slice(0, 120) : null;
+    }
+
+    // Tagged friends — re-run the same follow/follower gate as POST.
+    if (taggedUserIds !== undefined) {
+      let taggedIds = [];
+      if (Array.isArray(taggedUserIds) && taggedUserIds.length) {
+        const ids = [...new Set(taggedUserIds.map(String))].filter(
+          (id) => mongoose.isValidObjectId(id) && id !== req.user._id.toString(),
+        );
+        if (ids.length) {
+          const Follow = require('../models/Follow');
+          const rels = await Follow.find({
+            $or: [
+              { follower: req.user._id, following: { $in: ids } },
+              { following: req.user._id, follower: { $in: ids } },
+            ],
+          }).select('follower following').lean();
+          const allowed = new Set();
+          rels.forEach((r) => {
+            allowed.add(r.follower.toString());
+            allowed.add(r.following.toString());
+          });
+          taggedIds = ids.filter((id) => allowed.has(id));
+        }
+      }
+      moment.taggedUserIds = taggedIds;
+    }
+
+    await moment.save();
+    const populated = await moment.populate([
+      { path: 'user', select: 'nickname avatarUrl isPremium' },
+      { path: 'taggedUserIds', select: 'nickname avatarUrl' },
+    ]);
+
+    const meStr = req.user._id.toString();
+    const payload = {
+      ...populated.toObject(),
+      likeCount: moment.likes.length,
+      isLiked: moment.likes.some((u) => u.toString() === meStr),
+    };
+
+    // Broadcast so any client viewing the feed can invalidate/refresh.
+    try {
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+      if (io) io.emit('moment:updated', { momentId: moment._id.toString() });
+    } catch (_) {}
+
+    ok(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── DELETE /api/moments/:id ───────────────────────────────────────────────────
 router.delete('/:id', auth, async (req, res, next) => {
   try {

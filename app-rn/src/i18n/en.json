@@ -762,7 +762,8 @@
       "addPhotoTitle": "Add photo",
       "takePhoto": "Take photo",
       "chooseFromLibrary": "Choose from Library",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "editTitle": "Edit Moment"
     },
     "comments": {
       "title": "Comments",
@@ -783,6 +784,9 @@
       "body": "This can't be undone.",
       "action": "Delete",
       "failed": "Delete failed"
+    },
+    "menu": {
+      "edit": "Edit"
     }
   },
   "chat": {
@@ -1481,7 +1485,8 @@
     "retry": "Retry",
     "save": "Save",
     "cancel": "Cancel",
-    "ok": "OK"
+    "ok": "OK",
+    "done": "Done"
   },
   "admin": {
     "error": "Error",

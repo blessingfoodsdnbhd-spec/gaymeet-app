@@ -84,18 +84,42 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
     },
   });
 
+  // Build the edit-prefill payload from this moment and open the composer in
+  // edit mode. taggedUserIds and location are populated by the backend, so the
+  // composer can restore @-tags and the place chip exactly as posted.
+  const onEdit = () => {
+    const coords = moment.location?.coordinates;
+    (nav as any).navigate('Composer', {
+      edit: {
+        id: moment._id,
+        content: moment.content ?? '',
+        images: moment.images ?? [],
+        tagged: (moment.taggedUserIds ?? []).map((u) => ({
+          _id: u._id,
+          nickname: u.nickname,
+        })),
+        place:
+          coords && coords.length === 2
+            ? { lng: coords[0], lat: coords[1], label: moment.locationLabel ?? '' }
+            : null,
+      },
+    });
+  };
+
   const onMore = () => {
     if (isMine) {
+      // Own post → 编辑 / 删除 / 取消 in one menu.
       Alert.alert(
-        t('moments.delete.title'),
-        t('moments.delete.body'),
+        t('moments.composer.headerTitle'),
+        undefined,
         [
-          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('moments.menu.edit'), onPress: onEdit },
           {
             text: t('moments.delete.action'),
             style: 'destructive',
             onPress: () => deleteMut.mutate(),
           },
+          { text: t('common.cancel'), style: 'cancel' },
         ],
       );
     } else {

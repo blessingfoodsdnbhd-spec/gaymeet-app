@@ -50,7 +50,20 @@ export type RootStackParamList = {
   ChatTranslation: undefined;
   AccountSettings: undefined;
   Comments: { momentId: string; authorId?: string };
-  Composer: undefined;
+  /** New moment, or — when `edit` is passed — edit an existing one (PATCH).
+   *  `edit` carries the prefill: id + content + photos + tagged friends +
+   *  location, so the composer opens populated and saves instead of posts. */
+  Composer:
+    | {
+        edit?: {
+          id: string;
+          content: string;
+          images: string[];
+          tagged: { _id: string; nickname: string }[];
+          place: { lat: number; lng: number; label: string } | null;
+        };
+      }
+    | undefined;
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string; previewMode?: boolean };
   Premium: undefined;

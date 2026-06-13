@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -31,6 +32,7 @@ const STAMP_DISTANCE = 120;
 function DiscoverCardInner({ user, dragX, isTop }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<any>();
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
   const initial = (user.nickname || user.email || '?').trim().charAt(0).toUpperCase();
 
@@ -198,7 +200,17 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           left a seam where the next card's name (e.g. "Dennis Tan" under the
           top card's "Edi Teh") ghosted through on Android. `surface` is a solid
           #FFFFFF — never an rgba — so nothing behind can bleed in. */}
-      <View style={[styles.info, { backgroundColor: theme.colors.surface }]}>
+      {/* Info area below the photo — tapping name / tags / distance / bio opens
+          the full profile. The photo area above keeps its own left/right
+          tap-to-cycle Pressables; the action bar (✕/⭐/❤️/Premium) lives in
+          DiscoverScreen, outside this card, so it's untouched. Only the top
+          card is interactive — a drag cancels the Pressable so CardStack's
+          swipe still owns like/pass. */}
+      <Pressable
+        style={[styles.info, { backgroundColor: theme.colors.surface }]}
+        onPress={isTop ? () => nav.navigate('UserDetail', { userId: user.id }) : undefined}
+        disabled={!isTop}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
           <NameWithBadge
             name={user.nickname}
@@ -250,7 +262,7 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
             })
             .filter(Boolean)}
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }

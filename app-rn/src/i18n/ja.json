@@ -11,7 +11,8 @@
     "retry": "再試行",
     "save": "保存",
     "cancel": "キャンセル",
-    "ok": "OK"
+    "ok": "OK",
+    "done": "完了"
   },
   "tabs": {
     "discover": "発見",
@@ -198,7 +199,8 @@
       "addPhotoTitle": "写真を追加",
       "takePhoto": "写真を撮る",
       "chooseFromLibrary": "ライブラリから選択",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "editTitle": "モーメントを編集"
     },
     "comments": {
       "title": "コメント",
@@ -219,6 +221,9 @@
       "body": "元に戻せません。",
       "action": "削除",
       "failed": "削除に失敗しました"
+    },
+    "menu": {
+      "edit": "編集"
     }
   },
   "languageSettings": {

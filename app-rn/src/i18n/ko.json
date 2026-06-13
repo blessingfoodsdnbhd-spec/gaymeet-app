@@ -11,7 +11,8 @@
     "retry": "다시 시도",
     "save": "저장",
     "cancel": "취소",
-    "ok": "확인"
+    "ok": "확인",
+    "done": "완료"
   },
   "tabs": {
     "discover": "발견",
@@ -198,7 +199,8 @@
       "addPhotoTitle": "사진 추가",
       "takePhoto": "사진 촬영",
       "chooseFromLibrary": "라이브러리에서 선택",
-      "cancel": "취소"
+      "cancel": "취소",
+      "editTitle": "모먼트 수정"
     },
     "comments": {
       "title": "댓글",
@@ -219,6 +221,9 @@
       "body": "되돌릴 수 없습니다.",
       "action": "삭제",
       "failed": "삭제 실패"
+    },
+    "menu": {
+      "edit": "수정"
     }
   },
   "languageSettings": {
