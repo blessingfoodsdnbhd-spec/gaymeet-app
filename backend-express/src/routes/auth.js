@@ -279,6 +279,12 @@ const BYPASS_LOGINS = {
   [(process.env.REVIEW_LOGIN_EMAIL || 'hafiz@example.com').toLowerCase().trim()]:
     process.env.REVIEW_LOGIN_CODE || '111111',
   'meyou-bot@meyou.uk': '888888',
+  // QA Premium test account — for verifying the Premium-gated chat edit-message
+  // flow (Android keyboard fly-to-top). Seeded by scripts/seed-qa-premium.js
+  // (isPremium=true, onboarded, has editable messages). Fake domain → no email,
+  // so it uses this fixed code. Distinct from hafiz, which MUST stay Free (it's
+  // the Apple reviewer demo). Keep this entry; the account is reused.
+  'qa-premium@meyou.test': '222222',
 };
 
 // ── POST /api/auth/send-otp ───────────────────────────────────────────────────
