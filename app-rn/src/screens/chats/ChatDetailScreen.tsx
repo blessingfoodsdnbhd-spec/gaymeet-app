@@ -1232,7 +1232,27 @@ export function ChatDetailScreen() {
                     // Own message → small ✕ on the LEFT of the right-aligned
                     // bubble. Premium-gated delete (free → upsell). Light grey so
                     // it never competes with the bubble.
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    //
+                    // width:'100%' + justifyContent:'flex-end' is LOAD-BEARING.
+                    // The bubble's maxWidth is a PERCENTAGE (Bubble.tsx '78%').
+                    // A percentage only resolves correctly against a parent with a
+                    // DEFINITE width. A bare shrink-wrapped row is indefinite, and
+                    // Android/Yoga then resolves '78%' against ~0 → the bubble
+                    // collapses to one glyph per line ("你好" → 你/好). iOS happens
+                    // to treat the indefinite-parent percentage as "no constraint",
+                    // which is why iPhone looked fine. Pinning the row to the full
+                    // (definite) column width fixes both platforms; flex-end keeps
+                    // ✕ tucked just left of the bubble. 78% + ✕(~29px) < 100%, so
+                    // the ✕ never steals bubble width and nothing wraps.
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: 6,
+                        width: '100%',
+                      }}
+                    >
                       <Pressable
                         onPress={() => onDeleteMsg(msg)}
                         hitSlop={10}
