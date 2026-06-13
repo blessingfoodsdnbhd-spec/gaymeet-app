@@ -931,6 +931,7 @@ export function ChatDetailScreen() {
             </Pressable>
             <Pressable
               style={iconBtn(theme)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               onPress={() =>
                 showSafetyMenu({
                   userId: thread.user.id,

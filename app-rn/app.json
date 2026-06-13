@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 70,
+      "versionCode": 71,
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
