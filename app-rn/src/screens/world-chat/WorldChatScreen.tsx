@@ -878,7 +878,7 @@ export function WorldChatScreen({
       />
 
       {/* Full-screen photo viewer */}
-      <Modal visible={!!viewerPhoto} transparent animationType="fade" onRequestClose={() => setViewerPhoto(null)}>
+      <Modal visible={!!viewerPhoto} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setViewerPhoto(null)}>
         <PhotoViewer
           open={!!viewerPhoto}
           photos={viewerPhoto ? [viewerPhoto] : []}

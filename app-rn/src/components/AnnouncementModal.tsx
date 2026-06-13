@@ -114,7 +114,7 @@ export function AnnouncementModal({
     : `${t('announcement.close')} (${secondsLeft})`;
 
   return (
-    <Modal visible animationType="fade" transparent onRequestClose={onClose}>
+    <Modal visible animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={closeEnabled ? onClose : undefined}>
         {/* Stop backdrop taps from closing while interacting with the carousel. */}
         <Pressable style={styles.carouselWrap} onPress={() => {}}>

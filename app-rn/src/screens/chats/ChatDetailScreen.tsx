@@ -931,7 +931,7 @@ export function ChatDetailScreen() {
       edges={['top', 'bottom']}
     >
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line, backgroundColor: theme.colors.bg }]}>
         <Pressable onPress={() => nav.goBack()} hitSlop={8}>
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
@@ -1813,6 +1813,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Android: the inverted messages FlatList (a native ScrollView) otherwise
+    // overdraws the header region once it has content, swallowing taps on the
+    // safety-menu "..." button (reproduces only with chat history present).
+    // zIndex orders RN's own layout; elevation raises the native view in
+    // Android's z/touch order so the header always sits above the list.
+    zIndex: 10,
+    elevation: 10,
   },
   // Reaction pill shown under a message bubble.
   reactionPill: {
