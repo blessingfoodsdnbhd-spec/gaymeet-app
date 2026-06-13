@@ -143,9 +143,24 @@ export function ChatComposer({
     finishAndSend();
   }, [finishAndSend]);
 
+  // Safety net. RNGH guarantees `onFinalize` fires on EVERY gesture reset —
+  // including the Android cases where the gesture is cancelled/interrupted
+  // (keyboard show, layout shift, the overlay remounting the view) and `onEnd`
+  // is silently skipped. On the happy path `onEnd` has already moved us out of
+  // 'recording' before this runs, so this is a no-op; it only triggers when the
+  // normal end path didn't run, in which case we force-clear the stuck overlay
+  // and discard the (abnormally-terminated) clip. Never touches the locked HUD.
+  const finalizeHold = React.useCallback(() => {
+    if (voicePhaseRef.current !== 'recording') return;
+    cancelledRef.current = false;
+    setVoicePhase('idle');
+    resetDrag();
+    recorder.cancel();
+  }, [recorder, resetDrag, setVoicePhase]);
+
   // Stable trampolines so the gesture is built once but always calls latest.
-  const handlersRef = React.useRef({ beginHold, lockHold, discardHold, endHold });
-  handlersRef.current = { beginHold, lockHold, discardHold, endHold };
+  const handlersRef = React.useRef({ beginHold, lockHold, discardHold, endHold, finalizeHold });
+  handlersRef.current = { beginHold, lockHold, discardHold, endHold, finalizeHold };
   const tapHandlerRef = React.useRef<(() => void) | undefined>(onStartVoiceRecord);
   tapHandlerRef.current = onStartVoiceRecord;
 
@@ -154,6 +169,7 @@ export function ChatComposer({
     const invokeLock = () => handlersRef.current.lockHold();
     const invokeDiscard = () => handlersRef.current.discardHold();
     const invokeEnd = () => handlersRef.current.endHold();
+    const invokeFinalize = () => handlersRef.current.finalizeHold();
     const invokeTap = () => tapHandlerRef.current?.();
 
     const pan = Gesture.Pan()
@@ -171,6 +187,12 @@ export function ChatComposer({
       })
       .onEnd(() => {
         runOnJS(invokeEnd)();
+      })
+      // Guaranteed reset hook — fires even when onEnd is skipped (gesture
+      // cancelled/interrupted on Android). Prevents the recording overlay from
+      // sticking with the mic + timer frozen on screen.
+      .onFinalize(() => {
+        runOnJS(invokeFinalize)();
       });
 
     const tap = Gesture.Tap().onEnd(() => {
