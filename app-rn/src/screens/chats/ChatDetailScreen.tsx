@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -145,6 +146,14 @@ function replyPreviewText(m: Message): string {
 
 export function ChatDetailScreen() {
   const theme = useTheme();
+  const { width: winWidth } = useWindowDimensions();
+  // Absolute-px cap for the text bubble's width. The shared <Bubble> caps at
+  // '78%', a PERCENTAGE that only resolves against a parent with a DEFINITE
+  // width. To overlay the ✕ we wrap the bubble in a shrink-wrapped (indefinite)
+  // container, so we hand the text bubble a concrete pixel cap instead — same
+  // ~78% of the usable row (screen minus the list's 14pt horizontal padding on
+  // each side), but immune to the indefinite-parent percentage trap on Android.
+  const textBubbleMaxW = Math.round((winWidth - 28) * 0.78);
   const { t } = useTranslation();
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
@@ -1175,7 +1184,7 @@ export function ChatDetailScreen() {
                     <Bubble
                       text={msg.content}
                       from={mine ? 'me' : 'them'}
-                      style={failed ? { opacity: 0.6 } : undefined}
+                      style={[{ maxWidth: textBubbleMaxW }, failed ? { opacity: 0.6 } : null]}
                     />
                   </Pressable>
                 );
@@ -1229,19 +1238,39 @@ export function ChatDetailScreen() {
                     </Pressable>
                   )}
                   {mine && !msg.pendingId && !msg.isSystem && msg.status !== 'failed' && !!msg.id ? (
-                    // Own message → small ✕ on the LEFT of the right-aligned
-                    // bubble. Premium-gated delete (free → upsell). Light grey so
-                    // it never competes with the bubble.
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    // Own message → small ✕ delete afffordance to the LEFT of the
+                    // bubble. Premium-gated (free → upsell). Light grey so it never
+                    // competes with the bubble.
+                    //
+                    // The ✕ is an ABSOLUTE overlay, NOT a flex-row sibling. PR #245
+                    // put it in a `flexDirection:'row'` next to the bubble, which
+                    // on Android collapsed short bubbles to one glyph per line
+                    // ("hi" → h/i, "你好" → 你/好): a <Text> inside a row reports its
+                    // min-intrinsic (single-glyph) width and Yoga lays it out that
+                    // narrow. iOS measures it naturally, so iPhone looked fine.
+                    // Keeping the bubble a plain column child (as it was pre-#245)
+                    // restores natural text measurement; the ✕ floats over the
+                    // empty gutter just left of the bubble and steals no layout
+                    // space. The wrapper shrink-wraps to the bubble, so left:-27
+                    // tracks the bubble's (dynamic, right-aligned) left edge.
+                    <View style={{ position: 'relative', alignSelf: 'flex-end' }}>
+                      {bubble}
                       <Pressable
                         onPress={() => onDeleteMsg(msg)}
                         hitSlop={10}
                         accessibilityLabel={t('chat.message.deleteAction')}
-                        style={{ padding: 4 }}
+                        style={{
+                          position: 'absolute',
+                          left: -27,
+                          top: 0,
+                          bottom: 0,
+                          width: 23,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                       >
                         <X size={15} color={theme.colors.muted} strokeWidth={2} />
                       </Pressable>
-                      {bubble}
                     </View>
                   ) : (
                     bubble
