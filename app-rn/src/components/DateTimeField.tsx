@@ -109,7 +109,7 @@ export function DateTimeField({
 
       {/* iOS: spinner inside a bottom sheet */}
       {mode === 'ios' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setMode(null)}>
+        <Modal transparent statusBarTranslucent animationType="fade" onRequestClose={() => setMode(null)}>
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
             onPress={() => setMode(null)}
