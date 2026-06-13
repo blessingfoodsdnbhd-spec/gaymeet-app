@@ -6,14 +6,13 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-// IMPORTANT: ScrollView from react-native-gesture-handler, NOT react-native.
-// The Sheet renders inside a GestureHandlerRootView/GestureDetector (RNGH) tree.
-// On Android, RN-core ScrollView doesn't share RNGH's touch system, so once the
-// list is scrolled the Pressables below the fold (the interest chips) stop
-// receiving taps ("android 选择不到") — the distance pills work only because
-// they sit above the fold. RNGH's ScrollView coordinates with the gesture tree
-// so inner touchables fire on Android. Drop-in API-compatible on both platforms.
-import { ScrollView } from 'react-native-gesture-handler';
+// IMPORTANT: BottomSheetScrollView (from @gorhom/bottom-sheet), NOT react-native.
+// The Sheet is now a @gorhom/bottom-sheet BottomSheetModal; its own scrollable
+// must register with the sheet's gesture context so (a) the inner Pressables
+// (interest chips) keep receiving taps on Android after a scroll ("android 选择
+// 不到") and (b) over-scroll at the top coordinates with pull-to-dismiss. RN-core
+// ScrollView shares neither. Drop-in API-compatible on both platforms.
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
@@ -99,7 +98,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
 
   return (
     <Sheet open={open} onClose={onClose} maxHeight="80%">
-      <ScrollView
+      <BottomSheetScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         style={{ maxHeight: scrollMaxH }}
@@ -169,7 +168,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
             />
           ))}
         </View>
-      </ScrollView>
+      </BottomSheetScrollView>
 
       <View style={styles.footer}>
         <View style={{ flex: 1 }}>

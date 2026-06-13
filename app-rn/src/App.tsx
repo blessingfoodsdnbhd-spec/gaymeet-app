@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -147,18 +148,26 @@ export function App() {
                 drainColdTap();
               }}
             >
-              <RootNavigator />
-              {/* Both listeners use useNavigation() and must live inside
-                  NavigationContainer to read the navigator context. */}
-              <GlobalMatchListener />
-              <MessageBanner />
-              {/* Android-only safety menu sheet (iOS uses native ActionSheetIOS) */}
-              <SafetyMenuSheet />
-              {/* Post-login announcement modal — fetches /current iff
-                  authed and renders the Modal on top of everything else
-                  inside the container. Renders nothing when there's no
-                  active announcement or it's been "don't show again". */}
-              <AnnouncementBootstrap />
+              {/* BottomSheetModalProvider hosts the portal that every <Sheet>
+                  (now a @gorhom/bottom-sheet BottomSheetModal) teleports into.
+                  It MUST sit BELOW Theme/Query/Toast and INSIDE
+                  NavigationContainer — portaled sheet content resolves React
+                  context against THIS host location, so a higher placement would
+                  strip useTheme/useQuery/navigation/i18n from inside sheets. */}
+              <BottomSheetModalProvider>
+                <RootNavigator />
+                {/* Both listeners use useNavigation() and must live inside
+                    NavigationContainer to read the navigator context. */}
+                <GlobalMatchListener />
+                <MessageBanner />
+                {/* Android-only safety menu sheet (iOS uses native ActionSheetIOS) */}
+                <SafetyMenuSheet />
+                {/* Post-login announcement modal — fetches /current iff
+                    authed and renders the Modal on top of everything else
+                    inside the container. Renders nothing when there's no
+                    active announcement or it's been "don't show again". */}
+                <AnnouncementBootstrap />
+              </BottomSheetModalProvider>
             </NavigationContainer>
             </ToastProvider>
           </ThemeProvider>

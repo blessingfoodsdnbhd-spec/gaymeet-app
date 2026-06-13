@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { Sheet } from '../../components/Sheet';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
@@ -333,7 +334,10 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
     >
       {(dragArea: PanGesture) => user ? (
         <View style={{ flex: 1 }}>
-        <ScrollView
+        {/* Outer vertical scroll → BottomSheetScrollView so it registers with the
+            @gorhom/bottom-sheet gesture context (taps below the fold + over-scroll
+            pull-to-dismiss). The INNER horizontal photo pagers stay RN ScrollView. */}
+        <BottomSheetScrollView
           showsVerticalScrollIndicator={false}
           style={{ maxHeight: scrollMaxH, marginHorizontal: -20, marginTop: -6 }}
         >
@@ -606,7 +610,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
 
             <View style={{ height: 16 }} />
           </View>
-        </ScrollView>
+        </BottomSheetScrollView>
 
         {/* Sticky action footer — Follow / Like / Message (Premium only). */}
         {!isSelf && (

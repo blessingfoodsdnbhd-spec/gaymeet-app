@@ -2,7 +2,6 @@ import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react-native';
 
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopics, type Topic } from '../../api/topics';
@@ -72,7 +72,7 @@ export function TopicPickerSheet({ open, onClose, onPick }: Props) {
         </View>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <BottomSheetScrollView showsVerticalScrollIndicator={false}>
         {available.map((tp) => (
           <Pressable
             key={tp.slug}
@@ -93,7 +93,7 @@ export function TopicPickerSheet({ open, onClose, onPick }: Props) {
             <ChevronRight size={16} color={theme.colors.muted} strokeWidth={1.8} />
           </Pressable>
         ))}
-      </ScrollView>
+      </BottomSheetScrollView>
     </Sheet>
   );
 }

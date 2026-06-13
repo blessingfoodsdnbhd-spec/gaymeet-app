@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Crown, Pencil, X } from 'lucide-react-native';
 
 import { Sheet } from '../../components/Sheet';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopicPersona } from '../../api/topics';
@@ -140,7 +141,9 @@ export function TopicPersonaSheet({
 
       {persona && (
         <View style={{ flex: 1 }}>
-          <ScrollView
+          {/* Outer vertical scroll → BottomSheetScrollView for gesture-context
+              registration; inner horizontal photo pager stays RN ScrollView. */}
+          <BottomSheetScrollView
             showsVerticalScrollIndicator={false}
             style={{ maxHeight: scrollMaxH, marginHorizontal: -20, marginTop: -6 }}
           >
@@ -282,7 +285,7 @@ export function TopicPersonaSheet({
                 </View>
               )}
             </View>
-          </ScrollView>
+          </BottomSheetScrollView>
 
           {/* Sticky action footer. Self → edit own photos; others without an
               approved unlock → request cross-topic unlock. */}

@@ -3,11 +3,13 @@ import {
   Alert,
   View,
   Text,
-  TextInput,
   Pressable,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+// BottomSheetTextInput so the delete-confirm field's keyboard coordinates with
+// the @gorhom/bottom-sheet Sheet engine.
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -171,7 +173,7 @@ export function AccountSettings() {
         <Text style={[styles.prompt, { color: theme.colors.muted }]}>
           {t('accountSettings.deleteConfirmPrompt')}
         </Text>
-        <TextInput
+        <BottomSheetTextInput
           value={typedEmail}
           onChangeText={setTypedEmail}
           placeholder={email}

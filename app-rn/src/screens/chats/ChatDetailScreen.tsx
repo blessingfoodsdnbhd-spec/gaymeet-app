@@ -37,6 +37,7 @@ import { Bubble } from '../../components/Bubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { SwipeToReply } from '../../components/SwipeToReply';
 import { Sheet } from '../../components/Sheet';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { ImageBubble } from './ImageBubble';
 import { LocationBubble } from './LocationBubble';
@@ -1600,21 +1601,22 @@ export function ChatDetailScreen() {
             >
               {t('chat.message.editTitle')}
             </Text>
-            <TextInput
-              ref={editInputRef}
+            <BottomSheetTextInput
+              // BottomSheetTextInput types its ref against RNGH's TextInput, not
+              // RN's; the ref is only used to call .focus(), so bridge the types.
+              ref={editInputRef as any}
               value={editDraft}
               onChangeText={setEditDraft}
               placeholder={t('chat.message.editPlaceholder')}
               placeholderTextColor={theme.colors.muted}
               multiline
-              // NO autoFocus: it fires on mount, raising the keyboard WHILE this
-              // sheet's 320ms open animation is still running. Under Android
-              // edge-to-edge (Build 53) the Modal window then pans/resizes
-              // mid-animation and the sheet "flies to the top". The useEffect at
-              // editInputRef instead focuses 250ms after open — once the sheet
-              // has settled — so the keyboard only rises against a stationary
-              // window. The editInputRef comment already said autoFocus "can be
-              // dropped"; it was a leftover, and removing it is the actual fix.
+              // BottomSheetTextInput (not RN TextInput) is REQUIRED so the
+              // @gorhom/bottom-sheet engine tracks this field's focus and lifts
+              // the in-window sheet above the IME via keyboardBehavior. The old
+              // "no autoFocus + 250ms delayed focus" dance was a workaround for
+              // the RN-Modal window pan that no longer exists; the delayed focus
+              // (see editInputRef useEffect) is kept as-is — harmless and still
+              // gives the present animation time to settle before the IME rises.
               style={{
                 backgroundColor: theme.colors.surface,
                 borderRadius: 14,

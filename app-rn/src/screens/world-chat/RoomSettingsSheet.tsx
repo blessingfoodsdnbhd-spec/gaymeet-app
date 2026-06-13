@@ -2,15 +2,16 @@ import React from 'react';
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   Switch,
-  ScrollView,
   ActivityIndicator,
   StyleSheet,
   Alert,
   useWindowDimensions,
 } from 'react-native';
+// BottomSheetScrollView / BottomSheetTextInput (not RN's) so scroll + keyboard
+// coordinate with the @gorhom/bottom-sheet Sheet engine.
+import { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { X, UserPlus, Crown, ChevronLeft, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -223,7 +224,7 @@ export function RoomSettingsSheet({
         {membersQ.isLoading ? (
           <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <BottomSheetScrollView style={{ maxHeight: scrollMaxH }}>
             {list.map((m) => (
               <Pressable
                 key={m.id}
@@ -249,7 +250,7 @@ export function RoomSettingsSheet({
                 {m.isCreator && <Crown size={15} color={theme.colors.primary} strokeWidth={2} />}
               </Pressable>
             ))}
-          </ScrollView>
+          </BottomSheetScrollView>
         )}
       </Sheet>
     );
@@ -304,7 +305,7 @@ export function RoomSettingsSheet({
             {t('worldChat.rooms.noFriends')}
           </Text>
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <BottomSheetScrollView style={{ maxHeight: scrollMaxH }}>
             {friends.map((f) => {
               const on = picked.has(f.id);
               return (
@@ -345,7 +346,7 @@ export function RoomSettingsSheet({
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </BottomSheetScrollView>
         )}
         <View style={{ marginTop: 14 }}>
           <Button
@@ -365,12 +366,12 @@ export function RoomSettingsSheet({
   return (
     <Sheet open={open} onClose={onClose} maxHeight="86%">
       <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{t('worldChat.rooms.settings')}</Text>
-      <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled">
+      <BottomSheetScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled">
         {/* Edit meta */}
         <Text style={[styles.label, { color: theme.colors.muted }]}>{t('worldChat.rooms.fieldTitle')}</Text>
-        <TextInput value={title} onChangeText={(x) => setTitle(x.slice(0, 80))} style={input} placeholderTextColor={theme.colors.muted} />
+        <BottomSheetTextInput value={title} onChangeText={(x) => setTitle(x.slice(0, 80))} style={input} placeholderTextColor={theme.colors.muted} />
         <Text style={[styles.label, { color: theme.colors.muted, marginTop: 12 }]}>{t('worldChat.rooms.fieldDesc')}</Text>
-        <TextInput
+        <BottomSheetTextInput
           value={description}
           onChangeText={(x) => setDescription(x.slice(0, 300))}
           multiline
@@ -385,7 +386,7 @@ export function RoomSettingsSheet({
           <Switch value={isPrivate} onValueChange={setIsPrivate} trackColor={{ true: theme.colors.primary, false: theme.colors.line }} />
         </View>
         {isPrivate && (
-          <TextInput
+          <BottomSheetTextInput
             value={password}
             onChangeText={setPassword}
             placeholder={room.isPrivate ? t('worldChat.rooms.passwordChangePh') : t('worldChat.rooms.passwordPh')}
@@ -433,7 +434,7 @@ export function RoomSettingsSheet({
             </View>
           ))
         )}
-      </ScrollView>
+      </BottomSheetScrollView>
 
       {/* Danger zone */}
       <View style={{ marginTop: 14, gap: 10 }}>
