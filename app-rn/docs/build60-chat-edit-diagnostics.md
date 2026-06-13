@@ -106,8 +106,34 @@ handoff-timing fix can rescue. The Build 60 rAF+360ms handoff still helps the
 > native `KeyboardControllerModuleImpl.setSoftInputMode` targets
 > `currentActivity.window` (the host activity), **not** the Sheet Modal's own
 > Dialog window — so it can't govern the Modal's pan and risks stranding the
-> activity in `ADJUST_NOTHING`. The Sheet already lifts via the reanimated
-> `ty+kbHeight` transform (#227). Skipped deliberately.
+> activity in `ADJUST_NOTHING`. While a Modal Dialog is up it owns focus and its
+> own soft-input mode, so the activity-window mode is moot anyway. The edit
+> Modal's "don't pan the keyboard" intent is **already met** by #227's
+> KeyboardProvider + the Sheet's reanimated `ty+kbHeight` lift (this is what fixed
+> the Build 56/57 fly-to-top). Adding `setInputMode` would be cargo-cult — skipped
+> deliberately. (Happy to add it if desired, but it won't move the needle.)
+
+## Build 62 update — voice recording UI (same family)
+
+The voice mic showed the same symptoms (giant pink mic stuck on screen / record
+needs several taps). Two distinct causes, both fixed:
+
+1. **`ChatVoiceRecorderSheet`** (the tap-to-record bottom sheet — its 84×84 pink
+   `bigBtn` Mic IS the "giant pink mic"): its record/stop/play buttons were RN
+   `Pressable` inside the Sheet's `GestureHandlerRootView` → the **same first-tap
+   contention** as the location/edit buttons, so "tap mic to start recording"
+   needed several taps. **Fix:** RN `Pressable` → RNGH `Pressable`. Added
+   `debugTag="voice"` (→ `SHEET_SHOW`/`SHEET_CLOSE voice`) + a `VOICE_RECORD_TAP`
+   probe to confirm on device.
+2. **Inline hold-to-record overlay** (`ChatComposer`): the mic Pan used `.onEnd()`
+   only. RNGH fires `onEnd` ONLY on a clean finger-lift; a **cancelled/interrupted**
+   gesture skips it, so `voicePhase` stuck on `'recording'` and the recording
+   overlay **never dismounted** ("overlay 没关掉"). **Fix:** add
+   `.onFinalize((_e, success) => { if (!success) cancelStuckHold() })` — a safety
+   net that discards + resets to idle on a non-successful finalize (a `locked`
+   hands-free HUD already ended successfully, so it's left alone). The overlay is
+   already `pointerEvents="none"`, so it never blocked touches — the bug was
+   purely the stuck mount, not interception.
 
 ## Console probes shipped in this build (readable on the release Play install)
 

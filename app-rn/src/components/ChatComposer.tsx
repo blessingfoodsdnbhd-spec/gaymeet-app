@@ -143,9 +143,26 @@ export function ChatComposer({
     finishAndSend();
   }, [finishAndSend]);
 
+  // RNGH gives onEnd ONLY for a clean lift. If the Pan is CANCELLED/interrupted
+  // (another gesture wins, the touch system reclaims, the screen blurs), onEnd
+  // never fires — which left voicePhase stuck on 'recording' and the recording
+  // overlay frozen on screen forever (the "giant mic won't go away / overlay
+  // doesn't dismount" bug). onFinalize fires in BOTH cases, so we use it as the
+  // safety net: on a non-successful finalize while still in the un-locked
+  // recording phase, discard and reset. A 'locked' HUD is intentional hands-free
+  // and is left alone (its gesture already ended successfully).
+  const cancelStuckHold = React.useCallback(() => {
+    if (voicePhaseRef.current === 'recording') {
+      cancelledRef.current = true;
+      setVoicePhase('idle');
+      resetDrag();
+      recorder.cancel();
+    }
+  }, [recorder, resetDrag, setVoicePhase]);
+
   // Stable trampolines so the gesture is built once but always calls latest.
-  const handlersRef = React.useRef({ beginHold, lockHold, discardHold, endHold });
-  handlersRef.current = { beginHold, lockHold, discardHold, endHold };
+  const handlersRef = React.useRef({ beginHold, lockHold, discardHold, endHold, cancelStuckHold });
+  handlersRef.current = { beginHold, lockHold, discardHold, endHold, cancelStuckHold };
   const tapHandlerRef = React.useRef<(() => void) | undefined>(onStartVoiceRecord);
   tapHandlerRef.current = onStartVoiceRecord;
 
@@ -154,6 +171,7 @@ export function ChatComposer({
     const invokeLock = () => handlersRef.current.lockHold();
     const invokeDiscard = () => handlersRef.current.discardHold();
     const invokeEnd = () => handlersRef.current.endHold();
+    const invokeCancelStuck = () => handlersRef.current.cancelStuckHold();
     const invokeTap = () => tapHandlerRef.current?.();
 
     const pan = Gesture.Pan()
@@ -171,6 +189,9 @@ export function ChatComposer({
       })
       .onEnd(() => {
         runOnJS(invokeEnd)();
+      })
+      .onFinalize((_e, success) => {
+        if (!success) runOnJS(invokeCancelStuck)();
       });
 
     const tap = Gesture.Tap().onEnd(() => {

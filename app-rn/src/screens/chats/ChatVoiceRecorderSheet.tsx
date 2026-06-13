@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+// RNGH Pressable — these record/stop/play buttons live inside the Sheet's
+// GestureHandlerRootView, where RN's Pressable loses its first Android touch to
+// RNGH responder contention (the big pink Mic button "needs several taps to
+// start recording"). RNGH's Pressable responds on the first tap. See
+// MomentLocationSheet for the full rationale.
+import { Pressable } from 'react-native-gesture-handler';
 import { Mic, Play, Square, RotateCcw } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
@@ -135,7 +141,7 @@ export function ChatVoiceRecorderSheet({
   const tooShort = elapsed < MIN_MS;
 
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="62%">
+    <Sheet open={open} onClose={onClose} debugTag="voice" maxHeight="62%">
       <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 8 }}>
         <Text style={{ fontSize: 17, fontWeight: '800', color: theme.colors.text }}>
           {t('chat.voice.title')}
@@ -164,7 +170,10 @@ export function ChatVoiceRecorderSheet({
         </View>
 
         {phase === 'idle' && (
-          <Pressable onPress={startRecording} style={[styles.bigBtn, { backgroundColor: theme.colors.primary }]}>
+          <Pressable
+            onPress={() => { console.log('VOICE_RECORD_TAP', Date.now()); startRecording(); }}
+            style={[styles.bigBtn, { backgroundColor: theme.colors.primary }]}
+          >
             <Mic size={34} color="#FFFFFF" strokeWidth={2} />
           </Pressable>
         )}
