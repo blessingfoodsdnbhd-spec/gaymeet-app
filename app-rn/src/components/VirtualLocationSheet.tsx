@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+// RNGH Pressable — see MomentLocationSheet for the rationale: inside the Sheet's
+// GestureHandlerRootView, RN's Pressable loses its first Android touch to RNGH
+// responder contention ("needs several taps unless you scroll the list first").
+import { Pressable } from 'react-native-gesture-handler';
 import { MapPin, Check, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
@@ -88,7 +92,12 @@ export function VirtualLocationSheet({ open, onClose, currentLabel, onApplied }:
         </Pressable>
       ) : null}
 
-      <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ maxHeight: 360 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {CITIES.map((c) => {
           const active = currentLabel === c.label;
           return (

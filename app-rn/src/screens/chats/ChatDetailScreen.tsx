@@ -13,6 +13,13 @@ import {
   Alert,
 } from 'react-native';
 import { KeyboardAvoidingView, KeyboardController } from 'react-native-keyboard-controller';
+// RNGH Pressable for controls that live INSIDE a Sheet (under its
+// GestureHandlerRootView). RN's Pressable loses its first Android touch to RNGH
+// responder contention there — the likely real reason the actions-sheet "编辑"
+// row needed several taps (the tap was eaten before onPress fired; no handoff
+// timing fix can help that). Used by ActionRow below. Screen-level Pressables
+// (header, message rows) stay on RN's Pressable — they're not inside a Sheet.
+import { Pressable as GHPressable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -1763,9 +1770,9 @@ interface ActionRowProps {
 function ActionRow({ icon, label, labelColor, centered, onPress }: ActionRowProps) {
   const theme = useTheme();
   return (
-    <Pressable
+    <GHPressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={({ pressed }: { pressed: boolean }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
@@ -1785,7 +1792,7 @@ function ActionRow({ icon, label, labelColor, centered, onPress }: ActionRowProp
       >
         {label}
       </Text>
-    </Pressable>
+    </GHPressable>
   );
 }
 

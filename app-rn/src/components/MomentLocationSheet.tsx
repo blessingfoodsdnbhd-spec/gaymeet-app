@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+// RNGH Pressable (NOT react-native's). Inside the Sheet's GestureHandlerRootView,
+// RN's JS-responder Pressable contends with RNGH's native gesture system on
+// Android: the FIRST touch after the sheet opens is consumed establishing the
+// gesture context, so the map/city buttons "need several taps" — UNLESS you
+// first scroll the city list (that scroll is the touch that wakes the pipeline),
+// after which one tap works. RNGH's Pressable participates in the same native
+// gesture system, so it responds on the first tap. (Repro confirmed on device,
+// Build 60.)
+import { Pressable } from 'react-native-gesture-handler';
 import { Map, MapPin, Navigation, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
@@ -74,24 +83,27 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
 
   return (
     <Sheet open={open} onClose={onClose} onDismiss={onDismiss} maxHeight="70%">
-      {/* __DEV__-only tap diagnostics (stripped from release builds). On a dev
-          build, watch Metro logs while tapping the map button on a real device:
+      {/* Tap diagnostics — UNGATED (Build 61) so they reach release logcat
+          (this project has no transform-remove-console). On device:
+            adb logcat -s ReactNativeJS:V | grep LOCATION_
             • SHEET_TOUCH every tap + MAP_PRESS_IN every tap + MAP_CLICK every tap
               → the tap fully works; any "needs N taps" is a DOWNSTREAM nav/anim
-                race, not interception (this is the expected case — see #224).
+                race, not interception (see #224).
             • SHEET_TOUCH/PRESS_IN fire but MAP_CLICK is dropped
               → the press is being cancelled mid-gesture (a parent responder).
             • SHEET_TOUCH does not fire on every tap
-              → an overlay is intercepting above the sheet (statically: none found). */}
-      <View onTouchStart={() => { if (__DEV__) console.log('LOCATION_SHEET_TOUCH', Date.now()); }}>
+              → an overlay is intercepting above the sheet (statically: none found).
+          With the RNGH Pressable swap above this should now read one of each per
+          tap from the first tap. Remove in a later cleanup build. */}
+      <View onTouchStart={() => console.log('LOCATION_SHEET_TOUCH', Date.now())}>
       <Text style={[styles.title, { color: theme.colors.text }]}>
         {t('moments.compose.location')}
       </Text>
 
       {onChooseMap ? (
         <Pressable
-          onPressIn={() => { if (__DEV__) console.log('LOCATION_MAP_PRESS_IN', Date.now()); }}
-          onPress={() => { if (__DEV__) console.log('LOCATION_MAP_CLICK', Date.now()); onChooseMap(); }}
+          onPressIn={() => console.log('LOCATION_MAP_PRESS_IN', Date.now())}
+          onPress={() => { console.log('LOCATION_MAP_CLICK', Date.now()); onChooseMap(); }}
           hitSlop={10}
           style={[styles.row, { borderBottomColor: theme.colors.line }]}
         >
@@ -123,7 +135,12 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
         </Pressable>
       ) : null}
 
-      <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ maxHeight: 320 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {CITIES.map((c) => (
           <Pressable
             key={c.label}

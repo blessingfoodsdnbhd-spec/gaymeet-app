@@ -47,7 +47,8 @@ The message row is:
   long-press is not the failing step.
 - The edit button is a plain `Pressable` (ActionRow) inside the Sheet's
   `GestureHandlerRootView`; the Sheet's only Pan is the drag-handle strip, which
-  doesn't overlap the button. No contention.
+  doesn't overlap the button. **No *Pan* contention — but see the Build 61 update
+  below: RN `Pressable` ↔ RNGH-root first-touch contention was missed here.**
 
 ## Conclusion
 
@@ -65,6 +66,48 @@ races**:
 The map multi-tap symptom is the **same class** (Modal/navigation handoff race,
 already addressed by `navigateAfterSheetClose`, PR #224), which corroborates
 "handoff timing", not "overlay interception", as the family root cause.
+
+## Build 61 update — device repro pins a SECOND, deeper root cause
+
+A device repro narrowed it precisely: in the moment **add-location** sheet, the
+"🗺 在地图上选择" button **needs several taps — UNLESS you first scroll the city
+list, after which one tap works.** The button sits *above* the ScrollView, so the
+ScrollView isn't intercepting it; rather, **the first touch anywhere in the
+sheet is consumed**, and the scroll just happens to be that first (sacrificial)
+touch.
+
+Root cause: **RN `Pressable` (JS responder system) contends with RNGH's native
+gesture system inside the Sheet's `GestureHandlerRootView`.** On Android the
+first touch after the sheet mounts is eaten establishing the gesture context, so
+the first `onPress` never fires. This is a known RNGH-on-Android issue; the fix
+is to use **RNGH's own `Pressable`** (`react-native-gesture-handler`), which
+participates in the same native gesture system and responds on the first tap.
+
+This is almost certainly the **real** root of "编辑 needs several taps" too — the
+`ActionRow` (edit/copy/delete row) is an RN `Pressable` in the same
+`GestureHandlerRootView`, so its first tap was eaten *before* `onPress`, which no
+handoff-timing fix can rescue. The Build 60 rAF+360ms handoff still helps the
+*second* race (Dialog teardown once the tap does fire), so both fixes stay.
+
+**Applied in Build 61:**
+- `MomentLocationSheet` + `VirtualLocationSheet`: RN `Pressable` → RNGH
+  `Pressable` (all rows incl. the map button); ScrollViews get
+  `keyboardShouldPersistTaps="handled"` + `nestedScrollEnabled` (insurance).
+- `ChatDetailScreen.ActionRow`: RN `Pressable` → RNGH `Pressable` (aliased
+  `GHPressable`). Screen-level Pressables (header, message rows) stay on RN's —
+  they're not inside a Sheet.
+- Un-gated MomentLocationSheet's existing `LOCATION_*` tap probes (were `__DEV__`,
+  invisible on the release Play build the user actually tests) so device logcat
+  now shows one `MAP_PRESS_IN`/`MAP_CLICK` per tap — confirming the fix.
+- Keyboard-bearing sheets (`FriendPickerSheet`, `FiltersSheet`, `RoomSettingsSheet`)
+  already carry `keyboardShouldPersistTaps="handled"` — left as-is.
+
+> Why not `setInputMode(SOFT_INPUT_ADJUST_NOTHING)` (still on the audit list):
+> native `KeyboardControllerModuleImpl.setSoftInputMode` targets
+> `currentActivity.window` (the host activity), **not** the Sheet Modal's own
+> Dialog window — so it can't govern the Modal's pan and risks stranding the
+> activity in `ADJUST_NOTHING`. The Sheet already lifts via the reanimated
+> `ty+kbHeight` transform (#227). Skipped deliberately.
 
 ## Console probes shipped in this build (readable on the release Play install)
 
