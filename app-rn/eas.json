@@ -13,7 +13,7 @@
     "preview": {
       "distribution": "internal",
       "ios": { "image": "latest" },
-      "android": { "image": "latest" }
+      "android": { "image": "latest", "buildType": "apk" }
     },
     "production": {
       "autoIncrement": false,

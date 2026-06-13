@@ -31,6 +31,9 @@ const worldChatMessageSchema = new mongoose.Schema(
     // Lazy per-target-language cache: { 'en': '…', 'ja': '…' }. An empty string
     // marks "source already equals this target" so we never re-detect/re-call.
     translations: { type: Map, of: String, default: undefined },
+    // Set once the author edits the text (PATCH /world-chat/:messageId).
+    edited: { type: Boolean, default: false },
+    editedAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

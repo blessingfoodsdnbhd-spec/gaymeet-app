@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Search, Flame, StickyNote, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react-native';
+import { Search, Flame, StickyNote, ChevronRight, Pin, PinOff, Trash2, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -34,6 +34,8 @@ import {
   type ChatThread,
 } from '../../api/chats';
 import { getNotesUnread } from '../../api/notes';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
+import { useAuth } from '../../store/auth';
 import { useChats } from '../../store/chats';
 import { on as wsOn } from '../../api/ws';
 import type { RootStackParamList } from '../../navigation/types';
@@ -60,6 +62,11 @@ export function ChatsListScreen() {
   const nav = useNavigation<Nav>();
   const toast = useToast();
   const [q, setQ] = useState('');
+  // Deleting a chat is Premium-only; free users get the upsell (holds the
+  // contextual reason string, null = closed).
+  const me = useAuth((s) => s.user);
+  const isPremium = !!(me as any)?.isPremium;
+  const [upsellReason, setUpsellReason] = useState<string | null>(null);
 
   const setThreads = useChats((s) => s.setThreads);
   const queryClient = useQueryClient();
@@ -177,6 +184,11 @@ export function ChatsListScreen() {
   // first, then optimistically drop the row and call the backend.
   const handleDelete = useCallback(
     (thread: ChatThread) => {
+      // Premium gate: free users can't delete chats — show the upsell instead.
+      if (!isPremium) {
+        setUpsellReason(t('premium.upsell.deleteChatReason'));
+        return;
+      }
       Alert.alert(
         t('chats.swipe.deleteTitle'),
         t('chats.swipe.deleteConfirm', { name: thread.user.nickname }),
@@ -201,7 +213,7 @@ export function ChatsListScreen() {
         ],
       );
     },
-    [queryClient, refetchThreads, toast, t],
+    [queryClient, refetchThreads, toast, t, isPremium],
   );
 
   // Long-press a row → same actions as the swipe gestures, for discoverability.
@@ -329,6 +341,13 @@ export function ChatsListScreen() {
           }
         />
       )}
+
+      {/* Premium upsell — shown when a free user taps ✕ / swipes to delete. */}
+      <UpgradePremiumSheet
+        open={!!upsellReason}
+        onClose={() => setUpsellReason(null)}
+        reason={upsellReason ?? undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -537,6 +556,7 @@ function SwipeableThreadRow({
         onPress={onPress}
         onAvatarPress={onAvatarPress}
         onLongPress={onLongPress}
+        onDelete={onDelete}
       />
     </Swipeable>
   );
@@ -575,11 +595,14 @@ function ThreadRow({
   onPress,
   onAvatarPress,
   onLongPress,
+  onDelete,
 }: {
   thread: ChatThread;
   onPress: () => void;
   onAvatarPress: () => void;
   onLongPress?: () => void;
+  /** ✕ button — premium-gated delete (parent decides upsell vs confirm). */
+  onDelete?: () => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -674,6 +697,24 @@ function ThreadRow({
             {thread.unreadCount > 99 ? '99+' : thread.unreadCount}
           </Text>
         </View>
+      )}
+      {/* Always-visible ✕ delete button (premium-gated by the parent handler).
+          Nested Pressable captures its own tap so the row's onPress doesn't fire. */}
+      {onDelete && (
+        <Pressable
+          onPress={onDelete}
+          hitSlop={8}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.surface2,
+          }}
+        >
+          <X size={16} color={theme.colors.muted} strokeWidth={2} />
+        </Pressable>
       )}
     </Pressable>
   );

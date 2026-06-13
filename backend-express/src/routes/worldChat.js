@@ -975,6 +975,45 @@ router.post('/report', auth, async (req, res, next) => {
   }
 });
 
+// ── Edit your OWN text message ────────────────────────────────────────────────
+// Premium-only + owner-only + text-only. Broadcasts world-chat:message-edited
+// (room-scoped) so every client updates the body live. Mirrors the private-chat
+// PATCH /conversations/:matchId/messages/:msgId contract (402/403/410).
+router.patch('/:messageId', auth, async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    if (!mongoose.isValidObjectId(messageId)) return err(res, 'Invalid messageId');
+    const body = String((req.body && req.body.body) ?? '').trim();
+    if (!body) return err(res, 'Empty message');
+    if (body.length > 500) return err(res, 'Too long');
+    if (!isPremiumActive(req.user)) return err(res, 'Premium required', 402);
+    const msg = await WorldChatMessage.findById(messageId);
+    if (!msg) return err(res, 'Not found', 404);
+    if (msg.userId.toString() !== req.user._id.toString()) return err(res, 'Not your message', 403);
+    if ((msg.type || 'text') !== 'text') return err(res, 'Only text messages can be edited', 410);
+
+    msg.body = body;
+    msg.edited = true;
+    msg.editedAt = new Date();
+    // Drop any stale translation cache so re-translates reflect the new text.
+    msg.translations = undefined;
+    msg.detectedLang = null;
+    await msg.save();
+
+    const payload = {
+      messageId: msg._id.toString(),
+      roomId: msg.roomId,
+      body: msg.body,
+      edited: true,
+      editedAt: msg.editedAt.toISOString(),
+    };
+    broadcast('world-chat:message-edited', payload, msg.roomId);
+    ok(res, payload);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── Delete your OWN message ───────────────────────────────────────────────────
 // Owner-only. Broadcasts the same world-chat:message-deleted event the admin
 // path uses, so every client drops it live. (Single-segment path — never
