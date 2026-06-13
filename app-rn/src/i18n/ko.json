@@ -1314,6 +1314,8 @@
     "benefitsSection": "혜택",
     "cancelPolicy": "설정에서 언제든 취소할 수 있습니다. 장기 약정 없음.",
     "upsell": {
+    "deleteChatReason": "프리미엄으로 업그레이드하면 대화를 삭제할 수 있어요.",
+    "editMsgReason": "프리미엄으로 업그레이드하면 메시지를 편집할 수 있어요.",
       "title": "Meyou 프리미엄",
       "cta": "프리미엄 보기",
       "later": "나중에",

@@ -61,7 +61,7 @@ import {
 import { uploadFile } from '../../api/upload';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
-import { ChatVoiceRecorderSheet } from './ChatVoiceRecorderSheet';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { IcebreakerCard } from './IcebreakerCard';
 import {
   on as wsOn,
@@ -197,28 +197,16 @@ export function ChatDetailScreen() {
   // index without being recreated whenever the message list changes.
   const invItemsRef = useRef<ListItem[]>([]);
   const [showStickers, setShowStickers] = useState(false);
-  // +-button action sheet (camera / gallery / location)
-  const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
+  // Premium upsell sheet — holds the contextual reason string (null = closed).
+  const [upsellReason, setUpsellReason] = useState<string | null>(null);
   // Long-press action sheet target message (null = closed)
   const [actionsFor, setActionsFor] = useState<Message | null>(null);
   // "+" full emoji picker target, and who-reacted modal target ({msg, emoji}).
   const [emojiPickerFor, setEmojiPickerFor] = useState<Message | null>(null);
   const [whoReactedFor, setWhoReactedFor] = useState<{ msg: Message; emoji: string } | null>(null);
-  // Edit sheet state
+  // Inline-edit target (swipe-right). Drives the composer's "Editing …" chip and
+  // pre-fills `composing`; on Save, onSend routes to editMut. No separate sheet.
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
-  const [editDraft, setEditDraft] = useState('');
-  // The edit TextInput has NO autoFocus (it raced the sheet's open animation —
-  // see the note at that TextInput). Focus is driven solely here, once the
-  // sheet has settled, on BOTH platforms.
-  const editInputRef = useRef<TextInput>(null);
-  useEffect(() => {
-    if (!editingMsg) return;
-    // 350ms clears the Sheet's 320ms open animation (Sheet.tsx ty 320ms) so the
-    // keyboard rises only after the card has fully settled — never mid-slide,
-    // which is what made the edit sheet fly to the top on Android edge-to-edge.
-    const id = setTimeout(() => editInputRef.current?.focus(), 350);
-    return () => clearTimeout(id);
-  }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
   // sheet. On iOS a Modal can't be presented while another is still dismissing,
   // so opening one in the same tick we close the actions sheet makes it
@@ -535,11 +523,44 @@ export function ChatDetailScreen() {
   const onSend = useCallback(() => {
     const content = composing.trim();
     if (!content) return;
+    // Inline-edit mode (swipe-right): Save the edit instead of sending a new
+    // message. editMut is declared further down — go through a ref so this
+    // callback doesn't touch it during render (TDZ) nor list it as a dep.
+    if (editingMsg) {
+      const orig = editingMsg;
+      setEditingMsg(null);
+      setComposing('');
+      if (content !== orig.content) editMutRef.current.mutate({ msgId: orig.id, content });
+      return;
+    }
     const replyTo = replyingTo;
     setComposing('');
     setReplyingTo(null);
     sendMut.mutate({ content, type: 'text', replyTo });
-  }, [composing, sendMut, replyingTo]);
+  }, [composing, sendMut, replyingTo, editingMsg]);
+
+  // Begin an inline edit (swipe-right on an own text message). Premium-gated;
+  // free users get the upsell. Only own text messages within 24h are editable.
+  const onEditSwipe = useCallback(
+    (msg: Message) => {
+      if (msg.pendingId || msg.isSystem || msg.status === 'failed') return;
+      const mine = !!myId && senderIdOf(msg) === myId;
+      if (!mine || msg.type !== 'text') return;
+      const within24h = Date.now() - new Date(msg.createdAt).getTime() < 24 * 60 * 60 * 1000;
+      if (!within24h) {
+        Alert.alert(t('chat.message.editExpired'));
+        return;
+      }
+      if (!isPremium) {
+        setUpsellReason(t('premium.upsell.editMsgReason'));
+        return;
+      }
+      setReplyingTo(null);
+      setEditingMsg(msg);
+      setComposing(msg.content);
+    },
+    [myId, isPremium, t],
+  );
 
   // Swipe-right on a bubble → quote it in the composer. Ignore rows that aren't
   // real server messages yet (optimistic/failed sends have no usable id).
@@ -787,27 +808,10 @@ export function ChatDetailScreen() {
       }
     },
   });
-
-  const deleteMut = useMutation({
-    mutationFn: (msgId: string) => deleteMessage(matchId, msgId),
-    onSuccess: (data) => {
-      // Local cache + image cache drop; WS chat:deleted will catch up.
-      deleteCachedImage(data.messageId).catch(() => {});
-      queryClient.setQueryData<Message[]>(
-        ['chats', 'messages', matchId],
-        (prev) => (prev ?? []).filter((m) => m.id !== data.messageId),
-      );
-    },
-    onError: (e: any) => {
-      const status = e?.response?.status;
-      const detail = e?.response?.data?.error || e?.message || '';
-      if (status === 402) {
-        Alert.alert(t('chat.message.premiumOnly'));
-      } else {
-        Alert.alert(t('chat.message.deleteFailed'), detail);
-      }
-    },
-  });
+  // Stable handle so onSend (declared earlier) can fire the edit without taking
+  // editMut as a dep (it's defined here, after onSend → TDZ if referenced there).
+  const editMutRef = useRef(editMut);
+  editMutRef.current = editMut;
 
   // Reaction toggle. Optimistically updates the bubble's pills, then POSTs;
   // the server echoes the authoritative full map (and broadcasts to the peer
@@ -847,51 +851,6 @@ export function ChatDetailScreen() {
     [me?.id, matchId, queryClient, reactMut],
   );
 
-  /** Compute which long-press actions to show for a given message. */
-  const actionsAvailable = useMemo(() => {
-    if (!actionsFor) {
-      return { mine: false, canEdit: false, canDelete: false };
-    }
-    const mine = !!myId && senderIdOf(actionsFor) === myId;
-    const within24h =
-      Date.now() - new Date(actionsFor.createdAt).getTime() < 24 * 60 * 60 * 1000;
-    return {
-      mine,
-      canEdit:
-        mine && isPremium && actionsFor.type === 'text' && within24h,
-      // Standard messenger UX: anyone can delete their OWN message of any type
-      // (text / image / location). No Premium gate.
-      canDelete: mine,
-    };
-  }, [actionsFor, myId, isPremium]);
-
-  const onCopyMessage = useCallback(async (msg: Message) => {
-    let text = msg.content || '';
-    if (msg.type === 'location' && msg.location) {
-      text = msg.location.label
-        ? `${msg.location.label} (${msg.location.lat}, ${msg.location.lng})`
-        : `${msg.location.lat}, ${msg.location.lng}`;
-    } else if (msg.type === 'image' && msg.mediaUrl) {
-      text = msg.mediaUrl;
-    }
-    if (!text) return;
-    await Clipboard.setStringAsync(text);
-    Alert.alert(t('chat.message.copied'));
-  }, [t]);
-
-  const onConfirmDelete = useCallback(
-    (msg: Message) => {
-      Alert.alert(t('chat.message.deleteConfirm'), '', [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('chat.message.deleteAction'),
-          style: 'destructive',
-          onPress: () => deleteMut.mutate(msg.id),
-        },
-      ]);
-    },
-    [deleteMut, t],
-  );
 
   // Render a virtual list with time-divider rows interspersed
   const items = useMemo(() => buildItems(msgsQ.data ?? []), [msgsQ.data]);
@@ -1176,7 +1135,11 @@ export function ChatDetailScreen() {
               }
               const highlighted = !!msg.id && msg.id === highlightedId;
               return (
-                <SwipeToReply enabled={!msg.pendingId} onReply={() => onReplyTo(msg)}>
+                <SwipeToReply
+                  enabled={!msg.pendingId}
+                  onReply={() => onReplyTo(msg)}
+                  onEdit={mine && msg.type === 'text' ? () => onEditSwipe(msg) : undefined}
+                >
                   <View
                     style={{
                       flexDirection: 'column',
@@ -1357,7 +1320,6 @@ export function ChatDetailScreen() {
           onPickPhotoFromLibrary={pickGallery}
           onTakePhoto={pickCamera}
           onVoiceRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
-          onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
           onOpenStickers={() => setShowStickers((s) => !s)}
           placeholder={t('chats.detail.messagePlaceholder')}
           replyTo={
@@ -1373,13 +1335,21 @@ export function ChatDetailScreen() {
               : null
           }
           onCancelReply={() => setReplyingTo(null)}
+          editing={
+            editingMsg ? { id: editingMsg.id, preview: editingMsg.content } : null
+          }
+          onCancelEdit={() => {
+            setEditingMsg(null);
+            setComposing('');
+          }}
         />
       </KeyboardAvoidingView>
 
-      <ChatVoiceRecorderSheet
-        open={voiceRecorderOpen}
-        onClose={() => setVoiceRecorderOpen(false)}
-        onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+      {/* Premium upsell — shown when a free user swipes to edit a message. */}
+      <UpgradePremiumSheet
+        open={!!upsellReason}
+        onClose={() => setUpsellReason(null)}
+        reason={upsellReason ?? undefined}
       />
 
       {/* Long-press action sheet for an individual message */}
@@ -1430,63 +1400,10 @@ export function ChatDetailScreen() {
                 </Pressable>
               </View>
             )}
-            {actionsAvailable.canEdit && (
-              <ActionRow
-                icon={<Edit2 size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('chat.message.actions.edit')}
-                onPress={() => {
-                  const m = actionsFor;
-                  closeActionsThen(() => {
-                    setEditingMsg(m);
-                    setEditDraft(m.content);
-                  });
-                }}
-              />
-            )}
-            {actionsFor.type !== 'voice' && (
-              <ActionRow
-                icon={<Copy size={20} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('chat.message.actions.copy')}
-                onPress={() => {
-                  const m = actionsFor;
-                  setActionsFor(null);
-                  onCopyMessage(m);
-                }}
-              />
-            )}
-            {actionsAvailable.canDelete && (
-              <ActionRow
-                icon={<Trash2 size={20} color="#D14B4B" strokeWidth={1.8} />}
-                label={t('chat.message.actions.delete')}
-                labelColor="#D14B4B"
-                onPress={() => {
-                  const m = actionsFor;
-                  setActionsFor(null);
-                  onConfirmDelete(m);
-                }}
-              />
-            )}
-            {/* Others' messages — report / block the sender (WWWW). */}
-            {!actionsAvailable.mine && !actionsFor.isSystem && thread && (
-              <ActionRow
-                icon={<Flag size={20} color="#D14B4B" strokeWidth={1.8} />}
-                label={t('chat.message.actions.reportBlock')}
-                labelColor="#D14B4B"
-                onPress={() => {
-                  setActionsFor(null);
-                  showSafetyMenu({
-                    userId: thread.user.id,
-                    userName: thread.user.nickname,
-                    nav,
-                    includeUnmatch: false,
-                    onBlocked: () => {
-                      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
-                      nav.goBack();
-                    },
-                  });
-                }}
-              />
-            )}
+            {/* Redesign: the long-press menu is reactions-only now. Edit moved to
+                swipe-right, reply to swipe-left; copy/delete/report were removed
+                per spec. Sender report/block stays reachable from the header
+                safety menu ("..."). */}
             <ActionRow
               label={t('chat.message.actions.cancel')}
               centered
@@ -1578,101 +1495,8 @@ export function ChatDetailScreen() {
         )}
       </Sheet>
 
-      {/* Edit sheet — TextInput prefilled with the message content.
-          avoidKeyboard lifts this short, bottom-anchored sheet above the iOS
-          keyboard; without it the input renders BEHIND the keyboard and looks
-          uneditable ("edit opens but you can't change the text"). */}
-      <Sheet
-        open={!!editingMsg}
-        onClose={() => setEditingMsg(null)}
-        maxHeight="50%"
-        avoidKeyboard
-      >
-        {editingMsg && (
-          <View style={{ paddingHorizontal: 4 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '700',
-                color: theme.colors.text,
-                marginBottom: 14,
-              }}
-            >
-              {t('chat.message.editTitle')}
-            </Text>
-            <TextInput
-              ref={editInputRef}
-              value={editDraft}
-              onChangeText={setEditDraft}
-              placeholder={t('chat.message.editPlaceholder')}
-              placeholderTextColor={theme.colors.muted}
-              multiline
-              // NO autoFocus: it fires on mount, raising the keyboard WHILE this
-              // sheet's 320ms open animation is still running. Under Android
-              // edge-to-edge (Build 53) the Modal window then pans/resizes
-              // mid-animation and the sheet "flies to the top". The useEffect at
-              // editInputRef instead focuses 250ms after open — once the sheet
-              // has settled — so the keyboard only rises against a stationary
-              // window. The editInputRef comment already said autoFocus "can be
-              // dropped"; it was a leftover, and removing it is the actual fix.
-              style={{
-                backgroundColor: theme.colors.surface,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: theme.colors.line,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 15,
-                color: theme.colors.text,
-                minHeight: 88,
-                maxHeight: 200,
-                textAlignVertical: 'top',
-              }}
-            />
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
-              <Pressable
-                onPress={() => setEditingMsg(null)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  borderRadius: 14,
-                  alignItems: 'center',
-                  backgroundColor: theme.colors.surface2,
-                }}
-              >
-                <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  const m = editingMsg;
-                  const draft = editDraft.trim();
-                  if (!m || !draft || draft === m.content) {
-                    setEditingMsg(null);
-                    return;
-                  }
-                  editMut.mutate({ msgId: m.id, content: draft });
-                  setEditingMsg(null);
-                }}
-                disabled={editMut.isPending}
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  borderRadius: 14,
-                  alignItems: 'center',
-                  backgroundColor: theme.colors.primary,
-                  opacity: editMut.isPending ? 0.6 : 1,
-                }}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
-                  {t('common.save')}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-      </Sheet>
+      {/* Inline edit replaces the old edit sheet — see the composer's "Editing …"
+          chip (driven by `editingMsg`). */}
 
       {/* Full-screen photo viewer. ChatDetailScreen is a pushed screen
           (NOT a Modal), so a single Modal here is safe — no nested-Modal

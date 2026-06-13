@@ -45,6 +45,9 @@ export interface WorldChatMessage {
   voiceWaveform?: number[] | null;
   replyTo?: WorldChatReplyPreview | null;
   createdAt: string;
+  /** Set once the author edits the text via PATCH /world-chat/:messageId. */
+  edited?: boolean;
+  editedAt?: string | null;
 }
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
@@ -170,6 +173,12 @@ export const translateWorldChatMessage = (messageId: string, to: string) =>
  *  broadcasts world-chat:message-deleted so every client drops it live. */
 export const deleteWorldChatMessage = (messageId: string) =>
   api.delete(`/world-chat/${messageId}`);
+
+/** Edit your OWN text message. Premium-only + owner-only + text-only (backend
+ *  enforces; 402 = premium required, 403 = not owner, 410 = too old/non-text).
+ *  Broadcasts world-chat:message-edited so every client updates it live. */
+export const editWorldChatMessage = (messageId: string, body: string) =>
+  unwrap<WorldChatMessage>(api.patch(`/world-chat/${messageId}`, { body }));
 
 // ── Custom chat rooms (forum-style rooms inside a country) ────────────────────
 

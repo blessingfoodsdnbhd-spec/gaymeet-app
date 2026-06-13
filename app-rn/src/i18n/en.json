@@ -1368,6 +1368,8 @@
     "benefitsSection": "Benefits",
     "cancelPolicy": "Cancel anytime in Settings. No long-term commitment.",
     "upsell": {
+    "deleteChatReason": "Upgrade to Premium to delete chats.",
+    "editMsgReason": "Upgrade to Premium to edit your messages.",
       "title": "Meyou Premium",
       "cta": "See Premium",
       "later": "Maybe later",

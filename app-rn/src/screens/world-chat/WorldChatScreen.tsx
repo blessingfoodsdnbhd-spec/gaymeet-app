@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -31,7 +31,7 @@ import { Sheet } from '../../components/Sheet';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { PhotoViewer } from '../../components/PhotoViewer';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
-import { ChatVoiceRecorderSheet } from '../chats/ChatVoiceRecorderSheet';
+import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { openSheetAfterKeyboardDismiss } from '../../utils/keyboardSheet';
 import { useAuth } from '../../store/auth';
 import {
@@ -41,6 +41,7 @@ import {
   sendWorldChatVoice,
   reportWorldChat,
   deleteWorldChatMessage,
+  editWorldChatMessage,
   getChatRoom,
   translateWorldChatMessage,
   type WorldChatMessage,
@@ -168,9 +169,12 @@ export function WorldChatScreen({
   const [pendingPhoto, setPendingPhoto] = React.useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = React.useState(false);
   const [viewerPhoto, setViewerPhoto] = React.useState<string | null>(null);
-  // Voice send (hold-to-record in the composer, sheet recorder as fallback).
-  const [voiceRecorderOpen, setVoiceRecorderOpen] = React.useState(false);
+  // Voice send (tap-to-record in the composer).
   const [sendingVoice, setSendingVoice] = React.useState(false);
+  // Inline-edit target (swipe-right) + premium upsell reason (free users).
+  const [editingMsg, setEditingMsg] = React.useState<WorldChatMessage | null>(null);
+  const [upsellReason, setUpsellReason] = React.useState<string | null>(null);
+  const isPremium = !!(me as any)?.isPremium;
   // Quoted reply target + transient highlight after jumping to a message.
   const [replyingTo, setReplyingTo] = React.useState<WorldChatMessage | null>(null);
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null);
@@ -360,6 +364,20 @@ export function WorldChatScreen({
           prev ? { messages: prev.messages.filter((x) => x.messageId !== messageId) } : prev,
         );
       });
+      const uEdit = await wsOn('world-chat:message-edited', (p: any) => {
+        if (cancelled || !p?.messageId) return;
+        qc.setQueryData<Cache>(KEY, (prev) =>
+          prev
+            ? {
+                messages: prev.messages.map((x) =>
+                  x.messageId === p.messageId
+                    ? { ...x, body: p.body ?? x.body, edited: true, editedAt: p.editedAt ?? null }
+                    : x,
+                ),
+              }
+            : prev,
+        );
+      });
       const uCount = await wsOn('world-chat:online-count', (evt) => {
         // New server sends { roomId, count }; accept the matching room (or a
         // legacy payload with no roomId).
@@ -380,8 +398,8 @@ export function WorldChatScreen({
         Alert.alert(t('worldChat.rooms.kicked'));
         nav.goBack();
       });
-      if (cancelled) { uRecv(); uDel(); uCount(); uClosed(); uRoomDel(); uKicked(); return; }
-      unsubs = [uRecv, uDel, uCount, uClosed, uRoomDel, uKicked];
+      if (cancelled) { uRecv(); uDel(); uEdit(); uCount(); uClosed(); uRoomDel(); uKicked(); return; }
+      unsubs = [uRecv, uDel, uEdit, uCount, uClosed, uRoomDel, uKicked];
     })();
     return () => {
       cancelled = true;
@@ -426,8 +444,54 @@ export function WorldChatScreen({
     else Alert.alert(t('worldChat.sendFailed'), e?.response?.data?.error ?? '');
   };
 
+  // Inline-edit: PATCH the message body. Optimistic cache update; the WS
+  // world-chat:message-edited echo re-sets the same fields for everyone.
+  const editMut = useMutation({
+    mutationFn: ({ messageId, body }: { messageId: string; body: string }) =>
+      editWorldChatMessage(messageId, body),
+    onSuccess: (m) => {
+      qc.setQueryData<Cache>(KEY, (prev) =>
+        prev
+          ? {
+              messages: prev.messages.map((x) =>
+                x.messageId === m.messageId
+                  ? { ...x, body: m.body, edited: true, editedAt: m.editedAt ?? null }
+                  : x,
+              ),
+            }
+          : prev,
+      );
+    },
+    onError: (e: any) => {
+      const status = e?.response?.status;
+      if (status === 402) Alert.alert(t('chat.message.premiumOnly'));
+      else if (status === 410) Alert.alert(t('chat.message.editExpired'));
+      else Alert.alert(t('chat.message.editFailed'), e?.response?.data?.error ?? '');
+    },
+  });
+
+  // Begin inline edit on swipe-right. Own text messages only; premium-gated.
+  const onEditSwipe = (msg: WorldChatMessage) => {
+    if (msg.userId !== myId || (msg.type && msg.type !== 'text')) return;
+    if (!isPremium) {
+      setUpsellReason(t('premium.upsell.editMsgReason'));
+      return;
+    }
+    setReplyingTo(null);
+    setEditingMsg(msg);
+    setDraft(msg.body);
+  };
+
   const onSend = async () => {
     const body = draft.trim();
+    // Inline-edit mode: save the edit instead of sending a new message.
+    if (editingMsg) {
+      const orig = editingMsg;
+      setEditingMsg(null);
+      setDraft('');
+      if (body && body !== orig.body) editMut.mutate({ messageId: orig.messageId, body });
+      return;
+    }
     if (!body || sending) return;
     const replyMsg = replyingTo;
     setSending(true);
@@ -714,7 +778,15 @@ export function WorldChatScreen({
               item.type === 'system' ? (
                 <SystemRow msg={item} />
               ) : (
-              <SwipeToReply enabled={!closed} onReply={() => setReplyingTo(item)}>
+              <SwipeToReply
+                enabled={!closed}
+                onReply={() => setReplyingTo(item)}
+                onEdit={
+                  item.userId === myId && (!item.type || item.type === 'text')
+                    ? () => onEditSwipe(item)
+                    : undefined
+                }
+              >
                 <Row
                   msg={item}
                   mine={item.userId === myId}
@@ -756,7 +828,6 @@ export function WorldChatScreen({
             onPickPhotoFromLibrary={pickGallery}
             onTakePhoto={pickCamera}
             onVoiceRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
-            onStartVoiceRecord={() => setVoiceRecorderOpen(true)}
             replyTo={
               replyingTo
                 ? {
@@ -772,6 +843,11 @@ export function WorldChatScreen({
                 : null
             }
             onCancelReply={() => setReplyingTo(null)}
+            editing={editingMsg ? { id: editingMsg.messageId, preview: editingMsg.body } : null}
+            onCancelEdit={() => {
+              setEditingMsg(null);
+              setDraft('');
+            }}
           />
         )}
       </KeyboardAvoidingView>
@@ -887,11 +963,11 @@ export function WorldChatScreen({
         />
       </Modal>
 
-      {/* Voice recorder — tap-the-mic fallback (hold-to-record is inline). */}
-      <ChatVoiceRecorderSheet
-        open={voiceRecorderOpen}
-        onClose={() => setVoiceRecorderOpen(false)}
-        onRecorded={(uri, durationMs) => sendVoiceFromUri(uri, durationMs)}
+      {/* Premium upsell — shown when a free user swipes to edit a message. */}
+      <UpgradePremiumSheet
+        open={!!upsellReason}
+        onClose={() => setUpsellReason(null)}
+        reason={upsellReason ?? undefined}
       />
 
       {/* mIRC 在线名单 — right drawer (spec §9.1). */}
@@ -976,6 +1052,7 @@ function Row({
   onToggleTranslation: () => void;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const isTextMsg = (!msg.type || msg.type === 'text') && !!msg.body?.trim();
 
   // Lazily request a translation when this (foreign) row mounts. Own messages
@@ -1153,6 +1230,11 @@ function Row({
             >
               <Text style={{ fontSize: 16, lineHeight: 22, color: mine ? '#FFFFFF' : theme.colors.text }}>
                 {msg.body}
+                {msg.edited ? (
+                  <Text style={{ fontSize: 11, color: mine ? 'rgba(255,255,255,0.7)' : theme.colors.muted }}>
+                    {'  '}{t('chat.message.edited')}
+                  </Text>
+                ) : null}
               </Text>
             </View>
             </Pressable>
@@ -1264,6 +1346,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Android: the inverted messages FlatList (a native ScrollView) otherwise
+    // overdraws the header once it has content, swallowing taps on the action
+    // buttons (⋮/share/roster). zIndex orders RN layout; elevation raises the
+    // native view in Android's z/touch order so the header stays above the list.
+    // Mirrors the ChatDetail header fix.
+    zIndex: 10,
+    elevation: 10,
   },
   // Header action hit target — explicit 40×40 so Android delivers the tap (a
   // bare icon + hitSlop was unreliable). Icon is centered, so it reads the same.
