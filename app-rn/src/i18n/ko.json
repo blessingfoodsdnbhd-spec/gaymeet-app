@@ -807,7 +807,16 @@
     "sendFailed": "보낼 수 없습니다",
     "actionFailed": "문제가 발생했습니다",
     "blockConfirmTitle": "사용자를 차단할까요?",
-    "blockConfirmBody": "{{name}}님의 메시지를 더 이상 보지 않습니다."
+    "blockConfirmBody": "{{name}}님의 메시지를 더 이상 보지 않습니다.",
+    "notif": {
+      "toggle": "방 알림",
+      "enableTitle": "방 알림을 켤까요?",
+      "enableBody": "이 방의 새 메시지 알림을 받습니다.",
+      "enableAction": "켜기",
+      "disableTitle": "방 알림을 끌까요?",
+      "disableBody": "이 방의 새 메시지 알림을 받지 않습니다.",
+      "disableAction": "끄기"
+    }
   },
   "votes": {
     "listTitle": "콘테스트",
@@ -977,7 +986,8 @@
       "sendFailed": "음성 메시지를 보내지 못했습니다",
       "slideToCancel": "밀어서 취소",
       "locked": "잠김",
-      "tapToDelete": "탭하여 삭제"
+      "tapToDelete": "탭하여 삭제",
+      "stop": "중지"
     },
     "icebreakers": {
       "header": "👋 먼저 인사를 건네보세요!",
@@ -1314,15 +1324,16 @@
     "benefitsSection": "혜택",
     "cancelPolicy": "설정에서 언제든 취소할 수 있습니다. 장기 약정 없음.",
     "upsell": {
-    "deleteChatReason": "프리미엄으로 업그레이드하면 대화를 삭제할 수 있어요.",
-    "editMsgReason": "프리미엄으로 업그레이드하면 메시지를 편집할 수 있어요.",
+      "deleteChatReason": "프리미엄으로 업그레이드하면 대화를 삭제할 수 있어요.",
+      "editMsgReason": "프리미엄으로 업그레이드하면 메시지를 편집할 수 있어요.",
       "title": "Meyou 프리미엄",
       "cta": "프리미엄 보기",
       "later": "나중에",
       "viewers": "누가 당신의 프로필을 봤는지 정확히 확인하세요.",
       "likes": "당신을 알고 싶어하는 모든 사람을 확인하세요.",
       "privacy": "온라인 상태를 숨기고 시크릿 모드로 둘러보세요.",
-      "profile80": "프로필이 멋져요 — 프리미엄으로 3배의 노출을 얻으세요."
+      "profile80": "프로필이 멋져요 — 프리미엄으로 3배의 노출을 얻으세요.",
+      "deleteMsgReason": "Premium로 업그레이드하면 보낸 메시지를 삭제할 수 있어요."
     },
     "testimonials": {
       "1": {

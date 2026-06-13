@@ -553,7 +553,16 @@
     "sendFailed": "Couldn't send",
     "actionFailed": "Something went wrong",
     "blockConfirmTitle": "Block user?",
-    "blockConfirmBody": "You won't see messages from {{name}} anymore."
+    "blockConfirmBody": "You won't see messages from {{name}} anymore.",
+    "notif": {
+      "toggle": "Room notifications",
+      "enableTitle": "Turn on room notifications?",
+      "enableBody": "You'll get alerts for new messages in this room.",
+      "enableAction": "Turn on",
+      "disableTitle": "Mute room notifications?",
+      "disableBody": "You won't get alerts for new messages in this room.",
+      "disableAction": "Mute"
+    }
   },
   "votes": {
     "listTitle": "Contests",
@@ -790,7 +799,8 @@
       "sendFailed": "Couldn't send voice message",
       "slideToCancel": "Slide to cancel",
       "locked": "Locked",
-      "tapToDelete": "Tap to delete"
+      "tapToDelete": "Tap to delete",
+      "stop": "Stop"
     },
     "icebreakers": {
       "header": "👋 Break the ice — say hello!",
@@ -1368,15 +1378,16 @@
     "benefitsSection": "Benefits",
     "cancelPolicy": "Cancel anytime in Settings. No long-term commitment.",
     "upsell": {
-    "deleteChatReason": "Upgrade to Premium to delete chats.",
-    "editMsgReason": "Upgrade to Premium to edit your messages.",
+      "deleteChatReason": "Upgrade to Premium to delete chats.",
+      "editMsgReason": "Upgrade to Premium to edit your messages.",
       "title": "Meyou Premium",
       "cta": "See Premium",
       "later": "Maybe later",
       "viewers": "See exactly who viewed your profile.",
       "likes": "See everyone who wants to know you.",
       "privacy": "Hide your online status and browse incognito.",
-      "profile80": "Your profile looks great — go Premium for 3× the visibility."
+      "profile80": "Your profile looks great — go Premium for 3× the visibility.",
+      "deleteMsgReason": "Upgrade to Premium to delete your messages."
     },
     "testimonials": {
       "1": {

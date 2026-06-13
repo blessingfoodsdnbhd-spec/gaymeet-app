@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -34,6 +34,20 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
   const initial = (user.nickname || user.email || '?').trim().charAt(0).toUpperCase();
 
+  // All public photos, tap-cycled Tinder-style (left half = prev, right half =
+  // next). Falls back to the single avatar. The full-card swipe (like/pass) is
+  // owned by CardStack's Pan gesture; these are plain taps, so a drag cancels
+  // the Pressable before onPress and the two never fight.
+  const photos = useMemo(() => {
+    const p = (user.photos ?? []).filter(Boolean);
+    if (p.length > 0) return p;
+    return user.avatarUrl ? [user.avatarUrl] : [];
+  }, [user.photos, user.avatarUrl]);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  // Guard against a stale index if the photo set ever shrinks.
+  const idx = Math.min(photoIdx, Math.max(0, photos.length - 1));
+  const currentUrl = photos[idx] ?? null;
+
   // Memoize the source object so the reference stays stable across re-renders.
   // expo-image rebuilds its decoder + replays `transition` when the source
   // *reference* changes, even if the URI string is identical. That was the
@@ -41,8 +55,8 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
   // after a swipe, re-rendered, and got a new `{uri}` literal that fooled
   // expo-image into reloading.
   const imageSource = useMemo(
-    () => (user.avatarUrl ? { uri: user.avatarUrl } : null),
-    [user.avatarUrl],
+    () => (currentUrl ? { uri: currentUrl } : null),
+    [currentUrl],
   );
 
   const likeStampStyle = useAnimatedStyle(() => {
@@ -144,6 +158,39 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
         >
           <Text style={[styles.stampText, { color: theme.colors.nope }]}>NOPE</Text>
         </Animated.View>
+
+        {/* Tap zones — left half = previous photo, right half = next. Only the
+            top card cycles; non-top cards in the stack stay static. Transparent
+            overlays sit above the photo; a drag cancels them so CardStack's
+            swipe still drives like/pass. */}
+        {isTop && photos.length > 1 && (
+          <>
+            <Pressable
+              style={styles.tapLeft}
+              onPress={() => setPhotoIdx((i) => Math.max(0, Math.min(i, photos.length - 1) - 1))}
+            />
+            <Pressable
+              style={styles.tapRight}
+              onPress={() => setPhotoIdx((i) => Math.min(photos.length - 1, i + 1))}
+            />
+          </>
+        )}
+
+        {/* Segmented page indicator (Tinder-style) — one bar per photo, the
+            active one brightened with the brand accent. */}
+        {photos.length > 1 && (
+          <View style={styles.segments} pointerEvents="none">
+            {photos.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.segment,
+                  { backgroundColor: i === idx ? theme.colors.primary : 'rgba(255,255,255,0.5)' },
+                ]}
+              />
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Explicit opaque background: the info block must fully cover the card
@@ -294,6 +341,20 @@ const styles = StyleSheet.create({
   stampLike: { transform: [{ rotate: '-12deg' }] },
   stampNope: { transform: [{ rotate: '12deg' }] },
   stampText: { fontSize: 22, fontWeight: '800', letterSpacing: 1.5 },
+  // Tap-to-cycle hit zones over the photo (left = prev, right = next). Top
+  // edge starts below the segment indicator so a tap there doesn't fight it.
+  tapLeft: { position: 'absolute', top: 24, bottom: 0, left: 0, width: '50%' },
+  tapRight: { position: 'absolute', top: 24, bottom: 0, right: 0, width: '50%' },
+  // Segmented page indicator across the top of the photo.
+  segments: {
+    position: 'absolute',
+    top: 10,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  segment: { flex: 1, height: 3, borderRadius: 2 },
   // flex: 1 → fills the remaining ~38% below the fixed-height photo. Content
   // is top-anchored; any surplus shows as surface beneath the tags.
   info: { flex: 1, padding: 18, gap: 10 },

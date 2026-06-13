@@ -553,7 +553,16 @@
     "sendFailed": "发送失败",
     "actionFailed": "操作失败",
     "blockConfirmTitle": "屏蔽用户?",
-    "blockConfirmBody": "你将不再看到 {{name}} 的消息。"
+    "blockConfirmBody": "你将不再看到 {{name}} 的消息。",
+    "notif": {
+      "toggle": "房间通知",
+      "enableTitle": "开启房间通知?",
+      "enableBody": "开启后会收到这个房间的新消息提醒。",
+      "enableAction": "开启",
+      "disableTitle": "关闭房间通知?",
+      "disableBody": "关闭后不会再收到这个房间的新消息提醒。",
+      "disableAction": "关闭"
+    }
   },
   "votes": {
     "listTitle": "投票活动",
@@ -790,7 +799,8 @@
       "sendFailed": "语音消息发送失败",
       "slideToCancel": "滑动取消",
       "locked": "已锁定",
-      "tapToDelete": "点击删除"
+      "tapToDelete": "点击删除",
+      "stop": "停止"
     },
     "icebreakers": {
       "header": "👋 来打个招呼吧！",
@@ -1368,15 +1378,16 @@
     "benefitsSection": "专属权益",
     "cancelPolicy": "随时可在设置中取消,没有长期绑定。",
     "upsell": {
-    "deleteChatReason": "升级 Premium 即可删除对话。",
-    "editMsgReason": "升级 Premium 即可编辑你的消息。",
+      "deleteChatReason": "升级 Premium 即可删除对话。",
+      "editMsgReason": "升级 Premium 即可编辑你的消息。",
       "title": "Meyou Premium",
       "cta": "查看 Premium",
       "later": "以后再说",
       "viewers": "看清楚究竟是谁看了你的 profile。",
       "likes": "看看所有想认识你的人。",
       "privacy": "隐藏在线状态,隐身浏览。",
-      "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。"
+      "profile80": "你的 profile 很棒 — 升级 Premium 获得 3 倍曝光。",
+      "deleteMsgReason": "升级到 Premium 即可删除你发送的消息。"
     },
     "testimonials": {
       "1": {

@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Plus,
   Trash2,
+  X,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
@@ -813,6 +814,51 @@ export function ChatDetailScreen() {
   const editMutRef = useRef(editMut);
   editMutRef.current = editMut;
 
+  // Delete one of MY messages. Optimistic removal with rollback on failure.
+  const deleteMut = useMutation({
+    mutationFn: (msgId: string) => deleteMessage(matchId, msgId),
+    onMutate: (msgId) => {
+      const prev = queryClient.getQueryData<Message[]>(['chats', 'messages', matchId]);
+      queryClient.setQueryData<Message[]>(['chats', 'messages', matchId], (p) =>
+        (p ?? []).filter((m) => m.id !== msgId),
+      );
+      return { prev };
+    },
+    onError: (e: any, _msgId, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['chats', 'messages', matchId], ctx.prev);
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.error || e?.message || '';
+      if (status === 402) Alert.alert(t('chat.message.premiumOnly'));
+      else Alert.alert(t('chat.message.deleteFailed'), detail);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+    },
+  });
+
+  // ✕ next to an own message → delete it. Premium-gated like the ChatsList ✕:
+  // every user sees the ✕, free users get the upsell, Premium gets a confirm.
+  const onDeleteMsg = useCallback(
+    (msg: Message) => {
+      if (msg.pendingId || msg.isSystem || msg.status === 'failed' || !msg.id) return;
+      const mine = !!myId && senderIdOf(msg) === myId;
+      if (!mine) return;
+      if (!isPremium) {
+        setUpsellReason(t('premium.upsell.deleteMsgReason'));
+        return;
+      }
+      Alert.alert(t('chat.message.deleteConfirm'), undefined, [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('chat.message.deleteAction'),
+          style: 'destructive',
+          onPress: () => deleteMut.mutate(msg.id),
+        },
+      ]);
+    },
+    [myId, isPremium, t, deleteMut],
+  );
+
   // Reaction toggle. Optimistically updates the bubble's pills, then POSTs;
   // the server echoes the authoritative full map (and broadcasts to the peer
   // via WS). On error we refetch to undo the optimistic change.
@@ -931,6 +977,7 @@ export function ChatDetailScreen() {
             </Pressable>
             <Pressable
               style={iconBtn(theme)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               onPress={() =>
                 showSafetyMenu({
                   userId: thread.user.id,
@@ -1181,7 +1228,24 @@ export function ChatDetailScreen() {
                       </Text>
                     </Pressable>
                   )}
-                  {bubble}
+                  {mine && !msg.pendingId && !msg.isSystem && msg.status !== 'failed' && !!msg.id ? (
+                    // Own message → small ✕ on the LEFT of the right-aligned
+                    // bubble. Premium-gated delete (free → upsell). Light grey so
+                    // it never competes with the bubble.
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Pressable
+                        onPress={() => onDeleteMsg(msg)}
+                        hitSlop={10}
+                        accessibilityLabel={t('chat.message.deleteAction')}
+                        style={{ padding: 4 }}
+                      >
+                        <X size={15} color={theme.colors.muted} strokeWidth={2} />
+                      </Pressable>
+                      {bubble}
+                    </View>
+                  ) : (
+                    bubble
+                  )}
                   {!mine && msg.flagged && (
                     <View
                       style={{
