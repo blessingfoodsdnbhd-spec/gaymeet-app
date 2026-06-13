@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -147,6 +148,15 @@ export function App() {
                 drainColdTap();
               }}
             >
+              {/* BottomSheetModalProvider hosts the portal that every <Sheet>
+                  (now built on @gorhom/bottom-sheet) presents into. It MUST sit
+                  inside ThemeProvider/ToastProvider/QueryClientProvider AND
+                  NavigationContainer: gorhom portals a presented modal's content
+                  to THIS mount point, so the content only sees the React contexts
+                  available here (useTheme/useNavigation/toast/react-query all read
+                  from above). It nests inside GestureHandlerRootView (App root) as
+                  gorhom requires for its pan gestures. */}
+              <BottomSheetModalProvider>
               <RootNavigator />
               {/* Both listeners use useNavigation() and must live inside
                   NavigationContainer to read the navigator context. */}
@@ -159,6 +169,7 @@ export function App() {
                   inside the container. Renders nothing when there's no
                   active announcement or it's been "don't show again". */}
               <AnnouncementBootstrap />
+              </BottomSheetModalProvider>
             </NavigationContainer>
             </ToastProvider>
           </ThemeProvider>
