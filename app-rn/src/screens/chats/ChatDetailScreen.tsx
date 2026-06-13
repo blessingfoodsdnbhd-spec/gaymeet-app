@@ -6,7 +6,6 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  Keyboard,
   Modal,
   Platform,
   StyleSheet,
@@ -1104,15 +1103,15 @@ export function ChatDetailScreen() {
               }
               const mine = !!myId && senderIdOf(msg) === myId;
               const failed = msg.status === 'failed';
-              const onLongPress = () => {
-                // Drop the composer keyboard first. If it's up when the actions
-                // Modal opens, edge-to-edge Android pans the new Modal window up
-                // to clear the keyboard, throwing the actions sheet to the top
-                // of the screen (overlapping the header). No-op when nothing is
-                // focused; harmless on iOS.
-                Keyboard.dismiss();
-                setActionsFor(msg);
-              };
+              // Build 74: long-press is intentionally DISABLED. The long-press
+              // sheet was reactions-only (emoji picker), which we're removing —
+              // see spec. Leaving it `undefined` means a long-press on any
+              // message bubble does nothing at all (no sheet, no gesture). The
+              // reaction *display* under messages stays; users just can't add
+              // new reactions. Edit = swipe-right, reply = swipe-left, delete =
+              // the ✕ affordance, report/block = the header "⋯" safety menu —
+              // none of those depend on long-press.
+              const onLongPress = undefined;
 
               let bubble: React.ReactNode;
               if (msg.type === 'image') {
@@ -1257,7 +1256,11 @@ export function ChatDetailScreen() {
                       {bubble}
                       <Pressable
                         onPress={() => onDeleteMsg(msg)}
-                        hitSlop={10}
+                        // Build 74: ✕ is now visually tiny + near-transparent so
+                        // it never competes with the bubble, but the tap target
+                        // stays large (width 23 + hitSlop 26 ≈ 75px) so Premium
+                        // users can still reliably hit delete.
+                        hitSlop={26}
                         accessibilityLabel={t('chat.message.deleteAction')}
                         style={{
                           position: 'absolute',
@@ -1269,7 +1272,7 @@ export function ChatDetailScreen() {
                           justifyContent: 'center',
                         }}
                       >
-                        <X size={15} color={theme.colors.muted} strokeWidth={2} />
+                        <X size={9} color="rgba(0,0,0,0.22)" strokeWidth={2} />
                       </Pressable>
                     </View>
                   ) : (
