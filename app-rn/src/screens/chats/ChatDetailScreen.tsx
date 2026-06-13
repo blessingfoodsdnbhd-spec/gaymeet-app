@@ -6,13 +6,12 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  Keyboard,
   Modal,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView, KeyboardController } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -1095,7 +1094,7 @@ export function ChatDetailScreen() {
                 // to clear the keyboard, throwing the actions sheet to the top
                 // of the screen (overlapping the header). No-op when nothing is
                 // focused; harmless on iOS.
-                Keyboard.dismiss();
+                KeyboardController.dismiss();
                 setActionsFor(msg);
               };
 

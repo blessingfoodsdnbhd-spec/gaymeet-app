@@ -8,8 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Keyboard,
 } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
@@ -113,7 +113,7 @@ export function MapPickerScreen() {
     );
   };
   const pickResult = (lat: number, lng: number, name?: string) => {
-    Keyboard.dismiss();
+    KeyboardController.dismiss();
     setQuery('');
     goTo(lat, lng);
     // In moment mode, remember the searched place's name as the label.

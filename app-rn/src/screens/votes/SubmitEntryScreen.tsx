@@ -7,11 +7,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
   TouchableWithoutFeedback,
-  Keyboard,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView, KeyboardController } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, ImagePlus } from 'lucide-react-native';
@@ -83,10 +82,10 @@ export function SubmitEntryScreen() {
 
       <KeyboardAvoidingView
         // Android: undefined — root KeyboardProvider emulates adjustResize (no double-shift).
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <TouchableWithoutFeedback onPress={() => KeyboardController.dismiss()} accessible={false}>
           <View style={{ flex: 1, padding: 20 }}>
             <Pressable
               onPress={pick}
@@ -123,7 +122,7 @@ export function SubmitEntryScreen() {
               multiline
               blurOnSubmit
               returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
+              onSubmitEditing={() => KeyboardController.dismiss()}
               style={{
                 marginTop: 16,
                 backgroundColor: theme.colors.surface,

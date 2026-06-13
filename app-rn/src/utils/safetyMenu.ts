@@ -1,4 +1,5 @@
-import { ActionSheetIOS, Alert, Keyboard, Platform } from 'react-native';
+import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 
 import i18n from '../i18n';
 import { blockUser, invalidateAfterBlock } from '../api/safety';
@@ -20,8 +21,12 @@ export function showSafetyMenu(options: SafetyMenuOptions) {
   // on Android the Modal-based <SafetyMenuSheet/> would otherwise mount with the
   // keyboard up and get panned to the top of the screen by edge-to-edge
   // soft-input (Build 53). Centralising it here covers every safety-menu caller.
-  // Harmless before the iOS ActionSheetIOS path too.
-  Keyboard.dismiss();
+  // Harmless before the iOS ActionSheetIOS path too. KeyboardController.dismiss()
+  // (react-native-keyboard-controller) is fire-and-forget here; the Android
+  // sheet store.open() below races nothing visual — the <SafetyMenuSheet/> Modal
+  // mounts off a state change on the next render, by which point the IME hide is
+  // already in flight.
+  KeyboardController.dismiss();
 
   if (Platform.OS === 'android') {
     useSafetyMenu.getState().open(options);

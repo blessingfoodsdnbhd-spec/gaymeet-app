@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, Plus, X, Trash2 } from 'lucide-react-native';
@@ -119,7 +119,7 @@ export function EventUpdatesScreen() {
       </View>
 
       {/* Android: undefined — root KeyboardProvider emulates adjustResize (no double-shift). */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <FlatList
           data={updates}
           keyExtractor={(u) => u.id}

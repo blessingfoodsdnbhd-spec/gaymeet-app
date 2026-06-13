@@ -5,11 +5,11 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -193,11 +193,12 @@ export function CommentsScreen() {
       </View>
 
       <KeyboardAvoidingView
-        // Mirror ChatDetailScreen: behavior=undefined on Android (esp. under the
-        // forced edge-to-edge of API 35) drifts the composer out of place and
-        // leaves it hidden behind the keyboard. "height" + a 0 offset lets the
-        // system adjustResize position the input correctly across phone/tablet.
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // keyboard-controller's KeyboardAvoidingView (driven by KeyboardProvider
+        // in App.tsx) tracks the native keyboard animation on BOTH platforms, so
+        // behavior="padding" is correct everywhere and never double-compensates
+        // against Android's adjustResize the way RN's behavior="height" did under
+        // API 35 forced edge-to-edge. Mirrors ChatDetailScreen / WorldChatScreen.
+        behavior="padding"
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >

@@ -1,24 +1,30 @@
-import { Keyboard, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 
 /**
  * Android edge-to-edge soft-input PAN guard.
  *
  * Since edge-to-edge landed (Build 53, #216), Android pans the active Modal
  * window to the top of the screen whenever the soft keyboard is up as that
- * Modal mounts — throwing bottom Sheets / action sheets over the header. Drop
- * any live keyboard BEFORE opening the Sheet so the freshly-mounted Modal never
- * inherits a keyboard to be panned by.
+ * Modal mounts — throwing bottom Sheets / action sheets over the header. Wait
+ * for any live keyboard to FULLY retract BEFORE opening the Sheet so the
+ * freshly-mounted Modal never inherits a keyboard to be panned by.
+ *
+ * `KeyboardController.dismiss()` (react-native-keyboard-controller) resolves its
+ * promise only once the native IME hide animation has completed — so we open the
+ * Sheet on `.then(open)` rather than firing `open()` in the same tick we ask the
+ * keyboard to close. That ordering is the real fix: the old
+ * `Keyboard.dismiss(); open()` raced the still-animating keyboard and the Modal
+ * could mount mid-pan. Resolves instantly when nothing is focused, so it's a
+ * harmless no-op on iOS (no such window pan) and on an idle screen.
  *
  * Use this at every call site that opens a `<Sheet>` / `<Modal>` (long-press
  * action sheets, "tag friends", "add location", settings sheets…) where a
  * composer / search keyboard may be up at the moment of opening.
- *
- * Harmless no-op on iOS (no such window pan) and when nothing is focused.
  * Generalises the ChatDetailScreen long-press fix from #220.
  */
 export function openSheetAfterKeyboardDismiss(open: () => void) {
-  Keyboard.dismiss();
-  open();
+  KeyboardController.dismiss().then(open).catch(open);
 }
 
 /**
