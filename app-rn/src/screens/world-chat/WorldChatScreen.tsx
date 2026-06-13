@@ -17,7 +17,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -47,6 +47,7 @@ import {
   type WorldChatMessage,
 } from '../../api/worldChat';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
+import { useRoomNotifPrefs } from '../../store/roomNotifPrefs';
 import { uploadFile } from '../../api/upload';
 import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
@@ -152,6 +153,30 @@ export function WorldChatScreen({
     setSettingsTab('invite');
     setSettingsOpen(true);
   }, []);
+
+  // Per-room notification mute. Reactive read so the bell icon flips live.
+  const notifMuted = useRoomNotifPrefs((s) => !!s.muted[roomId]);
+  const onToggleNotif = React.useCallback(() => {
+    const muted = useRoomNotifPrefs.getState().isMuted(roomId);
+    if (muted) {
+      Alert.alert(t('worldChat.notif.enableTitle'), t('worldChat.notif.enableBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('worldChat.notif.enableAction'),
+          onPress: () => useRoomNotifPrefs.getState().setMuted(roomId, false),
+        },
+      ]);
+    } else {
+      Alert.alert(t('worldChat.notif.disableTitle'), t('worldChat.notif.disableBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('worldChat.notif.disableAction'),
+          style: 'destructive',
+          onPress: () => useRoomNotifPrefs.getState().setMuted(roomId, true),
+        },
+      ]);
+    }
+  }, [roomId, t]);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -713,6 +738,11 @@ export function WorldChatScreen({
           <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, marginRight: -9 }}>
             <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={styles.headerBtn}>
               <Users size={22} color={theme.colors.text} />
+            </Pressable>
+            <Pressable onPress={onToggleNotif} hitSlop={8} accessibilityLabel={t('worldChat.notif.toggle')} style={styles.headerBtn}>
+              {notifMuted
+                ? <BellOff size={21} color={theme.colors.muted} />
+                : <Bell size={21} color={theme.colors.text} />}
             </Pressable>
             <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={styles.headerBtn}>
               <Share2 size={21} color={theme.colors.text} />

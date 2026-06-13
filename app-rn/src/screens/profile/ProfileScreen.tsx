@@ -38,6 +38,7 @@ import { NameWithBadge } from '../../components/NameWithBadge';
 import { PopularityBadge } from '../../components/PopularityBadge';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
+import { ProfilePhotoCarousel } from '../../components/ProfilePhotoCarousel';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
@@ -119,10 +120,9 @@ export function ProfileScreen() {
 
   const interests = (user.interests ?? []) as InterestTagId[];
   const photos = user.photos ?? [];
-  // Hero = main photo, falling back to the avatar. Tapping opens the same
-  // fullscreen gallery the grid uses, so both start from photo 0.
+  // Hero = all photos in a swipeable carousel, falling back to the avatar.
+  // Tapping a photo opens the same fullscreen gallery the grid uses.
   const heroPhotos = photos.length > 0 ? photos : user.avatarUrl ? [user.avatarUrl] : [];
-  const heroUri = heroPhotos[0] ?? null;
   // 3-column photo grid: 6 visible cells (3 × 2). Square tiles, 8px gutters.
   const GRID_GAP = 8;
   const GRID_SLOTS = 6;
@@ -175,30 +175,26 @@ export function ProfileScreen() {
       />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, paddingBottom: 40 }}>
-        {/* Hero — main photo (or avatar) filling the screen width, breaking out
-            of the content padding for a full-bleed banner under the TopBar.
-            Replaces the old small circle avatar; tap to open fullscreen. */}
-        <Pressable
-          onPress={heroUri ? () => photoViewer.open(heroPhotos, 0) : goEdit}
+        {/* Hero — full-width swipeable carousel of ALL photos (falls back to the
+            avatar). Breaks out of the content padding for a full-bleed banner
+            under the TopBar; paged with dot indicator, tap a photo to open the
+            fullscreen viewer. Shared with UserDetailScreen via ProfilePhotoCarousel. */}
+        <ProfilePhotoCarousel
+          photos={heroPhotos}
+          width={width}
+          height={width}
+          onPressPhoto={(p, i) => photoViewer.open(p, i)}
           style={{ marginHorizontal: -theme.spacing.xl }}
-        >
-          {heroUri ? (
-            <ExpoImage
-              source={{ uri: heroUri }}
-              style={{ width, height: width, backgroundColor: theme.colors.surface2 }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              // Full-res decode — same url renders small in discover/nearby grids.
-              allowDownscaling={false}
-              priority="high"
-            />
-          ) : (
-            <View style={{ width, height: width, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: theme.colors.surface2 }}>
+          empty={
+            <Pressable
+              onPress={goEdit}
+              style={{ width, height: width, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: theme.colors.surface2 }}
+            >
               <ImagePlus size={32} color={theme.colors.primary} strokeWidth={1.8} />
               <Text style={{ color: theme.colors.muted, fontSize: 13 }}>{t('profile.edit.addPhotosHint')}</Text>
-            </View>
-          )}
-        </Pressable>
+            </Pressable>
+          }
+        />
 
         <View style={{ marginTop: 16 }}>
           <ProfileCompletionCard user={user} />

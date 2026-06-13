@@ -807,7 +807,16 @@
     "sendFailed": "送信できませんでした",
     "actionFailed": "問題が発生しました",
     "blockConfirmTitle": "ユーザーをブロックしますか？",
-    "blockConfirmBody": "{{name}}のメッセージが今後表示されません。"
+    "blockConfirmBody": "{{name}}のメッセージが今後表示されません。",
+    "notif": {
+      "toggle": "ルーム通知",
+      "enableTitle": "ルーム通知をオンにしますか？",
+      "enableBody": "このルームの新着メッセージが通知されます。",
+      "enableAction": "オン",
+      "disableTitle": "ルーム通知をオフにしますか？",
+      "disableBody": "このルームの新着メッセージは通知されません。",
+      "disableAction": "オフ"
+    }
   },
   "votes": {
     "listTitle": "コンテスト",
@@ -1314,8 +1323,8 @@
     "benefitsSection": "特典",
     "cancelPolicy": "設定でいつでも解約できます。長期契約なし。",
     "upsell": {
-    "deleteChatReason": "プレミアムにアップグレードして会話を削除。",
-    "editMsgReason": "プレミアムにアップグレードしてメッセージを編集。",
+      "deleteChatReason": "プレミアムにアップグレードして会話を削除。",
+      "editMsgReason": "プレミアムにアップグレードしてメッセージを編集。",
       "title": "Meyouプレミアム",
       "cta": "プレミアムを見る",
       "later": "あとで",
