@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "72",
+      "buildNumber": "73",
       "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:meyou.uk",
