@@ -1733,10 +1733,14 @@ const styles = StyleSheet.create({
     // Android: the inverted messages FlatList (a native ScrollView) otherwise
     // overdraws the header region once it has content, swallowing taps on the
     // safety-menu "..." button (reproduces only with chat history present).
-    // zIndex orders RN's own layout; elevation raises the native view in
-    // Android's z/touch order so the header always sits above the list.
+    // zIndex orders RN's own layout so the header stays above the list; the
+    // opaque inline backgroundColor (set in the JSX) keeps it solid. NOTE: do
+    // NOT add `elevation` here — on Android elevation renders a Material drop
+    // shadow on all four sides, which reads as an outlined card/box around the
+    // whole header (absent on iOS, which ignores elevation). The real tap fix
+    // lives in the Alert.alert safety menu switch (PR #245), not elevation.
+    // Mirrors the WorldChat header fix (PR #249).
     zIndex: 10,
-    elevation: 10,
   },
   // Reaction pill shown under a message bubble.
   reactionPill: {
