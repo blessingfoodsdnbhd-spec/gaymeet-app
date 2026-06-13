@@ -32,14 +32,18 @@ interface Props {
   /** Open the full map picker with POI search (HHHHH). Parent closes the sheet
    *  + navigates; restored after the DDDDD removal stripped this entry. */
   onChooseMap?: () => void;
-  /** iOS-only: fires after this Sheet's Modal has fully dismissed. The composer
-   *  chains the MapPicker fullScreenModal present off this so it never presents
-   *  while the Sheet's Modal is still dismissing (which tangles the iOS VC chain
-   *  and makes Save → goBack collapse the Composer too). Forwarded to Sheet. */
+  /** Legacy iOS-only Modal.onDismiss (unreliable on Fabric). Forwarded to Sheet;
+   *  prefer onClosed for chaining. */
   onDismiss?: () => void;
+  /** Reliable on BOTH platforms: fires after this Sheet's slide-out completes.
+   *  The composer chains the MapPicker fullScreenModal present off this so it
+   *  never presents while the Sheet's Modal is still dismissing (which tangles
+   *  the iOS VC chain → Save → goBack collapses the Composer) and never stacks
+   *  behind a not-yet-gone Modal on Android. Forwarded to Sheet. */
+  onClosed?: () => void;
 }
 
-export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMap, onDismiss }: Props) {
+export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMap, onDismiss, onClosed }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -73,7 +77,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
   };
 
   return (
-    <Sheet open={open} onClose={onClose} onDismiss={onDismiss} maxHeight="70%">
+    <Sheet open={open} onClose={onClose} onDismiss={onDismiss} onClosed={onClosed} maxHeight="70%">
       {/* __DEV__-only tap diagnostics (stripped from release builds). On a dev
           build, watch Metro logs while tapping the map button on a real device:
             • SHEET_TOUCH every tap + MAP_PRESS_IN every tap + MAP_CLICK every tap

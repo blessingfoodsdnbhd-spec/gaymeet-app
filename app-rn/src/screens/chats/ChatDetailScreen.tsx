@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
   Alert,
+  InteractionManager,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -220,55 +221,40 @@ export function ChatDetailScreen() {
     return () => clearTimeout(id);
   }, [editingMsg]);
   // Several long-press actions (edit, full emoji picker) open their OWN <Modal>
-  // sheet. On iOS a Modal can't be presented while another is still dismissing,
-  // so opening one in the same tick we close the actions sheet makes it
-  // silently fail to appear (the "edit does nothing" bug).
+  // sheet. Opening that second Modal in the SAME tick we close the actions sheet
+  // fails on BOTH platforms, for different reasons: iOS rejects presenting a
+  // Modal while another is still dismissing (silent no-op), and Android Fabric +
+  // edge-to-edge stacks the new Modal BEHIND the still-tearing-down one — it
+  // renders invisibly, which is the "编辑 needs several taps" bug. So: close the
+  // actions sheet first, queue the follow-up, and fire it only once that sheet
+  // has FULLY slid out.
   //
-  // #181 queued the follow-up and ran it from the actions <Modal onDismiss>.
-  // That callback is UNRELIABLE on the New Architecture (Fabric, this app runs
-  // newArchEnabled) + RN 0.76 — it frequently never fires, so the queued edit
-  // stayed parked in the ref and "编辑" did nothing again on Build 61. Don't
-  // depend on onDismiss: close the actions sheet, then present the follow-up
-  // after a fixed delay long enough for the native modal to finish tearing
-  // down (its animationType is "none", so dismissal is near-instant; ~320ms is
-  // comfortably safe and barely perceptible). Android has no race — run now.
+  // History of how we signal "fully closed":
+  //   #181 — RN's native <Modal onDismiss>. Dead on Fabric/RN 0.76 (frequently
+  //     never fires); the queued edit stayed parked → broke edit on Build 61.
+  //   then — a magic-number setTimeout (160ms Android / 320ms iOS). But 160ms is
+  //     SHORTER than the Sheet's own 220ms slide-out (Sheet.tsx), so the edit
+  //     Modal mounted mid-animation and stacked behind → still multiple taps.
+  //   now — the Sheet's `onClosed`, which fires from its reanimated slide-out
+  //     completion: reliable on both platforms, tied to the real animation
+  //     instead of a guessed delay. We then defer ONE interaction frame
+  //     (InteractionManager) so the closed Modal's window is fully gone before
+  //     the next one mounts.
   const pendingActionRef = useRef<(() => void) | null>(null);
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runPending = useCallback(() => {
-    if (pendingTimerRef.current) {
-      clearTimeout(pendingTimerRef.current);
-      pendingTimerRef.current = null;
-    }
     const next = pendingActionRef.current;
     if (next) {
       pendingActionRef.current = null;
-      next();
+      InteractionManager.runAfterInteractions(next);
     }
   }, []);
-  const closeActionsThen = useCallback(
-    (next: () => void) => {
-      // Both platforms now defer through the same pending mechanism, only the
-      // delay differs:
-      //   iOS — the present-while-dismissing race above needs ~320ms.
-      //   Android — there is no present race, but if we open the edit sheet in
-      //     the SAME tick the actions Modal is torn down, the edit input's
-      //     keyboard rises WHILE the actions Modal is still on screen. Under
-      //     edge-to-edge (Build 53) Android pans that still-present Modal to the
-      //     top of the window — this is the "action sheet flies to the top"
-      //     glitch. Waiting ~160ms lets the actions Modal (animationType="none",
-      //     near-instant) fully unmount first, so only the edit sheet is present
-      //     when its keyboard appears. (Pre-#218 the Android keyboard often
-      //     didn't rise — autoFocus was dropped — so the pan never showed; #218
-      //     hardened focus(), which is why this surfaced in Build 54.)
-      pendingActionRef.current = next;
-      setActionsFor(null);
-      pendingTimerRef.current = setTimeout(runPending, Platform.OS === 'ios' ? 320 : 160);
-    },
-    [runPending],
-  );
-  // Don't leave a queued sheet to pop after the screen is gone.
+  const closeActionsThen = useCallback((next: () => void) => {
+    pendingActionRef.current = next;
+    setActionsFor(null); // starts the slide-out → onClosed → runPending
+  }, []);
+  // Don't run a queued follow-up after the screen is gone.
   useEffect(() => () => {
-    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    pendingActionRef.current = null;
   }, []);
   // Image viewer Modal
   const [viewerImage, setViewerImage] = useState<Message | null>(null);
@@ -1386,6 +1372,7 @@ export function ChatDetailScreen() {
       <Sheet
         open={!!actionsFor}
         onClose={() => setActionsFor(null)}
+        onClosed={runPending}
         maxHeight="40%"
       >
         {actionsFor && (

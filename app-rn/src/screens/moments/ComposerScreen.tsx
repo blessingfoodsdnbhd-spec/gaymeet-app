@@ -9,6 +9,7 @@ import {
   Alert,
   StyleSheet,
   ActionSheetIOS,
+  InteractionManager,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
@@ -42,9 +43,10 @@ export function ComposerScreen() {
   const [place, setPlace] = useState<MomentPlace | null>(null);
   const [tagOpen, setTagOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
-  // iOS: the MapPicker navigate is queued here and fired from the location
-  // Sheet's onDismiss (see onChooseMap), so it presents only AFTER the Sheet's
-  // Modal is gone — never present-while-dismissing.
+  // The MapPicker navigate is queued here and fired from the location Sheet's
+  // onClosed (see onChooseMap), so it presents only AFTER the Sheet has fully
+  // slid out and its Modal is gone — never present-while-dismissing (iOS) and
+  // never stacked behind a not-yet-torn-down Modal (Android).
   const pendingMapRef = useRef(false);
   const [ephemeral, setEphemeral] = useState(false); // 24h auto-expire (STORY1)
   // Note: a per-moment interest tag picker used to live here, but the
@@ -366,52 +368,36 @@ export function ComposerScreen() {
       <MomentLocationSheet
         open={locOpen}
         onClose={() => setLocOpen(false)}
-        onDismiss={() => {
-          // iOS: the location Sheet's Modal has now fully dismissed, so it's
-          // safe to present the MapPicker fullScreenModal. Doing it here (rather
-          // than in the same tick as setLocOpen(false)) is what stops the iOS VC
-          // chain from tangling — see onChooseMap.
+        onClosed={() => {
+          // Both platforms: the location Sheet has now FULLY slid out and its
+          // Modal window is gone, so presenting the MapPicker is clean. Why this
+          // matters per platform:
+          //   iOS — MapPicker is `presentation: 'fullScreenModal'` (#185). Present
+          //     it while the Sheet's VC is still dismissing and iOS tangles the
+          //     chain (Composer → Sheet → MapPicker), so Save → goBack unwinds the
+          //     WHOLE chain and dumps the user on the Moments list with the draft
+          //     lost (#204).
+          //   Android — pushing mid-Dialog-teardown got dropped, so the map
+          //     "needed 4–5 taps" (#190).
+          // Both were previously worked around separately (iOS native onDismiss,
+          // Android setTimeout(400)); onClosed is the single reliable signal. The
+          // extra interaction frame lets the teardown settle fully before present.
           if (pendingMapRef.current) {
             pendingMapRef.current = false;
-            (nav as any).navigate('MapPicker', { mode: 'moment' });
+            InteractionManager.runAfterInteractions(() =>
+              (nav as any).navigate('MapPicker', { mode: 'moment' }),
+            );
           }
         }}
         current={place}
         onPick={setPlace}
         onChooseMap={() => {
           // One-shot bridge — MapPicker resolves the picked place on Save (HHHHH).
+          // Queue the navigate and close the Sheet; the present fires from
+          // onClosed above once the slide-out completes (same path both platforms).
           setMomentLocationHandler(setPlace);
-          if (Platform.OS === 'android') {
-            // The location Sheet is a RN <Modal> (an Android Dialog). Pushing
-            // the MapPicker in the SAME tick we close it made Android drop the
-            // push mid-Dialog-teardown — the map opened only after 4–5 taps.
-            // (#190's card push fixed the *total* failure but not this timing
-            // race.) Defer the navigate until the Sheet's slide-out (~220ms) is
-            // done, so the push lands on the now-focused root activity. Mirrors
-            // AboutUserSheet's Android sheet→follow-up fix.
-            setLocOpen(false);
-            // 250ms wasn't always enough on slower devices — the push still landed
-            // mid-Dialog-teardown and was dropped (map "needs several taps"). Give
-            // the teardown more headroom; a dropped push is the only failure mode
-            // here, so erring longer is safe (the map just opens a beat later).
-            setTimeout(() => (nav as any).navigate('MapPicker', { mode: 'moment' }), 400);
-          } else {
-            // iOS: the MapPicker is `presentation: 'fullScreenModal'` (#185, to
-            // keep Save → goBack from collapsing the Composer modal group). But
-            // the Sheet is itself a RN <Modal>; presenting the fullScreenModal in
-            // the SAME tick we close the Sheet presents it while the Sheet's VC
-            // is still dismissing. iOS then tangles the presentation chain
-            // (Composer → Sheet → MapPicker instead of Composer → MapPicker), so
-            // Save's goBack unwinds the WHOLE chain — popping the Composer too
-            // and dumping the user on the Moments list with the draft + location
-            // lost. (#204 wrongly assumed iOS same-tick "works"; it opens but
-            // tangles.) Queue the navigate and fire it from the Sheet's onDismiss
-            // once the Modal is gone, so the present is clean and goBack reveals
-            // the still-mounted Composer for the bridge. Mirrors ChatDetail's
-            // closeActionsThen / onDismiss chaining.
-            pendingMapRef.current = true;
-            setLocOpen(false);
-          }
+          pendingMapRef.current = true;
+          setLocOpen(false);
         }}
       />
     </SafeAreaView>

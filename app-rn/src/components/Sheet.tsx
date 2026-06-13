@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Modal, Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   Gesture,
@@ -41,14 +41,28 @@ interface Props {
    */
   overlay?: React.ReactNode;
   /**
-   * iOS-only: fires after the underlying Modal has fully dismissed. Use to
-   * chain a SECOND sheet open after this one closes — iOS rejects presenting
-   * a Modal while another is still dismissing, so opening the next sheet in
-   * the same tick we close this one makes it silently fail to appear. Wait
-   * for this callback instead. (No-op on Android, where there is no such
-   * present-while-dismissing race.)
+   * iOS-only, UNRELIABLE on the New Architecture: RN's native `Modal.onDismiss`.
+   * It frequently never fires on Fabric + RN 0.76 (this app), so do NOT chain a
+   * follow-up sheet off it — that was the #181 mechanism that left "编辑" doing
+   * nothing on Build 61. Prefer `onClosed` below for chaining. Kept only for the
+   * few legacy iOS-only callers that still pass it.
    */
   onDismiss?: () => void;
+  /**
+   * Reliable, BOTH platforms: fires once the card's slide-out animation has
+   * fully completed (~220ms after `open` flips false). Driven off this Sheet's
+   * OWN reanimated `withTiming` completion via `runOnJS` — NOT RN's flaky native
+   * `Modal.onDismiss` — so it's deterministic on Fabric/Android where onDismiss
+   * isn't.
+   *
+   * Use this to chain "close one Sheet, then open another" or "close a Sheet,
+   * then present a fullScreenModal/navigate": by the time it fires the card has
+   * slid off and the underlying Modal window is torn down, so the next Modal
+   * mounts cleanly (no Android nested-Modal stacking, no iOS
+   * present-while-dismissing race). Replaces the per-platform magic-number
+   * setTimeout guesses (160/250/320/400ms) that raced this very animation.
+   */
+  onClosed?: () => void;
   /**
    * @deprecated Keyboard avoidance is now AUTOMATIC on both platforms — the
    * card always rides above the soft keyboard via react-native-keyboard-controller
@@ -59,7 +73,7 @@ interface Props {
   avoidKeyboard?: boolean;
 }
 
-export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }: Props) {
+export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss, onClosed }: Props) {
   return (
     <Modal
       visible={open}
@@ -87,7 +101,7 @@ export function Sheet({ open, onClose, children, maxHeight, overlay, onDismiss }
           useReanimatedKeyboardAnimation reads below (React context crosses the
           Modal boundary). iOS keyboard notifications are global, so the height
           updates there without the watcher. */}
-      <SheetSurface open={open} onClose={onClose} maxHeight={maxHeight} overlay={overlay}>
+      <SheetSurface open={open} onClose={onClose} maxHeight={maxHeight} overlay={overlay} onClosed={onClosed}>
         {children}
       </SheetSurface>
     </Modal>
@@ -100,7 +114,8 @@ function SheetSurface({
   children,
   maxHeight = '85%',
   overlay,
-}: Pick<Props, 'open' | 'onClose' | 'children' | 'maxHeight' | 'overlay'>) {
+  onClosed,
+}: Pick<Props, 'open' | 'onClose' | 'children' | 'maxHeight' | 'overlay' | 'onClosed'>) {
   const theme = useTheme();
   const { height: winH } = useWindowDimensions();
   const ty = useSharedValue(winH);
@@ -113,15 +128,40 @@ function SheetSurface({
   // the sole compensation (no double-shift).
   const { height: kbHeight } = useReanimatedKeyboardAnimation();
 
+  // onClosed plumbing. The withTiming completion runs on the UI thread, so it
+  // calls back to JS through a STABLE bridge (fireClosed) that reads the latest
+  // callback off a ref — this way an inline/unstable `onClosed` from a caller
+  // never re-runs the open/close effect (which would re-trigger the animation
+  // on every parent render). `wasOpen` gates out the initial closed mount, where
+  // ty already sits at winH and withTiming(winH) would otherwise fire its
+  // completion immediately with nothing having actually closed.
+  const onClosedRef = useRef(onClosed);
+  onClosedRef.current = onClosed;
+  const fireClosed = useCallback(() => {
+    onClosedRef.current?.();
+  }, []);
+  const wasOpen = useRef(false);
+
   useEffect(() => {
     if (open) {
+      wasOpen.current = true;
       ty.value = withTiming(0, { duration: 320, easing: Easing.bezier(0.2, 0.7, 0.2, 1) });
       opacity.value = withTiming(1, { duration: 250 });
     } else {
-      ty.value = withTiming(winH, { duration: 220 });
+      const justClosed = wasOpen.current;
+      wasOpen.current = false;
       opacity.value = withTiming(0, { duration: 180 });
+      // Fire onClosed off the slide-out's OWN completion — deterministic on both
+      // platforms, unlike RN's native Modal.onDismiss (dead on Fabric). `finished`
+      // is false if a re-open interrupts the close mid-flight, so we don't signal
+      // a close that didn't happen.
+      ty.value = withTiming(winH, { duration: 220 }, (finished) => {
+        if (finished && justClosed) {
+          runOnJS(fireClosed)();
+        }
+      });
     }
-  }, [open, winH, ty, opacity]);
+  }, [open, winH, ty, opacity, fireClosed]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   // Lift by keyboard height (kbHeight, negative) on top of the dismiss transform.
