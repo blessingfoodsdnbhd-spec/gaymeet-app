@@ -24,11 +24,15 @@ interface Props {
   user: DiscoverCardUser;
   dragX?: SharedValue<number>;
   isTop?: boolean;
+  /** Tap the info block (name / tags / distance) → open the full profile.
+   *  Only wired for the top card. Keep this STABLE (useCallback) so the
+   *  memoized card doesn't need it in its comparator. */
+  onOpenProfile?: (userId: string) => void;
 }
 
 const STAMP_DISTANCE = 120;
 
-function DiscoverCardInner({ user, dragX, isTop }: Props) {
+function DiscoverCardInner({ user, dragX, isTop, onOpenProfile }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
@@ -198,7 +202,16 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           left a seam where the next card's name (e.g. "Dennis Tan" under the
           top card's "Edi Teh") ghosted through on Android. `surface` is a solid
           #FFFFFF — never an rgba — so nothing behind can bleed in. */}
-      <View style={[styles.info, { backgroundColor: theme.colors.surface }]}>
+      {/* Info block — tap (top card only) opens the full profile. Like the
+          photo tap-zones above, this is a plain Pressable: CartStack's Pan owns
+          the swipe, and a drag cancels the press before onPress, so tap-to-open
+          and swipe-to-like/pass never fight. The ✕/⭐/❤️ action bar lives
+          OUTSIDE the card (DiscoverScreen), so it's unaffected. */}
+      <Pressable
+        onPress={isTop && onOpenProfile ? () => onOpenProfile(user.id) : undefined}
+        disabled={!(isTop && onOpenProfile)}
+        style={[styles.info, { backgroundColor: theme.colors.surface }]}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
           <NameWithBadge
             name={user.nickname}
@@ -250,7 +263,7 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
             })
             .filter(Boolean)}
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }

@@ -19,6 +19,8 @@ interface Props {
   cards: DiscoverCardUser[];
   /** Called after the top card flies off-screen. */
   onSwiped: (user: DiscoverCardUser, liked: boolean) => void;
+  /** Tap the top card's info block → open that user's full profile. */
+  onOpenProfile?: (userId: string) => void;
 }
 
 export interface CardStackHandle {
@@ -34,7 +36,7 @@ const FLY_DURATION = 250;
 const ENTER_DURATION = 190;
 
 export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
-  { cards, onSwiped },
+  { cards, onSwiped, onOpenProfile },
   ref,
 ) {
   const top = cards[0];
@@ -235,6 +237,7 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
                 user={card}
                 dragX={idx === 0 ? tx : undefined}
                 isTop={idx === 0}
+                onOpenProfile={idx === 0 ? onOpenProfile : undefined}
               />
             </Animated.View>
           );

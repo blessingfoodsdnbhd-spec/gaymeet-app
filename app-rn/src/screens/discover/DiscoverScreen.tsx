@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -473,6 +473,12 @@ function CardsBody({
   // in Discover (LikedMeGrid, BoostButton); vipLevel covers the legacy flag.
   const isPremium = !!(me as any)?.isPremium || ((me as any)?.vipLevel ?? 0) > 0;
 
+  // Stable so the memoized DiscoverCard doesn't need it in its comparator.
+  const openProfile = useCallback(
+    (userId: string) => nav.navigate('UserDetail', { userId }),
+    [nav],
+  );
+
   if (cardsQ.isLoading) {
     return (
       <View style={styles.centerFill}>
@@ -512,7 +518,7 @@ function CardsBody({
   return (
     <>
       <View style={{ flex: 1 }}>
-        <CardStack ref={stackRef} cards={cards} onSwiped={onSwiped} />
+        <CardStack ref={stackRef} cards={cards} onSwiped={onSwiped} onOpenProfile={openProfile} />
       </View>
       <View style={styles.actionBar}>
         <CircleBtn
