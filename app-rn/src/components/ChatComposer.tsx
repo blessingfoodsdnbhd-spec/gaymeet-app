@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { useVoiceRecorder, VOICE_MIN_MS } from '../hooks/useVoiceRecorder';
 import { formatVoiceDuration } from './VoiceRecordingHUD';
+import { VoicePlayButton } from './VoicePlayButton';
 
 export type ChatComposerProps = {
   value: string;
@@ -72,6 +73,9 @@ export function ChatComposer({
   // Optimistic flag so the bar appears the instant the mic is tapped, before the
   // async permission/prepare round-trip resolves.
   const [recording, setRecording] = React.useState(false);
+  // Two-stage capture: after ✓ stops the recording we hold the clip here and show
+  // a PREVIEW bar (play / re-record / send) instead of firing it off immediately.
+  const [recorded, setRecorded] = React.useState<{ uri: string; durationMs: number } | null>(null);
 
   const startRec = React.useCallback(async () => {
     setRecording(true);
@@ -84,11 +88,23 @@ export function ChatComposer({
     await recorder.cancel();
   }, [recorder]);
 
-  const sendRec = React.useCallback(async () => {
-    setRecording(false);
+  // ✓ during recording → STOP (not send). Hand off to the preview bar; a clip
+  // shorter than the floor is silently discarded back to the composer.
+  const stopRec = React.useCallback(async () => {
     const res = await recorder.stop();
-    if (res && res.durationMs >= VOICE_MIN_MS) onVoiceRecorded?.(res.uri, res.durationMs);
-  }, [recorder, onVoiceRecorded]);
+    if (res && res.durationMs >= VOICE_MIN_MS) setRecorded(res);
+    setRecording(false);
+  }, [recorder]);
+
+  // 🗑 in the preview → drop the clip, back to the plain composer.
+  const discardRecorded = React.useCallback(() => setRecorded(null), []);
+
+  // 📤 in the preview → actually send the held clip.
+  const sendRecorded = React.useCallback(() => {
+    const r = recorded;
+    setRecorded(null);
+    if (r) onVoiceRecorded?.(r.uri, r.durationMs);
+  }, [recorded, onVoiceRecorded]);
 
   // ── Recording bar (replaces the composer row while recording) ───────────────
   if (recording) {
@@ -131,9 +147,10 @@ export function ChatComposer({
           </Text>
         </View>
 
-        {/* ✓ send */}
+        {/* ✓ stop — ends the recording and opens the preview (does NOT send) */}
         <Pressable
-          onPress={sendRec}
+          onPress={stopRec}
+          accessibilityLabel={t('chat.voice.stop')}
           style={{
             width: 44,
             height: 44,
@@ -144,6 +161,64 @@ export function ChatComposer({
           }}
         >
           <Check size={22} color="#FFFFFF" strokeWidth={2.4} />
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ── Preview bar (after ✓ stop): re-record · play · send ─────────────────────
+  if (recorded) {
+    return (
+      <View
+        style={[
+          styles.composer,
+          { backgroundColor: theme.colors.bg, borderTopColor: theme.colors.line },
+        ]}
+      >
+        {/* 🗑 re-record / discard */}
+        <Pressable
+          onPress={discardRecorded}
+          hitSlop={8}
+          accessibilityLabel={t('chat.voice.tapToDelete')}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Trash2 size={24} color={theme.colors.error} strokeWidth={1.8} />
+        </Pressable>
+
+        {/* ▶︎ play preview + clip length, in a pill so it reads as a recorded clip */}
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            marginHorizontal: 2,
+            borderRadius: theme.radius.pill,
+            backgroundColor: theme.colors.primarySoft,
+          }}
+        >
+          <VoicePlayButton url={recorded.uri} size={22} color={theme.colors.primaryDeep} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.primaryDeep }}>
+            {formatVoiceDuration(recorded.durationMs)}
+          </Text>
+        </View>
+
+        {/* 📤 send the held clip */}
+        <Pressable
+          onPress={sendRecorded}
+          accessibilityLabel={t('chat.voice.send')}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: theme.colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Send size={20} color="#FFFFFF" strokeWidth={2} />
         </Pressable>
       </View>
     );

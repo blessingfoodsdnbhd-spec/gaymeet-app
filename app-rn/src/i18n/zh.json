@@ -799,7 +799,8 @@
       "sendFailed": "语音消息发送失败",
       "slideToCancel": "滑动取消",
       "locked": "已锁定",
-      "tapToDelete": "点击删除"
+      "tapToDelete": "点击删除",
+      "stop": "停止"
     },
     "icebreakers": {
       "header": "👋 来打个招呼吧！",

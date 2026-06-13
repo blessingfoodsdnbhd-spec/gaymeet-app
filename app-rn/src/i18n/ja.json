@@ -986,7 +986,8 @@
       "sendFailed": "ボイスメッセージを送信できませんでした",
       "slideToCancel": "スライドでキャンセル",
       "locked": "ロック中",
-      "tapToDelete": "タップで削除"
+      "tapToDelete": "タップで削除",
+      "stop": "停止"
     },
     "icebreakers": {
       "header": "👋 まずは挨拶してみよう！",

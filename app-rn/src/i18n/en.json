@@ -799,7 +799,8 @@
       "sendFailed": "Couldn't send voice message",
       "slideToCancel": "Slide to cancel",
       "locked": "Locked",
-      "tapToDelete": "Tap to delete"
+      "tapToDelete": "Tap to delete",
+      "stop": "Stop"
     },
     "icebreakers": {
       "header": "👋 Break the ice — say hello!",
