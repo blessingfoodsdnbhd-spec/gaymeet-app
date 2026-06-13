@@ -102,7 +102,7 @@ export function CommentCard({
       </View>
 
       {/* Full-screen photo viewer */}
-      <Modal visible={photoOpen} transparent animationType="fade" onRequestClose={() => setPhotoOpen(false)}>
+      <Modal visible={photoOpen} transparent animationType="fade" onRequestClose={() => setPhotoOpen(false)} statusBarTranslucent>
         <Pressable style={styles.viewer} onPress={() => setPhotoOpen(false)}>
           {!!comment.photoUrl && (
             <Image source={{ uri: comment.photoUrl }} style={styles.viewerImg} contentFit="contain" />

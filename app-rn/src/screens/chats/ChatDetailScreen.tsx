@@ -980,7 +980,7 @@ export function ChatDetailScreen() {
       edges={['top', 'bottom']}
     >
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line, backgroundColor: theme.colors.bg }]}>
         <Pressable onPress={() => nav.goBack()} hitSlop={8}>
           <ChevronLeft size={26} color={theme.colors.text} />
         </Pressable>
@@ -1869,6 +1869,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Keep the header above the inverted messages FlatList. On Android Fabric the
+    // inverted list (scaleY:-1) over-draws past its layout bounds when content is
+    // tall, painting/swallowing taps in the header strip — so the "..." safety
+    // menu was untappable whenever chat history existed (fine when empty). zIndex
+    // wins draw order on Fabric; elevation wins Android touch arbitration; the
+    // opaque bg (set inline from theme) lets both take effect. (Build 63)
+    zIndex: 10,
+    elevation: 10,
   },
   // Reaction pill shown under a message bubble.
   reactionPill: {

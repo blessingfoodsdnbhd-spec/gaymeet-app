@@ -64,7 +64,7 @@ export function MatchOverlay({ open, matchedUser, me, onMessage, onLater }: Prop
     .join(' · ');
 
   return (
-    <Modal visible={open} transparent animationType="none" onRequestClose={onLater}>
+    <Modal visible={open} transparent animationType="none" onRequestClose={onLater} statusBarTranslucent>
       <Animated.View style={[StyleSheet.absoluteFill, fadeStyle]}>
         <LinearGradient
           colors={[...brandGradient.colors] as [string, string, ...string[]]}

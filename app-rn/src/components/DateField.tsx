@@ -93,7 +93,7 @@ export function DateField({
       )}
 
       {mode === 'ios' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setMode(null)}>
+        <Modal transparent animationType="fade" onRequestClose={() => setMode(null)} statusBarTranslucent>
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
             onPress={() => setMode(null)}

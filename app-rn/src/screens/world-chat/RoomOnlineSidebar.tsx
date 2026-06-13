@@ -63,7 +63,7 @@ export function RoomOnlineSidebar({
   const users = roster?.users ?? [];
 
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.overlay}>
         <Pressable style={{ flex: 1 }} onPress={onClose} />
         <View style={[styles.panel, { backgroundColor: theme.colors.surface }]}>
