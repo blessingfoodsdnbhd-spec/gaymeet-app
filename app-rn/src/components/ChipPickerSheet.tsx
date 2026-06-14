@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+// RNGH Pressable so chips respond to the first Android tap inside the Sheet's
+// GestureHandlerRootView (otherwise the ScrollView eats the first touch). (#231)
+import { Pressable } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
 import { useTheme } from '../theme/ThemeProvider';
@@ -49,7 +52,7 @@ export function ChipPickerSheet({
       <Text style={{ fontSize: theme.typography.size.h3, fontWeight: '700', color: theme.colors.text, marginBottom: 14 }}>
         {title}
       </Text>
-      <ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {options.map((o) => {
             const active = selected.includes(o.id);

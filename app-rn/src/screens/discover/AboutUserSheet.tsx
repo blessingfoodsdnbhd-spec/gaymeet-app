@@ -335,6 +335,8 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
         <View style={{ flex: 1 }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
           style={{ maxHeight: scrollMaxH, marginHorizontal: -20, marginTop: -6 }}
         >
           {/* Full-bleed photo carousel — paged, tap any photo to zoom. Wrapped

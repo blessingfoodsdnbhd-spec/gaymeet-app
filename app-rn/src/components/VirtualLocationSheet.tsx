@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+// RNGH Pressable so the revert/city rows take the first Android tap inside the
+// Sheet's GestureHandlerRootView (the ScrollView would otherwise eat it). (#231)
+import { Pressable } from 'react-native-gesture-handler';
 import { MapPin, Check, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
@@ -79,7 +82,7 @@ export function VirtualLocationSheet({ open, onClose, currentLabel, onApplied }:
       </Text>
 
       {currentLabel ? (
-        <Pressable onPress={revert} style={[styles.revertRow, { borderColor: theme.colors.line }]}>
+        <Pressable onPress={revert} hitSlop={10} style={[styles.revertRow, { borderColor: theme.colors.line }]}>
           <X size={16} color={theme.colors.danger ?? '#D14B4B'} strokeWidth={2} />
           <Text style={{ flex: 1, fontSize: 14, color: theme.colors.text }}>
             {t('virtualLocation.revert')}
@@ -88,13 +91,19 @@ export function VirtualLocationSheet({ open, onClose, currentLabel, onApplied }:
         </Pressable>
       ) : null}
 
-      <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ maxHeight: 360 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {CITIES.map((c) => {
           const active = currentLabel === c.label;
           return (
             <Pressable
               key={c.label}
               onPress={() => pick(c)}
+              hitSlop={10}
               style={[styles.cityRow, { borderBottomColor: theme.colors.line }]}
             >
               <MapPin size={16} color={theme.colors.primary} strokeWidth={2} />

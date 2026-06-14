@@ -72,7 +72,11 @@ export function TopicPickerSheet({ open, onClose, onPick }: Props) {
         </View>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {available.map((tp) => (
           <Pressable
             key={tp.slug}

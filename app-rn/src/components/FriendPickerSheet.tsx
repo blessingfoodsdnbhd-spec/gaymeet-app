@@ -1,5 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, StyleSheet } from 'react-native';
+// RNGH Pressable: inside the Sheet's GestureHandlerRootView, RN's Pressable
+// loses its first Android touch to the FlatList's scroll responder ("must
+// scroll the friend list once before a checkbox toggles"). RNGH's Pressable
+// arbitrates with the scroll gesture so the first tap lands. (#231 regression.)
+import { Pressable } from 'react-native-gesture-handler';
 import { Check, Search } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -119,10 +124,11 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
         keyExtractor={(u) => u._id}
         style={{ maxHeight: 380 }}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         renderItem={({ item }) => {
           const sel = !!picked[item._id];
           return (
-            <Pressable onPress={() => toggle(item)} style={styles.row}>
+            <Pressable onPress={() => toggle(item)} hitSlop={8} style={styles.row}>
               <Avatar name={item.nickname} uri={item.avatarUrl} avatarIdx={0} size={40} />
               <NameWithBadge
                 name={item.nickname}

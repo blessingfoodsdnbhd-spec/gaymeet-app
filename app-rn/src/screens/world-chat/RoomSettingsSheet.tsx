@@ -223,7 +223,7 @@ export function RoomSettingsSheet({
         {membersQ.isLoading ? (
           <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {list.map((m) => (
               <Pressable
                 key={m.id}
@@ -304,7 +304,7 @@ export function RoomSettingsSheet({
             {t('worldChat.rooms.noFriends')}
           </Text>
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {friends.map((f) => {
               const on = picked.has(f.id);
               return (

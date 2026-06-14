@@ -237,6 +237,7 @@ export function CommentsScreen() {
             keyExtractor={(c) => c._id}
             contentContainerStyle={{ paddingVertical: 4 }}
             keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
             renderItem={({ item }) => {
               const replies = repliesByParent.get(item._id) ?? [];
               const isOpen = expanded.has(item._id);
