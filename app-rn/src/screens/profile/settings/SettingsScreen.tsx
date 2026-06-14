@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Crown,
   Globe,
+  HardDrive,
   Languages,
   Lock,
   Megaphone,
@@ -103,6 +104,12 @@ export function SettingsScreen() {
             icon={<Languages size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
             label={t('profile.rows.chatTranslation')}
             onPress={() => nav.navigate('ChatTranslation')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={<HardDrive size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.storage')}
+            onPress={() => nav.navigate('StorageSettings')}
           />
           <Divider />
           <SettingsRow

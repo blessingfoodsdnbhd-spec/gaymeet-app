@@ -259,7 +259,8 @@
       "myData": "マイデータ 📊",
       "giftPremium": "プレミアムを贈る 🎁",
       "wallet": "ウォレット",
-      "appIcon": "アプリアイコン"
+      "appIcon": "アプリアイコン",
+      "storage": "ストレージとキャッシュ"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1586,5 +1587,19 @@
       "sunset": "サンセット",
       "night": "ナイト"
     }
+  },
+  "storage": {
+    "title": "ストレージとキャッシュ",
+    "mediaCache": "メディアキャッシュ",
+    "localChat": "ローカルチャット履歴",
+    "messagesN": "{{n}} 件",
+    "clearMedia": "メディアキャッシュを削除",
+    "clearChat": "ローカル履歴を削除",
+    "clear": "削除",
+    "clearMediaTitle": "メディアキャッシュを削除しますか?",
+    "clearMediaBody": "キャッシュ画像を削除し、必要時に再ダウンロードします。",
+    "clearChatTitle": "ローカル履歴を削除しますか?",
+    "clearChatBody": "端末内キャッシュのみ削除され、サーバー上のメッセージには影響しません。",
+    "note": "容量節約のため、メディアは7日、ローカル履歴は60日保持し、毎日1回自動整理します。"
   }
 }

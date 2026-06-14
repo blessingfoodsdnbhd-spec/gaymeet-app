@@ -35,6 +35,7 @@ export type RootStackParamList = {
   PremiumGift: undefined;
   Wallet: undefined;
   AppIcon: undefined;
+  StorageSettings: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

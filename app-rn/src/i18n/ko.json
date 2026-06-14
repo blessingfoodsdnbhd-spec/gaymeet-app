@@ -259,7 +259,8 @@
       "myData": "내 데이터 📊",
       "giftPremium": "프리미엄 선물하기 🎁",
       "wallet": "내 지갑",
-      "appIcon": "앱 아이콘"
+      "appIcon": "앱 아이콘",
+      "storage": "저장공간 및 캐시"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1586,5 +1587,19 @@
       "sunset": "선셋",
       "night": "나이트"
     }
+  },
+  "storage": {
+    "title": "저장공간 및 캐시",
+    "mediaCache": "미디어 캐시",
+    "localChat": "로컬 채팅 기록",
+    "messagesN": "{{n}}개 메시지",
+    "clearMedia": "미디어 캐시 지우기",
+    "clearChat": "로컬 채팅 기록 지우기",
+    "clear": "지우기",
+    "clearMediaTitle": "미디어 캐시를 지울까요?",
+    "clearMediaBody": "캐시된 이미지를 삭제하며 필요할 때 다시 내려받습니다.",
+    "clearChatTitle": "로컬 채팅 기록을 지울까요?",
+    "clearChatBody": "기기 내 캐시만 삭제되며 서버의 메시지는 영향받지 않습니다.",
+    "note": "공간 절약을 위해 미디어는 7일, 로컬 채팅은 60일 보관하며 매일 한 번 자동 정리합니다."
   }
 }

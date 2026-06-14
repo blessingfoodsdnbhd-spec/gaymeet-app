@@ -1079,7 +1079,8 @@
       "myData": "My Data 📊",
       "giftPremium": "Gift Premium 🎁",
       "wallet": "My Wallet",
-      "appIcon": "App Icon"
+      "appIcon": "App Icon",
+      "storage": "Storage & Cache"
     },
     "edit": {
       "title": "Edit profile",
@@ -1586,5 +1587,19 @@
       "sunset": "Sunset",
       "night": "Night"
     }
+  },
+  "storage": {
+    "title": "Storage & Cache",
+    "mediaCache": "Media cache",
+    "localChat": "Local chat history",
+    "messagesN": "{{n}} messages",
+    "clearMedia": "Clear media cache",
+    "clearChat": "Clear local chat history",
+    "clear": "Clear",
+    "clearMediaTitle": "Clear media cache?",
+    "clearMediaBody": "Cached images will be removed and re-downloaded when needed.",
+    "clearChatTitle": "Clear local chat history?",
+    "clearChatBody": "Only the on-device cache is removed; messages on the server are unaffected.",
+    "note": "To save space, media is kept 7 days and local chat 60 days; the app cleans up once a day."
   }
 }
