@@ -76,18 +76,7 @@
     "invalid": "コードが正しくありません。もう一度お試しください"
   },
   "errors": {
-    "reservedName": "この名前は公式用に予約されています",
-    "rateLimited": "送信が速すぎます。{{retryAfter}}秒後にもう一度お試しください",
-    "accountTooYoung": "新規アカウントは{{waitHours}}時間後に利用可能になります",
-    "duplicateMessage": "重複したメッセージが検出されました",
-    "tooManySignups": "このネットワークからの登録が多すぎます。後でお試しください",
-    "roomLimitReached": "新しいルームを作成する前に既存のルームを閉じてください"
-  },
-  "report": {
-    "autoHidden": {
-      "poster": "あなたのコンテンツは複数の通報により審査中です",
-      "viewer": "このコンテンツは複数の通報により非表示です"
-    }
+    "reservedName": "この名前は公式用に予約されています"
   },
   "verified": {
     "tooltip": "認証済みの公式アカウント"

@@ -6,7 +6,6 @@ const { auth } = require('../middleware/auth');
 const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2 = require('../services/r2Service');
 const { ok, err } = require('../utils/respond');
-const { enforceRateLimit } = require('../middleware/antiSpam');
 
 const MAX_PUBLIC_PHOTOS = 5;
 
@@ -39,9 +38,6 @@ router.post('/photos', auth, uploadMem.single('photo'), async (req, res, next) =
 
     // Admin photo-upload ban.
     if (req.user.photoUploadBanned) return err(res, '你已被禁止上传照片', 403);
-
-    // Anti-spam: cap photo uploads per hour / day (per tier).
-    if (await enforceRateLimit(req, res, 'photo')) return;
 
     const user = await User.findById(req.user._id);
     const raw = req.body?.primary;

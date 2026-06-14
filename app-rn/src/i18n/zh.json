@@ -161,18 +161,7 @@
     "sessionExpired": "登入已过期,请重新登入"
   },
   "errors": {
-    "reservedName": "此名称为官方保留",
-    "rateLimited": "发送太快了，{{retryAfter}}秒后再试",
-    "accountTooYoung": "新帐号 {{waitHours}} 小时后解锁此功能",
-    "duplicateMessage": "重复内容已被识别",
-    "tooManySignups": "此网络注册过多，请稍后再试",
-    "roomLimitReached": "请先关闭一个房间再创建新的"
-  },
-  "report": {
-    "autoHidden": {
-      "poster": "您的内容已被多人举报，正在等待审核",
-      "viewer": "此内容已被多人举报"
-    }
+    "reservedName": "此名称为官方保留"
   },
   "verified": {
     "tooltip": "已验证的官方账号"

@@ -5,8 +5,6 @@ const DirectMessage = require('../models/DirectMessage');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
-const { enforceRateLimit, enforceNoDuplicate, enforceAccountAgeOr403 } = require('../middleware/antiSpam');
-const { followStatusMap } = require('../utils/followStatus');
 
 const COST_FREE = 20;
 const COST_PREMIUM = 10;
@@ -24,16 +22,6 @@ router.post('/send', auth, async (req, res, next) => {
     if (await isBlockedBetween(sender, receiverId)) {
       return res.status(403).json({ error: 'User unavailable', code: 'BLOCKED' });
     }
-
-    // Anti-spam: per-minute send cap + duplicate-text rejection.
-    if (await enforceRateLimit(req, res, 'dm')) return;
-    if (await enforceNoDuplicate(req, res, content)) return;
-
-    // Account-age gate: messaging a non-mutual stranger needs a 24h-old account.
-    // (Premium does NOT bypass — blocks the buy-then-spam pattern.)
-    const rel = await followStatusMap(sender._id, [receiverId]);
-    const isMutual = rel.get(String(receiverId)) === 'mutual';
-    if (!isMutual && enforceAccountAgeOr403(req, res, 24)) return;
 
     const cost = isPremiumActive(sender) ? COST_PREMIUM : COST_FREE;
 
