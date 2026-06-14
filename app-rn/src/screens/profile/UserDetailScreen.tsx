@@ -395,11 +395,9 @@ export function UserDetailScreen() {
             <HighlightsSection userId={userId} />
           </View>
 
-          {user.prompts && user.prompts.length > 0 && (
-            <Card surface2 flat style={{ padding: 14, marginTop: 18 }}>
-              <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>
-                {user.prompts[0].q}
-              </Text>
+          {(user.prompts ?? []).filter((p) => p?.q && p?.a).map((p, i) => (
+            <Card key={`${p.q}-${i}`} surface2 flat style={{ padding: 14, marginTop: i === 0 ? 18 : 12 }}>
+              <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 6 }}>{p.q}</Text>
               <Text
                 style={{
                   fontFamily: 'Fraunces',
@@ -410,10 +408,10 @@ export function UserDetailScreen() {
                   fontWeight: '500',
                 }}
               >
-                &ldquo;{user.prompts[0].a}&rdquo;
+                &ldquo;{p.a}&rdquo;
               </Text>
             </Card>
-          )}
+          ))}
 
           {user.bio ? (
             <View style={{ marginTop: 22 }}>
