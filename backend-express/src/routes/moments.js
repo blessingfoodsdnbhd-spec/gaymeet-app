@@ -5,7 +5,6 @@ const MomentComment = require('../models/MomentComment');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
-const { enforceRateLimit, enforceNoDuplicate } = require('../middleware/antiSpam');
 const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
 const { blockedIdSet } = require('../utils/blocking');
@@ -195,10 +194,6 @@ router.post('/', auth, async (req, res, next) => {
     if (content.length > 500) return err(res, 'content max 500 chars');
     if (images.length > 3) return err(res, 'max 3 images');
     if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
-
-    // Anti-spam: per-tier post caps + duplicate-text rejection.
-    if (await enforceRateLimit(req, res, 'moment')) return;
-    if (content && (await enforceNoDuplicate(req, res, content))) return;
 
     const data = {
       user: req.user._id,
@@ -471,10 +466,6 @@ router.post('/:id/comment', auth, async (req, res, next) => {
     if (!text && !photoUrl) return err(res, 'content or photo required');
     if (text.length > 200) return err(res, 'comment max 200 chars');
     if (text && hasProfanity(text)) return err(res, 'Inappropriate content', 422);
-
-    // Anti-spam: per-tier comment caps + duplicate-text rejection.
-    if (await enforceRateLimit(req, res, 'comment')) return;
-    if (text && (await enforceNoDuplicate(req, res, text))) return;
 
     const moment = await Moment.findOne({ _id: req.params.id, isActive: true });
     if (!moment) return err(res, 'Moment not found', 404);

@@ -3,7 +3,6 @@ const PhotoLibrary = require('../models/PhotoLibrary');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
 const { isPremiumActive } = require('../utils/premium');
-const { enforceRateLimit } = require('../middleware/antiSpam');
 const r2 = require('../services/r2Service');
 
 const FREE_MAX = 30;
@@ -44,9 +43,6 @@ router.post('/', auth, async (req, res, next) => {
   try {
     const { url } = req.body;
     if (!url || !String(url).trim()) return err(res, 'url required', 400);
-
-    // Anti-spam: cap photo uploads per hour / day (per tier).
-    if (await enforceRateLimit(req, res, 'photo')) return;
 
     const count = await PhotoLibrary.countDocuments({ user: req.user._id });
     const max = maxFor(req.user);

@@ -85,31 +85,6 @@ api.interceptors.response.use(
       showToast(i18n.t('auth.sessionExpired'), 'error');
       return new Promise(() => {}); // never settles — downstream handlers no-op
     }
-
-    // Anti-spam responses (429 rate-limit / duplicate, 403 account-too-young,
-    // signup IP cap). The backend tags these with a `code`; surface a friendly
-    // toast centrally so every screen gets it for free. We still reject so the
-    // caller's loading state resets.
-    const data = err?.response?.data as
-      | { code?: string; retryAfter?: number; waitHours?: number }
-      | undefined;
-    switch (data?.code) {
-      case 'RATE_LIMITED':
-        showToast(i18n.t('errors.rateLimited', { retryAfter: data.retryAfter ?? 0 }), 'error');
-        break;
-      case 'DUPLICATE_MESSAGE':
-        showToast(i18n.t('errors.duplicateMessage'), 'error');
-        break;
-      case 'ACCOUNT_TOO_YOUNG':
-        showToast(i18n.t('errors.accountTooYoung', { waitHours: data.waitHours ?? 0 }), 'error');
-        break;
-      case 'TOO_MANY_SIGNUPS_FROM_IP':
-        showToast(i18n.t('errors.tooManySignups'), 'error');
-        break;
-      case 'ROOM_LIMIT_REACHED':
-        showToast(i18n.t('errors.roomLimitReached'), 'error');
-        break;
-    }
     return Promise.reject(err);
   },
 );
