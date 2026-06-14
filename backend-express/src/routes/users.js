@@ -121,6 +121,11 @@ router.patch('/me', auth, async (req, res, next) => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
+    // bio: cap length server-side as a safety net (client allows up to 500).
+    if (updates.bio !== undefined) {
+      updates.bio = String(updates.bio ?? '').slice(0, 500);
+    }
+
     // preferredLanguage: only accept the supported UI locales; anything else
     // (incl. region variants) is ignored so push localization stays predictable.
     if (updates.preferredLanguage !== undefined) {

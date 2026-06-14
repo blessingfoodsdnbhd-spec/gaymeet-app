@@ -981,7 +981,7 @@ export function EditProfileScreen() {
             onEndEditing={saveBio}
             placeholder={t('profile.edit.bioPlaceholder')}
             placeholderTextColor={theme.colors.muted}
-            maxLength={140}
+            maxLength={500}
             multiline
             style={[
               styles.inlineField,
@@ -1002,7 +1002,7 @@ export function EditProfileScreen() {
               textAlign: 'right',
             }}
           >
-            {bio.length} / 140
+            {bio.length} / 500
           </Text>
 
           <SectionTitle>{t('profile.edit.dob')}</SectionTitle>
