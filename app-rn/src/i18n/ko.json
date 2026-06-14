@@ -714,6 +714,11 @@
       "title": "방 색상",
       "hint": "레벨이 오르면 색상이 해제됩니다",
       "locked": "아직 해제되지 않은 색상입니다"
+    },
+    "preview": {
+      "lastMessages": "최근 메시지",
+      "noMessages": "아직 메시지가 없습니다",
+      "enter": "입장하기"
     }
   },
   "chatTranslation": {

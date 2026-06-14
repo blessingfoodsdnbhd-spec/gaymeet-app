@@ -25,6 +25,8 @@ const worldChatMessageSchema = new mongoose.Schema(
     voiceWaveform: { type: [Number], default: undefined },
     // Optional quoted reply → the original message in the same room.
     replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorldChatMessage', default: null },
+    // @-mentioned users in this room (resolved from the live roster at send).
+    mentions: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: undefined },
     // ── Auto-translate cache ──────────────────────────────────────────────────
     // Source language, detected once on the first translation request.
     detectedLang: { type: String, default: null },

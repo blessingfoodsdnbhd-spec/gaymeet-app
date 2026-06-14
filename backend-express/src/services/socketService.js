@@ -651,4 +651,4 @@ function getIO() {
   return io;
 }
 
-module.exports = { initSocket, getIO, getRoomCounts, roomOnlineCount };
+module.exports = { initSocket, getIO, getRoomCounts, roomOnlineCount, buildRoster };

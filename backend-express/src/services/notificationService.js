@@ -17,6 +17,7 @@ const ALL_TYPES = [
   'follow',
   'room_invite',
   'world_chat_reply',
+  'world_chat_mention',
   'vote_first_vote',
   'vote_ending_24h',
   'vote_ending_1h',

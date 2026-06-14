@@ -23,6 +23,7 @@ const {
 const { blockedIdSet } = require('../utils/blocking');
 const { isPremiumActive } = require('../utils/premium');
 const { identityOf, levelOf } = require('../utils/identity');
+const { postAsBot } = require('../utils/worldChatBot');
 const roomColors = require('../config/roomColors');
 const { titleKeyForLevel } = require('../config/xpTable');
 const xpService = require('../services/xpService');
@@ -238,6 +239,19 @@ router.post('/send', auth, async (req, res, next) => {
           }
         : null;
 
+    // Resolve @mentions against the live room roster (handles CJK names with no
+    // word boundaries by testing substring inclusion). Cap to 5, excl. self.
+    let mentions = [];
+    if (!isPhoto && !isVoice && body.includes('@')) {
+      try {
+        const roster = await require('../services/socketService').buildRoster(roomId);
+        mentions = (roster.users || [])
+          .filter((u) => u.userId !== uid && u.name && body.includes('@' + u.name))
+          .slice(0, 5)
+          .map((u) => u.userId);
+      } catch (_) {}
+    }
+
     const msg = await WorldChatMessage.create({
       userId: req.user._id,
       roomId,
@@ -249,6 +263,7 @@ router.post('/send', auth, async (req, res, next) => {
       voiceDurationMs: isVoice ? voiceDurationMs : null,
       voiceWaveform: isVoice ? voiceWaveform : undefined,
       replyToMessageId: replyTo ? replyDoc._id : null,
+      mentions: mentions.length ? mentions : undefined,
     });
 
     // Keep the room list sortable + show activity.
@@ -322,6 +337,31 @@ router.post('/send', auth, async (req, res, next) => {
           fromUserAvatarUrl: req.user.avatarUrl || '',
         },
       }).catch(() => {});
+    }
+
+    // Push each @mentioned user (skip the reply target — they already got one).
+    if (mentions.length) {
+      const name = req.user.nickname || '';
+      const snippet = summarize(msg).slice(0, 80);
+      for (const mid of mentions) {
+        if (replyTo && replyTo.userId === mid) continue;
+        notify(mid, 'world_chat_mention', {
+          i18n: {
+            en: { title: name, body: `Mentioned you: ${snippet}` },
+            zh: { title: name, body: `提到了你：${snippet}` },
+            ko: { title: name, body: `회원님을 언급했습니다: ${snippet}` },
+            ja: { title: name, body: `あなたをメンションしました: ${snippet}` },
+          },
+          data: {
+            roomId,
+            custom: custom ? '1' : '0',
+            messageId: msg._id.toString(),
+            fromUserId: uid,
+            fromUserName: name,
+            fromUserAvatarUrl: req.user.avatarUrl || '',
+          },
+        }).catch(() => {});
+      }
     }
   } catch (e) {
     next(e);
@@ -473,6 +513,10 @@ router.post('/rooms', auth, async (req, res, next) => {
     });
     room.creatorId = req.user; // populate for serialize
     created(res, serializeRoom(room, req.user._id, roomCount(room._id.toString())));
+
+    // Official bot drops a welcome + rules line into the fresh room (best-effort).
+    const welcome = `👋 欢迎来到「${ttl}」!\n请友善交流,禁止骚扰、广告与违规内容。祝你玩得开心 🎉`;
+    postAsBot(room._id.toString(), welcome, broadcast).catch(() => {});
   } catch (e) {
     next(e);
   }
