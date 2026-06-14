@@ -96,6 +96,11 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'daily_digest': {
       return safeNavigate('VotesList');
     }
+    case 'daily_matches': {
+      // "今日缘分" daily recommendations nudge → open the Discover tab where the
+      // fresh interest+geo-ranked picks are computed.
+      return safeNavigate('Main', { screen: 'Discover' });
+    }
     case 'invite_redeemed': {
       return safeNavigate('InviteFriends');
     }
