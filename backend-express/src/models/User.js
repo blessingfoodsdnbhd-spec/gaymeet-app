@@ -141,6 +141,12 @@ const userSchema = new mongoose.Schema(
     // Virtual currency
     coins: { type: Number, default: 0 },
 
+    // Coin-reward bookkeeping (Phase 4 economy) — one-time / daily-capped grants.
+    coinRewards: {
+      profileComplete: { type: Boolean, default: false }, // one-time profile-completion bonus
+      lastVoteBonusDate: { type: String, default: null }, // YYYY-MM-DD of last daily vote bonus
+    },
+
     // Popularity leaderboard
     popularityScore: { type: Number, default: 0 },  // incremented when others vote
     ticketBalance: { type: Number, default: 5 },     // votes the user can cast today

@@ -14,6 +14,7 @@ import {
   BadgeCheck,
   Bell,
   ChevronRight,
+  Coins,
   Crown,
   Eye,
   Gift,
@@ -374,6 +375,14 @@ export function ProfileScreen() {
         {/* Settings. */}
         <SectionTitle>{t('profile.settingsTitle')}</SectionTitle>
         <Card flat style={{ paddingVertical: 4 }}>
+          {/* Wallet / coins (Phase 4). */}
+          <SettingsRow
+            icon={<Coins size={18} color={theme.colors.warning} strokeWidth={1.8} />}
+            label={t('profile.rows.wallet')}
+            detail={t('wallet.coinsN', { n: user.coins ?? 0 })}
+            onPress={() => nav.navigate('Wallet')}
+          />
+          <Divider />
           {/* Active Premium users get the name badge instead — the row is redundant (SSSSS). */}
           {!(user as any).isPremium && (
             <>

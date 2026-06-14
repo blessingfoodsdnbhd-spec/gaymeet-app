@@ -13,6 +13,9 @@ import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+// Mirrors backend COIN_REWARDS.boostCost. Premium users boost free.
+const BOOST_COST = 50;
+
 /**
  * Boost button — lives in the DiscoverScreen TopBar.
  *
@@ -63,39 +66,48 @@ export function BoostButton() {
   const onActivate = useCallback(async () => {
     try {
       const res = await activateBoost();
-      // Hydrate local user so the badge appears instantly.
+      // Hydrate local user so the badge appears instantly (+ new balance if paid).
       if (user) {
         setUser({
           ...(user as any),
           isBoosted: true,
           boostExpiresAt: res.boostExpiresAt,
+          ...(res.balance != null ? { coins: res.balance } : {}),
         });
       }
       Alert.alert(t('boost.activated'));
     } catch (e: any) {
+      const status = e?.response?.status;
       const detail = e?.response?.data?.error || e?.message || '';
       // Backend uses "Boost already active" as exact text.
       if (/already active/i.test(detail)) {
         Alert.alert(t('boost.alreadyActive'));
+      } else if (status === 402 || /insufficient/i.test(detail)) {
+        Alert.alert(t('boost.insufficientTitle'), t('boost.insufficientBody', { cost: BOOST_COST }), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('boost.getCoins'), onPress: () => nav.navigate('Wallet') },
+        ]);
       } else {
         Alert.alert(t('boost.activateFailed'), detail);
       }
     }
-  }, [user, setUser, t]);
+  }, [user, setUser, t, nav]);
 
   const onPress = () => {
     if (isActive) {
       Alert.alert(t('boost.alreadyActive'));
       return;
     }
-    if (!isPremium) {
-      Alert.alert(t('boost.premiumTitle'), t('boost.premiumBody'), [
+    if (isPremium) {
+      // Premium boosts free.
+      Alert.alert(t('boost.confirmTitle'), t('boost.confirmBody'), [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('common.ok'), onPress: () => nav.navigate('Premium') },
+        { text: t('boost.confirmCta'), onPress: onActivate },
       ]);
       return;
     }
-    Alert.alert(t('boost.confirmTitle'), t('boost.confirmBody'), [
+    // Free users pay coins.
+    Alert.alert(t('boost.confirmTitle'), t('boost.coinConfirmBody', { cost: BOOST_COST }), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('boost.confirmCta'), onPress: onActivate },
     ]);

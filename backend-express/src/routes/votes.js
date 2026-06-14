@@ -13,6 +13,8 @@ const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { notify, coalesceOk } = require('../services/notificationService');
+const User = require('../models/User');
+const { COIN_REWARDS } = require('../utils/coins');
 const { blockedIdSet } = require('../utils/blocking');
 const { hasProfanity } = require('../utils/profanityFilter');
 
@@ -635,6 +637,18 @@ router.post('/:id/entries/:entryId/vote', auth, async (req, res, next) => {
     }
     await VoteEntry.updateOne({ _id: entryId }, { $inc: { voteCount: 1 } });
     await VoteEvent.updateOne({ _id: id }, { $inc: { voteCount: 1 } });
+
+    // Daily vote bonus — first vote of the UTC day earns coins. Atomic once/day
+    // via the date guard; never blocks the response on failure.
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      if (req.user.coinRewards?.lastVoteBonusDate !== today) {
+        await User.updateOne(
+          { _id: req.user._id, 'coinRewards.lastVoteBonusDate': { $ne: today } },
+          { $set: { 'coinRewards.lastVoteBonusDate': today }, $inc: { coins: COIN_REWARDS.voteDaily } },
+        );
+      }
+    } catch (_) {}
 
     // First-vote nudge to the entrant (entry.voteCount is the pre-increment
     // value). Coalesced to ~1/hour per entry as a safety net against races.

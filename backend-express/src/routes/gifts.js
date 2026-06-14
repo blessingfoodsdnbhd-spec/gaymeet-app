@@ -4,6 +4,7 @@ const GiftTransaction = require('../models/GiftTransaction');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, created, err } = require('../utils/respond');
+const { COIN_REWARDS, isProfileComplete } = require('../utils/coins');
 
 const FREE_DAILY_GIFTS = 3;
 
@@ -200,15 +201,16 @@ router.post('/purchase', auth, async (req, res, next) => {
     }
 
     // In production: verify receipt with Apple/Google Play. Trust client here.
+    const credited = found.coins + (found.bonus || 0);
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $inc: { coins: found.coins } },
+      { $inc: { coins: credited } },
       { new: true }
     );
 
     ok(res, {
       success: true,
-      purchased: found.coins,
+      purchased: credited,
       newBalance: user.coins,
       package: found,
     });
@@ -220,6 +222,33 @@ router.post('/purchase', auth, async (req, res, next) => {
 // Expose packages list
 router.get('/packages', auth, (req, res) => {
   ok(res, COIN_PACKAGES);
+});
+
+// ── POST /api/coins/claim-profile ─────────────────────────────────────────────
+// One-time bonus for completing your profile. Idempotent: the `$ne: true` filter
+// guarantees the grant happens at most once even on concurrent calls.
+router.post('/claim-profile', auth, async (req, res, next) => {
+  try {
+    const u = await User.findById(req.user._id);
+    if (!u) return err(res, 'Not found', 404);
+    if (u.coinRewards?.profileComplete) {
+      return ok(res, { granted: 0, balance: u.coins ?? 0, alreadyClaimed: true });
+    }
+    if (!isProfileComplete(u)) {
+      return err(res, 'Profile not complete yet', 400);
+    }
+    const updated = await User.findOneAndUpdate(
+      { _id: u._id, 'coinRewards.profileComplete': { $ne: true } },
+      { $set: { 'coinRewards.profileComplete': true }, $inc: { coins: COIN_REWARDS.profileComplete } },
+      { new: true, projection: 'coins' },
+    );
+    ok(res, {
+      granted: updated ? COIN_REWARDS.profileComplete : 0,
+      balance: updated?.coins ?? u.coins ?? 0,
+    });
+  } catch (e) {
+    next(e);
+  }
 });
 
 module.exports = router;

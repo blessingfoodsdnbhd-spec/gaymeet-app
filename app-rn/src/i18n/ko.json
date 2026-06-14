@@ -257,7 +257,8 @@
       "verification": "사진 인증 받기",
       "adminVerifications": "인증 심사",
       "myData": "내 데이터 📊",
-      "giftPremium": "프리미엄 선물하기 🎁"
+      "giftPremium": "프리미엄 선물하기 🎁",
+      "wallet": "내 지갑"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1306,7 +1307,11 @@
     "alreadyActive": "이미 부스트가 활성화되어 있습니다",
     "activateFailed": "부스트를 활성화할 수 없습니다",
     "premiumTitle": "부스트는 프리미엄 기능",
-    "premiumBody": "부스트로 더 많은 매칭을 — 업그레이드하여 잠금 해제하세요."
+    "premiumBody": "부스트로 더 많은 매칭을 — 업그레이드하여 잠금 해제하세요.",
+    "insufficientTitle": "코인이 부족합니다",
+    "insufficientBody": "부스트에 {{cost}} 코인이 필요합니다. 얻거나 충전할까요?",
+    "getCoins": "코인 받기",
+    "coinConfirmBody": "{{cost}} 코인으로 30분간 디스커버 최상단에 노출할까요?"
   },
   "report": {
     "title": "{{name}} 신고",
@@ -1536,5 +1541,24 @@
     "todayReward": "오늘 출석 +{{n}} 코인",
     "balance": "코인 잔액 {{n}}",
     "claim": "받기"
+  },
+  "wallet": {
+    "title": "내 지갑",
+    "balanceLabel": "코인 잔액",
+    "coins": "코인",
+    "coinsN": "{{n}} 코인",
+    "rechargeSection": "충전",
+    "bestValue": "최고 혜택",
+    "popular": "인기",
+    "mockNote": "충전은 데모 모드입니다. 실제 결제는 아직 연결되지 않았습니다.",
+    "purchaseSuccess": "+{{n}} 코인 충전됨",
+    "purchaseFailed": "구매 실패",
+    "earnSection": "코인 모으는 법",
+    "earn": {
+      "checkin": "매일 출석",
+      "invite": "친구 초대",
+      "profile": "프로필 완성",
+      "vote": "투표 참여"
+    }
   }
 }

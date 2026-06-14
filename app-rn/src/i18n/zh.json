@@ -1070,7 +1070,8 @@
       "verification": "申请照片认证",
       "adminVerifications": "认证审核",
       "myData": "我的数据 📊",
-      "giftPremium": "送 Premium 给朋友 🎁"
+      "giftPremium": "送 Premium 给朋友 🎁",
+      "wallet": "我的钱包"
     },
     "edit": {
       "title": "编辑资料",
@@ -1360,7 +1361,11 @@
     "alreadyActive": "Boost 已在进行",
     "activateFailed": "启动 Boost 失败",
     "premiumTitle": "Boost 是 Premium 功能",
-    "premiumBody": "用 Boost 获得更多 Match — 升级解锁。"
+    "premiumBody": "用 Boost 获得更多 Match — 升级解锁。",
+    "insufficientTitle": "金币不足",
+    "insufficientBody": "加速需要 {{cost}} 金币。去赚取或充值?",
+    "getCoins": "获取金币",
+    "coinConfirmBody": "花费 {{cost}} 金币,在发现页排到最前 30 分钟?"
   },
   "report": {
     "title": "举报 {{name}}",
@@ -1536,5 +1541,24 @@
     "todayReward": "今日签到 +{{n}} 金币",
     "balance": "金币余额 {{n}}",
     "claim": "领取"
+  },
+  "wallet": {
+    "title": "我的钱包",
+    "balanceLabel": "金币余额",
+    "coins": "金币",
+    "coinsN": "{{n}} 金币",
+    "rechargeSection": "充值",
+    "bestValue": "超值",
+    "popular": "热门",
+    "mockNote": "充值为演示模式,暂未接入真实支付(后续接入)。",
+    "purchaseSuccess": "充值成功 +{{n}} 金币",
+    "purchaseFailed": "充值失败",
+    "earnSection": "如何赚取金币",
+    "earn": {
+      "checkin": "每日签到",
+      "invite": "邀请好友加入",
+      "profile": "完成个人资料",
+      "vote": "参与投票"
+    }
   }
 }

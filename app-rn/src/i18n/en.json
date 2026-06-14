@@ -1070,7 +1070,8 @@
       "verification": "Get verified",
       "adminVerifications": "Verifications",
       "myData": "My Data 📊",
-      "giftPremium": "Gift Premium 🎁"
+      "giftPremium": "Gift Premium 🎁",
+      "wallet": "My Wallet"
     },
     "edit": {
       "title": "Edit profile",
@@ -1360,7 +1361,11 @@
     "alreadyActive": "Boost already active",
     "activateFailed": "Couldn't activate Boost",
     "premiumTitle": "Boost is Premium",
-    "premiumBody": "Get more matches with Boost — upgrade to unlock."
+    "premiumBody": "Get more matches with Boost — upgrade to unlock.",
+    "insufficientTitle": "Not enough coins",
+    "insufficientBody": "Boost costs {{cost}} coins. Earn or recharge?",
+    "getCoins": "Get coins",
+    "coinConfirmBody": "Spend {{cost}} coins to be first in Discover for 30 minutes?"
   },
   "report": {
     "title": "Report {{name}}",
@@ -1536,5 +1541,24 @@
     "todayReward": "Daily check-in +{{n}} coins",
     "balance": "Balance: {{n}} coins",
     "claim": "Claim"
+  },
+  "wallet": {
+    "title": "My Wallet",
+    "balanceLabel": "Coin balance",
+    "coins": "coins",
+    "coinsN": "{{n}} coins",
+    "rechargeSection": "Recharge",
+    "bestValue": "Best value",
+    "popular": "Popular",
+    "mockNote": "Recharge is in demo mode — real payments aren't wired up yet.",
+    "purchaseSuccess": "Added +{{n}} coins",
+    "purchaseFailed": "Purchase failed",
+    "earnSection": "How to earn coins",
+    "earn": {
+      "checkin": "Daily check-in",
+      "invite": "Invite a friend",
+      "profile": "Complete your profile",
+      "vote": "Vote in contests"
+    }
   }
 }
