@@ -1528,5 +1528,13 @@
       "deleteBody": "This hides it from users. You can re-enable it later.",
       "delete": "Delete"
     }
+  },
+  "streak": {
+    "title": "Login streak",
+    "dayCount": "{{n}}-day streak",
+    "dayShort": "Day {{n}}",
+    "todayReward": "Daily check-in +{{n}} coins",
+    "balance": "Balance: {{n}} coins",
+    "claim": "Claim"
   }
 }
