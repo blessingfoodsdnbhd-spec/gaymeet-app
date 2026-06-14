@@ -141,10 +141,25 @@ export function UserDetailScreen() {
       Alert.alert(t('userDetail.requestSentToast'));
     },
     onError: (e: any) => {
+      const status = e?.response?.status;
       const detail = e?.response?.data?.error || e?.message || '';
+      // Requesting private photos is Premium-only (backend returns 402).
+      if (status === 402 || /premium/i.test(detail)) {
+        nav.navigate('Premium');
+        return;
+      }
       Alert.alert(t('userDetail.requestFailed'), detail);
     },
   });
+
+  // Only Premium can request — short-circuit to the paywall before the call.
+  const onRequestPhotos = () => {
+    if (!isPremium) {
+      nav.navigate('Premium');
+      return;
+    }
+    requestMut.mutate();
+  };
 
   // "Send a message" CTA. Premium → openConversation (free if already
   // matched, else creates a DM). Non-premium → paywall. Mirrors
@@ -336,31 +351,39 @@ export function UserDetailScreen() {
                 privatePhotosQ.isLoading ? (
                   <ActivityIndicator color={theme.colors.primary} />
                 ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8 }}
-                  >
-                    {(privatePhotosQ.data?.photos ?? []).map((url, i) => (
-                      <Pressable
-                        key={url}
-                        onPress={() => photoViewer.open(privatePhotosQ.data?.photos ?? [], i)}
-                      >
-                        <ExpoImage
-                          source={{ uri: url }}
-                          style={{ width: 140, height: 180, borderRadius: 14 }}
-                          cachePolicy="memory-disk"
-                          contentFit="cover"
-                        />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
+                  <>
+                    {privatePhotosQ.data?.oneTimeView && (
+                      <Text style={{ color: theme.colors.warning, fontSize: 12.5, fontWeight: '700', marginBottom: 8 }}>
+                        {t('userDetail.oneTimeViewNotice')}
+                      </Text>
+                    )}
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8 }}
+                    >
+                      {(privatePhotosQ.data?.photos ?? []).map((url, i) => (
+                        <Pressable
+                          key={url}
+                          onPress={() => photoViewer.open(privatePhotosQ.data?.photos ?? [], i)}
+                        >
+                          <ExpoImage
+                            source={{ uri: url }}
+                            style={{ width: 140, height: 180, borderRadius: 14 }}
+                            cachePolicy="memory-disk"
+                            contentFit="cover"
+                          />
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </>
                 )
               ) : (
                 <LockedPhotosBlock
                   status={reqStatus}
+                  count={user.privatePhotosCount ?? 0}
                   busy={!previewMode && requestMut.isPending}
-                  onRequest={() => requestMut.mutate()}
+                  onRequest={onRequestPhotos}
                   disabled={previewMode}
                 />
               )}

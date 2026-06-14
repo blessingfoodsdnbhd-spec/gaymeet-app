@@ -86,7 +86,9 @@ export type PhotoRequestStatus =
   | 'approved'
   | 'rejected'
   | 'expired'
-  | 'revoked';
+  | 'revoked'
+  // 'viewed' = the requester used their single allowed view (view-once).
+  | 'viewed';
 
 /** Populated `requester` / `owner` slice — backend selects a slim subset. */
 export interface PhotoRequestUser {
@@ -137,7 +139,7 @@ export const getSent = () =>
  *   status:'pending'  → request in flight, no photos
  *   status:'none'     → no relationship, no photos (also covers revoked/rejected)
  */
-export type ViewerStatus = 'owner' | 'approved' | 'pending' | 'none';
+export type ViewerStatus = 'owner' | 'approved' | 'pending' | 'none' | 'viewed';
 
 // One private photo, detailed. Private-bucket photos (C-1) are served as
 // short-lived SIGNED urls and may need refreshing (refreshPrivatePhotoUrl)
@@ -162,6 +164,8 @@ export const getPrivatePhotos = (ownerId: string) =>
     photos: string[];
     photosDetailed?: PrivatePhotoItem[];
     status: ViewerStatus;
+    /** True on the single allowed view (view-once) — show a one-time notice. */
+    oneTimeView?: boolean;
   }>(api.get(`/users/${ownerId}/private-photos`));
 
 // Mint a fresh short-lived signed URL for one private-bucket photo. For legacy
