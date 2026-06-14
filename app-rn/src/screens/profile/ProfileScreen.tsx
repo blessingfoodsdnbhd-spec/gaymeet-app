@@ -24,6 +24,7 @@ import {
   Plus,
   Settings as SettingsIcon,
   Share2,
+  Sparkles,
 } from 'lucide-react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
@@ -413,6 +414,12 @@ export function ProfileScreen() {
             label={t('profile.rows.verification')}
             detail={photoVerified ? t('verification.verified') : undefined}
             onPress={() => nav.navigate('Verification')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={<Sparkles size={18} color={theme.colors.secondary} strokeWidth={1.8} />}
+            label={t('profile.rows.appIcon')}
+            onPress={() => nav.navigate('AppIcon')}
           />
         </Card>
 

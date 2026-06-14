@@ -34,6 +34,7 @@ export type RootStackParamList = {
   MyAnalytics: undefined;
   PremiumGift: undefined;
   Wallet: undefined;
+  AppIcon: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

@@ -1073,7 +1073,8 @@
       "adminVerifications": "Verifications",
       "myData": "My Data 📊",
       "giftPremium": "Gift Premium 🎁",
-      "wallet": "My Wallet"
+      "wallet": "My Wallet",
+      "appIcon": "App Icon"
     },
     "edit": {
       "title": "Edit profile",
@@ -1561,6 +1562,24 @@
       "invite": "Invite a friend",
       "profile": "Complete your profile",
       "vote": "Vote in contests"
+    }
+  },
+  "appIcon": {
+    "title": "App Icon",
+    "classic": "Classic",
+    "lockedTitle": "Unlock more icons",
+    "unlockStreak": "{{n}}-day login streak (now {{cur}})",
+    "unlockReferral": "Invite {{n}} friends (now {{cur}})",
+    "unlockPremium": "or get Premium",
+    "savedTitle": "Saved",
+    "savedPendingBuild": "Your icon choice is saved and will apply after the next update.",
+    "buildNote": "Note: icon changes take effect in the next release.",
+    "names": {
+      "pink": "Pink",
+      "purple": "Purple",
+      "blue": "Blue",
+      "sunset": "Sunset",
+      "night": "Night"
     }
   }
 }
