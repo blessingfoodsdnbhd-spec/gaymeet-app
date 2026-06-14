@@ -8,7 +8,7 @@ const ChatRoom = require('../models/ChatRoom');
 const Follow = require('../models/Follow');
 const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
-const { requireAdminAuth } = require('../middleware/adminAuth');
+const { requireAdminAuth, isAdminUser } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const {
   ALL_ROOMS,
@@ -20,6 +20,12 @@ const {
   isCountryChannel,
   isValidChannel,
 } = require('../config/worldChatRooms');
+const {
+  enforceRateLimit,
+  enforceNoDuplicate,
+  enforceAccountAgeOr403,
+} = require('../middleware/antiSpam');
+const { evaluateReport } = require('../services/autoModeration');
 const { blockedIdSet } = require('../utils/blocking');
 const { isPremiumActive } = require('../utils/premium');
 const { identityOf, levelOf } = require('../utils/identity');
@@ -207,6 +213,12 @@ router.post('/send', auth, async (req, res, next) => {
       if (room.status === 'closed') return err(res, 'This room is closed', 403);
       if (!room.memberIds.some((m) => sameId(m, req.user._id))) return err(res, 'Join the room first', 403);
     }
+
+    // Anti-spam: account-age gate (1h to post text/voice, 24h to post photos),
+    // per-tier rate limits, and duplicate-text rejection.
+    if (enforceAccountAgeOr403(req, res, isPhoto ? 24 : 1)) return;
+    if (await enforceRateLimit(req, res, isPhoto ? 'photo' : 'plazaMsg')) return;
+    if (!isPhoto && !isVoice && (await enforceNoDuplicate(req, res, body))) return;
 
     // Content filter applies to the visible text (body for text, caption for photo).
     const filterTarget = isPhoto ? caption : body;
@@ -445,6 +457,9 @@ router.post('/rooms', auth, async (req, res, next) => {
     const priv = !!isPrivate;
     if (priv && !String(password ?? '').trim()) return err(res, 'Private rooms need a password');
 
+    // Anti-spam: UGC rooms need a 7-day-old account.
+    if (enforceAccountAgeOr403(req, res, 7 * 24)) return;
+
     // 自建房颜色 — must be a palette color the creator has unlocked by level
     // (defaults to Lv1 灰白 when omitted). Reject locked/unknown colors.
     const cardColor = String(req.body?.cardColor ?? '').trim() || roomColors.DEFAULT_HEX;
@@ -674,6 +689,8 @@ router.post('/rooms/:id/invite', auth, async (req, res, next) => {
     if (!room) return err(res, 'Room not found', 404);
     if (room.status === 'closed') return err(res, 'This room is closed', 403);
     if (!isRoomMember(room, req.user._id)) return err(res, 'Join the room first', 403);
+    // Anti-spam: inviting friends needs a 7-day-old account.
+    if (enforceAccountAgeOr403(req, res, 7 * 24)) return;
     let ids = Array.isArray(req.body?.userIds) ? req.body.userIds.filter((x) => mongoose.isValidObjectId(x)) : [];
     ids = [...new Set(ids.map(String))].slice(0, INVITE_PER_REQUEST);
     if (!ids.length) return err(res, 'No users to invite');
@@ -835,9 +852,22 @@ router.get('/recent', auth, async (req, res, next) => {
     const excludeIds = [...excludeSet].map((id) => new mongoose.Types.ObjectId(id));
 
     // roomId:'world' must also match legacy docs that predate the field (null).
+    // Auto-hidden messages: invisible to everyone except their author and admins
+    // (the author still sees theirs, flagged "under review"). Two $or groups
+    // (room match + visibility) are combined under $and so neither clobbers the
+    // other.
+    const isAdmin = isAdminUser(req.user);
+    const andClauses = [];
+    if (roomId === 'world') {
+      andClauses.push({ $or: [{ roomId: 'world' }, { roomId: { $exists: false } }, { roomId: null }] });
+    }
+    if (!isAdmin) {
+      andClauses.push({ $or: [{ hidden: { $ne: true } }, { userId: req.user._id }] });
+    }
     const q = {
       userId: { $nin: excludeIds },
-      ...(roomId === 'world' ? { $or: [{ roomId: 'world' }, { roomId: { $exists: false } }, { roomId: null }] } : { roomId }),
+      ...(roomId === 'world' ? {} : { roomId }),
+      ...(andClauses.length ? { $and: andClauses } : {}),
     };
     if (before && mongoose.isValidObjectId(before)) {
       q._id = { $lt: new mongoose.Types.ObjectId(before) };
@@ -884,6 +914,10 @@ router.get('/recent', auth, async (req, res, next) => {
           caption: m.caption ?? null,
           replyTo,
           createdAt: m.createdAt.toISOString(),
+          // Auto-moderation flags so the client can render an "under review"
+          // overlay. `myContentHidden` = the viewer's own hidden message;
+          // `hidden` is only ever true here for the author or an admin.
+          ...(m.hidden ? { hidden: true, myContentHidden: sameId(m.userId._id, req.user._id) } : {}),
         };
       });
 
@@ -969,6 +1003,18 @@ router.post('/report', auth, async (req, res, next) => {
       body: msg ? msg.body : '',
       reason: String(reason ?? '').slice(0, 300),
     });
+    // Auto-hide once 3 distinct users report the same message (best-effort —
+    // a moderation hiccup must never fail the user's report).
+    evaluateReport({
+      ReportModel: WorldChatReport,
+      reportMatch: { messageId },
+      ContentModel: WorldChatMessage,
+      contentId: messageId,
+    })
+      .then(({ hidden }) => {
+        if (hidden) broadcast('world-chat:message-hidden', { messageId });
+      })
+      .catch(() => {});
     ok(res, { ok: true });
   } catch (e) {
     next(e);

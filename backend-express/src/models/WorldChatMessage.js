@@ -34,6 +34,16 @@ const worldChatMessageSchema = new mongoose.Schema(
     // Set once the author edits the text (PATCH /world-chat/:messageId).
     edited: { type: Boolean, default: false },
     editedAt: { type: Date, default: null },
+    // Auto-moderation (anti-spam Phase 1): hidden from everyone but the author
+    // and admins once N distinct users report it. See services/autoModeration.js.
+    hidden: { type: Boolean, default: false },
+    autoHiddenAt: { type: Date, default: null },
+    autoHiddenReason: { type: String, default: null },
+    moderationStatus: {
+      type: String,
+      enum: ['none', 'auto_hidden', 'confirmed', 'restored'],
+      default: 'none',
+    },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
