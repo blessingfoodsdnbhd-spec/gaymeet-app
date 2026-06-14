@@ -852,6 +852,7 @@
       "editPlaceholder": "Edit your message…",
       "editFailed": "Couldn't edit",
       "editExpired": "Can only edit messages within 24h",
+      "deleteExpired": "Messages can't be deleted after 24h",
       "deleteConfirm": "Delete this message?",
       "deleteAction": "Delete",
       "deleteFailed": "Couldn't delete",

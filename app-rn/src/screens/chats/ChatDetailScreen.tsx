@@ -860,6 +860,15 @@ export function ChatDetailScreen() {
       if (msg.pendingId || msg.isSystem || msg.status === 'failed' || !msg.id) return;
       const mine = !!myId && senderIdOf(msg) === myId;
       if (!mine) return;
+      // 24h window — messages older than a day can't be deleted. Checked before
+      // the Premium upsell so an old message explains the rule rather than
+      // pushing an upgrade that still wouldn't let you delete it.
+      const within24h =
+        Date.now() - new Date(msg.createdAt).getTime() < 24 * 60 * 60 * 1000;
+      if (!within24h) {
+        Alert.alert(t('chat.message.deleteExpired'));
+        return;
+      }
       if (!isPremium) {
         setUpsellReason(t('premium.upsell.deleteMsgReason'));
         return;
