@@ -972,6 +972,7 @@
       "editPlaceholder": "メッセージを編集…",
       "editFailed": "編集できませんでした",
       "editExpired": "24時間以内のメッセージのみ編集できます",
+      "deleteExpired": "24時間を過ぎたメッセージは削除できません",
       "deleteConfirm": "このメッセージを削除しますか？",
       "deleteAction": "削除",
       "deleteFailed": "削除できませんでした",

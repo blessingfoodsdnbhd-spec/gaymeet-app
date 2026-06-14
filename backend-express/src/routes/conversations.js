@@ -557,6 +557,9 @@ async function refreshMatchLastMessage(matchId) {
 }
 
 const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+// Messages can only be deleted within 24h of being sent — same window as edit,
+// so old chat history can't be silently rewritten after the fact.
+const DELETE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // ── PATCH /api/conversations/:matchId/messages/:msgId ────────────────────────
 // Premium-only. Text messages only. Within 24h of send. Owner only.
@@ -640,9 +643,10 @@ router.patch('/:matchId/messages/:msgId', auth, async (req, res, next) => {
 });
 
 // ── DELETE /api/conversations/:matchId/messages/:msgId ────────────────────────
-// Owner only. Any message type (text / image / location). Standard messenger
-// UX — NOT Premium-gated. Hard-deletes the row; image messages also B2-delete
-// their mediaUrl (best effort).
+// Owner only, within a 24h window. Any message type (text / image / location).
+// NOT server-side Premium-gated (the client gates the ✕ behind Premium).
+// Hard-deletes the row; image messages also B2-delete their mediaUrl (best
+// effort).
 router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
   try {
     const match = await Match.findOne({
@@ -660,6 +664,12 @@ router.delete('/:matchId/messages/:msgId', auth, async (req, res, next) => {
 
     if (message.senderId.toString() !== req.user._id.toString()) {
       return err(res, 'Forbidden', 403);
+    }
+
+    // 24h delete window. Defense-in-depth: the client already hides/explains
+    // this, but reject stale deletes here too so the rule can't be bypassed.
+    if (Date.now() - message.createdAt.getTime() > DELETE_WINDOW_MS) {
+      return err(res, 'Delete window expired', 403);
     }
 
     // If this carried an image, best-effort B2 cleanup. The DB row

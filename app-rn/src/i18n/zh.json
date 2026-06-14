@@ -852,6 +852,7 @@
       "editPlaceholder": "编辑你的消息…",
       "editFailed": "编辑失败",
       "editExpired": "只能编辑 24 小时内的消息",
+      "deleteExpired": "超过 24 小时无法删除",
       "deleteConfirm": "删除这则消息?",
       "deleteAction": "删除",
       "deleteFailed": "删除失败",
