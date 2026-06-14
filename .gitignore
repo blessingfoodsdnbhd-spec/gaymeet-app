@@ -53,3 +53,11 @@ app/pubspec.lock
 
 # ── Claude internal ───────────────────────────────────────────────────────────
 .claude/
+
+# build artifacts & local QA captures (Build 75 session)
+*.aab
+*.ipa
+*.apk
+/*.png
+/ui*.xml
+/shots1500/
