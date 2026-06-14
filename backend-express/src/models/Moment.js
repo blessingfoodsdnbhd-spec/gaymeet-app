@@ -24,6 +24,8 @@ const momentSchema = new mongoose.Schema(
       default: 'public',
     },
     isActive: { type: Boolean, default: true },
+    // Set when the author edits the moment (PATCH /:id). null = never edited.
+    editedAt: { type: Date, default: null },
     // Ephemeral "24h story" moments (STORY1). null = permanent. Past expiry is
     // hidden from feeds and swept by the cleanup job.
     expiresAt: { type: Date, default: null },

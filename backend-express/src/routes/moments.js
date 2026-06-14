@@ -287,6 +287,85 @@ router.delete('/:id', auth, async (req, res, next) => {
   }
 });
 
+// ── PATCH /api/moments/:id ────────────────────────────────────────────────────
+// Edit your OWN moment — content / images / location / tagged friends. Free and
+// Premium alike (Apple 1.2: users must be able to manage their own UGC; NOT
+// premium-gated). Mirrors POST's validation + the follow/follower tag gate.
+router.patch('/:id', auth, async (req, res, next) => {
+  try {
+    const moment = await Moment.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+      isActive: { $ne: false },
+    });
+    if (!moment) return err(res, 'Moment not found', 404);
+
+    const { content, images, lat, lng, locationLabel, taggedUserIds } = req.body;
+
+    if (content != null) {
+      if (String(content).length > 500) return err(res, 'content max 500 chars');
+      if (hasProfanity(content)) return err(res, 'Inappropriate content', 422);
+      moment.content = content;
+    }
+    if (Array.isArray(images)) {
+      if (images.length > 3) return err(res, 'max 3 images');
+      moment.images = images;
+    }
+    // Must still have something to show after the edit.
+    if (!moment.content && (!moment.images || moment.images.length === 0)) {
+      return err(res, 'content or images required');
+    }
+
+    // Location: explicit (null,null) clears it; a lat+lng pair sets/updates it.
+    if (lat === null && lng === null) {
+      moment.location = undefined;
+      moment.markModified('location');
+      moment.hasLocation = false;
+      moment.locationLabel = null;
+    } else if (lat != null && lng != null) {
+      moment.location = { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] };
+      moment.hasLocation = true;
+      moment.locationLabel = locationLabel ? String(locationLabel).slice(0, 120) : null;
+    }
+
+    // Tagged friends — same anti-spam follow/follower gate as POST.
+    if (Array.isArray(taggedUserIds)) {
+      let taggedIds = [];
+      const ids = [...new Set(taggedUserIds.map(String))].filter(
+        (id) => mongoose.isValidObjectId(id) && id !== req.user._id.toString(),
+      );
+      if (ids.length) {
+        const Follow = require('../models/Follow');
+        const rels = await Follow.find({
+          $or: [
+            { follower: req.user._id, following: { $in: ids } },
+            { following: req.user._id, follower: { $in: ids } },
+          ],
+        }).select('follower following').lean();
+        const allowed = new Set();
+        rels.forEach((r) => {
+          allowed.add(r.follower.toString());
+          allowed.add(r.following.toString());
+        });
+        taggedIds = ids.filter((id) => allowed.has(id));
+      }
+      moment.taggedUserIds = taggedIds;
+    }
+
+    moment.editedAt = new Date();
+    await moment.save();
+
+    const populated = await moment.populate([
+      { path: 'user', select: 'nickname avatarUrl isPremium' },
+      { path: 'taggedUserIds', select: 'nickname avatarUrl' },
+    ]);
+
+    ok(res, populated.toObject());
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/moments/:id/like ────────────────────────────────────────────────
 router.post('/:id/like', auth, async (req, res, next) => {
   try {

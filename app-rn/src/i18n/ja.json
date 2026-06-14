@@ -198,7 +198,9 @@
       "addPhotoTitle": "写真を追加",
       "takePhoto": "写真を撮る",
       "chooseFromLibrary": "ライブラリから選択",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "editTitle": "投稿を編集",
+      "saveCta": "保存"
     },
     "comments": {
       "title": "コメント",
@@ -212,13 +214,19 @@
       "reply": "返信",
       "viewReplies": "返信 {{n}} 件を表示",
       "hideReplies": "返信を隠す",
-      "cancelReply": "返信をキャンセル"
+      "cancelReply": "返信をキャンセル",
+      "deleteTitle": "このコメントを削除しますか？",
+      "deleteBody": "この操作は取り消せません。",
+      "delete": "削除"
     },
     "delete": {
       "title": "このモーメントを削除しますか？",
       "body": "元に戻せません。",
       "action": "削除",
       "failed": "削除に失敗しました"
+    },
+    "menu": {
+      "edit": "編集"
     }
   },
   "languageSettings": {

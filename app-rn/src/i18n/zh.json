@@ -762,7 +762,9 @@
       "addPhotoTitle": "添加照片",
       "takePhoto": "拍照",
       "chooseFromLibrary": "从相册选择",
-      "cancel": "取消"
+      "cancel": "取消",
+      "editTitle": "编辑动态",
+      "saveCta": "保存"
     },
     "comments": {
       "title": "评论",
@@ -776,13 +778,19 @@
       "reply": "回复",
       "viewReplies": "查看 {{n}} 条回复",
       "hideReplies": "收起回复",
-      "cancelReply": "取消回复"
+      "cancelReply": "取消回复",
+      "deleteTitle": "删除这条评论？",
+      "deleteBody": "此操作无法撤销。",
+      "delete": "删除"
     },
     "delete": {
       "title": "删除这条动态?",
       "body": "删除后无法恢复。",
       "action": "删除",
       "failed": "删除失败"
+    },
+    "menu": {
+      "edit": "编辑"
     }
   },
   "chat": {
