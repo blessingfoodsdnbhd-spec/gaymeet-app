@@ -147,6 +147,43 @@ async function hotEventsDigest() {
   }
 }
 
+/**
+ * "今日缘分" — daily recommendations nudge at ~10am LOCAL time. Unlike the other
+ * digests (which fire at a single fixed UTC hour), this one must land in each
+ * user's morning, so it runs on every 15-min tick and self-filters: a user's
+ * local hour is derived coarsely from their longitude (≈15° per hour), and only
+ * those currently at local-hour 10 are pushed. The 20h dedup window makes the
+ * four in-hour ticks idempotent. The push is a nudge that deep-links into
+ * Discover, where the actual interest+geo-ranked picks are computed on open —
+ * we deliberately avoid a per-user geoNear here (too heavy for the free tier).
+ */
+async function dailyMatchesDigest() {
+  const utcHour = new Date().getUTCHours();
+  const users = await User.find({
+    fcmToken: { $ne: null },
+    lastActiveAt: { $gt: new Date(Date.now() - 14 * DAY) },
+  })
+    .select('_id location')
+    .limit(5000)
+    .lean();
+  for (const u of users) {
+    const lng = u.location?.coordinates?.[0] ?? 0;
+    const offset = Math.round(lng / 15); // coarse tz from longitude
+    const localHour = (((utcHour + offset) % 24) + 24) % 24;
+    if (localHour !== 10) continue;
+    if (await alreadyNotified(u._id, 'daily_matches', null, null, 20 * HOUR)) continue;
+    await notify(u._id, 'daily_matches', {
+      i18n: {
+        en: { title: "Today's picks 💘", body: "We've lined up new people for you — come see today's matches" },
+        zh: { title: '今日缘分 💘', body: '为你挑选了新的人选 — 来看看今天的推荐' },
+        ja: { title: '今日のおすすめ 💘', body: '新しい出会いを用意しました — 今日のおすすめをチェック' },
+        ko: { title: '오늘의 인연 💘', body: '새로운 추천을 준비했어요 — 오늘의 매칭을 확인하세요' },
+      },
+      data: {},
+    });
+  }
+}
+
 // Fires every 15 min; daily digests run only on their target UTC hour, deduped
 // per-user-per-day by the ledger so the multiple in-hour ticks are safe.
 async function dailyTick() {
@@ -158,6 +195,8 @@ async function dailyTick() {
       await viewersDigest();
       await wantsYouDigest();
     }
+    // Local-10am gated internally, so it must run on every tick (not a fixed UTC hour).
+    await dailyMatchesDigest();
   } catch (_) {
     /* best-effort */
   }

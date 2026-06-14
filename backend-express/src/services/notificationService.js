@@ -21,6 +21,7 @@ const ALL_TYPES = [
   'viewers_digest',
   'wants_you_digest',
   'daily_digest',
+  'daily_matches',
   'comeback',
 ];
 

@@ -15,6 +15,7 @@ const GROUPS: { key: string; types: string[] }[] = [
   { key: 'worldChatReply', types: ['world_chat_reply'] },
   { key: 'viewers', types: ['viewers_digest'] },
   { key: 'wants', types: ['wants_you_digest'] },
+  { key: 'dailyMatches', types: ['daily_matches'] },
   { key: 'digest', types: ['daily_digest'] },
   { key: 'comeback', types: ['comeback'] },
 ];
