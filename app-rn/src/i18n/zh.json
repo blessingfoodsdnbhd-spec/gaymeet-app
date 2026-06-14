@@ -1073,7 +1073,8 @@
       "adminVerifications": "认证审核",
       "myData": "我的数据 📊",
       "giftPremium": "送 Premium 给朋友 🎁",
-      "wallet": "我的钱包"
+      "wallet": "我的钱包",
+      "appIcon": "App 图标"
     },
     "edit": {
       "title": "编辑资料",
@@ -1561,6 +1562,24 @@
       "invite": "邀请好友加入",
       "profile": "完成个人资料",
       "vote": "参与投票"
+    }
+  },
+  "appIcon": {
+    "title": "App 图标",
+    "classic": "经典",
+    "lockedTitle": "解锁更多图标",
+    "unlockStreak": "连续登录 {{n}} 天(当前 {{cur}})",
+    "unlockReferral": "邀请 {{n}} 位好友(当前 {{cur}})",
+    "unlockPremium": "或开通会员",
+    "savedTitle": "已保存",
+    "savedPendingBuild": "图标选择已保存,将在下次更新后生效。",
+    "buildNote": "提示:更换图标需在下个版本生效。",
+    "names": {
+      "pink": "粉",
+      "purple": "紫",
+      "blue": "蓝",
+      "sunset": "日落",
+      "night": "暗夜"
     }
   }
 }

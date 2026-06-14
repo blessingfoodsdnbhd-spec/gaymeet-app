@@ -258,7 +258,8 @@
       "adminVerifications": "인증 심사",
       "myData": "내 데이터 📊",
       "giftPremium": "프리미엄 선물하기 🎁",
-      "wallet": "내 지갑"
+      "wallet": "내 지갑",
+      "appIcon": "앱 아이콘"
     },
     "edit": {
       "aboutYou": "내 정보",
@@ -1561,6 +1562,24 @@
       "invite": "친구 초대",
       "profile": "프로필 완성",
       "vote": "투표 참여"
+    }
+  },
+  "appIcon": {
+    "title": "앱 아이콘",
+    "classic": "클래식",
+    "lockedTitle": "아이콘 잠금 해제",
+    "unlockStreak": "{{n}}일 연속 출석(현재 {{cur}})",
+    "unlockReferral": "친구 {{n}}명 초대(현재 {{cur}})",
+    "unlockPremium": "또는 프리미엄 가입",
+    "savedTitle": "저장됨",
+    "savedPendingBuild": "아이콘 선택이 저장되었으며 다음 업데이트 후 적용됩니다.",
+    "buildNote": "참고: 아이콘 변경은 다음 릴리스에 적용됩니다.",
+    "names": {
+      "pink": "핑크",
+      "purple": "퍼플",
+      "blue": "블루",
+      "sunset": "선셋",
+      "night": "나이트"
     }
   }
 }

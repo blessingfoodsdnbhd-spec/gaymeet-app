@@ -258,7 +258,8 @@
       "adminVerifications": "認証審査",
       "myData": "マイデータ 📊",
       "giftPremium": "プレミアムを贈る 🎁",
-      "wallet": "ウォレット"
+      "wallet": "ウォレット",
+      "appIcon": "アプリアイコン"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1561,6 +1562,24 @@
       "invite": "友達を招待",
       "profile": "プロフィールを完成",
       "vote": "投票に参加"
+    }
+  },
+  "appIcon": {
+    "title": "アプリアイコン",
+    "classic": "クラシック",
+    "lockedTitle": "アイコンを解放",
+    "unlockStreak": "{{n}}日連続ログイン(現在 {{cur}})",
+    "unlockReferral": "友達を{{n}}人招待(現在 {{cur}})",
+    "unlockPremium": "またはプレミアム加入",
+    "savedTitle": "保存しました",
+    "savedPendingBuild": "アイコンの選択は保存され、次回のアップデート後に反映されます。",
+    "buildNote": "注:アイコンの変更は次回リリースで反映されます。",
+    "names": {
+      "pink": "ピンク",
+      "purple": "パープル",
+      "blue": "ブルー",
+      "sunset": "サンセット",
+      "night": "ナイト"
     }
   }
 }

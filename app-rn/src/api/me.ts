@@ -72,6 +72,8 @@ export interface User {
   currentExp?: number;
   /** Daily-login streak (STREAK1). */
   streak?: { current: number; longest: number; lastActiveDate: string | null };
+  /** Friends who joined via this user's invite (referral) — unlocks app icons. */
+  referralCount?: number;
   /** Virtual currency balance (Phase 4 economy). */
   coins?: number;
   isBoosted?: boolean;
