@@ -1731,13 +1731,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // Android: the inverted messages FlatList (a native ScrollView) otherwise
-    // overdraws the header region once it has content, swallowing taps on the
-    // safety-menu "..." button (reproduces only with chat history present).
-    // zIndex orders RN's own layout; elevation raises the native view in
-    // Android's z/touch order so the header always sits above the list.
+    // zIndex orders RN's own sibling layout so the header sits above the inverted
+    // messages list. NO `elevation` here: on Android elevation paints a Material
+    // drop shadow on ALL FOUR sides, which reads as a dark rectangular outline
+    // boxing the whole header (the user-reported Android-only outline; iOS ignores
+    // elevation so it never showed there). The "..." safety-menu tap is handled by
+    // the native Alert.alert path (#245), not by raising the header's z-order, so
+    // dropping elevation costs nothing. (Build 74 fix, lost when Build 75/76 cut
+    // off origin/main where PR #250 never merged — re-applied in Build 76.)
     zIndex: 10,
-    elevation: 10,
   },
   // Reaction pill shown under a message bubble.
   reactionPill: {
