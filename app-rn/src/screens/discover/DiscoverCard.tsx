@@ -9,6 +9,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
 import { TagChip } from '../../components/TagChip';
@@ -31,6 +32,7 @@ const STAMP_DISTANCE = 120;
 function DiscoverCardInner({ user, dragX, isTop }: Props) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const nav = useNavigation<any>();
   const [a, b] = avatarGradients[user.avatarIdx % avatarGradients.length];
   const initial = (user.nickname || user.email || '?').trim().charAt(0).toUpperCase();
 
@@ -200,14 +202,23 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           #FFFFFF — never an rgba — so nothing behind can bleed in. */}
       <View style={[styles.info, { backgroundColor: theme.colors.surface }]}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-          <NameWithBadge
-            name={user.nickname}
-            official={user.isOfficial}
-            verified={user.isVerified}
-            premium={user.isPremium}
-            textStyle={[styles.name, { color: theme.colors.text }]}
-            badgeSize={16}
-          />
+          {/* Tap the NAME → full profile (UserDetail). Only the top card is
+              interactive; the ⭐ button is follow, not profile. A tap can't fight
+              CardStack's swipe Pan — a drag cancels the Pressable before onPress. */}
+          <Pressable
+            onPress={isTop ? () => nav.navigate('UserDetail', { userId: user.id }) : undefined}
+            disabled={!isTop}
+            hitSlop={8}
+          >
+            <NameWithBadge
+              name={user.nickname}
+              official={user.isOfficial}
+              verified={user.isVerified}
+              premium={user.isPremium}
+              textStyle={[styles.name, { color: theme.colors.text }]}
+              badgeSize={16}
+            />
+          </Pressable>
           <FollowBadge status={user.followStatus} size={16} />
           {(() => {
             const age = computeAge(user.dob) ?? user.age;

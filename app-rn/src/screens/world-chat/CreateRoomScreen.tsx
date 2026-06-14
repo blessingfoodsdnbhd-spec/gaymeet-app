@@ -6,11 +6,11 @@ import {
   Pressable,
   Switch,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -99,7 +99,7 @@ export function CreateRoomScreen() {
         <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>{t('worldChat.rooms.createTitle')}</Text>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }} keyboardShouldPersistTaps="handled">
           <Text style={{ fontSize: 12.5, color: theme.colors.muted }}>
             {t('worldChat.rooms.inChannel', { channel: channelTitle })}

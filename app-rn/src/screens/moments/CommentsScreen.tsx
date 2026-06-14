@@ -5,11 +5,11 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -197,7 +197,7 @@ export function CommentsScreen() {
         // forced edge-to-edge of API 35) drifts the composer out of place and
         // leaves it hidden behind the keyboard. "height" + a 0 offset lets the
         // system adjustResize position the input correctly across phone/tablet.
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
