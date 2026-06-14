@@ -1216,8 +1216,10 @@
     "statusUnknown": "Unknown",
     "prefs": {
       "importantSection": "Important",
-      "important": "Matches, notes & room invites",
+      "important": "Notes & room invites",
       "importantHint": "Always on — these are the moments you won't want to miss.",
+      "matches": "New matches",
+      "messages": "New messages",
       "moreSection": "More notifications",
       "votes": "Contest updates",
       "follow": "New followers",

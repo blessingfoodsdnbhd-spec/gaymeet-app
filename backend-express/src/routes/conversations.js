@@ -11,6 +11,7 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
 const { sendPushToUser } = require('../utils/push');
+const { isAllowed } = require('../services/notificationService');
 const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
 
 // Chat voice-message upload — memory storage, audio only, ≤5 MB (≈60s m4a).
@@ -402,6 +403,7 @@ router.post('/:matchId/send', auth, async (req, res, next) => {
     if (otherId && otherId !== req.user._id.toString()) {
       (async () => {
         try {
+          if (!(await isAllowed(otherId, 'message'))) return; // user muted new-message push
           console.log('[push] chat http-route hook firing →', otherId, 'type=', msgType);
           const sender = await User.findById(req.user._id).select('nickname').lean();
           const senderName = sender?.nickname || 'New message';

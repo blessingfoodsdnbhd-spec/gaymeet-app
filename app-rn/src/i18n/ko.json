@@ -1162,8 +1162,10 @@
     "statusUnknown": "알 수 없음",
     "prefs": {
       "importantSection": "중요",
-      "important": "매칭, 쪽지 및 방 초대",
+      "important": "쪽지 및 방 초대",
       "importantHint": "항상 켜짐 — 놓치고 싶지 않은 순간들이에요.",
+      "matches": "새 매칭",
+      "messages": "새 메시지",
       "moreSection": "기타 알림",
       "votes": "콘테스트 업데이트",
       "follow": "새 팔로워",
