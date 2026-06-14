@@ -1376,13 +1376,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // Android: the inverted messages FlatList (a native ScrollView) otherwise
-    // overdraws the header once it has content, swallowing taps on the action
-    // buttons (⋮/share/roster). zIndex orders RN layout; elevation raises the
-    // native view in Android's z/touch order so the header stays above the list.
-    // Mirrors the ChatDetail header fix.
+    // zIndex orders RN's own sibling layout so the header sits above the inverted
+    // messages list. NO `elevation`: on Android elevation paints a Material drop
+    // shadow on ALL FOUR sides, which reads as a dark rectangular outline boxing
+    // the whole header (the user-reported Android-only outline; iOS ignores
+    // elevation). The header action taps (⋮/share/roster) work via zIndex + the
+    // explicit 40×40 headerBtn hit targets, so dropping elevation costs nothing.
+    // Same fix as ChatDetail; lost when builds cut off origin/main where PR #249
+    // never merged — re-applied in Build 81.
     zIndex: 10,
-    elevation: 10,
   },
   // Header action hit target — explicit 40×40 so Android delivers the tap (a
   // bare icon + hitSlop was unreliable). Icon is centered, so it reads the same.
