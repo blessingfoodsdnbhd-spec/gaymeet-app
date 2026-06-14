@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, Platform, StyleSheet, Alert } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +59,7 @@ export function RedeemInviteScreen() {
         <Text style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>{t('invite.redeemTitle')}</Text>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <View style={{ padding: 24, gap: 16 }}>
           <Text style={{ fontSize: 14, color: theme.colors.muted, lineHeight: 21 }}>{t('invite.redeemHint')}</Text>
           <TextInput

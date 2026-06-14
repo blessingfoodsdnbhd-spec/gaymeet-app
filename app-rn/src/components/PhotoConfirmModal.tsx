@@ -5,10 +5,10 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Send } from 'lucide-react-native';
@@ -55,7 +55,7 @@ export function PhotoConfirmModal({
             {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
           </View>
 
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView behavior="padding">
             <View style={styles.bottomRow}>
               <TextInput
                 value={caption}

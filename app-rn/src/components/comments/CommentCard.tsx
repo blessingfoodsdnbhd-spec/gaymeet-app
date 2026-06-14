@@ -26,8 +26,8 @@ export function CommentCard({
   isReply?: boolean;
   onReply?: (c: Comment) => void;
   onTapAuthor?: (userId: string) => void;
-  /** Long-press to report the comment's author (Apple 1.2 — every UGC surface
-   *  must offer a report path). No-op for the viewer's own comments. */
+  /** Long-press handler (Apple 1.2 — every UGC surface needs a manage path):
+   *  the parent routes own comments to Delete and others' to report/block. */
   onReport?: (c: Comment) => void;
 }) {
   const theme = useTheme();

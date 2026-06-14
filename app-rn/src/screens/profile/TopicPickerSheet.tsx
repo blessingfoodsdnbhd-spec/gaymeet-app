@@ -1,12 +1,14 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+// RNGH Pressable + ScrollView — inside the Sheet's GestureHandlerRootView the
+// RN-core versions eat the first Android touch (a topic row "needs several taps
+// unless you scroll the list first"). RNGH's versions respond on first tap (Build 76).
+import { Pressable, ScrollView } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react-native';
@@ -72,11 +74,16 @@ export function TopicPickerSheet({ open, onClose, onPick }: Props) {
         </View>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {available.map((tp) => (
           <Pressable
             key={tp.slug}
             onPress={() => onPick(tp)}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.row,
               {

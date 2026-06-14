@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
 import { ChevronLeft, Plus, CalendarClock } from 'lucide-react-native';
@@ -159,7 +159,7 @@ export function CreateVoteScreen() {
       ) : (
       <KeyboardAvoidingView
         // Android: undefined — root KeyboardProvider emulates adjustResize (no double-shift).
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
       <ScrollView

@@ -3,12 +3,16 @@ import {
   View,
   Text,
   ScrollView,
-  Pressable,
   StyleSheet,
   Alert,
   Platform,
   useWindowDimensions,
 } from 'react-native';
+// RNGH Pressable — inside the Sheet's GestureHandlerRootView the RN-core
+// Pressable loses its first Android touch to RNGH responder contention; RNGH's
+// own Pressable responds on the first tap (Build 76). ScrollViews + the tuned
+// drag/paging GestureDetector are left untouched to preserve photo paging/zoom.
+import { Pressable } from 'react-native-gesture-handler';
 import { Image as ExpoImage } from 'expo-image';
 import { Heart, MessageCircle, MoreHorizontal, Share2, StickyNote, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';

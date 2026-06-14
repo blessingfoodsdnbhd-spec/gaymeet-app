@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+// Pressable + ScrollView from react-native-gesture-handler (NOT react-native).
+// Inside the Sheet's GestureHandlerRootView on Android, RN-core's JS-responder
+// Pressable / ScrollView don't share RNGH's native gesture system: the FIRST
+// touch after the sheet opens is consumed waking the gesture pipeline, so the
+// map/current/city buttons "need several taps — UNLESS you first scroll the
+// list". RNGH's own Pressable + ScrollView coordinate with the gesture tree and
+// respond on the first tap (regression of the Build 61 fix; restored Build 76).
+import { Pressable, ScrollView } from 'react-native-gesture-handler';
 import { Map, MapPin, Navigation, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
@@ -102,7 +110,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
         </Pressable>
       ) : null}
 
-      <Pressable onPress={useCurrent} style={[styles.row, { borderBottomColor: theme.colors.line }]}>
+      <Pressable onPress={useCurrent} hitSlop={8} style={[styles.row, { borderBottomColor: theme.colors.line }]}>
         <Navigation size={18} color={theme.colors.primary} strokeWidth={2} />
         <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
           {t('moments.compose.currentLocation')}
@@ -113,6 +121,7 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
       {current ? (
         <Pressable
           onPress={() => { onPick(null); onClose(); }}
+          hitSlop={8}
           style={[styles.row, { borderBottomColor: theme.colors.line }]}
         >
           <X size={18} color={theme.colors.danger ?? '#D14B4B'} strokeWidth={2} />
@@ -123,11 +132,17 @@ export function MomentLocationSheet({ open, onClose, current, onPick, onChooseMa
         </Pressable>
       ) : null}
 
-      <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ maxHeight: 320 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {CITIES.map((c) => (
           <Pressable
             key={c.label}
             onPress={() => { onPick(c); onClose(); }}
+            hitSlop={8}
             style={[styles.row, { borderBottomColor: theme.colors.line }]}
           >
             <MapPin size={16} color={theme.colors.muted} strokeWidth={2} />

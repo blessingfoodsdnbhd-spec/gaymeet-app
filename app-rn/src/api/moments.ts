@@ -104,6 +104,23 @@ export const postMoment = (body: {
   expiresInHours?: number;
 }) => unwrap<Moment>(api.post('/moments', body));
 
+/**
+ * Edit your OWN moment (content / images / location / tagged friends). Free and
+ * Premium alike — not gated. Pass `lat:null, lng:null` to CLEAR an existing
+ * location. Backend: PATCH /moments/:id (ownership-checked).
+ */
+export const patchMoment = (
+  id: string,
+  body: {
+    content: string;
+    images?: string[];
+    taggedUserIds?: string[];
+    lat?: number | null;
+    lng?: number | null;
+    locationLabel?: string | null;
+  },
+) => unwrap<Moment>(api.patch(`/moments/${id}`, body));
+
 // ── Comments ──────────────────────────────────────────────────────────────────
 export interface Comment {
   _id: string;

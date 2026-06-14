@@ -50,7 +50,19 @@ export type RootStackParamList = {
   ChatTranslation: undefined;
   AccountSettings: undefined;
   Comments: { momentId: string; authorId?: string };
-  Composer: undefined;
+  // `edit` opens the Composer pre-filled from an existing OWN moment; absent =
+  // compose a new one. (Moments edit — Build 76.)
+  Composer:
+    | {
+        edit?: {
+          id: string;
+          content: string;
+          images: string[];
+          tagged: { _id: string; nickname: string }[];
+          place: { lat: number; lng: number; label: string } | null;
+        };
+      }
+    | undefined;
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string; previewMode?: boolean };
   Premium: undefined;

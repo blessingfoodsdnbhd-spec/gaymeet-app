@@ -84,20 +84,41 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
     },
   });
 
+  // Open the Composer in edit mode, pre-filled from this moment (own posts only;
+  // Free + Premium). The map's GeoJSON stores [lng, lat]; the Composer's place is
+  // {lat, lng, label}.
+  const goEdit = () => {
+    const coords = moment.location?.coordinates;
+    (nav as any).navigate('Composer', {
+      edit: {
+        id: moment._id,
+        content: moment.content ?? '',
+        images: moment.images ?? [],
+        tagged: (moment.taggedUserIds ?? []).map((u) => ({ _id: u._id, nickname: u.nickname })),
+        place:
+          coords && coords.length === 2
+            ? { lat: coords[1], lng: coords[0], label: moment.locationLabel ?? '' }
+            : null,
+      },
+    });
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(t('moments.delete.title'), t('moments.delete.body'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('moments.delete.action'), style: 'destructive', onPress: () => deleteMut.mutate() },
+    ]);
+  };
+
   const onMore = () => {
     if (isMine) {
-      Alert.alert(
-        t('moments.delete.title'),
-        t('moments.delete.body'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('moments.delete.action'),
-            style: 'destructive',
-            onPress: () => deleteMut.mutate(),
-          },
-        ],
-      );
+      // Own post → Edit / Delete / Cancel (NOT long-press). Edit opens the
+      // Composer pre-filled; Delete asks a second confirm before removing.
+      Alert.alert(moment.user.nickname, undefined, [
+        { text: t('moments.menu.edit'), onPress: goEdit },
+        { text: t('moments.delete.action'), style: 'destructive', onPress: confirmDelete },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]);
     } else {
       showSafetyMenu({
         userId: moment.user._id,

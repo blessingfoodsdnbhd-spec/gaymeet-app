@@ -6,11 +6,11 @@ import {
   Pressable,
   Alert,
   Platform,
-  KeyboardAvoidingView,
   Keyboard,
   TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -106,7 +106,7 @@ export function OTPCodeScreen() {
       <KeyboardAvoidingView
         // Android: undefined — the root KeyboardProvider emulates adjustResize, so
         // a non-undefined behavior would double-shift the content up.
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

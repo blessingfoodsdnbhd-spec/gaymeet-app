@@ -1104,15 +1104,13 @@ export function ChatDetailScreen() {
               }
               const mine = !!myId && senderIdOf(msg) === myId;
               const failed = msg.status === 'failed';
-              const onLongPress = () => {
-                // Drop the composer keyboard first. If it's up when the actions
-                // Modal opens, edge-to-edge Android pans the new Modal window up
-                // to clear the keyboard, throwing the actions sheet to the top
-                // of the screen (overlapping the header). No-op when nothing is
-                // focused; harmless on iOS.
-                Keyboard.dismiss();
-                setActionsFor(msg);
-              };
+              // Long-press is intentionally a NO-OP (Build 76, both platforms).
+              // It used to open a reactions-only sheet (emoji row + "+"); removed
+              // per spec. Existing reactions still DISPLAY and stay tappable under
+              // the bubble (see the reactions row below) — there's just no
+              // long-press entry to add new ones. ✕-delete, swipe edit/reply,
+              // photo-tap, and the header "..." menu are unaffected.
+              const onLongPress = undefined;
 
               let bubble: React.ReactNode;
               if (msg.type === 'image') {
@@ -1157,6 +1155,7 @@ export function ChatDetailScreen() {
                         url={msg.mediaUrl ?? ''}
                         size={22}
                         color={mine ? '#FFFFFF' : theme.colors.primaryDeep}
+                        preload
                       />
                       {/* simple static waveform glyph */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
@@ -1445,98 +1444,10 @@ export function ChatDetailScreen() {
         reason={upsellReason ?? undefined}
       />
 
-      {/* Long-press action sheet for an individual message */}
-      <Sheet
-        open={!!actionsFor}
-        onClose={() => setActionsFor(null)}
-        maxHeight="40%"
-      >
-        {actionsFor && (
-          <>
-            {/* Quick emoji reactions (WhatsApp/iMessage). Sits ABOVE the
-                copy/edit/delete actions so it never conflicts with them. Tap an
-                emoji → toggle + close; "+" → full picker. */}
-            {!actionsFor.isSystem && (
-              <View style={styles.reactionPickerRow}>
-                {REACTION_EMOJIS.map((emoji) => {
-                  const active = !!me?.id && !!actionsFor.reactions?.[emoji]?.includes(me.id);
-                  return (
-                    <Pressable
-                      key={emoji}
-                      onPress={() => {
-                        const m = actionsFor;
-                        setActionsFor(null);
-                        onReact(m, emoji);
-                      }}
-                      hitSlop={4}
-                      style={[
-                        styles.reactionPickerEmoji,
-                        active && { backgroundColor: theme.colors.primarySoft },
-                      ]}
-                    >
-                      <Text style={{ fontSize: 26 }}>{emoji}</Text>
-                    </Pressable>
-                  );
-                })}
-                <Pressable
-                  onPress={() => {
-                    const m = actionsFor;
-                    closeActionsThen(() => setEmojiPickerFor(m));
-                  }}
-                  hitSlop={4}
-                  style={[
-                    styles.reactionPickerEmoji,
-                    { backgroundColor: theme.colors.surface2 },
-                  ]}
-                >
-                  <Plus size={22} color={theme.colors.text2} strokeWidth={2} />
-                </Pressable>
-              </View>
-            )}
-            {/* Redesign: the long-press menu is reactions-only now. Edit moved to
-                swipe-right, reply to swipe-left; copy/delete/report were removed
-                per spec. Sender report/block stays reachable from the header
-                safety menu ("..."). */}
-            <ActionRow
-              label={t('chat.message.actions.cancel')}
-              centered
-              onPress={() => setActionsFor(null)}
-            />
-          </>
-        )}
-      </Sheet>
-
-      {/* "+" full emoji picker — opened from the reaction row. Curated grid
-          (no native emoji lib). Tap an emoji → toggle + close. */}
-      <Sheet
-        open={!!emojiPickerFor}
-        onClose={() => setEmojiPickerFor(null)}
-        maxHeight="50%"
-      >
-        {emojiPickerFor && (
-          <>
-            <Text style={[styles.pickerTitle, { color: theme.colors.text }]}>
-              {t('chat.reactions.add')}
-            </Text>
-            <View style={styles.emojiGrid}>
-              {EMOJI_PICKER.map((emoji) => (
-                <Pressable
-                  key={emoji}
-                  onPress={() => {
-                    const m = emojiPickerFor;
-                    setEmojiPickerFor(null);
-                    onReact(m, emoji);
-                  }}
-                  hitSlop={2}
-                  style={styles.emojiGridCell}
-                >
-                  <Text style={{ fontSize: 28 }}>{emoji}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        )}
-      </Sheet>
+      {/* Long-press message menu + "+" emoji picker REMOVED (Build 76): both were
+          the reactions-add entry (the long-press sheet was reactions-ONLY), now
+          gone on both platforms. Existing reactions still render + stay tappable
+          under each bubble; the who-reacted sheet (below) still works. */}
 
       {/* Who-reacted list. 1-on-1 chat has only two participants, so every
           userId resolves to me or the other person — no extra lookups. */}
@@ -1730,13 +1641,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // Android: the inverted messages FlatList (a native ScrollView) otherwise
-    // overdraws the header region once it has content, swallowing taps on the
-    // safety-menu "..." button (reproduces only with chat history present).
-    // zIndex orders RN's own layout; elevation raises the native view in
-    // Android's z/touch order so the header always sits above the list.
+    // zIndex orders RN's own sibling layout so the header sits above the inverted
+    // messages list. NO `elevation` here: on Android elevation paints a Material
+    // drop shadow on ALL FOUR sides, which reads as a dark rectangular outline
+    // boxing the whole header (the user-reported Android-only outline; iOS ignores
+    // elevation so it never showed there). The "..." safety-menu tap is handled by
+    // the native Alert.alert path (#245), not by raising the header's z-order, so
+    // dropping elevation costs nothing. (Build 74 fix, lost when Build 75/76 cut
+    // off origin/main where PR #250 never merged — re-applied in Build 76.)
     zIndex: 10,
-    elevation: 10,
   },
   // Reaction pill shown under a message bubble.
   reactionPill: {

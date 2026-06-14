@@ -5,11 +5,11 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Alert,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,7 +23,7 @@ import { ChatComposer } from '../../components/ChatComposer';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { CommentCard } from '../../components/comments/CommentCard';
 import { uploadFile } from '../../api/upload';
-import { getComments, postComment, type Comment } from '../../api/moments';
+import { getComments, postComment, deleteComment, type Comment } from '../../api/moments';
 import { useAuth } from '../../store/auth';
 import { showSafetyMenu } from '../../utils/safetyMenu';
 import type { RootStackParamList } from '../../navigation/types';
@@ -167,10 +167,36 @@ export function CommentsScreen() {
 
   const onTapAuthor = (userId: string) => (nav as any).navigate('UserDetail', { userId });
 
-  // Long-press a comment → report/block its author (Apple 1.2 — every UGC
-  // surface needs a report path). Skipped for the viewer's own comments.
-  const onReport = (c: Comment) => {
-    if (c.user._id === myId) return;
+  // Delete your OWN comment (Apple 1.2 — manage your own UGC). Optimistically
+  // drops the comment AND any replies to it from the cache; refreshes the feed
+  // so the moment's comment counter updates.
+  const deleteMut = useMutation({
+    mutationFn: (commentId: string) => deleteComment(momentId, commentId),
+    onMutate: async (commentId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['moments', 'comments', momentId] });
+      const prev = queryClient.getQueryData<Comment[]>(['moments', 'comments', momentId]);
+      queryClient.setQueryData<Comment[]>(['moments', 'comments', momentId], (cs) =>
+        (cs ?? []).filter((c) => c._id !== commentId && c.parentComment !== commentId),
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['moments', 'comments', momentId], ctx.prev);
+      Alert.alert(t('moments.comments.sendFailed'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['moments'] }),
+  });
+
+  // Long-press a comment → your OWN comment offers Delete (Apple 1.2 — manage
+  // your own UGC); others' comments report/block the author.
+  const onCommentLongPress = (c: Comment) => {
+    if (c.user._id === myId) {
+      Alert.alert(t('moments.comments.deleteTitle'), t('moments.comments.deleteBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('moments.comments.delete'), style: 'destructive', onPress: () => deleteMut.mutate(c._id) },
+      ]);
+      return;
+    }
     showSafetyMenu({
       nav: nav as any,
       userId: c.user._id,
@@ -197,7 +223,7 @@ export function CommentsScreen() {
         // forced edge-to-edge of API 35) drifts the composer out of place and
         // leaves it hidden behind the keyboard. "height" + a 0 offset lets the
         // system adjustResize position the input correctly across phone/tablet.
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
@@ -242,7 +268,7 @@ export function CommentsScreen() {
               const isOpen = expanded.has(item._id);
               return (
                 <View>
-                  <CommentCard comment={item} onReply={setReplyTo} onTapAuthor={onTapAuthor} onReport={onReport} />
+                  <CommentCard comment={item} onReply={setReplyTo} onTapAuthor={onTapAuthor} onReport={onCommentLongPress} />
                   {replies.length > 0 && (
                     <Pressable
                       onPress={() =>
@@ -271,7 +297,7 @@ export function CommentsScreen() {
                         isReply
                         onReply={setReplyTo}
                         onTapAuthor={onTapAuthor}
-                        onReport={onReport}
+                        onReport={onCommentLongPress}
                       />
                     ))}
                 </View>

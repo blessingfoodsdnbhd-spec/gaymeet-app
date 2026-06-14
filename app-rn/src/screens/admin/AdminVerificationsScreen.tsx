@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { ChevronLeft, Video as VideoIcon } from 'lucide-react-native';
+import { Video, ResizeMode } from 'expo-av';
+import { ChevronLeft, Play, Video as VideoIcon, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,10 @@ export function AdminVerificationsScreen() {
   const nav = useNavigation<any>();
   const qc = useQueryClient();
   const photoViewer = usePhotoViewer();
+  // Fullscreen video review — video submissions can't open a static image viewer
+  // (the thumbnail was a dead VideoIcon). Tapping it now plays the clip so the
+  // reviewer can actually watch the requested pose before approve/reject.
+  const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
 
   const q = useQuery({ queryKey: ['admin', 'verifications'], queryFn: getAdminVerifications });
 
@@ -78,14 +83,25 @@ export function AdminVerificationsScreen() {
             return (
               <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.line }]}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  {/* Tap the submitted photo → fullscreen pinch-to-zoom viewer. */}
+                  {/* Tap the submitted media → photo opens the pinch-to-zoom
+                      viewer; video opens the fullscreen player below. */}
                   <Pressable
-                    onPress={() => { if (!isVideo && img) photoViewer.open([img], 0); }}
-                    disabled={isVideo || !img}
+                    onPress={() => {
+                      if (!img) return;
+                      if (isVideo) setVideoUrl(img);
+                      else photoViewer.open([img], 0);
+                    }}
+                    disabled={!img}
                     style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}
                   >
                     {isVideo ? (
-                      <VideoIcon size={28} color={c.success} strokeWidth={1.8} />
+                      <>
+                        <VideoIcon size={28} color={c.success} strokeWidth={1.8} />
+                        {/* play affordance so it reads as tappable */}
+                        <View style={styles.playBadge}>
+                          <Play size={12} color="#FFFFFF" strokeWidth={2} fill="#FFFFFF" />
+                        </View>
+                      </>
                     ) : img ? (
                       <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     ) : (
@@ -134,6 +150,32 @@ export function AdminVerificationsScreen() {
         />
       )}
       {photoViewer.node}
+
+      {/* Fullscreen video player for video verifications. expo-av Video with
+          native controls (scrub/pause) so the reviewer can inspect the pose. */}
+      <Modal
+        visible={!!videoUrl}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setVideoUrl(null)}
+      >
+        <View style={styles.videoBackdrop}>
+          {videoUrl ? (
+            <Video
+              source={{ uri: videoUrl }}
+              style={styles.videoPlayer}
+              resizeMode={ResizeMode.CONTAIN}
+              useNativeControls
+              shouldPlay
+              isLooping
+            />
+          ) : null}
+          <Pressable onPress={() => setVideoUrl(null)} hitSlop={16} style={styles.videoClose}>
+            <X size={26} color="#FFFFFF" strokeWidth={2} />
+          </Pressable>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -146,4 +188,18 @@ const styles = StyleSheet.create({
   kindChip: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
   btn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 999 },
   btnTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  playBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', alignItems: 'center', justifyContent: 'center' },
+  videoPlayer: { width: '100%', height: '72%' },
+  videoClose: { position: 'absolute', top: 54, right: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
 });
