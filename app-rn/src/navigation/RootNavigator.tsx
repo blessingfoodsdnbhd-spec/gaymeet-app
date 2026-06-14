@@ -34,6 +34,7 @@ import { MyAnalyticsScreen } from '../screens/profile/MyAnalyticsScreen';
 import { PremiumGiftScreen } from '../screens/profile/PremiumGiftScreen';
 import { WalletScreen } from '../screens/profile/WalletScreen';
 import { AppIconScreen } from '../screens/profile/AppIconScreen';
+import { StorageSettings } from '../screens/profile/StorageSettings';
 import { CommentsScreen } from '../screens/moments/CommentsScreen';
 import { ComposerScreen } from '../screens/moments/ComposerScreen';
 import { ReportScreen } from '../screens/safety/ReportScreen';
@@ -147,6 +148,7 @@ export function RootNavigator() {
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="Wallet" component={WalletScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AppIcon" component={AppIconScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="StorageSettings" component={StorageSettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="PrivacySettings" component={PrivacySettings} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="BlockedList" component={BlockedListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettings} options={{ animation: 'slide_from_right' }} />

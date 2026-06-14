@@ -1079,7 +1079,8 @@
       "myData": "我的数据 📊",
       "giftPremium": "送 Premium 给朋友 🎁",
       "wallet": "我的钱包",
-      "appIcon": "App 图标"
+      "appIcon": "App 图标",
+      "storage": "存储与缓存"
     },
     "edit": {
       "title": "编辑资料",
@@ -1586,5 +1587,19 @@
       "sunset": "日落",
       "night": "暗夜"
     }
+  },
+  "storage": {
+    "title": "存储与缓存",
+    "mediaCache": "媒体缓存",
+    "localChat": "本地聊天记录",
+    "messagesN": "{{n}} 条消息",
+    "clearMedia": "清除媒体缓存",
+    "clearChat": "清除本地聊天记录",
+    "clear": "清除",
+    "clearMediaTitle": "清除媒体缓存?",
+    "clearMediaBody": "将删除已缓存的图片,需要时会重新下载。",
+    "clearChatTitle": "清除本地聊天记录?",
+    "clearChatBody": "仅删除本机缓存,服务器上的消息不受影响。",
+    "note": "为节省空间,媒体缓存保留 7 天,本地聊天记录保留 60 天,App 每天自动清理一次。"
   }
 }

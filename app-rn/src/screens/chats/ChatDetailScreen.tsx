@@ -60,6 +60,7 @@ import {
   type Message,
   type ChatThread,
 } from '../../api/chats';
+import { saveMessages } from '../../lib/localChat';
 import { uploadFile } from '../../api/upload';
 import { PhotoConfirmModal } from '../../components/PhotoConfirmModal';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
@@ -318,6 +319,12 @@ export function ChatDetailScreen() {
     queryFn: () => getMessages(otherId!),
     enabled: !!otherId,
   });
+
+  // Write-through mirror to the local SQLite cache (CACHE1) so DM history
+  // survives the server's relay-only + 30-day retention. Best-effort.
+  React.useEffect(() => {
+    if (msgsQ.data?.length) saveMessages(matchId, msgsQ.data as any);
+  }, [msgsQ.data, matchId]);
 
   // Show conversation starters (ICE1) on an empty chat: messages loaded, none
   // of them real (non-system), the user hasn't started typing, sticker tray closed.

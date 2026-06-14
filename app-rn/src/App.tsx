@@ -25,6 +25,7 @@ import { MessageBanner } from './components/MessageBanner';
 import { SafetyMenuSheet } from './components/SafetyMenuSheet';
 import { AnnouncementBootstrap } from './components/AnnouncementBootstrap';
 import { StreakBootstrap } from './components/StreakBootstrap';
+import { runDailyCleanupIfDue } from './lib/cacheCleanup';
 import {
   registerPushToken,
   setupPushListeners,
@@ -79,6 +80,10 @@ export function App() {
     // from NavigationContainer's onReady below.
     const teardownListeners = setupPushListeners();
     const teardownTokenRefresh = setupPushTokenRefresh();
+
+    // Daily local-cache maintenance (prune 60-day DM cache + evict 7-day media).
+    // Foreground-triggered; self-throttles to once/24h. Non-blocking.
+    runDailyCleanupIfDue();
 
     (async () => {
       // Load fonts and check auth in parallel
