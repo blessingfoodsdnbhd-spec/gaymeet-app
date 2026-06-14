@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "82",
+      "buildNumber": "100",
       "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:meyou.uk",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 82,
+      "versionCode": 100,
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
@@ -105,7 +105,17 @@
       "@react-native-firebase/messaging",
       "./plugins/withFirebaseMessagingManifestFix.js",
       "./plugins/withCustomNotificationSound.js",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-alternate-app-icons",
+        [
+          { "name": "pink", "ios": "./src/assets/icons/icon-pink.png", "android": { "foregroundImage": "./src/assets/icons/icon-pink.png", "backgroundColor": "#FAFAFC" } },
+          { "name": "purple", "ios": "./src/assets/icons/icon-purple.png", "android": { "foregroundImage": "./src/assets/icons/icon-purple.png", "backgroundColor": "#FAFAFC" } },
+          { "name": "blue", "ios": "./src/assets/icons/icon-blue.png", "android": { "foregroundImage": "./src/assets/icons/icon-blue.png", "backgroundColor": "#FAFAFC" } },
+          { "name": "sunset", "ios": "./src/assets/icons/icon-sunset.png", "android": { "foregroundImage": "./src/assets/icons/icon-sunset.png", "backgroundColor": "#FAFAFC" } },
+          { "name": "night", "ios": "./src/assets/icons/icon-night.png", "android": { "foregroundImage": "./src/assets/icons/icon-night.png", "backgroundColor": "#16151F" } }
+        ]
+      ]
     ],
     "extra": {
       "apiUrl": "https://gaymeet-api.onrender.com",
