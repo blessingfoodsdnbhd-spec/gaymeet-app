@@ -8,6 +8,7 @@ const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2          = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
+const { isPremiumActive } = require('../utils/premium');
 
 const MAX_PRIVATE_PHOTOS = 5;
 
@@ -181,6 +182,12 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       return err(res, 'Cannot request your own photos');
     }
 
+    // Only Premium members may REQUEST private photos. Free users can still be
+    // requested + approve/deny their own; they just can't initiate requests.
+    if (!isPremiumActive(req.user)) {
+      return err(res, 'PREMIUM_REQUIRED', 402);
+    }
+
     const owner = await User.findById(ownerId);
     if (!owner) return err(res, 'User not found', 404);
     if (owner.privatePhotos.length === 0) {
@@ -316,14 +323,34 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
       status: 'approved',
     });
     if (!approved) {
-      // Return pending status if they have a pending request
+      // No live grant. Surface the most relevant prior state so the client can
+      // show the right CTA: pending (waiting), viewed (one-time view used), none.
       const pending = await PhotoRequest.findOne({
         requester: req.user._id,
         owner: ownerId,
         status: 'pending',
       });
       if (pending) return ok(res, { photos: [], photosDetailed: [], status: 'pending' });
+      const viewed = await PhotoRequest.findOne({
+        requester: req.user._id,
+        owner: ownerId,
+        status: 'viewed',
+      });
+      if (viewed) return ok(res, { photos: [], photosDetailed: [], status: 'viewed' });
       return ok(res, { photos: [], photosDetailed: [], status: 'none' });
+    }
+
+    // View-once: consume the grant atomically. The first GET returns the photos
+    // and flips approved→viewed; any later GET falls into the 'viewed' branch
+    // above and is locked again. The `status:'approved'` filter in the update is
+    // the race guard so two concurrent loads can't both consume.
+    const consumed = await PhotoRequest.findOneAndUpdate(
+      { _id: approved._id, status: 'approved' },
+      { $set: { status: 'viewed', viewedAt: new Date() } },
+    );
+    if (!consumed) {
+      // Lost the race — another request just consumed it.
+      return ok(res, { photos: [], photosDetailed: [], status: 'viewed' });
     }
 
     const owner = await User.findById(ownerId).select('privatePhotos');
@@ -332,6 +359,7 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
       photos: detailed.map((p) => p.url),
       photosDetailed: detailed,
       status: 'approved',
+      oneTimeView: true, // this response is the single allowed view
     });
   } catch (e) {
     next(e);

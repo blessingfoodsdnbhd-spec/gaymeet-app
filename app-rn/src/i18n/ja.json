@@ -1079,7 +1079,9 @@
     "requestRejected": "リクエスト拒否 · タップで再申請",
     "requestRevoked": "以前アクセス権あり · 再申請",
     "requestSentToast": "リクエストを送りました",
-    "requestFailed": "リクエストを送れませんでした"
+    "requestFailed": "リクエストを送れませんでした",
+    "requestViewedAgain": "閲覧済み(1回限り)· 再リクエスト",
+    "oneTimeViewNotice": "⚠️ 一度だけ閲覧可能。離れると再ロックされます"
   },
   "nearby": {
     "peopleCount": "{{n}}人が近くに",

@@ -14,10 +14,14 @@ const photoRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'expired', 'revoked'],
+      // 'viewed' = approved grant consumed by the requester's one-time view.
+      enum: ['pending', 'approved', 'rejected', 'expired', 'revoked', 'viewed'],
       default: 'pending',
     },
     respondedAt: { type: Date, default: null },
+    // View-once: timestamp of the requester's single allowed viewing. Once set,
+    // the grant is consumed and the photos lock again.
+    viewedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

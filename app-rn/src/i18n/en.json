@@ -937,7 +937,9 @@
     "requestRejected": "Request denied · Tap to request again",
     "requestRevoked": "Previously had access · Request again",
     "requestSentToast": "Request sent",
-    "requestFailed": "Couldn't send request"
+    "requestFailed": "Couldn't send request",
+    "requestViewedAgain": "Viewed (one-time) · Request again",
+    "oneTimeViewNotice": "⚠️ One-time view — locks again once you leave"
   },
   "nearby": {
     "peopleCount": "{{n}} nearby",
