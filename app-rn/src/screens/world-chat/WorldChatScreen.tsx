@@ -53,6 +53,8 @@ import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
 import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
+import { DateDivider } from '../../components/chat/DateDivider';
+import { shouldShowDateDivider } from '../../utils/chatDate';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
@@ -816,10 +818,19 @@ export function WorldChatScreen({
                 <Text style={{ color: theme.colors.muted }}>{t('worldChat.empty')}</Text>
               </View>
             }
-            renderItem={({ item }) =>
-              item.type === 'system' ? (
-                <SystemRow msg={item} />
-              ) : (
+            renderItem={({ item, index }) => {
+              // Inverted list: data is newest-first, so the chronologically
+              // older neighbour sits at index+1. Show a date divider above the
+              // first message of each calendar day.
+              const older = messages[index + 1];
+              const showDate = shouldShowDateDivider(
+                older ? new Date(older.createdAt) : null,
+                new Date(item.createdAt),
+              );
+              const content =
+                item.type === 'system' ? (
+                  <SystemRow msg={item} />
+                ) : (
               <SwipeToReply
                 enabled={!closed}
                 onReply={() => setReplyingTo(item)}
@@ -847,8 +858,14 @@ export function WorldChatScreen({
                   onToggleTranslation={() => toggleTranslation(item.messageId)}
                 />
               </SwipeToReply>
-              )
-            }
+                );
+              return (
+                <>
+                  {showDate && <DateDivider date={new Date(item.createdAt)} />}
+                  {content}
+                </>
+              );
+            }}
           />
         )}
 
