@@ -145,6 +145,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/stories', storiesRoutes);
 app.use('/api/users', followsRoutes);       // /:id/follow, /:id/followers, /:id/following
 app.use('/api/energy', energyRoutes);
+app.use('/api/streak', require('./routes/streak')); // GET / daily-login streak status (STREAK1)
 app.use('/api/questions', questionsRoutes);  // /inbox, /ask/:id, /:id/answer, /user/:id/public
 app.use('/api/groups', groupsRoutes);
 app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-photos, /:id/private-photos

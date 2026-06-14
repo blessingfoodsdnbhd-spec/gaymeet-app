@@ -1528,5 +1528,13 @@
     "monthlyQuota": "今月の残り {{remaining}} / {{total}} 回",
     "alreadyPremium": "すでにPremium会員",
     "alreadyGifted": "贈呈済み"
+  },
+  "streak": {
+    "title": "連続ログイン",
+    "dayCount": "{{n}}日連続",
+    "dayShort": "{{n}}日目",
+    "todayReward": "本日のチェックイン +{{n}}コイン",
+    "balance": "コイン残高 {{n}}",
+    "claim": "受け取る"
   }
 }

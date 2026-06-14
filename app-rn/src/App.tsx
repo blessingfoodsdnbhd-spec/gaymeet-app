@@ -24,6 +24,7 @@ import { GlobalMatchListener } from './components/GlobalMatchListener';
 import { MessageBanner } from './components/MessageBanner';
 import { SafetyMenuSheet } from './components/SafetyMenuSheet';
 import { AnnouncementBootstrap } from './components/AnnouncementBootstrap';
+import { StreakBootstrap } from './components/StreakBootstrap';
 import {
   registerPushToken,
   setupPushListeners,
@@ -159,6 +160,9 @@ export function App() {
                   inside the container. Renders nothing when there's no
                   active announcement or it's been "don't show again". */}
               <AnnouncementBootstrap />
+              {/* Daily login-streak check-in — shows once per UTC day after the
+                  announcement modal settles. */}
+              <StreakBootstrap />
             </NavigationContainer>
             </ToastProvider>
           </ThemeProvider>

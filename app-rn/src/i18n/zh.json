@@ -1528,5 +1528,13 @@
       "deleteBody": "将对用户隐藏,稍后可重新启用。",
       "delete": "删除"
     }
+  },
+  "streak": {
+    "title": "连续登录",
+    "dayCount": "已连续 {{n}} 天",
+    "dayShort": "第{{n}}天",
+    "todayReward": "今日签到 +{{n}} 金币",
+    "balance": "金币余额 {{n}}",
+    "claim": "领取"
   }
 }

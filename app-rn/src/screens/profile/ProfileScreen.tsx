@@ -212,9 +212,22 @@ export function ProfileScreen() {
             textStyle={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}
           />
           {(user.streak?.current ?? 0) > 0 && (
-            <Text style={{ marginTop: 6, fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '600' }}>
-              {t('profile.streak', { n: user.streak!.current })}
-            </Text>
+            <View
+              style={{
+                marginTop: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'center',
+                paddingVertical: 4,
+                paddingHorizontal: 12,
+                borderRadius: theme.radius.pill,
+                backgroundColor: theme.colors.primarySoft,
+              }}
+            >
+              <Text style={{ fontSize: 13, color: theme.colors.primaryDeep, fontWeight: '700' }}>
+                {t('profile.streak', { n: user.streak!.current })}
+              </Text>
+            </View>
           )}
           {((user as any).popularity ?? 0) >= 1 && (
             <View style={{ marginTop: 6 }}>

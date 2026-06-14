@@ -1528,5 +1528,13 @@
     "monthlyQuota": "이번 달 남은 {{remaining}} / {{total}} 회",
     "alreadyPremium": "이미 Premium 회원",
     "alreadyGifted": "이미 선물함"
+  },
+  "streak": {
+    "title": "연속 출석",
+    "dayCount": "{{n}}일 연속",
+    "dayShort": "{{n}}일차",
+    "todayReward": "오늘 출석 +{{n}} 코인",
+    "balance": "코인 잔액 {{n}}",
+    "claim": "받기"
   }
 }

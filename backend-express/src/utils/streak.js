@@ -8,8 +8,18 @@ function ymd(d) {
   return d.toISOString().slice(0, 10); // UTC YYYY-MM-DD
 }
 
-// streak length → Premium days granted
+// streak length → Premium days granted (milestone bonus, kept from STREAK1)
 const REWARDS = { 7: 1, 14: 3, 30: 7 };
+
+// Coins granted for the Nth consecutive day's login. Recurring milestones so the
+// daily check-in keeps rewarding past day 30 (monthly > weekly > 3-day > base).
+// Tiers map to the plan's 1/3/7/30 milestones.
+function coinReward(n) {
+  if (n > 0 && n % 30 === 0) return 200; // monthly milestone
+  if (n > 0 && n % 7 === 0) return 50; // weekly milestone
+  if (n > 0 && n % 3 === 0) return 15; // 3-day milestone
+  return 5; // base daily check-in
+}
 
 async function grantStreakReward(user, milestone) {
   const days = REWARDS[milestone];
@@ -53,6 +63,7 @@ async function touchStreak(user) {
     const current = s.lastActiveDate === yesterday ? (s.current || 0) + 1 : 1;
     const longest = Math.max(s.longest || 0, current);
 
+    const coins = coinReward(current);
     const r = await User.updateOne(
       { _id: user._id, 'streak.lastActiveDate': { $ne: today } },
       {
@@ -61,6 +72,9 @@ async function touchStreak(user) {
           'streak.longest': longest,
           'streak.lastActiveDate': today,
         },
+        // Grant the day's check-in coins atomically in the SAME guarded update,
+        // so concurrent same-day requests can never double-credit.
+        $inc: { coins },
       },
     );
     const changed = (r.modifiedCount ?? r.nModified ?? 0) > 0;
@@ -72,4 +86,4 @@ async function touchStreak(user) {
   }
 }
 
-module.exports = { touchStreak };
+module.exports = { touchStreak, coinReward };
