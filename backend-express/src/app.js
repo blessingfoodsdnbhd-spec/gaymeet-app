@@ -166,6 +166,7 @@ app.use('/api/world-chat', worldChatRoutes); // 世界聊天室 — send/recent/
 app.use('/api/votes', votesRoutes); // 投票活動 — events/entries/votes/highlights + admin
 app.use('/api/admin', require('./routes/admin-users')); // POST /users/:id/popularity (X-Admin-Token)
 app.use('/api/admin', require('./routes/admin-moderation')); // ban/unban, chat/photo bans, delete photo/moment/vote, audit-log (ADMIN1)
+app.use('/api/admin', require('./routes/admin-discover')); // POST /discover/reset-all, /discover/reset-user/:userId — reset passed swipes
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/date-rooms', dateRoomsRoutes);
