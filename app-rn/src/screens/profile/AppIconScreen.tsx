@@ -122,7 +122,11 @@ function IconTile({
         {source ? (
           <Image source={source} style={styles.iconImg} />
         ) : (
-          <Image source={require('../../assets/logo.png')} style={styles.iconImg} />
+          // logo.jpg (not logo.png): logo.png is the app-icon source in app.json;
+          // require()-ing it too would collide with logo.jpg (WelcomeScreen) as
+          // the same Android drawable `src_assets_logo` (duplicate-resource build
+          // failure). Same artwork, so the Classic tile looks identical.
+          <Image source={require('../../assets/logo.jpg')} style={styles.iconImg} />
         )}
         {locked && (
           <View style={styles.lockOverlay}>
