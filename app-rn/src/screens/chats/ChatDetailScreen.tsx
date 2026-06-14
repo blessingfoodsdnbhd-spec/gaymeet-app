@@ -78,6 +78,7 @@ import {
 import { downloadAndCache, deleteCachedImage } from '../../utils/imageCache';
 import type { RootStackParamList } from '../../navigation/types';
 import { hhmm } from '../../utils/time';
+import { DateDivider } from '../../components/chat/DateDivider';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Rt = RouteProp<RootStackParamList, 'ChatDetail'>;
@@ -1071,9 +1072,18 @@ export function ChatDetailScreen() {
             // iOS-only — see `keepVisiblePosition` above for why this is off on
             // Android (Fabric mis-anchors it to the top when a Modal opens).
             maintainVisibleContentPosition={keepVisiblePosition}
-            keyExtractor={(it, i) => it.kind === 'time' ? `t-${it.iso}` : `m-${it.msg.id ?? i}`}
+            keyExtractor={(it, i) =>
+              it.kind === 'time'
+                ? `t-${it.iso}`
+                : it.kind === 'date'
+                  ? `d-${it.iso}`
+                  : `m-${it.msg.id ?? i}`
+            }
             contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
             renderItem={({ item }) => {
+              if (item.kind === 'date') {
+                return <DateDivider date={new Date(item.iso)} />;
+              }
               if (item.kind === 'time') {
                 return (
                   <Text
@@ -1577,19 +1587,28 @@ function ActionRow({ icon, label, labelColor, centered, onPress }: ActionRowProp
 
 type ListItem =
   | { kind: 'time'; iso: string }
+  | { kind: 'date'; iso: string }
   | { kind: 'msg'; msg: Message };
 
 function buildItems(messages: Message[]): ListItem[] {
   const out: ListItem[] = [];
   let lastTime = 0;
+  let lastDay: string | null = null;
   for (const m of messages) {
-    const t = new Date(m.createdAt).getTime();
-    // Insert a divider whenever there's a >10min gap between adjacent messages.
-    if (t - lastTime > 10 * 60_000) {
+    const d = new Date(m.createdAt);
+    const t = d.getTime();
+    const day = d.toDateString();
+    if (day !== lastDay) {
+      // New calendar day → date divider. It also serves as the gap separator,
+      // so we don't additionally emit a time divider at this boundary.
+      out.push({ kind: 'date', iso: m.createdAt });
+    } else if (t - lastTime > 10 * 60_000) {
+      // Same day but a >10min lull → keep the lightweight time divider.
       out.push({ kind: 'time', iso: m.createdAt });
     }
     out.push({ kind: 'msg', msg: m });
     lastTime = t;
+    lastDay = day;
   }
   return out;
 }
