@@ -16,6 +16,16 @@ const voteEntrySchema = new mongoose.Schema(
       default: 'active',
     },
     eliminatedAtRoundIndex: { type: Number, default: null },
+    // Auto-moderation (anti-spam Phase 1): hidden from everyone but the
+    // submitter and admins once N distinct users report it.
+    hidden: { type: Boolean, default: false },
+    autoHiddenAt: { type: Date, default: null },
+    autoHiddenReason: { type: String, default: null },
+    moderationStatus: {
+      type: String,
+      enum: ['none', 'auto_hidden', 'confirmed', 'restored'],
+      default: 'none',
+    },
   },
   { timestamps: true },
 );

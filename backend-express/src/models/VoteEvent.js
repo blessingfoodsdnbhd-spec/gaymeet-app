@@ -60,6 +60,16 @@ const voteEventSchema = new mongoose.Schema(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], default: [0, 0] },
     },
+    // Auto-moderation (anti-spam Phase 1): hidden from everyone but the creator
+    // and admins once N distinct users report it.
+    hidden: { type: Boolean, default: false },
+    autoHiddenAt: { type: Date, default: null },
+    autoHiddenReason: { type: String, default: null },
+    moderationStatus: {
+      type: String,
+      enum: ['none', 'auto_hidden', 'confirmed', 'restored'],
+      default: 'none',
+    },
   },
   { timestamps: true },
 );
