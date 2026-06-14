@@ -17,6 +17,7 @@ import {
 import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
 import { plazaRoomName } from '../../utils/plazaIdentity';
 import { RoomCardShell } from './RoomCardShell';
+import { RoomPreviewSheet } from './RoomPreviewSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -52,6 +53,7 @@ export function PlazaHotList() {
   );
 
   const nameOf = (r: WorldChatRoom) => plazaRoomName(r, t, isZh);
+  const [preview, setPreview] = React.useState<WorldChatRoom | null>(null);
 
   // A hot room may be a config room (open directly) or a public UGC room (join
   // frictionlessly first, then enter).
@@ -83,6 +85,7 @@ export function PlazaHotList() {
   }
 
   return (
+    <>
     <FlatList
       data={hot}
       keyExtractor={(r) => r.id}
@@ -96,6 +99,8 @@ export function PlazaHotList() {
       renderItem={({ item, index }) => (
         <Pressable
           onPress={() => openHot(item)}
+          onLongPress={() => setPreview(item)}
+          delayLongPress={350}
           style={({ pressed }) => [
             styles.card,
             { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, opacity: pressed ? 0.9 : 1 },
@@ -157,6 +162,19 @@ export function PlazaHotList() {
         </View>
       }
     />
+    {preview && (
+      <RoomPreviewSheet
+        roomId={preview.id}
+        title={nameOf(preview)}
+        onEnter={() => {
+          const r = preview;
+          setPreview(null);
+          openHot(r);
+        }}
+        onClose={() => setPreview(null)}
+      />
+    )}
+    </>
   );
 }
 

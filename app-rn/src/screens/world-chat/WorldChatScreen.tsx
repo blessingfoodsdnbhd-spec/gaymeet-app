@@ -181,6 +181,7 @@ export function WorldChatScreen({
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [online, setOnline] = React.useState<number | null>(null);
+  const [rosterUsers, setRosterUsers] = React.useState<{ userId: string; name: string }[]>([]);
   const [loadingOlder, setLoadingOlder] = React.useState(false);
   // Whether older history might still exist. Without this, onEndReached on a
   // short list fires repeatedly and loadOlder loops → the footer spinner never
@@ -423,8 +424,19 @@ export function WorldChatScreen({
         Alert.alert(t('worldChat.rooms.kicked'));
         nav.goBack();
       });
-      if (cancelled) { uRecv(); uDel(); uEdit(); uCount(); uClosed(); uRoomDel(); uKicked(); return; }
-      unsubs = [uRecv, uDel, uEdit, uCount, uClosed, uRoomDel, uKicked];
+      // Roster — drives @mention autocomplete in the composer. Refreshed on
+      // join/leave by the server; we also request it once on entry.
+      const uRoster = await wsOn('world-chat:roster', (r: any) => {
+        if (cancelled || (r?.roomId && r.roomId !== roomId)) return;
+        setRosterUsers(
+          (r?.users || [])
+            .map((u: any) => ({ userId: String(u.userId), name: u.name }))
+            .filter((u: any) => u.name),
+        );
+      });
+      wsEmit('world-chat:request-roster', { roomId });
+      if (cancelled) { uRecv(); uDel(); uEdit(); uCount(); uClosed(); uRoomDel(); uKicked(); uRoster(); return; }
+      unsubs = [uRecv, uDel, uEdit, uCount, uClosed, uRoomDel, uKicked, uRoster];
     })();
     return () => {
       cancelled = true;
@@ -853,6 +865,7 @@ export function WorldChatScreen({
             onChangeText={setDraft}
             onSend={onSend}
             maxLength={BODY_MAX}
+            mentionCandidates={rosterUsers}
             placeholder={nativePlaceholder(roomId, i18n.language)}
             disabled={sending || uploadingPhoto || sendingVoice}
             onPickPhotoFromLibrary={pickGallery}

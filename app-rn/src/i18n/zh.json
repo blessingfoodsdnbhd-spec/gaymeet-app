@@ -450,6 +450,11 @@
       "title": "房间颜色",
       "hint": "随等级提升解锁更多颜色",
       "locked": "该颜色尚未解锁"
+    },
+    "preview": {
+      "lastMessages": "最近消息",
+      "noMessages": "还没有消息",
+      "enter": "进入房间"
     }
   },
   "chatTranslation": {

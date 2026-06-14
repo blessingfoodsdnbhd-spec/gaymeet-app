@@ -450,6 +450,11 @@
       "title": "Room Color",
       "hint": "More colors unlock as you level up",
       "locked": "This color isn't unlocked yet"
+    },
+    "preview": {
+      "lastMessages": "Recent messages",
+      "noMessages": "No messages yet",
+      "enter": "Enter room"
     }
   },
   "chatTranslation": {

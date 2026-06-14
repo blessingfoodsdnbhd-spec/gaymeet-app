@@ -714,6 +714,11 @@
       "title": "ルームの色",
       "hint": "レベルアップで色が解放されます",
       "locked": "この色はまだ解放されていません"
+    },
+    "preview": {
+      "lastMessages": "最近のメッセージ",
+      "noMessages": "まだメッセージがありません",
+      "enter": "入室する"
     }
   },
   "chatTranslation": {

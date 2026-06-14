@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Camera, Check, Mic, Pencil, Plus, Send, Smile, Trash2, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
@@ -29,6 +29,10 @@ export type ChatComposerProps = {
    *  send button becomes a ✓ Save, and onSend saves the edit. */
   editing?: { id: string; preview: string } | null;
   onCancelEdit?: () => void;
+  /** Opt-in @mention autocomplete (World Chat passes the room roster). When the
+   *  user types "@name", a suggestion list appears; picking one inserts "@name ".
+   *  Undefined elsewhere (e.g. DM) → no mention UI, zero behavior change. */
+  mentionCandidates?: { userId: string; name: string }[];
 };
 
 /**
@@ -58,6 +62,7 @@ export function ChatComposer({
   onCancelReply,
   editing,
   onCancelEdit,
+  mentionCandidates,
 }: ChatComposerProps) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -65,6 +70,27 @@ export function ChatComposer({
 
   const handleChange = (text: string) => {
     onChangeText(maxLength != null ? text.slice(0, maxLength) : text);
+  };
+
+  // ── @mention autocomplete (opt-in via mentionCandidates) ────────────────────
+  // Matches the trailing "@token" (no whitespace after @). Substring match so it
+  // works for CJK nicknames with no word boundaries.
+  const mentionMatch = React.useMemo(() => {
+    if (!mentionCandidates || !mentionCandidates.length || editing) return null;
+    const at = value.lastIndexOf('@');
+    if (at < 0) return null;
+    const q = value.slice(at + 1);
+    if (/\s/.test(q) || q.length > 24) return null; // token ended
+    const ql = q.toLowerCase();
+    const matches = mentionCandidates
+      .filter((c) => c.name && (q === '' || c.name.toLowerCase().includes(ql)))
+      .slice(0, 6);
+    return matches.length ? { at, matches } : null;
+  }, [value, mentionCandidates, editing]);
+
+  const pickMention = (name: string) => {
+    if (!mentionMatch) return;
+    onChangeText(value.slice(0, mentionMatch.at) + '@' + name + ' ');
   };
 
   // ── Tap-to-record voice ─────────────────────────────────────────────────────
@@ -309,6 +335,35 @@ export function ChatComposer({
 
   return (
     <View>
+      {mentionMatch && (
+        <View
+          style={{
+            maxHeight: 176,
+            backgroundColor: theme.colors.surface,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: theme.colors.line,
+          }}
+        >
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {mentionMatch.matches.map((m) => (
+              <Pressable
+                key={m.userId}
+                onPress={() => pickMention(m.name)}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 18,
+                  paddingVertical: 11,
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <Text style={{ fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
+                  @{m.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {banner}
 
       {/* Composer */}
