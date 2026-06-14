@@ -53,3 +53,9 @@ app/pubspec.lock
 
 # ── Claude internal ───────────────────────────────────────────────────────────
 .claude/
+
+# build artifacts (Build 76 session, never commit)
+*.aab
+*.ipa
+*.log
+app-rn/node_modules

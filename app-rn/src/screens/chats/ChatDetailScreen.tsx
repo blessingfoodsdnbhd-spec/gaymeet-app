@@ -1157,6 +1157,7 @@ export function ChatDetailScreen() {
                         url={msg.mediaUrl ?? ''}
                         size={22}
                         color={mine ? '#FFFFFF' : theme.colors.primaryDeep}
+                        preload
                       />
                       {/* simple static waveform glyph */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>

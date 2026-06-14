@@ -3,7 +3,7 @@ import { Pressable, ActivityIndicator } from 'react-native';
 import { Volume2, Pause } from 'lucide-react-native';
 import { Audio } from 'expo-av';
 import { useTheme } from '../theme/ThemeProvider';
-import { takeVoice, ensureAudioMode } from '../utils/voiceCache';
+import { takeVoice, ensureAudioMode, prefetchVoice } from '../utils/voiceCache';
 
 // Module-level single-voice guard: only ONE voice may play app-wide at a time.
 // Without this, opening a profile repeatedly (or multiple buttons auto-playing —
@@ -14,18 +14,23 @@ let activeVoiceStop: (() => void) | null = null;
 /**
  * Tap-to-play a voice-intro URL. Toggles play/stop, auto-unloads on finish and
  * on unmount. `autoPlay` plays once on mount (used by Nearby auto-play).
+ * `preload` warms the voiceCache (shouldPlay:false) on mount so the first tap is
+ * instant instead of a 3–4s download+decode — used by chat voice messages, where
+ * nothing else prefetches (the Nearby grid/deck call prefetchMany themselves).
  */
 export function VoicePlayButton({
   url,
   size = 18,
   color,
   autoPlay = false,
+  preload = false,
   onPlayingChange,
 }: {
   url: string;
   size?: number;
   color?: string;
   autoPlay?: boolean;
+  preload?: boolean;
   onPlayingChange?: (playing: boolean) => void;
 }) {
   const theme = useTheme();
@@ -98,9 +103,13 @@ export function VoicePlayButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, stop]);
 
-  // Auto-play once on mount when requested.
+  // Auto-play once on mount when requested; otherwise warm the cache when
+  // `preload` is set so the first tap replays an already-decoded Sound. The
+  // FlatList only mounts bubbles near the viewport, so this preloads just the
+  // visible voice messages rather than the whole chat history.
   React.useEffect(() => {
     if (autoPlay && url) play();
+    else if (preload && url) prefetchVoice(url);
     return () => { stop(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
