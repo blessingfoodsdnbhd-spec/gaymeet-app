@@ -1162,8 +1162,10 @@
     "statusUnknown": "不明",
     "prefs": {
       "importantSection": "重要",
-      "important": "マッチ・メモ・ルーム招待",
+      "important": "メモ・ルーム招待",
       "importantHint": "常にオン — 見逃したくない瞬間です。",
+      "matches": "新しいマッチ",
+      "messages": "新着メッセージ",
       "moreSection": "その他の通知",
       "votes": "コンテスト更新",
       "follow": "新しいフォロワー",

@@ -8,6 +8,7 @@ const CallLog = require('../models/CallLog');
 const GroupChat = require('../models/GroupChat');
 const GroupMessage = require('../models/GroupMessage');
 const { sendPushToUser } = require('../utils/push');
+const { isAllowed } = require('./notificationService');
 const { ALL_ROOMS, VALID_ROOM_IDS, socketRoom } = require('../config/worldChatRooms');
 const { identityOf } = require('../utils/identity');
 const xpService = require('./xpService');
@@ -346,6 +347,7 @@ function initSocket(server) {
         if (otherId && otherId !== userId) {
           (async () => {
             try {
+              if (!(await isAllowed(otherId, 'message'))) return; // user muted new-message push
               console.log('[push] chat ws-route hook firing →', otherId, 'type=', msgType);
               const sender = await User.findById(userId).select('nickname').lean();
               const senderName = sender?.nickname || 'New message';

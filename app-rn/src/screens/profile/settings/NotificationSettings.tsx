@@ -10,6 +10,8 @@ import { getNotificationPrefs, updateNotificationPrefs } from '../../../api/noti
 // UI groups → the backend notification types they cover. A group is ON when
 // none of its types are in the `disabled` set.
 const GROUPS: { key: string; types: string[] }[] = [
+  { key: 'matches', types: ['match'] },
+  { key: 'messages', types: ['message'] },
   { key: 'votes', types: ['vote_first_vote', 'vote_ending_24h', 'vote_ending_1h', 'vote_ended', 'vote_result'] },
   { key: 'follow', types: ['follow'] },
   { key: 'worldChatReply', types: ['world_chat_reply'] },

@@ -1216,8 +1216,10 @@
     "statusUnknown": "未知",
     "prefs": {
       "importantSection": "重要",
-      "important": "配对、小纸条与聊天室邀请",
+      "important": "小纸条与聊天室邀请",
       "importantHint": "始终开启 — 这些是你不会想错过的时刻。",
+      "matches": "新配对",
+      "messages": "新消息",
       "moreSection": "更多通知",
       "votes": "投票活动提醒",
       "follow": "新的关注",

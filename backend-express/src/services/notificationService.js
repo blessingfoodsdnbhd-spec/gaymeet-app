@@ -2,13 +2,17 @@ const Notification = require('../models/Notification');
 const NotificationPreference = require('../models/NotificationPreference');
 const { sendPushToUser } = require('../utils/push');
 
-// Types the user can never turn off (and that ignore quiet hours for push).
-const HIGH_PRIORITY = new Set(['match', 'dm', 'note', 'room_invite', 'room_kick']);
+// Types that bypass quiet hours for push (time-sensitive). The user may still
+// turn `match`/`message` off in settings (see ALL_TYPES); `note`/`room_invite`/
+// `room_kick` have no UI toggle, so they remain effectively always-on.
+const HIGH_PRIORITY = new Set(['match', 'message', 'dm', 'note', 'room_invite', 'room_kick']);
 
-// All notification types the preferences UI knows about (high-priority ones are
-// shown but locked ON). Keep in sync with the client toggle list.
+// All notification types the preferences UI knows about. Keep in sync with the
+// client toggle list. `match` and `message` bypass quiet hours but ARE
+// user-toggleable here (they are the two core dating-app pushes).
 const ALL_TYPES = [
   'match',
+  'message',
   'note',
   'follow',
   'room_invite',
@@ -68,8 +72,10 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
   if (!userId) return null;
   try {
     const high = HIGH_PRIORITY.has(type);
-    const pref = high ? null : await getPref(userId);
-    if (!high && pref && Array.isArray(pref.disabled) && pref.disabled.includes(type)) {
+    const pref = await getPref(userId);
+    // Honor the user's opt-out for EVERY type (incl. high-priority match/message).
+    // HIGH_PRIORITY now only governs the quiet-hours bypass below.
+    if (pref && Array.isArray(pref.disabled) && pref.disabled.includes(type)) {
       return null; // user opted out — don't persist or push
     }
 
@@ -145,4 +151,18 @@ async function alreadyNotified(userId, type, dataKey, value, sinceMs) {
   }
 }
 
-module.exports = { notify, coalesceOk, alreadyNotified, inQuietHours, HIGH_PRIORITY, ALL_TYPES };
+/**
+ * Cheap pref check for push paths that bypass notify() and call sendPushToUser
+ * directly (e.g. the real-time DM hooks). Returns true unless the user has
+ * explicitly disabled `type`. Fail-OPEN: on any error we allow the push so a DB
+ * hiccup can never silently swallow a chat notification.
+ */
+async function isAllowed(userId, type) {
+  try {
+    const pref = await getPref(userId);
+    if (pref && Array.isArray(pref.disabled) && pref.disabled.includes(type)) return false;
+  } catch (_) {}
+  return true;
+}
+
+module.exports = { notify, coalesceOk, alreadyNotified, inQuietHours, isAllowed, HIGH_PRIORITY, ALL_TYPES };
