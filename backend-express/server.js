@@ -4,6 +4,7 @@ const app = require('./src/app');
 const { connectDB } = require('./src/config/db');
 const { initSocket } = require('./src/services/socketService');
 const { startNotificationJobs } = require('./src/services/notificationJobs');
+const { startRetentionJobs } = require('./src/services/retentionJobs');
 const env = require('./src/config/env');
 
 async function main() {
@@ -14,6 +15,10 @@ async function main() {
 
   // Re-engagement scheduled jobs (vote deadlines, comeback nudges, daily digests).
   startNotificationJobs();
+
+  // Data-retention cleanup (DISABLED unless RETENTION_ENABLED=true). 30-day DM +
+  // ended-contest vote purge. See services/retentionJobs.js.
+  startRetentionJobs();
 
   server.listen(env.PORT, () => {
     console.log(`🚀 GayMeet server running on port ${env.PORT}`);
