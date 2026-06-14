@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { ProgressBar } from './ProgressBar';
 import { useTheme } from '../theme/ThemeProvider';
 import type { User } from '../api/me';
+import { useAuth } from '../store/auth';
+import { claimProfileReward } from '../api/coins';
 
 export interface CompletionItem {
   key: string;
@@ -61,6 +63,20 @@ export function ProfileCompletionCard({ user }: { user: User | null }) {
   const { t } = useTranslation();
   const { percent, items, missingCount } = useProfileCompletion(user);
   const [expanded, setExpanded] = React.useState(false);
+  const setUser = useAuth((s) => s.setUser);
+
+  // One-time profile-completion coin bonus. Fires when the profile first hits
+  // 100%; the server grants at most once, so a per-mount ref guard is enough.
+  const claimedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (percent < 100 || claimedRef.current) return;
+    claimedRef.current = true;
+    claimProfileReward()
+      .then((r) => {
+        if (r.balance != null && user) setUser({ ...(user as any), coins: r.balance });
+      })
+      .catch(() => {});
+  }, [percent, user, setUser]);
 
   if (percent >= 100) return null;
 

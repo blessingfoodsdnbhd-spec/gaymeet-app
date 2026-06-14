@@ -33,6 +33,7 @@ export type RootStackParamList = {
   Verification: undefined;
   MyAnalytics: undefined;
   PremiumGift: undefined;
+  Wallet: undefined;
   TagsEdit: undefined;
   PromptsEdit: undefined;
   MyMoments: undefined;

@@ -72,6 +72,8 @@ export interface User {
   currentExp?: number;
   /** Daily-login streak (STREAK1). */
   streak?: { current: number; longest: number; lastActiveDate: string | null };
+  /** Virtual currency balance (Phase 4 economy). */
+  coins?: number;
   isBoosted?: boolean;
   boostExpiresAt?: string | null;
   /** Count of the user's locked photos. Backend strips the actual URLs

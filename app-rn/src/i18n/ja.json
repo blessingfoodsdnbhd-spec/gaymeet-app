@@ -257,7 +257,8 @@
       "verification": "写真認証を受ける",
       "adminVerifications": "認証審査",
       "myData": "マイデータ 📊",
-      "giftPremium": "プレミアムを贈る 🎁"
+      "giftPremium": "プレミアムを贈る 🎁",
+      "wallet": "ウォレット"
     },
     "edit": {
       "aboutYou": "あなたについて",
@@ -1306,7 +1307,11 @@
     "alreadyActive": "すでにブースト中です",
     "activateFailed": "ブーストを有効にできませんでした",
     "premiumTitle": "ブーストはプレミアム機能",
-    "premiumBody": "ブーストでマッチを増やそう — アップグレードで解放。"
+    "premiumBody": "ブーストでマッチを増やそう — アップグレードで解放。",
+    "insufficientTitle": "コインが足りません",
+    "insufficientBody": "ブーストには{{cost}}コイン必要です。獲得または購入しますか?",
+    "getCoins": "コインを入手",
+    "coinConfirmBody": "{{cost}}コインで30分間ディスカバーの先頭に表示しますか?"
   },
   "report": {
     "title": "{{name}}を通報",
@@ -1536,5 +1541,24 @@
     "todayReward": "本日のチェックイン +{{n}}コイン",
     "balance": "コイン残高 {{n}}",
     "claim": "受け取る"
+  },
+  "wallet": {
+    "title": "ウォレット",
+    "balanceLabel": "コイン残高",
+    "coins": "コイン",
+    "coinsN": "{{n}} コイン",
+    "rechargeSection": "チャージ",
+    "bestValue": "お得",
+    "popular": "人気",
+    "mockNote": "チャージはデモモードです。実際の決済は未接続です。",
+    "purchaseSuccess": "+{{n}} コイン獲得",
+    "purchaseFailed": "購入に失敗しました",
+    "earnSection": "コインの稼ぎ方",
+    "earn": {
+      "checkin": "毎日のチェックイン",
+      "invite": "友達を招待",
+      "profile": "プロフィールを完成",
+      "vote": "投票に参加"
+    }
   }
 }

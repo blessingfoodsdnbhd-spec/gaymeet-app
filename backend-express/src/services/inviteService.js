@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Follow = require('../models/Follow');
 const { grantPremiumMs } = require('../utils/premiumGrant');
 const { notify } = require('./notificationService');
+const { awardCoins, COIN_REWARDS } = require('../utils/coins');
 
 const REWARD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -68,6 +69,9 @@ async function redeemInvite(inviteeId, rawCode) {
 
   await grantPremiumMs(inviterId, REWARD_MS);
   await grantPremiumMs(inviteeId, REWARD_MS);
+  // Coin bonus on top of the Premium reward (once — guarded by InviteUsage above).
+  await awardCoins(inviterId, COIN_REWARDS.referralInviter);
+  await awardCoins(inviteeId, COIN_REWARDS.referralInvitee);
   await InviteCode.updateOne({ _id: invite._id }, { $inc: { usedCount: 1 } });
   await User.updateOne({ _id: inviteeId, referredBy: null }, { $set: { referredBy: inviterId } });
 
