@@ -3,14 +3,16 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   Switch,
-  ScrollView,
   ActivityIndicator,
   StyleSheet,
   Alert,
   useWindowDimensions,
 } from 'react-native';
+// RNGH Pressable + ScrollView — inside the Sheet's GestureHandlerRootView the
+// RN-core versions eat the first Android touch (member/invite rows "need several
+// taps unless you scroll first"). RNGH's versions respond on first tap (Build 76).
+import { Pressable, ScrollView } from 'react-native-gesture-handler';
 import { X, UserPlus, Crown, ChevronLeft, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -223,7 +225,7 @@ export function RoomSettingsSheet({
         {membersQ.isLoading ? (
           <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {list.map((m) => (
               <Pressable
                 key={m.id}
@@ -304,7 +306,7 @@ export function RoomSettingsSheet({
             {t('worldChat.rooms.noFriends')}
           </Text>
         ) : (
-          <ScrollView style={{ maxHeight: scrollMaxH }}>
+          <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {friends.map((f) => {
               const on = picked.has(f.id);
               return (
@@ -365,7 +367,7 @@ export function RoomSettingsSheet({
   return (
     <Sheet open={open} onClose={onClose} maxHeight="86%">
       <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{t('worldChat.rooms.settings')}</Text>
-      <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
         {/* Edit meta */}
         <Text style={[styles.label, { color: theme.colors.muted }]}>{t('worldChat.rooms.fieldTitle')}</Text>
         <TextInput value={title} onChangeText={(x) => setTitle(x.slice(0, 80))} style={input} placeholderTextColor={theme.colors.muted} />

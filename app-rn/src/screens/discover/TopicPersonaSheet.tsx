@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+// RNGH Pressable — inside the Sheet's GestureHandlerRootView the RN-core
+// Pressable loses its first Android touch to RNGH responder contention; RNGH's
+// own Pressable responds on the first tap (Build 76). ScrollViews stay RN-core
+// here so the horizontal photo pager keeps its existing paging behavior.
+import { Pressable } from 'react-native-gesture-handler';
 import { Image as ExpoImage } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';

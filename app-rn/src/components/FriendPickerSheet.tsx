@@ -1,5 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+// Pressable + FlatList from react-native-gesture-handler (NOT react-native).
+// Inside the Sheet's GestureHandlerRootView on Android, RN-core's Pressable /
+// FlatList don't share RNGH's native gesture system, so the first touch after
+// the sheet opens is eaten waking the gesture pipeline — you must scroll the
+// friend list once before a row registers. RNGH's own components respond on the
+// first tap (matches the Build 61 MomentLocationSheet fix; Build 76).
+import { Pressable, FlatList } from 'react-native-gesture-handler';
 import { Check, Search } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -98,7 +105,7 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
         <Text style={[styles.title, { color: theme.colors.text }]}>
           {t('moments.compose.tag')}
         </Text>
-        <Pressable onPress={confirm} hitSlop={8}>
+        <Pressable onPress={confirm} hitSlop={12}>
           <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: '600' }}>
             {t('moments.compose.taggedCount', { n: count })}
           </Text>
@@ -121,10 +128,11 @@ export function FriendPickerSheet({ open, onClose, selectedIds, max = 10, onConf
         keyExtractor={(u) => u._id}
         style={{ maxHeight: 380 }}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         renderItem={({ item }) => {
           const sel = !!picked[item._id];
           return (
-            <Pressable onPress={() => toggle(item)} style={styles.row}>
+            <Pressable onPress={() => toggle(item)} hitSlop={6} style={styles.row}>
               <Avatar name={item.nickname} uri={item.avatarUrl} avatarIdx={0} size={40} />
               <NameWithBadge
                 name={item.nickname}

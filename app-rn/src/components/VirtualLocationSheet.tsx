@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+// Pressable + ScrollView from react-native-gesture-handler — see
+// MomentLocationSheet for the rationale: inside the Sheet's
+// GestureHandlerRootView, RN-core's Pressable/ScrollView lose the first Android
+// touch to RNGH responder contention ("needs several taps unless you scroll the
+// list first"). RNGH's own components respond on the first tap (Build 76).
+import { Pressable, ScrollView } from 'react-native-gesture-handler';
 import { MapPin, Check, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from './Sheet';
@@ -79,7 +85,7 @@ export function VirtualLocationSheet({ open, onClose, currentLabel, onApplied }:
       </Text>
 
       {currentLabel ? (
-        <Pressable onPress={revert} style={[styles.revertRow, { borderColor: theme.colors.line }]}>
+        <Pressable onPress={revert} hitSlop={8} style={[styles.revertRow, { borderColor: theme.colors.line }]}>
           <X size={16} color={theme.colors.danger ?? '#D14B4B'} strokeWidth={2} />
           <Text style={{ flex: 1, fontSize: 14, color: theme.colors.text }}>
             {t('virtualLocation.revert')}
@@ -88,13 +94,19 @@ export function VirtualLocationSheet({ open, onClose, currentLabel, onApplied }:
         </Pressable>
       ) : null}
 
-      <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ maxHeight: 360 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         {CITIES.map((c) => {
           const active = currentLabel === c.label;
           return (
             <Pressable
               key={c.label}
               onPress={() => pick(c)}
+              hitSlop={8}
               style={[styles.cityRow, { borderBottomColor: theme.colors.line }]}
             >
               <MapPin size={16} color={theme.colors.primary} strokeWidth={2} />

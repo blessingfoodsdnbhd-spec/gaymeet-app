@@ -102,6 +102,7 @@ export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: P
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         style={{ maxHeight: scrollMaxH }}
       >
         <Text style={[styles.title, { color: theme.colors.text }]}>
