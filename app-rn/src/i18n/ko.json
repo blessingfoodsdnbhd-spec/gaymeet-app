@@ -720,6 +720,19 @@
       "lastMessages": "최근 메시지",
       "noMessages": "아직 메시지가 없습니다",
       "enter": "입장하기"
+    },
+    "joined": {
+      "title": "✨ 참여 중인 방",
+      "leaveTitle": "방 나가기",
+      "leaveBody": "“{{title}}”에서 나가시겠어요? 이 방의 메시지를 더 이상 받지 않습니다.",
+      "leave": "나가기"
+    },
+    "exit": {
+      "title": "방을 나가시겠어요?",
+      "body": "방을 유지하면 나중에 다시 와서 메시지를 볼 수 있어요.",
+      "bodyNamed": "“{{title}}”에서 나가시겠어요? 유지하면 나중에 다시 와서 메시지를 볼 수 있어요.",
+      "keep": "유지(알림 받기)",
+      "leave": "방 나가기"
     }
   },
   "chatTranslation": {
@@ -1190,7 +1203,8 @@
       "quietHours": "방해 금지 시간",
       "quietHoursHint": "이 시간대(UTC)에는 푸시를 보류합니다. 알림 센터에는 계속 표시됩니다.",
       "from": "부터",
-      "to": "까지"
+      "to": "까지",
+      "roomMessages": "방 메시지"
     }
   },
   "accountSettings": {

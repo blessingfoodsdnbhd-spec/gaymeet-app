@@ -720,6 +720,19 @@
       "lastMessages": "最近のメッセージ",
       "noMessages": "まだメッセージがありません",
       "enter": "入室する"
+    },
+    "joined": {
+      "title": "✨ 参加中のルーム",
+      "leaveTitle": "ルームを離れる",
+      "leaveBody": "「{{title}}」を離れますか？このルームのメッセージは届かなくなります。",
+      "leave": "離れる"
+    },
+    "exit": {
+      "title": "ルームを離れますか？",
+      "body": "ルームを保留すれば、後で戻ってメッセージを見られます。",
+      "bodyNamed": "「{{title}}」を離れますか？保留すれば後で戻ってメッセージを見られます。",
+      "keep": "保留（通知を受け取る）",
+      "leave": "ルームを離れる"
     }
   },
   "chatTranslation": {
@@ -1190,7 +1203,8 @@
       "quietHours": "おやすみ時間",
       "quietHoursHint": "この時間帯（UTC）はプッシュを保留します。通知センターには表示されます。",
       "from": "開始",
-      "to": "終了"
+      "to": "終了",
+      "roomMessages": "ルームメッセージ"
     }
   },
   "accountSettings": {

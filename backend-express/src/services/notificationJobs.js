@@ -5,6 +5,7 @@ const ProfileView = require('../models/ProfileView');
 const Swipe = require('../models/Swipe');
 const ChatRoom = require('../models/ChatRoom');
 const WorldChatMessage = require('../models/WorldChatMessage');
+const RoomMembership = require('../models/RoomMembership');
 const { notify, alreadyNotified } = require('./notificationService');
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -203,20 +204,21 @@ async function dailyTick() {
 }
 
 /**
- * Every 10 min: delete custom World-Chat rooms that have gone cold — Phase 4
- * spec §7.2: no activity for ≥3 days (72h) AND nobody currently connected.
- * `lastActiveAt` (bumped on every message) is the reliable persisted signal;
- * the live socket count guards against deleting a room people are sitting in;
- * the createdAt guard avoids nuking brand-new empty rooms. Broadcasts
- * world-chat:room-deleted so any lingering client is bounced to the world room.
- * TODO (P3 §7.2): push the creator a "closing in 24h" reminder before deletion.
+ * Every 10 min: delete custom World-Chat rooms that have gone fully cold.
+ * Build 102 §A raised the window from 3 → 30 days so "我开的房间 / 我在的房间"
+ * history persists for the retention period; only rooms abandoned for ≥30 days
+ * (and with nobody connected) are reclaimed. Rooms with 无限 retention
+ * (retentionDays === 0, Premium) are never auto-deleted. Memberships are
+ * cascaded so subscribers' lists self-heal. Broadcasts world-chat:room-deleted
+ * so any lingering client is bounced to the world room.
  */
 async function emptyRoomSweep() {
   try {
-    const cutoff = new Date(Date.now() - 3 * DAY);
+    const cutoff = new Date(Date.now() - 30 * DAY);
     const stale = await ChatRoom.find({
       lastActiveAt: { $lt: cutoff },
       createdAt: { $lt: cutoff },
+      retentionDays: { $ne: 0 }, // keep 无限-retention rooms forever
     }).select('_id').lean();
     if (!stale.length) return;
 
@@ -234,8 +236,40 @@ async function emptyRoomSweep() {
       await Promise.all([
         ChatRoom.deleteOne({ _id: r._id }),
         WorldChatMessage.deleteMany({ roomId: id }),
+        RoomMembership.deleteMany({ roomId: id }),
       ]);
       if (io) io.emit('world-chat:room-deleted', { roomId: id });
+    }
+  } catch (_) {
+    /* best-effort */
+  }
+}
+
+/**
+ * Build 102 §A — message retention sweep (replaces the old fixed 7-day TTL on
+ * WorldChatMessage). Runs every 6h:
+ *   - Official / virtual lobby rooms (roomId not a 24-hex ChatRoom id, incl.
+ *     legacy null roomIds) keep only ~24h of history — they're live-focused.
+ *   - Custom (user-created) rooms keep messages for their retentionDays
+ *     (7 / 30, default 30); retentionDays === 0 means 无限 (Premium) → skipped.
+ */
+async function roomMessageSweep() {
+  try {
+    const now = Date.now();
+    // Virtual/official rooms — 24h window.
+    await WorldChatMessage.deleteMany({
+      roomId: { $not: /^[a-f0-9]{24}$/i },
+      createdAt: { $lt: new Date(now - DAY) },
+    });
+    // Custom rooms — per-room retention.
+    const rooms = await ChatRoom.find({}).select('_id retentionDays').lean();
+    for (const r of rooms) {
+      const days = r.retentionDays == null ? 30 : r.retentionDays;
+      if (!days || days <= 0) continue; // 无限
+      await WorldChatMessage.deleteMany({
+        roomId: r._id.toString(),
+        createdAt: { $lt: new Date(now - days * DAY) },
+      });
     }
   } catch (_) {
     /* best-effort */
@@ -248,6 +282,8 @@ function startNotificationJobs() {
   setInterval(comebackSweep, 60 * 60 * 1000).unref?.();
   setInterval(dailyTick, 15 * 60 * 1000).unref?.();
   setInterval(emptyRoomSweep, 10 * 60 * 1000).unref?.();
+  setTimeout(roomMessageSweep, 60 * 1000).unref?.(); // first pass ~1min after boot
+  setInterval(roomMessageSweep, 6 * 60 * 60 * 1000).unref?.();
   console.log('[notifications] scheduled jobs started');
 }
 

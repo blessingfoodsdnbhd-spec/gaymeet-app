@@ -18,6 +18,7 @@ import { DEFAULT_HEX, CARD_TEXT } from '../../utils/roomColors';
 import { plazaRoomName } from '../../utils/plazaIdentity';
 import { RoomCardShell } from './RoomCardShell';
 import { RoomPreviewSheet } from './RoomPreviewSheet';
+import { JoinedRoomsSection } from './JoinedRoomsSection';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -159,6 +160,8 @@ export function PlazaHotList() {
               {t('plaza.hot.quota', { used: mine.length, cap: mineQ.data.cap })}
             </Text>
           )}
+          {/* ✨ 我在的房间 — joined (subscribed) rooms (Build 102 §C) */}
+          <JoinedRoomsSection />
         </View>
       }
     />

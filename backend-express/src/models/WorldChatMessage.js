@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 
 /**
- * 世界聊天室 / World Chat — a single public broadcast message. Messages
- * auto-expire 7 days after creation via the TTL index; a separate
- * createdAt:-1 index backs reverse-chronological pagination.
+ * 世界聊天室 / World Chat — a single public broadcast message. Retention is
+ * cron-driven (services/notificationJobs.roomMessageSweep), NOT a fixed TTL:
+ *   - custom (user-created) rooms keep messages for ChatRoom.retentionDays
+ *     (7 / 30 / ∞), so "我开的房间 / 我在的房间" history persists.
+ *   - official/virtual lobby rooms ('world', country codes, channel ids) keep
+ *     only the last ~24h (live-focused).
+ * The legacy 7-day TTL index is dropped at boot (server.js dropLegacyTTL).
  */
 const worldChatMessageSchema = new mongoose.Schema(
   {
@@ -40,9 +44,7 @@ const worldChatMessageSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
-// Per-room reverse-chrono history pagination.
+// Per-room reverse-chrono history pagination + retention sweep scan.
 worldChatMessageSchema.index({ roomId: 1, createdAt: -1 });
-// Auto-expire after 7 days.
-worldChatMessageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
 
 module.exports = mongoose.model('WorldChatMessage', worldChatMessageSchema);

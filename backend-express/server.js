@@ -7,8 +7,25 @@ const { startNotificationJobs } = require('./src/services/notificationJobs');
 const { startRetentionJobs } = require('./src/services/retentionJobs');
 const env = require('./src/config/env');
 
+// Build 102 §A — retire the old fixed 7-day TTL on world-chat messages. Mongoose
+// won't drop a removed index on its own, so do it once at boot; retention is now
+// cron-driven per-room (services/notificationJobs.roomMessageSweep). Idempotent.
+async function dropLegacyTTL() {
+  try {
+    const coll = require('mongoose').connection.collection('worldchatmessages');
+    const idx = await coll.indexes();
+    if (idx.some((i) => i.name === 'createdAt_1' && i.expireAfterSeconds != null)) {
+      await coll.dropIndex('createdAt_1');
+      console.log('[migrate] dropped legacy WorldChatMessage TTL index');
+    }
+  } catch (e) {
+    console.warn('[migrate] dropLegacyTTL skipped:', e?.message || e);
+  }
+}
+
 async function main() {
   await connectDB();
+  await dropLegacyTTL();
 
   const server = http.createServer(app);
   initSocket(server);

@@ -44,6 +44,10 @@ import {
   editWorldChatMessage,
   getChatRoom,
   translateWorldChatMessage,
+  enterRoom,
+  markRoomRead,
+  setRoomNotifications,
+  leaveRoomMembership,
   type WorldChatMessage,
 } from '../../api/worldChat';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
@@ -59,6 +63,7 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
+import { RoomExitConfirmSheet } from './RoomExitConfirmSheet';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import { roomShareUrl } from '../../utils/roomLink';
@@ -156,29 +161,89 @@ export function WorldChatScreen({
     setSettingsOpen(true);
   }, []);
 
-  // Per-room notification mute. Reactive read so the bell icon flips live.
+  // Per-room notification mute. Reactive read so the bell icon flips live. The
+  // local store drives the icon instantly; for custom rooms we also persist the
+  // membership flag server-side so the push fan-out (Build 102 §C) honors it.
   const notifMuted = useRoomNotifPrefs((s) => !!s.muted[roomId]);
+  const syncMute = React.useCallback(
+    (muted: boolean) => {
+      useRoomNotifPrefs.getState().setMuted(roomId, muted);
+      if (isCustom) {
+        setRoomNotifications(roomId, !muted).catch(() => {});
+        qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+      }
+    },
+    [roomId, isCustom, qc],
+  );
   const onToggleNotif = React.useCallback(() => {
     const muted = useRoomNotifPrefs.getState().isMuted(roomId);
     if (muted) {
       Alert.alert(t('worldChat.notif.enableTitle'), t('worldChat.notif.enableBody'), [
         { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('worldChat.notif.enableAction'),
-          onPress: () => useRoomNotifPrefs.getState().setMuted(roomId, false),
-        },
+        { text: t('worldChat.notif.enableAction'), onPress: () => syncMute(false) },
       ]);
     } else {
       Alert.alert(t('worldChat.notif.disableTitle'), t('worldChat.notif.disableBody'), [
         { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('worldChat.notif.disableAction'),
-          style: 'destructive',
-          onPress: () => useRoomNotifPrefs.getState().setMuted(roomId, true),
-        },
+        { text: t('worldChat.notif.disableAction'), style: 'destructive', onPress: () => syncMute(true) },
       ]);
     }
-  }, [roomId, t]);
+  }, [roomId, t, syncMute]);
+
+  // ── 我在的房间 membership (Build 102 §B/§C) ─────────────────────────────────
+  // Auto-subscribe + mark-read on entry (custom rooms only). The owner is already
+  // subscribed at create time; this also advances their unread high-water mark.
+  React.useEffect(() => {
+    if (!isCustom) return;
+    enterRoom(roomId).catch(() => {});
+    return () => {
+      // Mark read again on leave so the badge clears for next focus.
+      markRoomRead(roomId).catch(() => {});
+      qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+    };
+  }, [roomId, isCustom, qc]);
+
+  // Leave-confirmation sheet (non-owner custom rooms, pushed view only).
+  const [exitOpen, setExitOpen] = React.useState(false);
+  const exitConfirmedRef = React.useRef(false);
+  // The navigation action that beforeRemove intercepted, re-dispatched on confirm.
+  const pendingExitRef = React.useRef<any>(null);
+  const exitEligible = !embedded && isCustom && !!room && !isCreator;
+
+  React.useEffect(() => {
+    if (!exitEligible) return;
+    const unsub = nav.addListener('beforeRemove', (e: any) => {
+      if (exitConfirmedRef.current) return; // user already chose — let it through
+      e.preventDefault();
+      pendingExitRef.current = e.data.action;
+      setExitOpen(true);
+    });
+    return unsub;
+  }, [nav, exitEligible]);
+
+  const finishExit = React.useCallback(() => {
+    exitConfirmedRef.current = true;
+    setExitOpen(false);
+    const action = pendingExitRef.current;
+    if (action) nav.dispatch(action);
+    else nav.goBack();
+  }, [nav]);
+
+  const onExitKeep = React.useCallback(() => {
+    markRoomRead(roomId).catch(() => {});
+    qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+    finishExit();
+  }, [roomId, qc, finishExit]);
+
+  const onExitLeave = React.useCallback(() => {
+    leaveRoomMembership(roomId)
+      .catch(() => {})
+      .finally(() => {
+        qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+        qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
+        finishExit();
+      });
+  }, [roomId, qc, finishExit]);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -1039,6 +1104,15 @@ export function WorldChatScreen({
           setRosterOpen(false);
           if (userId !== myId) nav.navigate('UserDetail', { userId });
         }}
+      />
+
+      {/* 离开房间二次确认 (Build 102 §B) */}
+      <RoomExitConfirmSheet
+        open={exitOpen}
+        roomTitle={headerTitle}
+        onKeep={onExitKeep}
+        onLeave={onExitLeave}
+        onCancel={() => setExitOpen(false)}
       />
 
     </SafeAreaView>
