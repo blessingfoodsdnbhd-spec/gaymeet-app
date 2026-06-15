@@ -73,9 +73,11 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       return safeNavigate('WorldChatRoom', { roomId, custom: true });
     }
     case 'world_chat_reply':
-    case 'world_chat_mention': {
-      // Someone replied to / @mentioned you in World Chat → open the room and
-      // scroll to the message. `custom` ('1'/'0') flags a user-created room.
+    case 'world_chat_mention':
+    case 'world_chat_message': {
+      // Reply / @mention / new room message (我在的房间) → open the room and, when
+      // a specific message is referenced, scroll to it. `custom` ('1'/'0') flags
+      // a user-created room.
       const roomId = data.roomId ? String(data.roomId) : null;
       if (!roomId) return safeNavigate('Main');
       const scrollToMessageId = data.messageId ? String(data.messageId) : undefined;

@@ -455,6 +455,19 @@
       "lastMessages": "Recent messages",
       "noMessages": "No messages yet",
       "enter": "Enter room"
+    },
+    "joined": {
+      "title": "✨ Joined Rooms",
+      "leaveTitle": "Leave room",
+      "leaveBody": "Leave “{{title}}”? You’ll stop receiving messages from this room.",
+      "leave": "Leave"
+    },
+    "exit": {
+      "title": "Leave this room?",
+      "body": "Keep the room to come back and read the messages later.",
+      "bodyNamed": "Leave “{{title}}”? Keep it to come back and read the messages later.",
+      "keep": "Keep (stay notified)",
+      "leave": "Leave room"
     }
   },
   "chatTranslation": {
@@ -1244,7 +1257,8 @@
       "quietHours": "Quiet hours",
       "quietHoursHint": "We'll hold pushes during this window (UTC). They still appear in your Notification Center.",
       "from": "From",
-      "to": "To"
+      "to": "To",
+      "roomMessages": "Room messages"
     }
   },
   "accountSettings": {

@@ -197,9 +197,19 @@ export interface ChatRoomSummary {
   isCreator: boolean;
   isMember: boolean;
   memberCount: number;
+  /** Message retention window in days: 7 / 30, or 0 = 无限 (Premium). */
+  retentionDays?: number;
   onlineCount: number;
   lastActiveAt: string;
   createdAt: string;
+}
+
+/** 我在的房间 — a room the user subscribed to (joined, not owned). Extends the
+ *  room summary with the per-room mute flag + unread count. */
+export interface JoinedRoom extends ChatRoomSummary {
+  notificationsEnabled: boolean;
+  unread: number;
+  lastReadAt?: string | null;
 }
 
 export interface RoomFriend {
@@ -255,8 +265,40 @@ export const deleteChatRoom = (id: string, confirm = false) =>
 
 export const updateChatRoom = (
   id: string,
-  patch: { title?: string; description?: string; isPrivate?: boolean; password?: string },
+  patch: {
+    title?: string;
+    description?: string;
+    cardColor?: string;
+    isPrivate?: boolean;
+    password?: string;
+    /** 保留期 — 7 / 30, or 0 = 无限 (Premium; backend returns 402 otherwise). */
+    retentionDays?: number;
+  },
 ) => unwrap<{ room: ChatRoomSummary }>(api.patch(`/world-chat/rooms/${id}`, patch));
+
+// ── 我在的房间 / Room memberships (Build 102) ──────────────────────────────────
+
+/** Rooms the user joined but does NOT own, with unread counts + mute state. */
+export const getJoinedRooms = () =>
+  unwrap<{ rooms: JoinedRoom[] }>(api.get('/world-chat/rooms/joined'));
+
+/** Idempotently subscribe to a custom room + mark it read. Call on room entry. */
+export const enterRoom = (id: string) =>
+  api.post(`/world-chat/rooms/${id}/enter`, {});
+
+/** Advance the unread high-water mark (on entry / on receiving live messages). */
+export const markRoomRead = (id: string) =>
+  api.post(`/world-chat/rooms/${id}/mark-read`, {});
+
+/** 静音 — per-room mute toggle (server-authoritative; drives push fan-out). */
+export const setRoomNotifications = (id: string, notificationsEnabled: boolean) =>
+  unwrap<{ ok: boolean; notificationsEnabled: boolean }>(
+    api.patch(`/world-chat/rooms/${id}/membership`, { notificationsEnabled }),
+  );
+
+/** 离开房间 — unsubscribe from 我在的房间 (also leaves the underlying room). */
+export const leaveRoomMembership = (id: string) =>
+  api.delete(`/world-chat/rooms/${id}/membership`);
 
 export const kickRoomMember = (id: string, userId: string) =>
   api.delete(`/world-chat/rooms/${id}/kick/${userId}`);

@@ -28,6 +28,10 @@ const chatRoomSchema = new mongoose.Schema(
     status: { type: String, enum: ['open', 'closed'], default: 'open' },
     memberIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     messageCount: { type: Number, default: 0 },
+    // Message retention window in days. 7 / 30 (default) or 0 = 无限 (Premium
+    // creators only). The daily room-message sweep deletes messages older than
+    // this; 0 keeps them forever. See services/notificationJobs.roomMessageSweep.
+    retentionDays: { type: Number, default: 30 },
     lastActiveAt: { type: Date, default: Date.now },
   },
   { timestamps: { createdAt: true, updatedAt: false } },

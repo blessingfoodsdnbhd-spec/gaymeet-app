@@ -5,6 +5,7 @@ const WorldChatMessage = require('../models/WorldChatMessage');
 const WorldChatBan = require('../models/WorldChatBan');
 const WorldChatReport = require('../models/WorldChatReport');
 const ChatRoom = require('../models/ChatRoom');
+const RoomMembership = require('../models/RoomMembership');
 const Follow = require('../models/Follow');
 const { notify } = require('../services/notificationService');
 const { auth } = require('../middleware/auth');
@@ -123,6 +124,7 @@ function serializeRoom(room, userId, onlineCount) {
     isCreator: sameId(c, userId),
     isMember: (room.memberIds || []).some((m) => sameId(m, userId)),
     memberCount: (room.memberIds || []).length,
+    retentionDays: room.retentionDays ?? 30,
     onlineCount: onlineCount ?? 0,
     lastActiveAt: room.lastActiveAt,
     createdAt: room.createdAt,
@@ -167,6 +169,21 @@ function summarize(m) {
   if ((m.type || 'text') === 'photo') return (m.caption && m.caption.trim()) || '📷';
   if (m.type === 'voice') return '🎙️';
   return m.body || '';
+}
+
+// Upsert a 我在的房间 subscription for a custom room (no-op for virtual rooms).
+// Best-effort: a failed upsert must never block entering/posting in a room.
+async function ensureMembership(userId, roomId) {
+  if (!isCustomRoomId(roomId)) return;
+  try {
+    await RoomMembership.updateOne(
+      { userId, roomId },
+      { $setOnInsert: { userId, roomId, notificationsEnabled: true, joinedAt: new Date(), lastReadAt: new Date() } },
+      { upsert: true },
+    );
+  } catch (_) {
+    /* unique-race / transient — non-fatal */
+  }
 }
 
 // ── POST /api/world-chat/send ─────────────────────────────────────────────────
@@ -363,6 +380,56 @@ router.post('/send', auth, async (req, res, next) => {
         }).catch(() => {});
       }
     }
+
+    // ── 我在的房间 push fan-out (custom rooms only) ─────────────────────────────
+    // Notify every subscriber who has this room un-muted, except the sender and
+    // anyone already pinged above (reply target / @mention). notify() further
+    // honors the global 'world_chat_message' opt-out + quiet hours, so this is a
+    // two-layer gate: per-room (membership.notificationsEnabled) × global pref.
+    if (custom) {
+      try {
+        const name = req.user.nickname || '';
+        const roomTitle = (await ChatRoom.findById(roomId).select('title').lean())?.title || name;
+        const snippet = summarize(msg).slice(0, 80);
+        const alreadyPinged = new Set([uid, ...(replyTo ? [replyTo.userId] : []), ...mentions.map(String)]);
+        const subs = await RoomMembership.find({ roomId, notificationsEnabled: true })
+          .select('userId')
+          .lean();
+        for (const s of subs) {
+          const sid = s.userId.toString();
+          if (alreadyPinged.has(sid)) continue;
+          notify(sid, 'world_chat_message', {
+            i18n: {
+              en: { title: roomTitle, body: `${name}: ${snippet}` },
+              zh: { title: roomTitle, body: `${name}：${snippet}` },
+              ko: { title: roomTitle, body: `${name}: ${snippet}` },
+              ja: { title: roomTitle, body: `${name}: ${snippet}` },
+            },
+            // Collapse bursts of room messages into one tray push (the per-room
+            // unread badge carries the precise count); inbox rows still persist.
+            coalesce: {
+              windowMs: 5 * 60 * 1000,
+              summaryI18n: {
+                en: { title: roomTitle, body: '{{count}} new messages' },
+                zh: { title: roomTitle, body: '{{count}} 条新消息' },
+                ko: { title: roomTitle, body: '새 메시지 {{count}}개' },
+                ja: { title: roomTitle, body: '新着メッセージ {{count}}件' },
+              },
+            },
+            data: {
+              roomId,
+              custom: '1',
+              messageId: msg._id.toString(),
+              fromUserId: uid,
+              fromUserName: name,
+              fromUserAvatarUrl: req.user.avatarUrl || '',
+            },
+          }).catch(() => {});
+        }
+      } catch (_) {
+        /* push fan-out is best-effort */
+      }
+    }
   } catch (e) {
     next(e);
   }
@@ -512,6 +579,9 @@ router.post('/rooms', auth, async (req, res, next) => {
       lastActiveAt: new Date(),
     });
     room.creatorId = req.user; // populate for serialize
+    // Owner is auto-subscribed so their room shows in 我开的房间 and survives the
+    // cold-room sweep + new-message pushes (they can mute it like any other).
+    ensureMembership(req.user._id, room._id.toString());
     created(res, serializeRoom(room, req.user._id, roomCount(room._id.toString())));
 
     // Official bot drops a welcome + rules line into the fresh room (best-effort).
@@ -581,6 +651,59 @@ router.get('/rooms/mine', auth, async (req, res, next) => {
       cap: maxRoomsFor(req.user),
       isPremium: isPremiumActive(req.user),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// 我在的房间 — rooms the user has joined (subscribed) but does NOT own. Each row
+// carries live online count, the per-room mute flag, and an unread count (msgs
+// from others since lastReadAt). Owned rooms are excluded (they live under 我开
+// 的房间). Closed/deleted rooms are pruned from the membership set on the fly.
+router.get('/rooms/joined', auth, async (req, res, next) => {
+  try {
+    const memberships = await RoomMembership.find({ userId: req.user._id })
+      .sort({ joinedAt: -1 })
+      .limit(200)
+      .lean();
+    if (!memberships.length) return ok(res, { rooms: [] });
+
+    const byId = new Map(memberships.map((m) => [m.roomId, m]));
+    const rooms = await ChatRoom.find({ _id: { $in: [...byId.keys()] } })
+      .populate('creatorId', 'nickname avatarUrl')
+      .lean();
+
+    // Drop memberships whose room is gone (deleted) so the set self-heals.
+    const liveIds = new Set(rooms.map((r) => r._id.toString()));
+    const orphaned = [...byId.keys()].filter((id) => !liveIds.has(id));
+    if (orphaned.length) {
+      RoomMembership.deleteMany({ userId: req.user._id, roomId: { $in: orphaned } }).catch(() => {});
+    }
+
+    const joined = await Promise.all(
+      rooms
+        .filter((r) => !sameId(r.creatorId, req.user._id)) // exclude 我开的房间
+        .map(async (r) => {
+          const m = byId.get(r._id.toString());
+          let unread = 0;
+          try {
+            unread = await WorldChatMessage.countDocuments({
+              roomId: r._id.toString(),
+              userId: { $ne: req.user._id },
+              createdAt: { $gt: m.lastReadAt || m.joinedAt || new Date(0) },
+            });
+          } catch (_) {}
+          return {
+            ...serializeRoom(r, req.user._id, roomCount(r._id.toString())),
+            notificationsEnabled: m.notificationsEnabled !== false,
+            unread,
+            lastReadAt: m.lastReadAt || null,
+          };
+        }),
+    );
+    // Most recently active first.
+    joined.sort((a, b) => new Date(b.lastActiveAt) - new Date(a.lastActiveAt));
+    ok(res, { rooms: joined });
   } catch (e) {
     next(e);
   }
@@ -687,6 +810,7 @@ router.post('/rooms/:id/join', auth, async (req, res, next) => {
       room.memberIds.push(req.user._id);
       await room.save();
     }
+    ensureMembership(req.user._id, room._id.toString());
     ok(res, { room: serializeRoom(room, req.user._id, roomCount(room._id.toString())) });
   } catch (e) {
     next(e);
@@ -701,6 +825,75 @@ router.post('/rooms/:id/leave', auth, async (req, res, next) => {
     if (!room) return err(res, 'Room not found', 404);
     if (sameId(room.creatorId, req.user._id)) return err(res, 'The creator cannot leave — close or delete the room', 400);
     await ChatRoom.updateOne({ _id: room._id }, { $pull: { memberIds: req.user._id } });
+    await RoomMembership.deleteOne({ userId: req.user._id, roomId: room._id.toString() }).catch(() => {});
+    ok(res, { ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// 我在的房间 §B/§E — enter a custom room: idempotently subscribe + mark read.
+// Called by the client on room entry so first-time entry creates the membership.
+router.post('/rooms/:id/enter', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const room = await ChatRoom.findById(req.params.id).select('creatorId memberIds');
+    if (!room) return err(res, 'Room not found', 404);
+    // Only subscribe actual members — keeps the invariant membership ⊆ memberIds
+    // so 我在的房间 never lists a room whose /recent would 403. Non-members must
+    // join first (with a password for private rooms); we just no-op for them.
+    if (!isRoomMember(room, req.user._id)) return ok(res, { ok: true, subscribed: false });
+    await ensureMembership(req.user._id, req.params.id);
+    await RoomMembership.updateOne(
+      { userId: req.user._id, roomId: req.params.id },
+      { $set: { lastReadAt: new Date() } },
+    ).catch(() => {});
+    ok(res, { ok: true, subscribed: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Update the unread high-water mark (call on entry + on receiving live msgs).
+router.post('/rooms/:id/mark-read', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    await RoomMembership.updateOne(
+      { userId: req.user._id, roomId: req.params.id },
+      { $set: { lastReadAt: new Date() } },
+    );
+    ok(res, { ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// 静音 — per-room mute toggle. { notificationsEnabled: boolean }
+router.patch('/rooms/:id/membership', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const enabled = !!req.body?.notificationsEnabled;
+    await RoomMembership.updateOne(
+      { userId: req.user._id, roomId: req.params.id },
+      { $set: { notificationsEnabled: enabled }, $setOnInsert: { joinedAt: new Date(), lastReadAt: new Date() } },
+      { upsert: true },
+    );
+    ok(res, { ok: true, notificationsEnabled: enabled });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// 离开房间 — unsubscribe from 我在的房间 (also drops room membership for non-owners).
+router.delete('/rooms/:id/membership', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    await RoomMembership.deleteOne({ userId: req.user._id, roomId: req.params.id });
+    // Non-owners also leave the underlying room so they stop appearing in rosters.
+    const room = await ChatRoom.findById(req.params.id).select('creatorId');
+    if (room && !sameId(room.creatorId, req.user._id)) {
+      await ChatRoom.updateOne({ _id: room._id }, { $pull: { memberIds: req.user._id } }).catch(() => {});
+    }
     ok(res, { ok: true });
   } catch (e) {
     next(e);
@@ -772,6 +965,7 @@ router.delete('/rooms/:id/kick/:userId', auth, async (req, res, next) => {
     if (!sameId(room.creatorId, req.user._id)) return err(res, 'Only the creator can kick', 403);
     if (sameId(req.params.userId, req.user._id)) return err(res, "You can't kick yourself", 400);
     await ChatRoom.updateOne({ _id: room._id }, { $pull: { memberIds: req.params.userId } });
+    await RoomMembership.deleteOne({ userId: req.params.userId, roomId: room._id.toString() }).catch(() => {});
     broadcastToUser(req.params.userId, 'world-chat:kicked', { roomId: room._id.toString() });
     ok(res, { ok: true });
   } catch (e) {
@@ -827,6 +1021,15 @@ router.patch('/rooms/:id', auth, async (req, res, next) => {
     } else if (b.password !== undefined && room.isPrivate && String(b.password).trim()) {
       room.passwordHash = hashPassword(String(b.password).trim());
     }
+    // 保留期 — 7 / 30 days, or 0 = 无限 (Premium creators only).
+    if (b.retentionDays !== undefined) {
+      const d = Number(b.retentionDays);
+      if (![0, 7, 30].includes(d)) return err(res, 'retentionDays must be 7, 30 or 0');
+      if (d === 0 && !isPremiumActive(req.user)) {
+        return res.status(402).json({ error: 'Unlimited retention is Premium-only', code: 'PREMIUM_REQUIRED' });
+      }
+      room.retentionDays = d;
+    }
     await room.save();
     room.creatorId = req.user;
     ok(res, { room: serializeRoom(room, req.user._id, roomCount(room._id.toString())) });
@@ -847,6 +1050,7 @@ router.delete('/rooms/:id', auth, async (req, res, next) => {
     await Promise.all([
       ChatRoom.deleteOne({ _id: room._id }),
       WorldChatMessage.deleteMany({ roomId: room._id.toString() }),
+      RoomMembership.deleteMany({ roomId: room._id.toString() }),
     ]);
     broadcast('world-chat:room-deleted', { roomId: room._id.toString() }, room._id.toString());
     ok(res, { ok: true });

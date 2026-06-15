@@ -455,6 +455,19 @@
       "lastMessages": "最近消息",
       "noMessages": "还没有消息",
       "enter": "进入房间"
+    },
+    "joined": {
+      "title": "✨ 我在的房间",
+      "leaveTitle": "离开房间",
+      "leaveBody": "确定离开「{{title}}」？你将不再收到这个房间的消息。",
+      "leave": "离开"
+    },
+    "exit": {
+      "title": "离开房间？",
+      "body": "可以保留房间，稍后回来查看消息。",
+      "bodyNamed": "离开「{{title}}」？保留它就能稍后回来查看消息。",
+      "keep": "保留（继续接收通知）",
+      "leave": "离开房间"
     }
   },
   "chatTranslation": {
@@ -1244,7 +1257,8 @@
       "quietHours": "免打扰时段",
       "quietHoursHint": "在此时间段内(UTC)我们会暂停推送,但通知仍会出现在通知中心。",
       "from": "开始",
-      "to": "结束"
+      "to": "结束",
+      "roomMessages": "房间消息"
     }
   },
   "accountSettings": {
