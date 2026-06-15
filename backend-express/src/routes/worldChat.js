@@ -405,6 +405,17 @@ router.post('/send', auth, async (req, res, next) => {
               ko: { title: roomTitle, body: `${name}: ${snippet}` },
               ja: { title: roomTitle, body: `${name}: ${snippet}` },
             },
+            // Collapse bursts of room messages into one tray push (the per-room
+            // unread badge carries the precise count); inbox rows still persist.
+            coalesce: {
+              windowMs: 5 * 60 * 1000,
+              summaryI18n: {
+                en: { title: roomTitle, body: '{{count}} new messages' },
+                zh: { title: roomTitle, body: '{{count}} 条新消息' },
+                ko: { title: roomTitle, body: '새 메시지 {{count}}개' },
+                ja: { title: roomTitle, body: '新着メッセージ {{count}}件' },
+              },
+            },
             data: {
               roomId,
               custom: '1',
@@ -826,14 +837,18 @@ router.post('/rooms/:id/leave', auth, async (req, res, next) => {
 router.post('/rooms/:id/enter', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
-    const room = await ChatRoom.findById(req.params.id).select('status');
+    const room = await ChatRoom.findById(req.params.id).select('creatorId memberIds');
     if (!room) return err(res, 'Room not found', 404);
+    // Only subscribe actual members — keeps the invariant membership ⊆ memberIds
+    // so 我在的房间 never lists a room whose /recent would 403. Non-members must
+    // join first (with a password for private rooms); we just no-op for them.
+    if (!isRoomMember(room, req.user._id)) return ok(res, { ok: true, subscribed: false });
     await ensureMembership(req.user._id, req.params.id);
     await RoomMembership.updateOne(
       { userId: req.user._id, roomId: req.params.id },
       { $set: { lastReadAt: new Date() } },
     ).catch(() => {});
-    ok(res, { ok: true });
+    ok(res, { ok: true, subscribed: true });
   } catch (e) {
     next(e);
   }

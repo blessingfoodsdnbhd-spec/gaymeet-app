@@ -1062,6 +1062,9 @@ export function WorldChatScreen({
           }}
           onExit={() => {
             setSettingsOpen(false);
+            // The settings sheet already left the room — skip the exit-confirm
+            // interceptor so the user isn't re-prompted to leave/keep.
+            exitConfirmedRef.current = true;
             nav.goBack();
           }}
         />
