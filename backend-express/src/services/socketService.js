@@ -573,6 +573,17 @@ function initSocket(server) {
         // Refresh the online roster for both the room left and the room entered.
         emitRoster(prev);
         emitRoster(next);
+      } else {
+        // No-op re-join: the socket is already in `next` — almost always the
+        // global lobby 'world', which it auto-joined on connect. Membership is
+        // unchanged, so the branch above never runs and nothing re-broadcasts the
+        // roster/count. But the client that just (re)entered has freshly mounted
+        // its WS listeners, and the connect-time broadcast raced ahead of them.
+        // Push a fresh roster + count so the 在线名单 drawer and header count
+        // populate — without this the 总聊天室 looked broken (empty roster / "—"
+        // count) while sub-rooms, which re-broadcast on a real join, worked.
+        emitRoster(next);
+        socket.emit('world-chat:online-count', { roomId: next, count: roomOnlineCount(next) });
       }
       emitRoomsState();
     });

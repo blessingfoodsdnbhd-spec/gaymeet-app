@@ -495,6 +495,13 @@ export function WorldChatScreen({
       // join/leave by the server; we also request it once on entry.
       const uRoster = await wsOn('world-chat:roster', (r: any) => {
         if (cancelled || (r?.roomId && r.roomId !== roomId)) return;
+        // The roster carries the authoritative online count — seed the header
+        // from it so a number shows even when the passive online-count broadcast
+        // raced ahead of our listener. The 'world' lobby never re-broadcasts that
+        // count (re-joining it is a backend no-op), which left the header stuck
+        // on "—"; request-roster is emitted right after this listener registers,
+        // so this fires reliably on entry.
+        if (typeof r?.online === 'number') setOnline(r.online);
         setRosterUsers(
           (r?.users || [])
             .map((u: any) => ({ userId: String(u.userId), name: u.name }))

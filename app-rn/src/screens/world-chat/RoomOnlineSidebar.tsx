@@ -43,27 +43,34 @@ export function RoomOnlineSidebar({
 }) {
   const [roster, setRoster] = React.useState<PlazaRoster | null>(null);
 
-  // Subscribe to roster pushes for this room; the server also re-broadcasts on
-  // every join/leave, so the list stays live while the drawer is open.
+  // Subscribe to roster pushes for this room, THEN request a fresh one — strictly
+  // in that order, within ONE effect. The request must go out only after the
+  // listener is live: the global lobby ('world') is a backend no-op re-join that
+  // triggers no follow-up roster broadcast, so a request racing ahead of the
+  // (async) listener registration is lost forever and the drawer stays empty.
+  // Sub-rooms happened to recover via their real join's re-broadcast, which is
+  // why the 总聊天室 在线名单 looked broken while sub-boards worked. Re-runs on
+  // open so the list is fresh each time, and stays live (server re-broadcasts on
+  // join/leave) while the drawer is shown.
   React.useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     let unsub: (() => void) | null = null;
     (async () => {
       const u = await wsOn('world-chat:roster', (r) => {
         if (!cancelled && r.roomId === roomId) setRoster(r as PlazaRoster);
       });
-      if (cancelled) u();
-      else unsub = u;
+      if (cancelled) {
+        u();
+        return;
+      }
+      unsub = u;
+      wsEmit('world-chat:request-roster', { roomId });
     })();
     return () => {
       cancelled = true;
       unsub?.();
     };
-  }, [roomId]);
-
-  // Ask for a fresh roster whenever the drawer opens.
-  React.useEffect(() => {
-    if (open) wsEmit('world-chat:request-roster', { roomId });
   }, [open, roomId]);
 
   return (
