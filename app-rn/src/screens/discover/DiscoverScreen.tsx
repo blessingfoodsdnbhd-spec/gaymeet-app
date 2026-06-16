@@ -3,7 +3,9 @@ import { deferOpen } from '../../utils/deferOpen';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, Heart, MapPin, Search, SlidersHorizontal, Send, Star, Volume2, VolumeX, X } from 'lucide-react-native';
+import { Crown, Heart, MapPin, Search, SlidersHorizontal, Send, UserPlus, UserCheck, Volume2, VolumeX, X } from 'lucide-react-native';
+import { toggleFollow } from '../../api/follows';
+import { showToast } from '../../utils/toastBridge';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -473,6 +475,8 @@ function CardsBody({
   // don't already have Premium. Mirrors the `!!isPremium` check used elsewhere
   // in Discover (LikedMeGrid, BoostButton); vipLevel covers the legacy flag.
   const isPremium = !!(me as any)?.isPremium || ((me as any)?.vipLevel ?? 0) > 0;
+  // Optimistic follow override per userId (the ⭐ button is FOLLOW, not profile).
+  const [followFlip, setFollowFlip] = useState<Record<string, boolean>>({});
 
   if (cardsQ.isLoading) {
     return (
@@ -510,6 +514,23 @@ function CardsBody({
     );
   }
 
+  // ⭐ button = FOLLOW toggle (NOT open profile — the profile opens by tapping the
+  // name). Optimistic icon (UserPlus → UserCheck) with revert on failure; no sheet,
+  // no navigation, so nothing can "fly". Profile/about stays reachable via the name
+  // tap (DiscoverCard → UserDetail) and is deferOpen-guarded.
+  const topFollowing =
+    followFlip[top.id] ?? (top.followStatus === 'following' || top.followStatus === 'mutual');
+  const onFollow = () => {
+    const next = !topFollowing;
+    setFollowFlip((p) => ({ ...p, [top.id]: next }));
+    toggleFollow(top.id)
+      .then(() => showToast(next ? t('about.following') : t('about.follow'), 'success'))
+      .catch(() => {
+        setFollowFlip((p) => ({ ...p, [top.id]: !next })); // revert
+        showToast(t('about.followFailed'), 'error');
+      });
+  };
+
   return (
     <>
       <View style={{ flex: 1 }}>
@@ -523,10 +544,14 @@ function CardsBody({
           onPress={() => stackRef.current?.swipe(false)}
         />
         <CircleBtn
-          icon={<Star size={18} color={theme.colors.primaryDeep} strokeWidth={2} fill={theme.colors.primaryDeep} />}
+          icon={
+            topFollowing
+              ? <UserCheck size={18} color={theme.colors.primaryDeep} strokeWidth={2.2} />
+              : <UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />
+          }
           bg={theme.colors.primarySoft}
           small
-          onPress={() => onOpenAbout(top)}
+          onPress={onFollow}
         />
         <CircleBtnPrimary onPress={() => stackRef.current?.swipe(true)} />
         {/* Direct-intro button — DMing unmatched profiles is Premium-gated
