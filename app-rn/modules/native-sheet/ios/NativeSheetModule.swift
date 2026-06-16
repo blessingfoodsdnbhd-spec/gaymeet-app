@@ -57,7 +57,7 @@ public class NativeSheetModule: Module {
 
   // The app's active key window (replaces the iOS 15-deprecated
   // UIApplication.shared.windows.first).
-  private static func keyWindow() -> UIView? {
+  private static func keyWindow() -> UIWindow? {
     return UIApplication.shared.connectedScenes
       .compactMap { $0 as? UIWindowScene }
       .flatMap { $0.windows }
