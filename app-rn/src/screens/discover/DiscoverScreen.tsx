@@ -566,13 +566,11 @@ function CardsBody({
             onPress={() => onSendIntro(top)}
           />
           {!isPremium && (
+            {/* Crown-only badge: the "Premium" text label clipped/wrapped against
+                the screen's right edge on the rightmost button ("Premiu"/"m" then
+                "Prem…"). A bare crown can't clip and reads clearly as Premium. */}
             <View pointerEvents="none" style={styles.proCorner}>
-              <Crown size={9} color="#FFFFFF" strokeWidth={2.4} />
-              {/* numberOfLines=1 — without it the pill (anchored at the screen's
-                  right edge) squeezed "Premium" onto two lines ("Premiu"/"m"). */}
-              <Text style={styles.proCornerText} numberOfLines={1}>
-                {t('discover.premiumLabel')}
-              </Text>
+              <Crown size={12} color="#FFFFFF" strokeWidth={2.4} />
             </View>
           )}
         </View>
@@ -725,9 +723,8 @@ const styles = StyleSheet.create({
     // Horizontal padding must clear that radius or the rounded corner clips the
     // last glyph of "Premium" (the "m"). Extra right padding accounts for the
     // text's trailing letterSpacing.
-    paddingLeft: 8,
-    paddingRight: 10,
-    paddingVertical: 2,
+    paddingHorizontal: 3,
+    paddingVertical: 3,
     borderRadius: 999,
     backgroundColor: '#6B4FE0',
     borderWidth: 1.5,
