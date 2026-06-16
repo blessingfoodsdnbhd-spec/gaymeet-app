@@ -843,15 +843,21 @@ export function WorldChatScreen({
               )}
             </View>
             {/* Green dot drawn as a View, not the 🟢 emoji — Android renders that
-                emoji as a tofu box (looked like a ✕). */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                emoji as a tofu box (looked like a ✕). The whole "N 人在线" row is
+                tappable (not just the 👥 icon) → opens the online roster. */}
+            <Pressable
+              onPress={() => setRosterOpen(true)}
+              hitSlop={6}
+              accessibilityLabel={t('plaza.onlineList')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}
+            >
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success }} />
               <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12, color: theme.colors.muted }}>
                 {isCustom && room
                   ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · ${online ?? room.onlineCount}`
                   : t('worldChat.online', { n: online ?? '—' })}
               </Text>
-            </View>
+            </Pressable>
           </View>
           {/* Each action is an explicit 40×40 touch box, not a bare icon + hitSlop:
               on Android a Pressable wrapping only a small SVG reports a tiny hit
