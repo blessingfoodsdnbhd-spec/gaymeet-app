@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { X } from 'lucide-react-native';
+import { X, Settings } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -35,11 +35,14 @@ export function RoomOnlineSidebar({
   onClose,
   roomId,
   onOpenUser,
+  onOpenSettings,
 }: {
   open: boolean;
   onClose: () => void;
   roomId: string;
   onOpenUser: (userId: string) => void;
+  /** Custom rooms only: opens RoomSettingsSheet (relocated header ⋮). */
+  onOpenSettings?: () => void;
 }) {
   const [roster, setRoster] = React.useState<PlazaRoster | null>(null);
 
@@ -88,6 +91,7 @@ export function RoomOnlineSidebar({
         users={roster?.users ?? []}
         online={roster?.online ?? roster?.users?.length ?? 0}
         onOpenUser={onOpenUser}
+        onOpenSettings={onOpenSettings}
       />
     </Modal>
   );
@@ -99,12 +103,14 @@ function DrawerSurface({
   users,
   online,
   onOpenUser,
+  onOpenSettings,
 }: {
   open: boolean;
   onClose: () => void;
   users: PlazaRosterUser[];
   online: number;
   onOpenUser: (userId: string) => void;
+  onOpenSettings?: () => void;
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -141,6 +147,18 @@ function DrawerSurface({
             <X size={22} color={theme.colors.muted} />
           </Pressable>
         </View>
+        {/* Relocated header ⋮ (custom rooms only): room settings / management. */}
+        {onOpenSettings && (
+          <Pressable
+            onPress={onOpenSettings}
+            style={({ pressed }) => [styles.settingsRow, { borderBottomColor: theme.colors.line, opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Settings size={18} color={theme.colors.text} />
+            <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '700', color: theme.colors.text }}>
+              {t('worldChat.rooms.settings')}
+            </Text>
+          </Pressable>
+        )}
         <FlatList
           data={users}
           keyExtractor={(u) => u.userId}
@@ -191,5 +209,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, paddingVertical: 8 },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   lvl: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1 },
 });

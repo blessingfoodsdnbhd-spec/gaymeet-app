@@ -18,7 +18,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff } from 'lucide-react-native';
+import { ChevronLeft, Crown, Lock, Share2, Users, Bell, BellOff } from 'lucide-react-native';
 import { nativeActionSheet } from '../../../modules/native-sheet';
 import { deferOpen } from '../../utils/deferOpen';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +59,7 @@ import { useKeptRooms } from '../../store/keptRooms';
 import { uploadFile } from '../../api/upload';
 import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
+import { toggleFollow, isFollowing } from '../../api/follows';
 import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { DateDivider } from '../../components/chat/DateDivider';
@@ -165,16 +166,62 @@ export function WorldChatScreen({
     setSettingsOpen(true);
   }, []);
 
+  // v3.1.6: the header ⋮ moved into the 👥 roster drawer. Close the drawer, then
+  // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
+  // / delete-room for the creator; invite / view-members / leave for members).
+  const openRoomSettings = React.useCallback(() => {
+    setRosterOpen(false);
+    setSettingsTab('main');
+    InteractionManager.runAfterInteractions(() => setSettingsOpen(true));
+  }, []);
+
+  // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
+  // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
+  // here (add-friend = follow). Skips self; omits 添加好友 when already following.
   const openRosterUser = React.useCallback(
-    (userId: string) => {
+    async (userId: string) => {
       const targetId = String(userId ?? '');
       setRosterOpen(false);
       if (!targetId || targetId === myId) return;
-      InteractionManager.runAfterInteractions(() => {
-        nav.navigate('UserDetail', { userId: targetId });
-      });
+      let following = false;
+      try {
+        following = (await isFollowing(targetId)).following;
+      } catch {
+        /* offline/error — just omit the follow option, still allow profile/DM */
+      }
+      const viewProfile = t('worldChat.viewProfile');
+      const addFriend = t('worldChat.addFriend');
+      const dm = t('worldChat.dm');
+      const cancel = t('common.cancel');
+      const options = following
+        ? [viewProfile, dm, cancel]
+        : [viewProfile, addFriend, dm, cancel];
+      const i = await nativeActionSheet({ options, cancelIndex: options.length - 1 });
+      if (i < 0) return;
+      const picked = options[i];
+      if (picked === viewProfile) {
+        InteractionManager.runAfterInteractions(() => {
+          nav.navigate('UserDetail', { userId: targetId });
+        });
+      } else if (picked === addFriend) {
+        try {
+          await toggleFollow(targetId);
+          Alert.alert(t('worldChat.friendAdded'));
+        } catch {
+          Alert.alert(t('worldChat.actionFailed'));
+        }
+      } else if (picked === dm) {
+        try {
+          const res = await openConversation(targetId);
+          qc.invalidateQueries({ queryKey: ['chats', 'list'] });
+          nav.navigate('ChatDetail', { chatId: res.matchId });
+        } catch (e: any) {
+          if (e?.response?.status === 402) nav.navigate('Premium');
+          else Alert.alert(t('worldChat.actionFailed'), e?.response?.data?.error ?? '');
+        }
+      }
     },
-    [myId, nav],
+    [myId, nav, t, qc],
   );
 
   // Per-room notification mute. Reactive read so the bell icon flips live. The
@@ -930,16 +977,12 @@ export function WorldChatScreen({
             <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
-            {isCustom && room && (
-              <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')} style={styles.headerBtnCompact}>
-                <UserPlus size={22} color={theme.colors.text} />
-              </Pressable>
-            )}
-            {isCustom && room && (
-              <Pressable onPress={() => openSheetAfterKeyboardDismiss(() => { setSettingsTab('main'); setSettingsOpen(true); })} hitSlop={8} style={styles.headerBtnCompact}>
-                <MoreVertical size={22} color={theme.colors.text} />
-              </Pressable>
-            )}
+            {/* v3.1.6 header unification: every room (official / user / new) now shows
+                exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
+                settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
+                👥 roster drawer's "房间设置" row (openRoomSettings → RoomSettingsSheet),
+                so nothing is lost — official rooms simply have no settings row. Report
+                already lives in the message long-press menu (openMessageMenu). */}
           </View>
         </View>
       )}
@@ -1137,6 +1180,9 @@ export function WorldChatScreen({
         onClose={() => setRosterOpen(false)}
         roomId={roomId}
         onOpenUser={openRosterUser}
+        // Custom rooms only: surfaces the relocated room-settings entry (was the
+        // header ⋮). Official / country rooms have no settings → no row.
+        onOpenSettings={isCustom && room ? openRoomSettings : undefined}
       />
 
     </SafeAreaView>
