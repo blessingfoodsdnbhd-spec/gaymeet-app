@@ -787,6 +787,43 @@ export function WorldChatScreen({
     ]);
   };
 
+  // Message long-press menu via the NATIVE action sheet (Material BottomSheetDialog
+  // / iOS action sheet) instead of the RN-Modal <Sheet> — the old Sheet opened over
+  // the chat during a long-press gesture and could fly to the top under Android 15
+  // edge-to-edge. A native sheet cannot. Own msg → 回复/删除; others → 回复/举报/屏蔽/私信;
+  // 举报 chains a second native sheet with the reasons.
+  const openMessageMenu = React.useCallback(
+    async (m: WorldChatMessage) => {
+      const reply = `💬 ${t('worldChat.reply.label')}`;
+      if (m.userId === myId) {
+        const i = await nativeActionSheet({
+          options: [reply, t('worldChat.delete'), t('common.cancel')],
+          destructiveIndex: 1,
+          cancelIndex: 2,
+        });
+        if (i === 0) setReplyingTo(m);
+        else if (i === 1) onDelete(m);
+        return;
+      }
+      const i = await nativeActionSheet({
+        options: [reply, t('worldChat.report'), t('worldChat.block'), t('worldChat.dm'), t('common.cancel')],
+        destructiveIndex: 2,
+        cancelIndex: 4,
+      });
+      if (i === 0) setReplyingTo(m);
+      else if (i === 1) {
+        const r = await nativeActionSheet({
+          title: t('report.subtitle'),
+          options: [...REPORT_REASONS.map((x) => t(`report.reasons.${x}`)), t('common.cancel')],
+          cancelIndex: REPORT_REASONS.length,
+        });
+        if (r >= 0 && r < REPORT_REASONS.length) submitReport(m, REPORT_REASONS[r]);
+      } else if (i === 2) onBlock(m);
+      else if (i === 3) onDM(m);
+    },
+    [myId, t, onDelete, onBlock, onDM, submitReport],
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }} edges={embedded ? [] : ['top']}>
       {/* Header — hidden when embedded in the 广场 tab (the hub owns the chrome). */}
@@ -924,7 +961,7 @@ export function WorldChatScreen({
                   mine={item.userId === myId}
                   isCreator={!!creatorId && item.userId === creatorId}
                   highlighted={item.messageId === highlightedId}
-                  onLongPress={() => openSheetAfterKeyboardDismiss(() => setSelected(item))}
+                  onLongPress={() => openMessageMenu(item)}
                   onOpenUser={() =>
                     item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
                   }
@@ -991,77 +1028,8 @@ export function WorldChatScreen({
         )}
       </KeyboardAvoidingView>
 
-      {/* Long-press action sheet: own message → delete; others → report/block/DM.
-          Report swaps THIS sheet in place to a reason list (reportMode) rather
-          than opening a second Sheet — iOS drops a Modal presented while another
-          is still mid-dismiss. */}
-      <Sheet
-        open={!!selected}
-        onClose={() => {
-          setSelected(null);
-          setReportMode(false);
-        }}
-        maxHeight={reportMode ? '55%' : '40%'}
-      >
-        {selected &&
-          (reportMode ? (
-            <>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: theme.colors.muted,
-                  paddingHorizontal: 8,
-                  paddingTop: 4,
-                  paddingBottom: 8,
-                }}
-              >
-                {t('report.subtitle')}
-              </Text>
-              {REPORT_REASONS.map((r) => (
-                <ActionRow
-                  key={r}
-                  label={t(`report.reasons.${r}`)}
-                  onPress={() => submitReport(selected, r)}
-                />
-              ))}
-              <ActionRow
-                label={t('common.cancel')}
-                centered
-                onPress={() => {
-                  setSelected(null);
-                  setReportMode(false);
-                }}
-              />
-            </>
-          ) : selected.userId === myId ? (
-            <>
-              <ActionRow
-                label={`💬 ${t('worldChat.reply.label')}`}
-                onPress={() => {
-                  setReplyingTo(selected);
-                  setSelected(null);
-                }}
-              />
-              <ActionRow label={t('worldChat.delete')} danger onPress={() => onDelete(selected)} />
-              <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
-            </>
-          ) : (
-            <>
-              <ActionRow
-                label={`💬 ${t('worldChat.reply.label')}`}
-                onPress={() => {
-                  setReplyingTo(selected);
-                  setSelected(null);
-                }}
-              />
-              <ActionRow label={t('worldChat.report')} onPress={() => setReportMode(true)} />
-              <ActionRow label={t('worldChat.block')} danger onPress={() => onBlock(selected)} />
-              <ActionRow label={t('worldChat.dm')} onPress={() => onDM(selected)} />
-              <ActionRow label={t('common.cancel')} centered onPress={() => setSelected(null)} />
-            </>
-          ))}
-      </Sheet>
+      {/* Long-press menu is now the NATIVE action sheet (openMessageMenu) — the old
+          RN-Modal <Sheet> here could fly to the top under Android 15 edge-to-edge. */}
 
       {/* Custom-room settings (creator) / leave (member). */}
       {isCustom && room && (

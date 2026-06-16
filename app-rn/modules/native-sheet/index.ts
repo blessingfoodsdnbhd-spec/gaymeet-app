@@ -26,6 +26,7 @@ export async function nativeAlert(
   message: string,
   buttons: NativeButton[],
 ): Promise<number> {
+  console.log(`[NativeSheet] alert → native: "${title}"`); // logcat: confirms native path, not RN Modal
   return (await Native.presentAlert(title, message, buttons)) as number;
 }
 
@@ -45,6 +46,7 @@ export interface NativeActionSheetOptions {
  * BottomSheetDialog on Android (slides up from the bottom, edge-to-edge safe).
  */
 export async function nativeActionSheet(opts: NativeActionSheetOptions): Promise<number> {
+  console.log(`[NativeSheet] actionSheet → native: ${opts.options.length} options`); // logcat trace
   return (await Native.presentActionSheet(
     opts.title ?? null,
     opts.message ?? null,
