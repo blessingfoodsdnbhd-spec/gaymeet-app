@@ -175,8 +175,13 @@ export function WorldChatScreen({
   const openRoomSettings = React.useCallback(() => {
     setRosterOpen(false);
     setSettingsTab('main');
+    // RN can't present a second Modal while the first (the roster) is still on
+    // screen — on Android it stacks the new one BEHIND and it never shows
+    // (Sheet.tsx documents this). Wait well past the roster Modal's dismiss
+    // before presenting the settings Sheet. 280ms wasn't enough on a slow
+    // device; 550ms clears the Dialog teardown reliably.
     if (Platform.OS === 'android') {
-      setTimeout(() => setSettingsOpen(true), 280);
+      setTimeout(() => setSettingsOpen(true), 550);
     } else {
       setSettingsOpen(true);
     }
