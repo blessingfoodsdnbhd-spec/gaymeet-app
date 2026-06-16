@@ -59,7 +59,7 @@ import { useKeptRooms } from '../../store/keptRooms';
 import { uploadFile } from '../../api/upload';
 import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
-import { toggleFollow, isFollowing } from '../../api/follows';
+import { toggleFollow } from '../../api/follows';
 import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { DateDivider } from '../../components/chat/DateDivider';
@@ -169,57 +169,63 @@ export function WorldChatScreen({
   // v3.1.6: the header ⋮ moved into the 👥 roster drawer. Close the drawer, then
   // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
   // / delete-room for the creator; invite / view-members / leave for members).
+  // The roster is a native Android Dialog (Modal); opening the settings Sheet
+  // (also a Modal) in the same frame drops it mid-Dialog-teardown — the sheet
+  // never shows. Defer past the ~220ms teardown, mirroring navigateAfterSheetClose.
   const openRoomSettings = React.useCallback(() => {
     setRosterOpen(false);
     setSettingsTab('main');
-    InteractionManager.runAfterInteractions(() => setSettingsOpen(true));
+    if (Platform.OS === 'android') {
+      setTimeout(() => setSettingsOpen(true), 280);
+    } else {
+      setSettingsOpen(true);
+    }
   }, []);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
   // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
-  // here (add-friend = follow). Skips self; omits 添加好友 when already following.
+  // here (add-friend = follow). Skips self.
+  //
+  // IMPORTANT: present the sheet IMMEDIATELY — never await a network call before
+  // showing it. The earlier version awaited /is-following to decide whether to
+  // offer 添加好友, but on a cold Render dyno that GET can take tens of seconds,
+  // so the sheet appeared to never open. The follow is a toggle (idempotent on the
+  // backend); we read the returned state to toast the right message. deferOpen()
+  // pushes the present past the tap/gesture frame (Android-15 fly-up guard).
   const openRosterUser = React.useCallback(
-    async (userId: string) => {
+    (userId: string) => {
       const targetId = String(userId ?? '');
       setRosterOpen(false);
       if (!targetId || targetId === myId) return;
-      let following = false;
-      try {
-        following = (await isFollowing(targetId)).following;
-      } catch {
-        /* offline/error — just omit the follow option, still allow profile/DM */
-      }
-      const viewProfile = t('worldChat.viewProfile');
-      const addFriend = t('worldChat.addFriend');
-      const dm = t('worldChat.dm');
-      const cancel = t('common.cancel');
-      const options = following
-        ? [viewProfile, dm, cancel]
-        : [viewProfile, addFriend, dm, cancel];
-      const i = await nativeActionSheet({ options, cancelIndex: options.length - 1 });
-      if (i < 0) return;
-      const picked = options[i];
-      if (picked === viewProfile) {
-        InteractionManager.runAfterInteractions(() => {
+      deferOpen(async () => {
+        const viewProfile = t('worldChat.viewProfile');
+        const addFriend = t('worldChat.addFriend');
+        const dm = t('worldChat.dm');
+        const cancel = t('common.cancel');
+        const options = [viewProfile, addFriend, dm, cancel];
+        const i = await nativeActionSheet({ options, cancelIndex: options.length - 1 });
+        if (i < 0) return;
+        const picked = options[i];
+        if (picked === viewProfile) {
           nav.navigate('UserDetail', { userId: targetId });
-        });
-      } else if (picked === addFriend) {
-        try {
-          await toggleFollow(targetId);
-          Alert.alert(t('worldChat.friendAdded'));
-        } catch {
-          Alert.alert(t('worldChat.actionFailed'));
+        } else if (picked === addFriend) {
+          try {
+            const { following } = await toggleFollow(targetId);
+            Alert.alert(following ? t('worldChat.friendAdded') : t('worldChat.friendRemoved'));
+          } catch {
+            Alert.alert(t('worldChat.actionFailed'));
+          }
+        } else if (picked === dm) {
+          try {
+            const res = await openConversation(targetId);
+            qc.invalidateQueries({ queryKey: ['chats', 'list'] });
+            nav.navigate('ChatDetail', { chatId: res.matchId });
+          } catch (e: any) {
+            if (e?.response?.status === 402) nav.navigate('Premium');
+            else Alert.alert(t('worldChat.actionFailed'), e?.response?.data?.error ?? '');
+          }
         }
-      } else if (picked === dm) {
-        try {
-          const res = await openConversation(targetId);
-          qc.invalidateQueries({ queryKey: ['chats', 'list'] });
-          nav.navigate('ChatDetail', { chatId: res.matchId });
-        } catch (e: any) {
-          if (e?.response?.status === 402) nav.navigate('Premium');
-          else Alert.alert(t('worldChat.actionFailed'), e?.response?.data?.error ?? '');
-        }
-      }
+      });
     },
     [myId, nav, t, qc],
   );

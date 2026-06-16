@@ -830,6 +830,7 @@
     "viewProfile": "プロフィールを見る",
     "addFriend": "友達を追加",
     "friendAdded": "友達に追加しました",
+    "friendRemoved": "フォローを解除しました",
     "delete": "削除",
     "deleteConfirmTitle": "このメッセージを削除しますか？",
     "deleteConfirmBody": "このメッセージが削除されます。",
