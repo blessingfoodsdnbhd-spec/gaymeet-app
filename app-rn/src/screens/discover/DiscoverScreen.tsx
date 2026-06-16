@@ -565,10 +565,10 @@ function CardsBody({
             small
             onPress={() => onSendIntro(top)}
           />
+          {/* Crown-only badge: the "Premium" text label clipped/wrapped against the
+              screen's right edge on the rightmost button ("Premiu"/"m" → "Prem…").
+              A bare crown can't clip and reads clearly as Premium. */}
           {!isPremium && (
-            {/* Crown-only badge: the "Premium" text label clipped/wrapped against
-                the screen's right edge on the rightmost button ("Premiu"/"m" then
-                "Prem…"). A bare crown can't clip and reads clearly as Premium. */}
             <View pointerEvents="none" style={styles.proCorner}>
               <Crown size={12} color="#FFFFFF" strokeWidth={2.4} />
             </View>
