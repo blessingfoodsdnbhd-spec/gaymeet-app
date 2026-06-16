@@ -54,6 +54,7 @@ import {
 } from '../../api/worldChat';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { useRoomNotifPrefs } from '../../store/roomNotifPrefs';
+import { useKeptRooms } from '../../store/keptRooms';
 import { uploadFile } from '../../api/upload';
 import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
@@ -207,19 +208,43 @@ export function WorldChatScreen({
   // Backing out of a non-owner custom room shows a NATIVE keep/leave/cancel action
   // sheet (Material BottomSheetDialog / iOS action sheet) — a system component, NOT
   // an RN <Modal>, so it cannot hit the Android-15 edge-to-edge fly-up the old
-  // RoomExitConfirmSheet did. Triggered from the back gesture / header arrow /
-  // hardware back via beforeRemove. 保留 = keep subscription (silent, marked read on
-  // unmount); 离开 = unsubscribe (loud); 取消 = stay. Opened via deferOpen so it
-  // presents on the next stable frame, not mid touch/nav-transition.
+  // RoomExitConfirmSheet did. Triggered from the header arrow / hardware back via
+  // beforeRemove. 保留 = keep subscription (silent, marked read on unmount);
+  // 离开 = unsubscribe (loud); 取消 = stay. Opened via deferOpen so it presents on
+  // the next stable frame, not mid touch/nav-transition.
+  //
+  // v3.1.4 fixes:
+  //  • Bug 1 — once the user chose 保留, this room is in the local kept set, so we
+  //    DON'T re-prompt on every re-entry; back just goes through.
+  //  • Bug 2 — the iOS swipe-back gesture commits the native transition before
+  //    beforeRemove's preventDefault can reliably cancel it, so the sheet ended up
+  //    rendering on the LIST screen we'd already popped to. We disable the gesture
+  //    whenever the prompt is needed; the header arrow / hardware back dispatch a
+  //    discrete POP that preventDefault catches cleanly → the sheet shows ON the
+  //    room screen, before any navigation.
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
+  const isKept = useKeptRooms((s) => !!s.kept[roomId]);
+  const needsExitPrompt = exitEligible && !isKept;
   const explicitLeaveRef = React.useRef(false);
   const exitConfirmedRef = React.useRef(false);
+  const exitPendingRef = React.useRef(false); // a sheet is already scheduled/open
+
+  // Bug 2: kill the swipe-back gesture while a prompt is pending so it can't
+  // commit the pop out from under preventDefault. Re-enabled once kept.
+  React.useEffect(() => {
+    if (embedded || !isCustom) return;
+    nav.setOptions({ gestureEnabled: !needsExitPrompt });
+  }, [nav, embedded, isCustom, needsExitPrompt]);
 
   React.useEffect(() => {
     if (!exitEligible) return;
     const unsub = nav.addListener('beforeRemove', (e: any) => {
       if (exitConfirmedRef.current) return; // already chose — let the nav through
+      // Bug 1: already kept → no prompt, let back through normally.
+      if (useKeptRooms.getState().isKept(roomId)) return;
       e.preventDefault();
+      if (exitPendingRef.current) return; // a sheet is already scheduled — don't stack
+      exitPendingRef.current = true;
       const action = e.data.action;
       deferOpen(async () => {
         const choice = await nativeActionSheet({
@@ -229,17 +254,21 @@ export function WorldChatScreen({
           destructiveIndex: 1,
           cancelIndex: 2,
         });
+        exitPendingRef.current = false;
         if (choice === 2 || choice < 0) return; // 取消 / dismissed → stay in room
         if (choice === 1) {
           explicitLeaveRef.current = true; // 离开 → unsubscribe, loud announce, no mark-read
+          useKeptRooms.getState().setKept(roomId, false); // 离开 → ask again next time
           leaveRoomMembership(roomId)
             .catch(() => {})
             .finally(() => {
               qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
               qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
             });
+        } else {
+          // choice === 0 (保留): remember the keep so we never re-prompt for this room.
+          useKeptRooms.getState().setKept(roomId, true);
         }
-        // choice === 0 (保留): unmount marks read + silent-leaves; nothing extra.
         exitConfirmedRef.current = true;
         nav.dispatch(action);
       });
