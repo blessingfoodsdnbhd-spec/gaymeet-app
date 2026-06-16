@@ -14,7 +14,7 @@ import {
 // drag/paging GestureDetector are left untouched to preserve photo paging/zoom.
 import { Pressable } from 'react-native-gesture-handler';
 import { Image as ExpoImage } from 'expo-image';
-import { Heart, MessageCircle, MoreHorizontal, Share2, StickyNote, UserPlus, X } from 'lucide-react-native';
+import { Heart, MessageCircle, MoreHorizontal, Share2, StickyNote, UserCheck, UserPlus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -616,7 +616,16 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
         {!isSelf && (
           <View style={styles.footer}>
             <SecondaryAction
-              icon={<UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />}
+              // Followed vs not gets a DISTINCT glyph (UserCheck ✓ vs UserPlus +),
+              // and the icon colour tracks the button's done-state (muted grey when
+              // already following, like the label) so the two read as one state.
+              icon={
+                isAlreadyFollowing ? (
+                  <UserCheck size={18} color={theme.colors.muted} strokeWidth={2.2} />
+                ) : (
+                  <UserPlus size={18} color={theme.colors.primaryDeep} strokeWidth={2} />
+                )
+              }
               label={isAlreadyFollowing ? t('about.following') : t('about.follow')}
               done={isAlreadyFollowing}
               pressableWhenDone
