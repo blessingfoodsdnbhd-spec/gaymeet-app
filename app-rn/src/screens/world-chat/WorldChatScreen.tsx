@@ -12,13 +12,12 @@ import {
   Modal,
   Animated,
   Share,
-  InteractionManager,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff, LogOut } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -64,7 +63,6 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsSheet } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
-import { RoomExitConfirmSheet } from './RoomExitConfirmSheet';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import { roomShareUrl } from '../../utils/roomLink';
@@ -204,61 +202,39 @@ export function WorldChatScreen({
     };
   }, [roomId, isCustom, qc]);
 
-  // Leave-confirmation sheet (non-owner custom rooms, pushed view only).
-  const [exitOpen, setExitOpen] = React.useState(false);
-  const exitConfirmedRef = React.useRef(false);
-  // Set when the user chose 保留 (keep subscription): the unmount re-join to
-  // 'world' should then leave THIS room silently — no "👋 X 离开了房间" line to
-  // the others — because the user is keeping the room, not abandoning it. 离开
-  // (full leave) keeps the default loud announce.
-  const keepSilentRef = React.useRef(false);
-  // The navigation action that beforeRemove intercepted, re-dispatched on confirm.
-  const pendingExitRef = React.useRef<any>(null);
+  // Leaving a non-owner custom room. Backing out (gesture / header arrow) is the
+  // silent "keep" path — membership is untouched and the unmount marks the room
+  // read + leaves WITHOUT a "离开了房间" line (see the unmount effect). To actually
+  // unsubscribe, the non-owner taps the header LogOut → a NATIVE Alert.
+  //
+  // Why a native Alert and not the old RoomExitConfirmSheet: that sheet opened
+  // synchronously inside a `beforeRemove` back-interception, and presenting an RN
+  // <Modal> right as Android 15's edge-to-edge inset animation was in flight made
+  // the sheet card "fly" to the top-left on real devices (an InteractionManager
+  // defer didn't fix it). A native Alert is a system component — never an RN
+  // Modal/Sheet — so it cannot hit that fly-up. Same Alert as 我在的房间's 离开.
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
+  const explicitLeaveRef = React.useRef(false);
 
-  React.useEffect(() => {
-    if (!exitEligible) return;
-    const unsub = nav.addListener('beforeRemove', (e: any) => {
-      if (exitConfirmedRef.current) return; // user already chose — let it through
-      e.preventDefault();
-      pendingExitRef.current = e.data.action;
-      // Defer opening the sheet until the back-gesture's edge-to-edge inset /
-      // navigation animation settles. Opening the Modal synchronously inside
-      // beforeRemove caught a transient inset state under Android 15 forced
-      // edge-to-edge → the sheet card "flew" to the top-left on real devices
-      // (best-effort; not reproducible on the emulator). runAfterInteractions
-      // lets the system-bar inset animation finish first, then we present.
-      InteractionManager.runAfterInteractions(() => {
-        if (!exitConfirmedRef.current) setExitOpen(true);
-      });
-    });
-    return unsub;
-  }, [nav, exitEligible]);
-
-  const finishExit = React.useCallback(() => {
-    exitConfirmedRef.current = true;
-    setExitOpen(false);
-    const action = pendingExitRef.current;
-    if (action) nav.dispatch(action);
-    else nav.goBack();
-  }, [nav]);
-
-  const onExitKeep = React.useCallback(() => {
-    keepSilentRef.current = true; // keeping → don't announce a leave to the room
-    markRoomRead(roomId).catch(() => {});
-    qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
-    finishExit();
-  }, [roomId, qc, finishExit]);
-
-  const onExitLeave = React.useCallback(() => {
-    leaveRoomMembership(roomId)
-      .catch(() => {})
-      .finally(() => {
-        qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
-        qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
-        finishExit();
-      });
-  }, [roomId, qc, finishExit]);
+  const doLeaveRoom = React.useCallback(() => {
+    Alert.alert(t('plaza.joined.leaveTitle'), t('plaza.joined.leaveBody', { title: headerTitle }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('plaza.joined.leave'),
+        style: 'destructive',
+        onPress: () => {
+          explicitLeaveRef.current = true; // full leave → loud announce, no mark-read
+          leaveRoomMembership(roomId)
+            .catch(() => {})
+            .finally(() => {
+              qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+              qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
+              nav.goBack();
+            });
+        },
+      },
+    ]);
+  }, [roomId, qc, nav, t, headerTitle]);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -364,11 +340,15 @@ export function WorldChatScreen({
     };
   }, [roomId]);
   // On unmount, fall back to the world room so counts/visibility stay correct.
-  // silentLeave (set by 保留) suppresses the "left the room" presence line for
-  // the room we're leaving — keeping a room shouldn't announce a departure.
+  // Backing out of a custom room is the silent "keep": mark it read so the
+  // 我在的房间 unread badge clears, and leave WITHOUT a "离开了房间" line. An
+  // explicit leave (doLeaveRoom / settings onExit) sets explicitLeaveRef → the
+  // normal loud announce and no mark-read (you're unsubscribing anyway).
   React.useEffect(
     () => () => {
-      wsEmit('world-chat:join-room', { roomId: 'world', silentLeave: keepSilentRef.current });
+      const keeping = isCustom && !explicitLeaveRef.current;
+      if (keeping) markRoomRead(roomId).catch(() => {});
+      wsEmit('world-chat:join-room', { roomId: 'world', silentLeave: keeping });
     },
     [],
   );
@@ -850,6 +830,13 @@ export function WorldChatScreen({
             <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={styles.headerBtn}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
+            {exitEligible && (
+              // Explicit unsubscribe (non-owner custom rooms). Native Alert → no
+              // fly-up. Backing out keeps the room silently; this leaves it.
+              <Pressable onPress={doLeaveRoom} hitSlop={8} accessibilityLabel={t('plaza.joined.leave')} style={styles.headerBtn}>
+                <LogOut size={21} color={theme.colors.error} />
+              </Pressable>
+            )}
             {isCustom && room && (
               <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')} style={styles.headerBtn}>
                 <UserPlus size={22} color={theme.colors.text} />
@@ -1086,9 +1073,9 @@ export function WorldChatScreen({
           }}
           onExit={() => {
             setSettingsOpen(false);
-            // The settings sheet already left the room — skip the exit-confirm
-            // interceptor so the user isn't re-prompted to leave/keep.
-            exitConfirmedRef.current = true;
+            // The settings sheet already left the room → treat as an explicit
+            // leave so the unmount announces it loudly (and skips mark-read).
+            explicitLeaveRef.current = true;
             nav.goBack();
           }}
         />
@@ -1131,15 +1118,6 @@ export function WorldChatScreen({
           setRosterOpen(false);
           if (userId !== myId) nav.navigate('UserDetail', { userId });
         }}
-      />
-
-      {/* 离开房间二次确认 (Build 102 §B) */}
-      <RoomExitConfirmSheet
-        open={exitOpen}
-        roomTitle={headerTitle}
-        onKeep={onExitKeep}
-        onLeave={onExitLeave}
-        onCancel={() => setExitOpen(false)}
       />
 
     </SafeAreaView>
