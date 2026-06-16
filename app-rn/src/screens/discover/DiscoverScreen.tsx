@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { deferOpen } from '../../utils/deferOpen';
 import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -380,12 +381,12 @@ export function DiscoverScreen() {
         <CardsBody
           cardsQ={cardsQ}
           stackRef={stackRef}
-          onOpenAbout={(u) => setAboutUser(u)}
+          onOpenAbout={(u) => deferOpen(() => setAboutUser(u))}
           onSwiped={handleSwiped}
           onSendIntro={openIntroChat}
         />
       ) : mode.kind === 'nearby' ? (
-        <NearbyBody nearbyQ={nearbyQ} onOpen={(u) => setAboutUser(u)} />
+        <NearbyBody nearbyQ={nearbyQ} onOpen={(u) => deferOpen(() => setAboutUser(u))} />
       ) : mode.kind === 'likedme' ? (
         // FFFF + JJJJ — "想认识你" as the same 2/3/4-col grid as 附近, fed by
         // who-liked-you data. Premium gating / blur handled inside.

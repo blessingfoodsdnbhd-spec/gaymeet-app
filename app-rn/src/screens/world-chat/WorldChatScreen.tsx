@@ -17,8 +17,9 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff, LogOut } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff } from 'lucide-react-native';
 import { nativeActionSheet } from '../../../modules/native-sheet';
+import { deferOpen } from '../../utils/deferOpen';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -203,41 +204,48 @@ export function WorldChatScreen({
     };
   }, [roomId, isCustom, qc]);
 
-  // Leaving a non-owner custom room. Backing out (gesture / header arrow) is the
-  // silent "keep" path — membership is untouched and the unmount marks the room
-  // read + leaves WITHOUT a "离开了房间" line (see the unmount effect). To actually
-  // unsubscribe, the non-owner taps the header LogOut → a NATIVE Alert.
-  //
-  // Why a native Alert and not the old RoomExitConfirmSheet: that sheet opened
-  // synchronously inside a `beforeRemove` back-interception, and presenting an RN
-  // <Modal> right as Android 15's edge-to-edge inset animation was in flight made
-  // the sheet card "fly" to the top-left on real devices (an InteractionManager
-  // defer didn't fix it). A native Alert is a system component — never an RN
-  // Modal/Sheet — so it cannot hit that fly-up. Same Alert as 我在的房间's 离开.
+  // Backing out of a non-owner custom room shows a NATIVE keep/leave/cancel action
+  // sheet (Material BottomSheetDialog / iOS action sheet) — a system component, NOT
+  // an RN <Modal>, so it cannot hit the Android-15 edge-to-edge fly-up the old
+  // RoomExitConfirmSheet did. Triggered from the back gesture / header arrow /
+  // hardware back via beforeRemove. 保留 = keep subscription (silent, marked read on
+  // unmount); 离开 = unsubscribe (loud); 取消 = stay. Opened via deferOpen so it
+  // presents on the next stable frame, not mid touch/nav-transition.
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
   const explicitLeaveRef = React.useRef(false);
+  const exitConfirmedRef = React.useRef(false);
 
-  const doLeaveRoom = React.useCallback(async () => {
-    // Native bottom action sheet (Material BottomSheetDialog / iOS action sheet)
-    // — a system component, NOT an RN Modal, so it cannot hit the Android-15
-    // edge-to-edge fly-up. Resolves the tapped option index.
-    const choice = await nativeActionSheet({
-      title: t('plaza.joined.leaveTitle'),
-      message: t('plaza.joined.leaveBody', { title: headerTitle }),
-      options: [t('plaza.joined.leave'), t('common.cancel')],
-      destructiveIndex: 0,
-      cancelIndex: 1,
-    });
-    if (choice !== 0) return; // 取消 or dismissed
-    explicitLeaveRef.current = true; // full leave → loud announce, no mark-read
-    leaveRoomMembership(roomId)
-      .catch(() => {})
-      .finally(() => {
-        qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
-        qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
-        nav.goBack();
+  React.useEffect(() => {
+    if (!exitEligible) return;
+    const unsub = nav.addListener('beforeRemove', (e: any) => {
+      if (exitConfirmedRef.current) return; // already chose — let the nav through
+      e.preventDefault();
+      const action = e.data.action;
+      deferOpen(async () => {
+        const choice = await nativeActionSheet({
+          title: t('plaza.exit.title'),
+          message: headerTitle ? t('plaza.exit.bodyNamed', { title: headerTitle }) : t('plaza.exit.body'),
+          options: [t('plaza.exit.keep'), t('plaza.exit.leave'), t('common.cancel')],
+          destructiveIndex: 1,
+          cancelIndex: 2,
+        });
+        if (choice === 2 || choice < 0) return; // 取消 / dismissed → stay in room
+        if (choice === 1) {
+          explicitLeaveRef.current = true; // 离开 → unsubscribe, loud announce, no mark-read
+          leaveRoomMembership(roomId)
+            .catch(() => {})
+            .finally(() => {
+              qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+              qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
+            });
+        }
+        // choice === 0 (保留): unmount marks read + silent-leaves; nothing extra.
+        exitConfirmedRef.current = true;
+        nav.dispatch(action);
       });
-  }, [roomId, qc, nav, t, headerTitle]);
+    });
+    return unsub;
+  }, [nav, exitEligible, t, headerTitle, roomId, qc]);
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -876,13 +884,6 @@ export function WorldChatScreen({
             <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={styles.headerBtn}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
-            {exitEligible && (
-              // Explicit unsubscribe (non-owner custom rooms). Native Alert → no
-              // fly-up. Backing out keeps the room silently; this leaves it.
-              <Pressable onPress={doLeaveRoom} hitSlop={8} accessibilityLabel={t('plaza.joined.leave')} style={styles.headerBtn}>
-                <LogOut size={21} color={theme.colors.error} />
-              </Pressable>
-            )}
             {isCustom && room && (
               <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')} style={styles.headerBtn}>
                 <UserPlus size={22} color={theme.colors.text} />
