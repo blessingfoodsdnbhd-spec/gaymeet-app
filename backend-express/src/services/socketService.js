@@ -556,13 +556,16 @@ function initSocket(server) {
 
     // World Chat: switch rooms. Client emits when entering a country OR a
     // custom (user-created) room. Custom room ids are 24-hex ChatRoom ids.
-    socket.on('world-chat:join-room', ({ roomId } = {}) => {
+    socket.on('world-chat:join-room', ({ roomId, silentLeave } = {}) => {
       const next = VALID_ROOM_IDS.has(roomId) || isCustomRoomId(roomId) ? roomId : 'world';
       const prev = socket.data?.wcRoom || 'world';
       if (next !== prev) {
         // Announce the part to the old room while we're still in it, then the
-        // join to the new room once we've entered.
-        emitPresenceEvent('leave', prev, socket.user);
+        // join to the new room once we've entered. silentLeave (client chose 保留
+        // — keep the room/subscription) suppresses the "👋 X 离开了房间" line:
+        // keeping a room shouldn't read as leaving it. The roster still refreshes
+        // below, so the count stays accurate.
+        if (!silentLeave) emitPresenceEvent('leave', prev, socket.user);
         socket.leave(socketRoom(prev));
         socket.join(socketRoom(next));
         socket.data = { ...(socket.data || {}), wcRoom: next, wcJoinedMs: Date.now() };

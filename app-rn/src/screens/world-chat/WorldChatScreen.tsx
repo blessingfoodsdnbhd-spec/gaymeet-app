@@ -12,6 +12,7 @@ import {
   Modal,
   Animated,
   Share,
+  InteractionManager,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
@@ -206,6 +207,11 @@ export function WorldChatScreen({
   // Leave-confirmation sheet (non-owner custom rooms, pushed view only).
   const [exitOpen, setExitOpen] = React.useState(false);
   const exitConfirmedRef = React.useRef(false);
+  // Set when the user chose 保留 (keep subscription): the unmount re-join to
+  // 'world' should then leave THIS room silently — no "👋 X 离开了房间" line to
+  // the others — because the user is keeping the room, not abandoning it. 离开
+  // (full leave) keeps the default loud announce.
+  const keepSilentRef = React.useRef(false);
   // The navigation action that beforeRemove intercepted, re-dispatched on confirm.
   const pendingExitRef = React.useRef<any>(null);
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
@@ -216,7 +222,15 @@ export function WorldChatScreen({
       if (exitConfirmedRef.current) return; // user already chose — let it through
       e.preventDefault();
       pendingExitRef.current = e.data.action;
-      setExitOpen(true);
+      // Defer opening the sheet until the back-gesture's edge-to-edge inset /
+      // navigation animation settles. Opening the Modal synchronously inside
+      // beforeRemove caught a transient inset state under Android 15 forced
+      // edge-to-edge → the sheet card "flew" to the top-left on real devices
+      // (best-effort; not reproducible on the emulator). runAfterInteractions
+      // lets the system-bar inset animation finish first, then we present.
+      InteractionManager.runAfterInteractions(() => {
+        if (!exitConfirmedRef.current) setExitOpen(true);
+      });
     });
     return unsub;
   }, [nav, exitEligible]);
@@ -230,6 +244,7 @@ export function WorldChatScreen({
   }, [nav]);
 
   const onExitKeep = React.useCallback(() => {
+    keepSilentRef.current = true; // keeping → don't announce a leave to the room
     markRoomRead(roomId).catch(() => {});
     qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
     finishExit();
@@ -349,9 +364,11 @@ export function WorldChatScreen({
     };
   }, [roomId]);
   // On unmount, fall back to the world room so counts/visibility stay correct.
+  // silentLeave (set by 保留) suppresses the "left the room" presence line for
+  // the room we're leaving — keeping a room shouldn't announce a departure.
   React.useEffect(
     () => () => {
-      wsEmit('world-chat:join-room', { roomId: 'world' });
+      wsEmit('world-chat:join-room', { roomId: 'world', silentLeave: keepSilentRef.current });
     },
     [],
   );
