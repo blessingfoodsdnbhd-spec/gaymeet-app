@@ -3,7 +3,7 @@
     "name": "Meyou",
     "slug": "meyou",
     "scheme": "meyou",
-    "version": "2.1.3",
+    "version": "3.1.0",
     "orientation": "portrait",
     "icon": "./src/assets/logo.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "106",
+      "buildNumber": "107",
       "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:meyou.uk",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 106,
+      "versionCode": 107,
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {

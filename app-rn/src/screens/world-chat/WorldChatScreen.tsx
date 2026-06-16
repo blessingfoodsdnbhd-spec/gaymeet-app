@@ -18,6 +18,7 @@ import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff, LogOut } from 'lucide-react-native';
+import { nativeActionSheet } from '../../../modules/native-sheet';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -216,24 +217,26 @@ export function WorldChatScreen({
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
   const explicitLeaveRef = React.useRef(false);
 
-  const doLeaveRoom = React.useCallback(() => {
-    Alert.alert(t('plaza.joined.leaveTitle'), t('plaza.joined.leaveBody', { title: headerTitle }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('plaza.joined.leave'),
-        style: 'destructive',
-        onPress: () => {
-          explicitLeaveRef.current = true; // full leave → loud announce, no mark-read
-          leaveRoomMembership(roomId)
-            .catch(() => {})
-            .finally(() => {
-              qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
-              qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
-              nav.goBack();
-            });
-        },
-      },
-    ]);
+  const doLeaveRoom = React.useCallback(async () => {
+    // Native bottom action sheet (Material BottomSheetDialog / iOS action sheet)
+    // — a system component, NOT an RN Modal, so it cannot hit the Android-15
+    // edge-to-edge fly-up. Resolves the tapped option index.
+    const choice = await nativeActionSheet({
+      title: t('plaza.joined.leaveTitle'),
+      message: t('plaza.joined.leaveBody', { title: headerTitle }),
+      options: [t('plaza.joined.leave'), t('common.cancel')],
+      destructiveIndex: 0,
+      cancelIndex: 1,
+    });
+    if (choice !== 0) return; // 取消 or dismissed
+    explicitLeaveRef.current = true; // full leave → loud announce, no mark-read
+    leaveRoomMembership(roomId)
+      .catch(() => {})
+      .finally(() => {
+        qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
+        qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
+        nav.goBack();
+      });
   }, [roomId, qc, nav, t, headerTitle]);
 
   const [draft, setDraft] = React.useState('');

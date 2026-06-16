@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["NativeSheetModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.nativesheet.NativeSheetModule"]
+  }
+}

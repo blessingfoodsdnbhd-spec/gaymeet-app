@@ -424,7 +424,7 @@ export function ProfileScreen() {
         </Card>
 
         <Text style={{ textAlign: 'center', marginTop: 32, color: theme.colors.muted, fontSize: 11.5 }}>
-          Meyou · v{appVersion} ({buildNumber})
+          Meyou · v{appVersion}
         </Text>
       </ScrollView>
 

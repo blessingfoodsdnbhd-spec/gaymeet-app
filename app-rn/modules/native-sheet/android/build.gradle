@@ -1,0 +1,27 @@
+apply plugin: 'com.android.library'
+
+group = 'expo.modules.nativesheet'
+version = '1.0.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useDefaultAndroidSdkVersions()
+useExpoPublishing()
+
+android {
+  namespace "expo.modules.nativesheet"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // Material BottomSheetDialog — native, edge-to-edge safe (Android 15).
+  implementation "com.google.android.material:material:1.12.0"
+}
