@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { Sheet } from '../../components/Sheet';
 import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
+import { deferOpen } from '../../utils/deferOpen';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { Avatar } from '../../components/Avatar';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
@@ -359,7 +360,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                 {carouselPhotos.map((url, idx) => (
                   <Pressable
                     key={`c-${idx}-${url}`}
-                    onPress={() => setViewerIndex(idx)}
+                    onPress={() => deferOpen(() => setViewerIndex(idx))}
                     style={{ width: screenW, height: carouselH }}
                   >
                     <ExpoImage
@@ -413,7 +414,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
             </Pressable>
             {!isSelf && (
               <Pressable
-                onPress={() => setNoteOpen(true)}
+                onPress={() => deferOpen(() => setNoteOpen(true))}
                 hitSlop={8}
                 style={[styles.overlayBtn, { right: 102 }]}
               >
@@ -559,7 +560,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                     {unlockedPhotos.map((url, idx) => (
                       <Pressable
                         key={`pp-${idx}-${url}`}
-                        onPress={() => setPrivateViewerIndex(idx)}
+                        onPress={() => deferOpen(() => setPrivateViewerIndex(idx))}
                       >
                         <ExpoImage
                           source={{ uri: url }}

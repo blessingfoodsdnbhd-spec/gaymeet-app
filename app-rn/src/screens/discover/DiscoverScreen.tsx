@@ -348,7 +348,7 @@ export function DiscoverScreen() {
               )}
             </IconButton>
             <BoostButton />
-            <IconButton onPress={() => setFiltersOpen(true)}>
+            <IconButton onPress={() => deferOpen(() => setFiltersOpen(true))}>
               <View>
                 <SlidersHorizontal size={18} color={theme.colors.text} strokeWidth={1.6} />
                 {hasActiveFilters && (

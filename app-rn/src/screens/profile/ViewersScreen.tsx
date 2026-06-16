@@ -28,6 +28,7 @@ import { SortChipRow } from '../../components/SortChipRow';
 import { sortList } from '../../utils/listSort';
 import { useListSortPrefs } from '../../store/listSortPrefs';
 import { shareProfile } from '../../utils/shareProfile';
+import { deferOpen } from '../../utils/deferOpen';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -121,7 +122,7 @@ export function ViewersScreen() {
               onPress={
                 isPremium
                   ? () => nav.navigate('UserDetail', { userId: item._id })
-                  : () => setUpsellOpen(true)
+                  : () => deferOpen(() => setUpsellOpen(true))
               }
             />
           )}

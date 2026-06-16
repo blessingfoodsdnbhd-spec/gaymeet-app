@@ -7,6 +7,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../Avatar';
 import { NameWithBadge } from '../NameWithBadge';
 import { shortTime } from '../../utils/time';
+import { deferOpen } from '../../utils/deferOpen';
 import { type Comment } from '../../api/moments';
 
 function idxFor(id: string) {
@@ -84,7 +85,7 @@ export function CommentCard({
 
         {/* Photo */}
         {!!comment.photoUrl && (
-          <Pressable onPress={() => setPhotoOpen(true)} style={{ marginTop: 6 }}>
+          <Pressable onPress={() => deferOpen(() => setPhotoOpen(true))} style={{ marginTop: 6 }}>
             <Image
               source={{ uri: comment.photoUrl }}
               style={[styles.photo, { backgroundColor: theme.colors.surface2 }]}

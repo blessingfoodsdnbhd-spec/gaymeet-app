@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   Animated,
+  InteractionManager,
   Share,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -108,7 +109,7 @@ export function WorldChatScreen({
   const route = useRoute<Rt>();
   const qc = useQueryClient();
   const me = useAuth((s) => s.user);
-  const myId = me?.id;
+  const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
 
   // Embedded mode (inside the 广场 tab controller) drives the room from props
   // and is remounted by key when the user switches rooms; a pushed single-room
@@ -144,6 +145,7 @@ export function WorldChatScreen({
   const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
+  const openRoster = React.useCallback(() => setRosterOpen(true), []);
 
   // Share the room via the system share sheet using the friendly meyou.uk/r/{slug}
   // short link. Works for every room — custom, country, or the global world room.
@@ -161,6 +163,18 @@ export function WorldChatScreen({
     setSettingsTab('invite');
     setSettingsOpen(true);
   }, []);
+
+  const openRosterUser = React.useCallback(
+    (userId: string) => {
+      const targetId = String(userId ?? '');
+      setRosterOpen(false);
+      if (!targetId || targetId === myId) return;
+      InteractionManager.runAfterInteractions(() => {
+        nav.navigate('UserDetail', { userId: targetId });
+      });
+    },
+    [myId, nav],
+  );
 
   // Per-room notification mute. Reactive read so the bell icon flips live. The
   // local store drives the icon instantly; for custom rooms we also persist the
@@ -854,8 +868,9 @@ export function WorldChatScreen({
                 emoji as a tofu box (looked like a ✕). The whole "N 人在线" row is
                 tappable (not just the 👥 icon) → opens the online roster. */}
             <Pressable
-              onPress={() => setRosterOpen(true)}
-              hitSlop={6}
+              onPress={openRoster}
+              hitSlop={8}
+              accessibilityRole="button"
               accessibilityLabel={t('plaza.onlineList')}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}
             >
@@ -873,7 +888,7 @@ export function WorldChatScreen({
               A laid-out box hit-tests reliably; the icon stays centered so iOS
               looks the same. marginRight pulls the box's padding back to the edge. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, marginRight: -9 }}>
-            <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={styles.headerBtn}>
+            <Pressable onPress={openRoster} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={styles.headerBtn}>
               <Users size={22} color={theme.colors.text} />
             </Pressable>
             <Pressable onPress={onToggleNotif} hitSlop={8} accessibilityLabel={t('worldChat.notif.toggle')} style={styles.headerBtn}>
@@ -969,9 +984,7 @@ export function WorldChatScreen({
                   isCreator={!!creatorId && item.userId === creatorId}
                   highlighted={item.messageId === highlightedId}
                   onLongPress={() => openMessageMenu(item)}
-                  onOpenUser={() =>
-                    item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
-                  }
+                  onOpenUser={() => openRosterUser(item.userId)}
                   onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
                   onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
                   autoTranslate={autoTranslate}
@@ -1092,10 +1105,7 @@ export function WorldChatScreen({
         open={rosterOpen}
         onClose={() => setRosterOpen(false)}
         roomId={roomId}
-        onOpenUser={(userId) => {
-          setRosterOpen(false);
-          if (userId !== myId) nav.navigate('UserDetail', { userId });
-        }}
+        onOpenUser={openRosterUser}
       />
 
     </SafeAreaView>

@@ -17,6 +17,7 @@ import { tagById, type InterestTagId } from '../../data/interestTags';
 import { useTranslation } from 'react-i18next';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
+import { deferOpen } from '../../utils/deferOpen';
 import { FollowBadge } from '../../components/FollowBadge';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -206,7 +207,11 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
               interactive; the ⭐ button is follow, not profile. A tap can't fight
               CardStack's swipe Pan — a drag cancels the Pressable before onPress. */}
           <Pressable
-            onPress={isTop ? () => nav.navigate('UserDetail', { userId: user.id }) : undefined}
+            onPress={
+              isTop
+                ? () => deferOpen(() => nav.navigate('UserDetail', { userId: user.id }))
+                : undefined
+            }
             disabled={!isTop}
             hitSlop={8}
           >

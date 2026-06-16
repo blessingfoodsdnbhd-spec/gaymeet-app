@@ -45,6 +45,7 @@ import {
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { deferOpen } from '../../utils/deferOpen';
 import { fetchIsAdmin } from '../../api/admin';
 import { SendNoteSheet } from '../discover/SendNoteSheet';
 import type { RootStackParamList } from '../../navigation/types';
@@ -274,7 +275,7 @@ export function UserDetailScreen() {
                     Hidden on own profile and in self-preview (can't note yourself). */}
                 {!isSelf && !previewMode && (
                   <Pressable
-                    onPress={() => setNoteOpen(true)}
+                    onPress={() => deferOpen(() => setNoteOpen(true))}
                     hitSlop={8}
                     style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
                   >

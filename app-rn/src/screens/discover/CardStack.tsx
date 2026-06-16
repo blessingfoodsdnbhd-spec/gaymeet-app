@@ -33,7 +33,7 @@ const FLY_DURATION = 250;
 // (scale 0.96 → 1.0). Snappier than the fly-off so the deck feels responsive.
 const ENTER_DURATION = 190;
 
-export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
+const CardStackBase = forwardRef<CardStackHandle, Props>(function CardStack(
   { cards, onSwiped },
   ref,
 ) {
@@ -243,6 +243,8 @@ export const CardStack = forwardRef<CardStackHandle, Props>(function CardStack(
     </GestureDetector>
   );
 });
+
+export const CardStack = React.memo(CardStackBase);
 
 const styles = StyleSheet.create({
   wrap: {

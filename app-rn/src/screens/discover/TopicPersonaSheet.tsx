@@ -24,6 +24,7 @@ import { PhotoViewer } from '../../components/PhotoViewer';
 import { useTheme } from '../../theme/ThemeProvider';
 import { getTopicPersona } from '../../api/topics';
 import { navigateAfterSheetClose } from '../../utils/keyboardSheet';
+import { deferOpen } from '../../utils/deferOpen';
 import { TopicUnlockRequestSheet } from './TopicUnlockRequestSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -162,7 +163,7 @@ export function TopicPersonaSheet({
                   {galleryPhotos.map((url, idx) => (
                     <Pressable
                       key={`c-${idx}-${url}`}
-                      onPress={() => setViewerIndex(idx)}
+                      onPress={() => deferOpen(() => setViewerIndex(idx))}
                       style={{ width: screenW, height: carouselH }}
                     >
                       <ExpoImage
@@ -312,7 +313,7 @@ export function TopicPersonaSheet({
           ) : !hasUnlock ? (
             <View style={styles.footer}>
               <Pressable
-                onPress={() => setUnlockRequestOpen(true)}
+                onPress={() => deferOpen(() => setUnlockRequestOpen(true))}
                 style={({ pressed }) => [
                   styles.cta,
                   {

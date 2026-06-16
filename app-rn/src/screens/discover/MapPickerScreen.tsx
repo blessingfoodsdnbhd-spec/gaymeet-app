@@ -24,6 +24,7 @@ import { setVirtualLocation, clearVirtualLocation } from '../../api/me';
 import { useNominatimSearch } from '../../utils/useNominatimSearch';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { resolveMomentLocation } from '../../utils/momentLocationBridge';
+import { deferOpen } from '../../utils/deferOpen';
 import type { RootStackParamList } from '../../navigation/types';
 
 // Popular cities for Asian + Western markets (NNNN quick-jump chips).
@@ -275,7 +276,7 @@ ${
         <Text style={{ flex: 1, marginLeft: 8, fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {momentMode ? t('moments.compose.location') : t('virtualLocation.title')}
         </Text>
-        <Pressable onPress={canSave ? onSave : () => setUpsellOpen(true)} disabled={busy} hitSlop={12} style={styles.headerBtn}>
+        <Pressable onPress={canSave ? onSave : () => deferOpen(() => setUpsellOpen(true))} disabled={busy} hitSlop={12} style={styles.headerBtn}>
           {busy ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : canSave ? (

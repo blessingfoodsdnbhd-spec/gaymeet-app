@@ -41,6 +41,7 @@ import { TopicPickerSheet } from './TopicPickerSheet';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
+import { deferOpen } from '../../utils/deferOpen';
 import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
@@ -829,7 +830,7 @@ export function EditProfileScreen() {
           )}
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             <Pressable
-              onPress={() => setTopicPickerOpen(true)}
+              onPress={() => deferOpen(() => setTopicPickerOpen(true))}
               style={{
                 paddingHorizontal: 14,
                 paddingVertical: 10,
@@ -932,7 +933,7 @@ export function EditProfileScreen() {
             </View>
           ) : (
             <Pressable
-              onPress={() => setVoiceRecorderOpen(true)}
+              onPress={() => deferOpen(() => setVoiceRecorderOpen(true))}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 11, borderRadius: 999, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.colors.line }}
             >
               <Mic size={16} color={theme.colors.primary} strokeWidth={2} />
