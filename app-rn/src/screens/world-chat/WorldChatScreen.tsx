@@ -894,6 +894,14 @@ export function WorldChatScreen({
   // 举报 chains a second native sheet with the reasons.
   const openMessageMenu = React.useCallback(
     async (m: WorldChatMessage) => {
+      // Defer past the long-press gesture frame before presenting the sheet —
+      // the native action sheet is already fly-immune (Material BottomSheetDialog,
+      // not an RN Modal), but presenting synchronously inside the gesture is the
+      // Android-15 edge-to-edge fly-up trigger class, so we mirror deferOpen()
+      // (runAfterInteractions + rAF) here too. Belt and suspenders.
+      await new Promise<void>((resolve) =>
+        InteractionManager.runAfterInteractions(() => requestAnimationFrame(() => resolve())),
+      );
       const reply = `💬 ${t('worldChat.reply.label')}`;
       if (m.userId === myId) {
         const i = await nativeActionSheet({
