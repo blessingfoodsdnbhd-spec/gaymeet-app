@@ -568,7 +568,11 @@ function CardsBody({
           {!isPremium && (
             <View pointerEvents="none" style={styles.proCorner}>
               <Crown size={9} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.proCornerText}>{t('discover.premiumLabel')}</Text>
+              {/* numberOfLines=1 — without it the pill (anchored at the screen's
+                  right edge) squeezed "Premium" onto two lines ("Premiu"/"m"). */}
+              <Text style={styles.proCornerText} numberOfLines={1}>
+                {t('discover.premiumLabel')}
+              </Text>
             </View>
           )}
         </View>
