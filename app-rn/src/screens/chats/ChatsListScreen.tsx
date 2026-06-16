@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Search, Flame, StickyNote, ChevronRight, Pin, PinOff, Trash2, X } from 'lucide-react-native';
+import { Search, Flame, StickyNote, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -698,24 +698,8 @@ function ThreadRow({
           </Text>
         </View>
       )}
-      {/* Always-visible ✕ delete button (premium-gated by the parent handler).
-          Nested Pressable captures its own tap so the row's onPress doesn't fire. */}
-      {onDelete && (
-        <Pressable
-          onPress={onDelete}
-          hitSlop={8}
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.surface2,
-          }}
-        >
-          <X size={16} color={theme.colors.muted} strokeWidth={2} />
-        </Pressable>
-      )}
+      {/* Delete is swipe-only (swipe the row → 删除) — the always-visible ✕ was
+          redundant with that gesture and cluttered every row, so it's removed. */}
     </Pressable>
   );
 }
