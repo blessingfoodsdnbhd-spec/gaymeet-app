@@ -1,11 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, FlatList, Modal, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import { View, Text, Pressable, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { X, Settings } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -15,8 +9,6 @@ import { on as wsOn, emit as wsEmit } from '../../api/ws';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import type { PlazaRoster, PlazaRosterUser } from '../../api/worldChat';
 
-const PANEL_W = 264;
-
 function idxFor(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -25,8 +17,8 @@ function idxFor(id: string) {
 
 /**
  * mIRC 在线名单 (spec §9.1) — the room's live online roster. On desktop it's a
- * fixed 240px right sidebar; on mobile (this app) it slides in as a right drawer
- * from a header icon. Header shows "在线 N 人"; each row = identity color + emoji
+ * fixed 240px right sidebar; on mobile (this app) it opens as a bottom sheet.
+ * Header shows "在线 N 人"; each row = identity color + emoji
  * + name + level badge, sorted server-side (身份 → 等级 → 加入顺序). Tap a row to
  * open the user (profile / DM).
  */
@@ -76,36 +68,71 @@ export function RoomOnlineSidebar({
     };
   }, [open, roomId]);
 
+  if (!open) return null;
+
   return (
-    // animationType="none" (NOT "slide"): RN's native slide animation on a
-    // transparent + statusBarTranslucent Modal mis-positions the content under
-    // Android 15 forced edge-to-edge + Fabric — the panel slid off-screen and the
-    // drawer "flew" away (only the backdrop showed). We drive the slide-in with a
-    // reanimated translateX instead, exactly mirroring the shared Sheet's proven
-    // translateY approach. statusBarTranslucent is still required so the Modal
-    // window draws under the status bar like the edge-to-edge host activity.
-    <Modal visible={open} transparent statusBarTranslucent animationType="none" onRequestClose={onClose}>
-      <DrawerSurface
-        open={open}
+    <RosterModalSurface onClose={onClose}>
+      <RosterSheetContent
         onClose={onClose}
         users={roster?.users ?? []}
         online={roster?.online ?? roster?.users?.length ?? 0}
         onOpenUser={onOpenUser}
         onOpenSettings={onOpenSettings}
       />
-    </Modal>
+    </RosterModalSurface>
   );
 }
 
-function DrawerSurface({
-  open,
+function RosterModalSurface({
+  onClose,
+  children,
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={styles.modalRoot} pointerEvents="box-none">
+      <View style={[StyleSheet.absoluteFill, styles.backdrop]} pointerEvents="none" />
+      <View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: theme.radius.xxl,
+            borderTopRightRadius: theme.radius.xxl,
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.l,
+            paddingBottom: theme.spacing.xxxl,
+          },
+          theme.shadows.pop,
+        ]}
+      >
+        <View
+          style={[
+            styles.grabber,
+            {
+              backgroundColor: theme.colors.line,
+              width: theme.spacing.xxxl + theme.spacing.xs,
+              height: theme.spacing.xs,
+              borderRadius: theme.radius.s,
+              marginBottom: theme.spacing.m,
+            },
+          ]}
+        />
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function RosterSheetContent({
   onClose,
   users,
   online,
   onOpenUser,
   onOpenSettings,
 }: {
-  open: boolean;
   onClose: () => void;
   users: PlazaRosterUser[];
   online: number;
@@ -114,63 +141,41 @@ function DrawerSurface({
 }) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const tx = useSharedValue(PANEL_W); // start off-screen to the right
-  const opacity = useSharedValue(0);
-
-  React.useEffect(() => {
-    if (open) {
-      tx.value = withTiming(0, { duration: 280, easing: Easing.bezier(0.2, 0.7, 0.2, 1) });
-      opacity.value = withTiming(1, { duration: 220 });
-    } else {
-      tx.value = withTiming(PANEL_W, { duration: 200 });
-      opacity.value = withTiming(0, { duration: 160 });
-    }
-  }, [open, tx, opacity]);
-
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
+  const { height } = useWindowDimensions();
 
   return (
-    // Flex-based root (NOT absolute fill): on Fabric + Android an absolute-fill
-    // root view gets a broken hit region and swallows taps to children. Same
-    // lesson as the shared Sheet.
-    <View style={{ flex: 1 }}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }, backdropStyle]}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-      </Animated.View>
-      <Animated.View style={[styles.panel, { backgroundColor: theme.colors.surface }, panelStyle]}>
-        <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: theme.colors.text }}>
-            {t('plaza.online', { n: online })}
+    <View>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: theme.colors.text }}>
+          {t('plaza.online', { n: online })}
+        </Text>
+        <Pressable onPress={onClose} hitSlop={8}>
+          <X size={22} color={theme.colors.muted} />
+        </Pressable>
+      </View>
+      {onOpenSettings && (
+        <Pressable
+          onPress={onOpenSettings}
+          style={({ pressed }) => [styles.settingsRow, { borderBottomColor: theme.colors.line, opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Settings size={18} color={theme.colors.text} />
+          <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '700', color: theme.colors.text }}>
+            {t('worldChat.rooms.settings')}
           </Text>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <X size={22} color={theme.colors.muted} />
-          </Pressable>
-        </View>
-        {/* Relocated header ⋮ (custom rooms only): room settings / management. */}
-        {onOpenSettings && (
-          <Pressable
-            onPress={onOpenSettings}
-            style={({ pressed }) => [styles.settingsRow, { borderBottomColor: theme.colors.line, opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Settings size={18} color={theme.colors.text} />
-            <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '700', color: theme.colors.text }}>
-              {t('worldChat.rooms.settings')}
-            </Text>
-          </Pressable>
-        )}
-        <FlatList
-          data={users}
-          keyExtractor={(u) => u.userId}
-          contentContainerStyle={{ paddingVertical: 8 }}
-          renderItem={({ item }) => <RosterRow user={item} onPress={() => onOpenUser(item.userId)} />}
-          ListEmptyComponent={
-            <Text style={{ color: theme.colors.muted, textAlign: 'center', marginTop: 24, fontSize: 13 }}>
-              {t('plaza.online', { n: 0 })}
-            </Text>
-          }
-        />
-      </Animated.View>
+        </Pressable>
+      )}
+      <FlatList
+        data={users}
+        keyExtractor={(u) => u.userId}
+        style={{ maxHeight: Math.round(height * 0.56) }}
+        contentContainerStyle={{ paddingVertical: 8 }}
+        renderItem={({ item }) => <RosterRow user={item} onPress={() => onOpenUser(item.userId)} />}
+        ListEmptyComponent={
+          <Text style={{ color: theme.colors.muted, textAlign: 'center', marginTop: 24, fontSize: 13 }}>
+            {t('plaza.online', { n: 0 })}
+          </Text>
+        }
+      />
     </View>
   );
 }
@@ -196,16 +201,32 @@ function RosterRow({ user, onPress }: { user: PlazaRosterUser; onPress: () => vo
 }
 
 const styles = StyleSheet.create({
-  // Right-anchored drawer. Absolute within the flex root so the reanimated
-  // translateX slides it in from the right edge.
-  panel: { position: 'absolute', top: 0, bottom: 0, right: 0, width: PANEL_W },
+  modalRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  backdrop: {
+    backgroundColor: 'rgba(30,15,5,0.35)',
+    zIndex: 0,
+  },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: '78%',
+    zIndex: 1,
+    elevation: 1001,
+  },
+  grabber: {
+    alignSelf: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    paddingTop: 52,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, paddingVertical: 8 },

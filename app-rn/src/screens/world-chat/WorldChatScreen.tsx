@@ -166,25 +166,18 @@ export function WorldChatScreen({
     setSettingsOpen(true);
   }, []);
 
-  // v3.1.6: the header ⋮ moved into the 👥 roster drawer. Close the drawer, then
+  // v3.1.6: the header ⋮ moved into the 👥 roster sheet. Close the sheet, then
   // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
   // / delete-room for the creator; invite / view-members / leave for members).
-  // The roster is a native Android Dialog (Modal); opening the settings Sheet
-  // (also a Modal) in the same frame drops it mid-Dialog-teardown — the sheet
-  // never shows. Defer past the ~220ms teardown, mirroring navigateAfterSheetClose.
+  // The roster itself is a Modal-backed Sheet; opening the settings Sheet
+  // in the same frame drops it mid-dismiss — the next sheet can fail to show.
+  // Defer past the teardown, mirroring navigateAfterSheetClose.
   const openRoomSettings = React.useCallback(() => {
     setRosterOpen(false);
     setSettingsTab('main');
-    // RN can't present a second Modal while the first (the roster) is still on
-    // screen — on Android it stacks the new one BEHIND and it never shows
-    // (Sheet.tsx documents this). Wait well past the roster Modal's dismiss
-    // before presenting the settings Sheet. 280ms wasn't enough on a slow
-    // device; 550ms clears the Dialog teardown reliably.
-    if (Platform.OS === 'android') {
-      setTimeout(() => setSettingsOpen(true), 550);
-    } else {
-      setSettingsOpen(true);
-    }
+    // The roster is now an in-screen overlay, not an RN Modal, so there is no
+    // Android Dialog teardown to wait for before opening the settings sheet.
+    setSettingsOpen(true);
   }, []);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
@@ -999,7 +992,7 @@ export function WorldChatScreen({
             {/* v3.1.6 header unification: every room (official / user / new) now shows
                 exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
                 settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
-                👥 roster drawer's "房间设置" row (openRoomSettings → RoomSettingsSheet),
+                👥 roster sheet's "房间设置" row (openRoomSettings → RoomSettingsSheet),
                 so nothing is lost — official rooms simply have no settings row. Report
                 already lives in the message long-press menu (openMessageMenu). */}
           </View>
@@ -1193,7 +1186,7 @@ export function WorldChatScreen({
         reason={upsellReason ?? undefined}
       />
 
-      {/* mIRC 在线名单 — right drawer (spec §9.1). */}
+      {/* mIRC 在线名单 — bottom sheet on mobile (stable on Android 15/16). */}
       <RoomOnlineSidebar
         open={rosterOpen}
         onClose={() => setRosterOpen(false)}
