@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../store/auth';
 import { setPrivacy, patchMe, clearVirtualLocation } from '../../../api/me';
 import { UpgradePremiumSheet } from '../../../components/UpgradePremiumSheet';
+import { deferOpen } from '../../../utils/deferOpen';
 import {
   SettingsShell,
   SettingsCard,
@@ -162,7 +163,7 @@ export function PrivacySettings() {
         <Divider />
         {/* Premium-only. Free users: the disabled Switch lets the tap fall
             through to the Pressable, which opens the upgrade sheet. */}
-        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+        <Pressable onPress={isPremium ? undefined : () => deferOpen(() => setUpsellOpen(true))}>
           <ToggleRow
             label={t('privacySettings.hideOnlineStatus')}
             value={isPremium ? hideOnline : false}
@@ -174,7 +175,7 @@ export function PrivacySettings() {
         </Pressable>
         <Divider />
         {/* Premium-only — ghost mode (item 6): appear AFK rather than online. */}
-        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+        <Pressable onPress={isPremium ? undefined : () => deferOpen(() => setUpsellOpen(true))}>
           <ToggleRow
             label={t('privacySettings.ghostMode.label')}
             value={isPremium ? ghostMode : false}
@@ -186,7 +187,7 @@ export function PrivacySettings() {
         </Pressable>
         <Divider />
         {/* Premium-only — hide 人气 / popularity from other viewers (SSSS). */}
-        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+        <Pressable onPress={isPremium ? undefined : () => deferOpen(() => setUpsellOpen(true))}>
           <ToggleRow
             label={t('privacySettings.hidePopularity.label')}
             value={isPremium ? hidePopularity : false}
@@ -198,7 +199,7 @@ export function PrivacySettings() {
         </Pressable>
         <Divider />
         {/* Premium-only — incognito browsing keeps you out of others' 谁在看你. */}
-        <Pressable onPress={isPremium ? undefined : () => setUpsellOpen(true)}>
+        <Pressable onPress={isPremium ? undefined : () => deferOpen(() => setUpsellOpen(true))}>
           <ToggleRow
             label={t('privacySettings.incognitoBrowsing')}
             value={isPremium ? incognito : false}
@@ -216,7 +217,7 @@ export function PrivacySettings() {
         <LinkRow
           label={t('virtualLocation.myLocation')}
           detail={virtualActive ? (virtualLabel || t('virtualLocation.active')) : t('virtualLocation.notSet')}
-          onPress={() => (isPremium ? nav.navigate('MapPicker') : setUpsellOpen(true))}
+          onPress={() => (isPremium ? nav.navigate('MapPicker') : deferOpen(() => setUpsellOpen(true)))}
         />
         {virtualActive && (
           <>

@@ -40,6 +40,7 @@ import { NameWithBadge } from '../../components/NameWithBadge';
 import { shareVoteCard } from '../../utils/shareVoteCard';
 import { blockUser } from '../../api/safety';
 import { shortTime } from '../../utils/time';
+import { deferOpen } from '../../utils/deferOpen';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -251,7 +252,12 @@ export function VoteDetailScreen() {
                   <ExpoImage source={{ uri: url }} style={{ width, height: coverH }} contentFit="contain" cachePolicy="memory-disk" allowDownscaling={false} priority="high" />
                 );
                 return entry ? (
-                  <Pressable key={entry.id} onPress={() => setEntryViewerIndex(entries.findIndex((e) => e.id === entry.id))}>
+                  <Pressable
+                    key={entry.id}
+                    onPress={() =>
+                      deferOpen(() => setEntryViewerIndex(entries.findIndex((e) => e.id === entry.id)))
+                    }
+                  >
                     {img}
                   </Pressable>
                 ) : (
@@ -468,7 +474,7 @@ export function VoteDetailScreen() {
                 return (
                   <Pressable
                     key={entry.id}
-                    onPress={() => setEntryViewerIndex(idx)}
+                    onPress={() => deferOpen(() => setEntryViewerIndex(idx))}
                     style={{ width: 72, alignItems: 'center' }}
                   >
                     <View style={{ opacity: eliminated ? 0.5 : 1 }}>

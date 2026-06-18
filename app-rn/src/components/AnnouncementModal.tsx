@@ -115,68 +115,75 @@ export function AnnouncementModal({
 
   return (
     <Modal visible animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={closeEnabled ? onClose : undefined}>
-        {/* Stop backdrop taps from closing while interacting with the carousel. */}
-        <Pressable style={styles.carouselWrap} onPress={() => {}}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) =>
-              setPage(Math.round(e.nativeEvent.contentOffset.x / winW))
-            }
-          >
-            {announcements.map((a) => (
-              <View key={a.id} style={[styles.page, { width: winW }]}>
-                <AnnouncementCard imageUrl={a.imageUrl} ctaUrl={a.ctaUrl} />
-              </View>
-            ))}
-          </ScrollView>
-
-          {multi && (
-            <View style={styles.dots} pointerEvents="none">
-              {announcements.map((a, i) => (
-                <View
-                  key={a.id}
-                  style={[
-                    styles.dot,
-                    { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.4)' },
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-        </Pressable>
-      </Pressable>
-
-      <View style={styles.topRow} pointerEvents="box-none">
+      <View style={styles.modalRoot}>
         <Pressable
-          onPress={onDontShow}
-          hitSlop={12}
-          style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Text style={styles.btnText}>{t('announcement.dontShowAgain')}</Text>
-        </Pressable>
-
-        <Pressable
+          style={[StyleSheet.absoluteFillObject, styles.backdrop]}
           onPress={closeEnabled ? onClose : undefined}
-          disabled={!closeEnabled}
-          hitSlop={12}
-          style={({ pressed }) => [
-            styles.btn,
-            { opacity: !closeEnabled ? 0.55 : pressed ? 0.7 : 1 },
-          ]}
         >
-          <Text style={styles.btnText}>{closeLabel}</Text>
+          {/* Stop backdrop taps from closing while interacting with the carousel. */}
+          <Pressable style={styles.carouselWrap} onPress={() => {}}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) =>
+                setPage(Math.round(e.nativeEvent.contentOffset.x / winW))
+              }
+            >
+              {announcements.map((a) => (
+                <View key={a.id} style={[styles.page, { width: winW }]}>
+                  <AnnouncementCard imageUrl={a.imageUrl} ctaUrl={a.ctaUrl} />
+                </View>
+              ))}
+            </ScrollView>
+
+            {multi && (
+              <View style={styles.dots} pointerEvents="none">
+                {announcements.map((a, i) => (
+                  <View
+                    key={a.id}
+                    style={[
+                      styles.dot,
+                      { backgroundColor: i === page ? '#FFFFFF' : 'rgba(255,255,255,0.4)' },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+          </Pressable>
         </Pressable>
+
+        <View style={styles.topRow}>
+          <Pressable
+            onPress={onDontShow}
+            hitSlop={12}
+            style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Text style={styles.btnText}>{t('announcement.dontShowAgain')}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={closeEnabled ? onClose : undefined}
+            disabled={!closeEnabled}
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.btn,
+              { opacity: !closeEnabled ? 0.55 : pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Text style={styles.btnText}>{closeLabel}</Text>
+          </Pressable>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  modalRoot: {
     flex: 1,
+  },
+  backdrop: {
     backgroundColor: 'rgba(0,0,0,0.78)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -204,11 +211,13 @@ const styles = StyleSheet.create({
   },
   topRow: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 56 : 28,
+    top: Platform.OS === 'ios' ? 56 : 56,
     left: 18,
     right: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    zIndex: 1000,
+    elevation: 1000,
   },
   btn: {
     paddingHorizontal: 14,
@@ -217,6 +226,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.18)',
+    zIndex: 1001,
+    elevation: 1001,
   },
   btnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
 });

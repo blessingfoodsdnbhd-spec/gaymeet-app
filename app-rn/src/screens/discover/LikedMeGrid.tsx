@@ -10,6 +10,7 @@ import { NearbyGrid } from './NearbyGrid';
 import { EmptyState } from '../../components/EmptyState';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { getLikedMe } from '../../api/me';
+import { deferOpen } from '../../utils/deferOpen';
 import type { DiscoverCardUser } from '../../api/discover';
 
 function idxFor(id: string) {
@@ -73,7 +74,7 @@ export function LikedMeGrid() {
 
   const onOpen = (u: DiscoverCardUser) => {
     if (!isPremium) {
-      setUpsellOpen(true);
+      deferOpen(() => setUpsellOpen(true));
       return;
     }
     nav.navigate('UserDetail', { userId: u.id });

@@ -15,6 +15,7 @@ import { useAuth } from '../../../store/auth';
 import { deleteAccount, exportAccountData } from '../../../api/me';
 import { restoreSubscriptions } from '../../../utils/iap';
 import { openLegal, PRIVACY_URL, TERMS_URL, SUPPORT_URL } from '../../../utils/legalUrls';
+import { deferOpen } from '../../../utils/deferOpen';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { Sheet } from '../../../components/Sheet';
 import { SettingsShell, SettingsCard, LinkRow, Divider } from './SettingsShell';
@@ -48,7 +49,7 @@ export function AccountSettings() {
   const openDelete = () => {
     if (deleting) return;
     setTypedEmail('');
-    setConfirmOpen(true);
+    deferOpen(() => setConfirmOpen(true));
   };
 
   const doDelete = async () => {

@@ -11,13 +11,14 @@ import {
   Alert,
   Modal,
   Animated,
+  InteractionManager,
   Share,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, MoreVertical, Crown, Lock, Share2, UserPlus, Users, Bell, BellOff } from 'lucide-react-native';
+import { ChevronLeft, Crown, Lock, Share2, Users, Bell, BellOff } from 'lucide-react-native';
 import { nativeActionSheet } from '../../../modules/native-sheet';
 import { deferOpen } from '../../utils/deferOpen';
 import { useTranslation } from 'react-i18next';
@@ -54,9 +55,11 @@ import {
 } from '../../api/worldChat';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { useRoomNotifPrefs } from '../../store/roomNotifPrefs';
+import { useKeptRooms } from '../../store/keptRooms';
 import { uploadFile } from '../../api/upload';
 import { blockUser, type ReportReason } from '../../api/safety';
 import { openConversation, uploadChatVoice } from '../../api/chats';
+import { toggleFollow } from '../../api/follows';
 import { on as wsOn, emit as wsEmit, connect as wsConnect } from '../../api/ws';
 import { shortTime } from '../../utils/time';
 import { DateDivider } from '../../components/chat/DateDivider';
@@ -108,7 +111,7 @@ export function WorldChatScreen({
   const route = useRoute<Rt>();
   const qc = useQueryClient();
   const me = useAuth((s) => s.user);
-  const myId = me?.id;
+  const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
 
   // Embedded mode (inside the 广场 tab controller) drives the room from props
   // and is remounted by key when the user switches rooms; a pushed single-room
@@ -144,6 +147,7 @@ export function WorldChatScreen({
   const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
+  const openRoster = React.useCallback(() => setRosterOpen(true), []);
 
   // Share the room via the system share sheet using the friendly meyou.uk/r/{slug}
   // short link. Works for every room — custom, country, or the global world room.
@@ -161,6 +165,66 @@ export function WorldChatScreen({
     setSettingsTab('invite');
     setSettingsOpen(true);
   }, []);
+
+  // v3.1.6: the header ⋮ moved into the 👥 roster sheet. Close the sheet, then
+  // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
+  // / delete-room for the creator; invite / view-members / leave for members).
+  // The roster itself is a Modal-backed Sheet; opening the settings Sheet
+  // in the same frame drops it mid-dismiss — the next sheet can fail to show.
+  // Defer past the teardown, mirroring navigateAfterSheetClose.
+  const openRoomSettings = React.useCallback(() => {
+    setRosterOpen(false);
+    setSettingsTab('main');
+    deferOpen(() => setSettingsOpen(true));
+  }, []);
+
+  // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
+  // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
+  // here (add-friend = follow). Skips self.
+  //
+  // IMPORTANT: present the sheet IMMEDIATELY — never await a network call before
+  // showing it. The earlier version awaited /is-following to decide whether to
+  // offer 添加好友, but on a cold Render dyno that GET can take tens of seconds,
+  // so the sheet appeared to never open. The follow is a toggle (idempotent on the
+  // backend); we read the returned state to toast the right message. deferOpen()
+  // pushes the present past the tap/gesture frame (Android-15 fly-up guard).
+  const openRosterUser = React.useCallback(
+    (userId: string) => {
+      const targetId = String(userId ?? '');
+      setRosterOpen(false);
+      if (!targetId || targetId === myId) return;
+      deferOpen(async () => {
+        const viewProfile = t('worldChat.viewProfile');
+        const addFriend = t('worldChat.addFriend');
+        const dm = t('worldChat.dm');
+        const cancel = t('common.cancel');
+        const options = [viewProfile, addFriend, dm, cancel];
+        const i = await nativeActionSheet({ options, cancelIndex: options.length - 1 });
+        if (i < 0) return;
+        const picked = options[i];
+        if (picked === viewProfile) {
+          nav.navigate('UserDetail', { userId: targetId });
+        } else if (picked === addFriend) {
+          try {
+            const { following } = await toggleFollow(targetId);
+            Alert.alert(following ? t('worldChat.friendAdded') : t('worldChat.friendRemoved'));
+          } catch {
+            Alert.alert(t('worldChat.actionFailed'));
+          }
+        } else if (picked === dm) {
+          try {
+            const res = await openConversation(targetId);
+            qc.invalidateQueries({ queryKey: ['chats', 'list'] });
+            nav.navigate('ChatDetail', { chatId: res.matchId });
+          } catch (e: any) {
+            if (e?.response?.status === 402) nav.navigate('Premium');
+            else Alert.alert(t('worldChat.actionFailed'), e?.response?.data?.error ?? '');
+          }
+        }
+      });
+    },
+    [myId, nav, t, qc],
+  );
 
   // Per-room notification mute. Reactive read so the bell icon flips live. The
   // local store drives the icon instantly; for custom rooms we also persist the
@@ -207,19 +271,45 @@ export function WorldChatScreen({
   // Backing out of a non-owner custom room shows a NATIVE keep/leave/cancel action
   // sheet (Material BottomSheetDialog / iOS action sheet) — a system component, NOT
   // an RN <Modal>, so it cannot hit the Android-15 edge-to-edge fly-up the old
-  // RoomExitConfirmSheet did. Triggered from the back gesture / header arrow /
-  // hardware back via beforeRemove. 保留 = keep subscription (silent, marked read on
-  // unmount); 离开 = unsubscribe (loud); 取消 = stay. Opened via deferOpen so it
-  // presents on the next stable frame, not mid touch/nav-transition.
+  // RoomExitConfirmSheet did. Triggered from the header arrow / hardware back via
+  // beforeRemove. 保留 = keep subscription (silent, marked read on unmount);
+  // 离开 = unsubscribe (loud); 取消 = stay. Opened via deferOpen so it presents on
+  // the next stable frame, not mid touch/nav-transition.
+  //
+  // v3.1.4/v3.1.6 fixes:
+  //  • Bug 1 — once the user chose 保留, this room is in the local kept set, so we
+  //    DON'T re-prompt on every re-entry; back just goes through. (v3.1.6 carries
+  //    this onto the v3.1.5 header-unify line, which had branched from main before
+  //    v3.1.4 and so never received the kept-set logic.)
+  //  • Bug 2 — the iOS swipe-back gesture commits the native transition before
+  //    beforeRemove's preventDefault can reliably cancel it, so the sheet ended up
+  //    rendering on the LIST screen we'd already popped to. We disable the gesture
+  //    whenever the prompt is needed; the header arrow / hardware back dispatch a
+  //    discrete POP that preventDefault catches cleanly → the sheet shows ON the
+  //    room screen, before any navigation.
   const exitEligible = !embedded && isCustom && !!room && !isCreator;
+  const isKept = useKeptRooms((s) => !!s.kept[roomId]);
+  const needsExitPrompt = exitEligible && !isKept;
   const explicitLeaveRef = React.useRef(false);
   const exitConfirmedRef = React.useRef(false);
+  const exitPendingRef = React.useRef(false); // a sheet is already scheduled/open
+
+  // Bug 2: kill the swipe-back gesture while a prompt is pending so it can't
+  // commit the pop out from under preventDefault. Re-enabled once kept.
+  React.useEffect(() => {
+    if (embedded || !isCustom) return;
+    nav.setOptions({ gestureEnabled: !needsExitPrompt });
+  }, [nav, embedded, isCustom, needsExitPrompt]);
 
   React.useEffect(() => {
     if (!exitEligible) return;
     const unsub = nav.addListener('beforeRemove', (e: any) => {
       if (exitConfirmedRef.current) return; // already chose — let the nav through
+      // Bug 1: already kept → no prompt, let back through normally.
+      if (useKeptRooms.getState().isKept(roomId)) return;
       e.preventDefault();
+      if (exitPendingRef.current) return; // a sheet is already scheduled — don't stack
+      exitPendingRef.current = true;
       const action = e.data.action;
       deferOpen(async () => {
         const choice = await nativeActionSheet({
@@ -229,17 +319,21 @@ export function WorldChatScreen({
           destructiveIndex: 1,
           cancelIndex: 2,
         });
+        exitPendingRef.current = false;
         if (choice === 2 || choice < 0) return; // 取消 / dismissed → stay in room
         if (choice === 1) {
           explicitLeaveRef.current = true; // 离开 → unsubscribe, loud announce, no mark-read
+          useKeptRooms.getState().setKept(roomId, false); // 离开 → ask again next time
           leaveRoomMembership(roomId)
             .catch(() => {})
             .finally(() => {
               qc.invalidateQueries({ queryKey: ['worldChat', 'joinedRooms'] });
               qc.invalidateQueries({ queryKey: ['worldChat', 'hot', 5] });
             });
+        } else {
+          // choice === 0 (保留): remember the keep so we never re-prompt for this room.
+          useKeptRooms.getState().setKept(roomId, true);
         }
-        // choice === 0 (保留): unmount marks read + silent-leaves; nothing extra.
         exitConfirmedRef.current = true;
         nav.dispatch(action);
       });
@@ -802,6 +896,14 @@ export function WorldChatScreen({
   // 举报 chains a second native sheet with the reasons.
   const openMessageMenu = React.useCallback(
     async (m: WorldChatMessage) => {
+      // Defer past the long-press gesture frame before presenting the sheet —
+      // the native action sheet is already fly-immune (Material BottomSheetDialog,
+      // not an RN Modal), but presenting synchronously inside the gesture is the
+      // Android-15 edge-to-edge fly-up trigger class, so we mirror deferOpen()
+      // (runAfterInteractions + rAF) here too. Belt and suspenders.
+      await new Promise<void>((resolve) =>
+        InteractionManager.runAfterInteractions(() => requestAnimationFrame(() => resolve())),
+      );
       const reply = `💬 ${t('worldChat.reply.label')}`;
       if (m.userId === myId) {
         const i = await nativeActionSheet({
@@ -837,10 +939,16 @@ export function WorldChatScreen({
       {/* Header — hidden when embedded in the 广场 tab (the hub owns the chrome). */}
       {!embedded && (
         <View style={[styles.header, { borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center' }]}>
-          <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 10 }}>
+          <Pressable onPress={() => nav.goBack()} hitSlop={8} style={{ marginRight: 8 }}>
             <ChevronLeft size={26} color={theme.colors.text} />
           </Pressable>
-          <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={openRoster}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('plaza.onlineList')}
+            style={{ flex: 1, minWidth: 0, paddingVertical: 4, marginVertical: -4 }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
               {isCustom && room?.isPrivate && <Lock size={13} color={theme.colors.muted} />}
               <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 18, fontWeight: '700', color: theme.colors.text }}>
@@ -853,47 +961,38 @@ export function WorldChatScreen({
             {/* Green dot drawn as a View, not the 🟢 emoji — Android renders that
                 emoji as a tofu box (looked like a ✕). The whole "N 人在线" row is
                 tappable (not just the 👥 icon) → opens the online roster. */}
-            <Pressable
-              onPress={() => setRosterOpen(true)}
-              hitSlop={6}
-              accessibilityLabel={t('plaza.onlineList')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}
-            >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success }} />
               <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12, color: theme.colors.muted }}>
                 {isCustom && room
                   ? `${t('worldChat.rooms.memberCount', { n: room.memberCount })} · ${online ?? room.onlineCount}`
                   : t('worldChat.online', { n: online ?? '—' })}
               </Text>
-            </Pressable>
-          </View>
+            </View>
+          </Pressable>
           {/* Each action is an explicit 40×40 touch box, not a bare icon + hitSlop:
               on Android a Pressable wrapping only a small SVG reports a tiny hit
               area and taps near the screen edge miss (the buttons looked dead).
               A laid-out box hit-tests reliably; the icon stays centered so iOS
               looks the same. marginRight pulls the box's padding back to the edge. */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, marginRight: -9 }}>
-            <Pressable onPress={() => setRosterOpen(true)} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={styles.headerBtn}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 4, marginRight: -6 }}>
+            <Pressable onPress={openRoster} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               <Users size={22} color={theme.colors.text} />
             </Pressable>
-            <Pressable onPress={onToggleNotif} hitSlop={8} accessibilityLabel={t('worldChat.notif.toggle')} style={styles.headerBtn}>
+            <Pressable onPress={onToggleNotif} hitSlop={8} accessibilityLabel={t('worldChat.notif.toggle')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               {notifMuted
                 ? <BellOff size={21} color={theme.colors.muted} />
                 : <Bell size={21} color={theme.colors.text} />}
             </Pressable>
-            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={styles.headerBtn}>
+            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
-            {isCustom && room && (
-              <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.invite')} style={styles.headerBtn}>
-                <UserPlus size={22} color={theme.colors.text} />
-              </Pressable>
-            )}
-            {isCustom && room && (
-              <Pressable onPress={() => openSheetAfterKeyboardDismiss(() => { setSettingsTab('main'); setSettingsOpen(true); })} hitSlop={8} style={styles.headerBtn}>
-                <MoreVertical size={22} color={theme.colors.text} />
-              </Pressable>
-            )}
+            {/* v3.1.6 header unification: every room (official / user / new) now shows
+                exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
+                settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
+                👥 roster sheet's "房间设置" row (openRoomSettings → RoomSettingsSheet),
+                so nothing is lost — official rooms simply have no settings row. Report
+                already lives in the message long-press menu (openMessageMenu). */}
           </View>
         </View>
       )}
@@ -969,9 +1068,7 @@ export function WorldChatScreen({
                   isCreator={!!creatorId && item.userId === creatorId}
                   highlighted={item.messageId === highlightedId}
                   onLongPress={() => openMessageMenu(item)}
-                  onOpenUser={() =>
-                    item.userId !== myId && nav.navigate('UserDetail', { userId: item.userId })
-                  }
+                  onOpenUser={() => openRosterUser(item.userId)}
                   onReplyJump={item.replyTo ? () => jumpToMessage(item.replyTo!.messageId) : undefined}
                   onOpenPhoto={() => item.photoUrl && setViewerPhoto(item.photoUrl)}
                   autoTranslate={autoTranslate}
@@ -1087,15 +1184,15 @@ export function WorldChatScreen({
         reason={upsellReason ?? undefined}
       />
 
-      {/* mIRC 在线名单 — right drawer (spec §9.1). */}
+      {/* mIRC 在线名单 — bottom sheet on mobile (stable on Android 15/16). */}
       <RoomOnlineSidebar
         open={rosterOpen}
         onClose={() => setRosterOpen(false)}
         roomId={roomId}
-        onOpenUser={(userId) => {
-          setRosterOpen(false);
-          if (userId !== myId) nav.navigate('UserDetail', { userId });
-        }}
+        onOpenUser={openRosterUser}
+        // Custom rooms only: surfaces the relocated room-settings entry (was the
+        // header ⋮). Official / country rooms have no settings → no row.
+        onOpenSettings={isCustom && room ? openRoomSettings : undefined}
       />
 
     </SafeAreaView>
@@ -1476,6 +1573,7 @@ const styles = StyleSheet.create({
   // Header action hit target — explicit 40×40 so Android delivers the tap (a
   // bare icon + hitSlop was unreliable). Icon is centered, so it reads the same.
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerBtnCompact: { width: 34, height: 40, alignItems: 'center', justifyContent: 'center' },
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   composer: {
     flexDirection: 'row',
