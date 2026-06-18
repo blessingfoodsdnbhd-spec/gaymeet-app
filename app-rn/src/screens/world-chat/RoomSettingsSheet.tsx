@@ -60,6 +60,35 @@ export function RoomSettingsSheet({
   onExit: () => void;
   initialTab?: 'main' | 'invite';
 }) {
+  return (
+    <Sheet open={open} onClose={onClose} maxHeight="86%">
+      <RoomSettingsContent
+        open={open}
+        onClose={onClose}
+        room={room}
+        onChanged={onChanged}
+        onExit={onExit}
+        initialTab={initialTab}
+      />
+    </Sheet>
+  );
+}
+
+export function RoomSettingsContent({
+  open,
+  onClose,
+  room,
+  onChanged,
+  onExit,
+  initialTab = 'main',
+}: {
+  open: boolean;
+  onClose: () => void;
+  room: ChatRoomSummary;
+  onChanged: () => void;
+  onExit: () => void;
+  initialTab?: 'main' | 'invite';
+}) {
   const theme = useTheme();
   const { t } = useTranslation();
   const nav = useNavigation<any>();
@@ -222,7 +251,7 @@ export function RoomSettingsSheet({
   if (tab === 'members') {
     const list = membersQ.data ?? [];
     return (
-      <Sheet open={open} onClose={onClose} maxHeight="78%">
+      <View>
         <View style={styles.sheetHeader}>
           <Pressable onPress={() => setTab('main')} hitSlop={8}>
             <ChevronLeft size={24} color={theme.colors.text} />
@@ -262,14 +291,14 @@ export function RoomSettingsSheet({
             ))}
           </ScrollView>
         )}
-      </Sheet>
+      </View>
     );
   }
 
   // Non-creator member: view members + leave.
   if (!room.isCreator) {
     return (
-      <Sheet open={open} onClose={onClose} maxHeight="40%">
+      <View>
         <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{room.title}</Text>
         <Pressable onPress={() => setTab('invite')} style={[styles.actionRow, { borderColor: theme.colors.line }]}>
           <Text style={{ fontSize: 15, color: theme.colors.text, fontWeight: '600' }}>
@@ -291,7 +320,7 @@ export function RoomSettingsSheet({
             {t('common.cancel')}
           </Text>
         </Pressable>
-      </Sheet>
+      </View>
     );
   }
 
@@ -299,7 +328,7 @@ export function RoomSettingsSheet({
   if (tab === 'invite') {
     const friends = friendsQ.data ?? [];
     return (
-      <Sheet open={open} onClose={onClose} maxHeight="78%">
+      <View>
         <View style={styles.sheetHeader}>
           <Pressable onPress={() => setTab('main')} hitSlop={8}>
             <ChevronLeft size={24} color={theme.colors.text} />
@@ -367,14 +396,14 @@ export function RoomSettingsSheet({
             fullWidth
           />
         </View>
-      </Sheet>
+      </View>
     );
   }
 
   // Creator main settings.
   const members = membersQ.data ?? [];
   return (
-    <Sheet open={open} onClose={onClose} maxHeight="86%">
+    <View>
       <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>{t('worldChat.rooms.settings')}</Text>
       <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
         {/* Edit meta */}
@@ -459,7 +488,7 @@ export function RoomSettingsSheet({
           </Text>
         </Pressable>
       </View>
-    </Sheet>
+    </View>
   );
 }
 

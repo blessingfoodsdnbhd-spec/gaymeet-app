@@ -66,7 +66,7 @@ import { DateDivider } from '../../components/chat/DateDivider';
 import { shouldShowDateDivider } from '../../utils/chatDate';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
-import { RoomSettingsSheet } from './RoomSettingsSheet';
+import { RoomSettingsContent } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
@@ -142,9 +142,6 @@ export function WorldChatScreen({
   const creatorId = room?.creator?.id ?? null;
   const closed = room?.status === 'closed';
 
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-  // Which sub-screen the settings sheet opens on ('main' = ⋮ menu, 'invite' = +).
-  const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
   const openRoster = React.useCallback(() => setRosterOpen(true), []);
@@ -160,23 +157,6 @@ export function WorldChatScreen({
     const message = t('worldChat.rooms.shareMessage', { name: headerTitle, link: url });
     Share.share({ message }).catch(() => {});
   }, [roomId, headerTitle, t]);
-
-  const openInvite = React.useCallback(() => {
-    setSettingsTab('invite');
-    setSettingsOpen(true);
-  }, []);
-
-  // v3.1.6: the header ⋮ moved into the 👥 roster sheet. Close the sheet, then
-  // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
-  // / delete-room for the creator; invite / view-members / leave for members).
-  // The roster itself is a Modal-backed Sheet; opening the settings Sheet
-  // in the same frame drops it mid-dismiss — the next sheet can fail to show.
-  // Defer past the teardown, mirroring navigateAfterSheetClose.
-  const openRoomSettings = React.useCallback(() => {
-    setRosterOpen(false);
-    setSettingsTab('main');
-    deferOpen(() => setSettingsOpen(true));
-  }, []);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
   // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
@@ -990,7 +970,7 @@ export function WorldChatScreen({
             {/* v3.1.6 header unification: every room (official / user / new) now shows
                 exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
                 settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
-                👥 roster sheet's "房间设置" row (openRoomSettings → RoomSettingsSheet),
+                👥 roster sheet's "房间设置" row (inline RoomSettingsContent),
                 so nothing is lost — official rooms simply have no settings row. Report
                 already lives in the message long-press menu (openMessageMenu). */}
           </View>
@@ -1135,27 +1115,6 @@ export function WorldChatScreen({
       {/* Long-press menu is now the NATIVE action sheet (openMessageMenu) — the old
           RN-Modal <Sheet> here could fly to the top under Android 15 edge-to-edge. */}
 
-      {/* Custom-room settings (creator) / leave (member). */}
-      {isCustom && room && (
-        <RoomSettingsSheet
-          open={settingsOpen}
-          initialTab={settingsTab}
-          onClose={() => setSettingsOpen(false)}
-          room={room}
-          onChanged={() => {
-            setSettingsOpen(false);
-            roomQ.refetch();
-          }}
-          onExit={() => {
-            setSettingsOpen(false);
-            // The settings sheet already left the room → treat as an explicit
-            // leave so the unmount announces it loudly (and skips mark-read).
-            explicitLeaveRef.current = true;
-            nav.goBack();
-          }}
-        />
-      )}
-
       {/* Preview + optional caption before sending a photo */}
       <PhotoConfirmModal
         uri={pendingPhoto}
@@ -1192,7 +1151,27 @@ export function WorldChatScreen({
         onOpenUser={openRosterUser}
         // Custom rooms only: surfaces the relocated room-settings entry (was the
         // header ⋮). Official / country rooms have no settings → no row.
-        onOpenSettings={isCustom && room ? openRoomSettings : undefined}
+        settingsContent={
+          isCustom && room ? (
+            <RoomSettingsContent
+              open={rosterOpen}
+              initialTab="main"
+              onClose={() => setRosterOpen(false)}
+              room={room}
+              onChanged={() => {
+                setRosterOpen(false);
+                roomQ.refetch();
+              }}
+              onExit={() => {
+                setRosterOpen(false);
+                // The settings content already left the room → treat as an explicit
+                // leave so the unmount announces it loudly (and skips mark-read).
+                explicitLeaveRef.current = true;
+                nav.goBack();
+              }}
+            />
+          ) : undefined
+        }
       />
 
     </SafeAreaView>
