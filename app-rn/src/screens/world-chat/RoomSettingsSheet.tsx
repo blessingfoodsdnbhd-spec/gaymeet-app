@@ -36,6 +36,15 @@ import {
   type ChatRoomSummary,
 } from '../../api/worldChat';
 
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export function RoomSettingsSheet({
   open,
   onClose,
@@ -81,13 +90,13 @@ export function RoomSettingsSheet({
     queryKey: ['worldChat', 'roomMembers', room.id],
     queryFn: () => getRoomMembers(room.id),
     enabled: open && ((room.isCreator && tab === 'main') || tab === 'members'),
-    select: (d) => d.members,
+    select: (data) => uniqueById(data.members),
   });
   const friendsQ = useQuery({
     queryKey: ['worldChat', 'invitable', room.id],
     queryFn: () => getInvitableFriends(room.id),
     enabled: open && tab === 'invite', // any member can invite, not just the creator
-    select: (d) => d.friends,
+    select: (data) => uniqueById(data.friends),
   });
 
   const input = {
@@ -226,29 +235,29 @@ export function RoomSettingsSheet({
           <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
         ) : (
           <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-            {list.map((m) => (
+            {list.map((member, index) => (
               <Pressable
-                key={m.id}
+                key={`member-view-${member.id}-${index}`}
                 onPress={() =>
                   // Defer past the Sheet's Android Dialog teardown (same-tick
                   // close+navigate is dropped on Android). navigateAfterSheetClose.
                   navigateAfterSheetClose(onClose, () =>
-                    nav.navigate('UserDetail', { userId: m.id }),
+                    nav.navigate('UserDetail', { userId: member.id }),
                   )
                 }
                 style={[styles.memberRow, { borderColor: theme.colors.line }]}
               >
-                <Avatar name={m.displayName} uri={m.avatarUrl} size={38} />
+                <Avatar name={member.displayName} uri={member.avatarUrl} size={38} />
                 <NameWithBadge
-                  name={m.displayName}
-                  official={m.isOfficial}
-                  verified={m.isVerified}
-                  premium={m.isPremium}
+                  name={member.displayName}
+                  official={member.isOfficial}
+                  verified={member.isVerified}
+                  premium={member.isPremium}
                   badgeSize={14}
                   containerStyle={{ flex: 1 }}
                   textStyle={{ flex: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}
                 />
-                {m.isCreator && <Crown size={15} color={theme.colors.primary} strokeWidth={2} />}
+                {member.isCreator && <Crown size={15} color={theme.colors.primary} strokeWidth={2} />}
               </Pressable>
             ))}
           </ScrollView>
@@ -307,30 +316,30 @@ export function RoomSettingsSheet({
           </Text>
         ) : (
           <ScrollView style={{ maxHeight: scrollMaxH }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-            {friends.map((f) => {
-              const on = picked.has(f.id);
+            {friends.map((friend, index) => {
+              const on = picked.has(friend.id);
               return (
                 <Pressable
-                  key={f.id}
+                  key={`invite-${friend.id}-${index}`}
                   onPress={() =>
                     setPicked((prev) => {
                       const next = new Set(prev);
-                      on ? next.delete(f.id) : next.add(f.id);
+                      on ? next.delete(friend.id) : next.add(friend.id);
                       return next;
                     })
                   }
                   style={[styles.memberRow, { borderColor: theme.colors.line }]}
                 >
-                  <Avatar name={f.displayName} uri={f.avatarUrl} size={38} />
+                  <Avatar name={friend.displayName} uri={friend.avatarUrl} size={38} />
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {f.isOnline && (
+                    {friend.isOnline && (
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.success ?? theme.colors.online ?? '#3CC479' }} />
                     )}
                     <NameWithBadge
-                      name={f.displayName}
-                      official={f.isOfficial}
-                      verified={f.isVerified}
-                      premium={f.isPremium}
+                      name={friend.displayName}
+                      official={friend.isOfficial}
+                      verified={friend.isVerified}
+                      premium={friend.isPremium}
                       badgeSize={14}
                       containerStyle={{ flexShrink: 1 }}
                       textStyle={{ flexShrink: 1, fontSize: 15, color: theme.colors.text, fontWeight: '600' }}
@@ -413,22 +422,22 @@ export function RoomSettingsSheet({
         {membersQ.isLoading ? (
           <ActivityIndicator color={theme.colors.muted} style={{ marginVertical: 12 }} />
         ) : (
-          members.map((m) => (
-            <View key={m.id} style={[styles.memberRow, { borderColor: theme.colors.line }]}>
-              <Avatar name={m.displayName} uri={m.avatarUrl} size={36} />
+          members.map((member, index) => (
+            <View key={`member-manage-${member.id}-${index}`} style={[styles.memberRow, { borderColor: theme.colors.line }]}>
+              <Avatar name={member.displayName} uri={member.avatarUrl} size={36} />
               <NameWithBadge
-                name={m.displayName}
-                official={m.isOfficial}
-                verified={m.isVerified}
-                premium={m.isPremium}
+                name={member.displayName}
+                official={member.isOfficial}
+                verified={member.isVerified}
+                premium={member.isPremium}
                 badgeSize={13}
                 containerStyle={{ flex: 1 }}
                 textStyle={{ flex: 1, fontSize: 14.5, color: theme.colors.text, fontWeight: '600' }}
               />
-              {m.isCreator ? (
+              {member.isCreator ? (
                 <Crown size={16} color={theme.colors.primary} />
               ) : (
-                <Pressable onPress={() => onKick(m.id, m.displayName)} hitSlop={8}>
+                <Pressable onPress={() => onKick(member.id, member.displayName)} hitSlop={8}>
                   <X size={18} color={theme.colors.danger ?? '#E5484D'} />
                 </Pressable>
               )}

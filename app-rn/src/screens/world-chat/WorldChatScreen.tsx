@@ -175,9 +175,7 @@ export function WorldChatScreen({
   const openRoomSettings = React.useCallback(() => {
     setRosterOpen(false);
     setSettingsTab('main');
-    // The roster is now an in-screen overlay, not an RN Modal, so there is no
-    // Android Dialog teardown to wait for before opening the settings sheet.
-    setSettingsOpen(true);
+    deferOpen(() => setSettingsOpen(true));
   }, []);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
