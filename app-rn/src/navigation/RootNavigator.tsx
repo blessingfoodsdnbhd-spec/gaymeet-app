@@ -44,6 +44,7 @@ import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
+import { OnlineUsersListScreen } from '../screens/world-chat/OnlineUsersListScreen';
 import { ChannelRoomsScreen } from '../screens/world-chat/ChannelRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
@@ -174,6 +175,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="UserDetail"
             component={UserDetailScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="OnlineUsersList"
+            component={OnlineUsersListScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

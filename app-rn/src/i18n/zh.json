@@ -576,6 +576,16 @@
     "actionFailed": "操作失败",
     "blockConfirmTitle": "屏蔽用户?",
     "blockConfirmBody": "你将不再看到 {{name}} 的消息。",
+    "onlineList": {
+      "title": "房间成员",
+      "tabOnline": "在线",
+      "tabOffline": "离线",
+      "tabFollowing": "你关注的",
+      "searchPlaceholder": "搜索成员…",
+      "online": "在线",
+      "offline": "离线",
+      "empty": "这里还没有人"
+    },
     "notif": {
       "toggle": "房间通知",
       "enableTitle": "开启房间通知?",

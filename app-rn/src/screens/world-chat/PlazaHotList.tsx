@@ -165,6 +165,21 @@ export function PlazaHotList() {
         </View>
       }
     />
+    {/* Create FAB — the 我开的房间 empty-state hint ("点右下角『＋』新建一个")
+        promises this, but the 热门 tab had no FAB (only the per-channel screens
+        did), so creating a room from the hub was a dead end. Hub-created rooms
+        hang under the general 世界大厅 ('world') channel. A small leaf Pressable
+        with position:absolute — the standard FAB pattern (NOT the vc117
+        absolute-fill ROOT trap). */}
+    <Pressable
+      onPress={() => nav.navigate('CreateRoom', { channelId: 'world', title: t('plaza.worldLobby'), kind: 'country' })}
+      style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+      accessibilityRole="button"
+      accessibilityLabel={t('worldChat.rooms.create')}
+    >
+      <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
+      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14.5 }}>{t('worldChat.rooms.create')}</Text>
+    </Pressable>
     {preview && (
       <RoomPreviewSheet
         roomId={preview.id}
@@ -188,4 +203,20 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 13 },
   countRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  fab: {
+    position: 'absolute',
+    right: 18,
+    bottom: 26,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 18,
+    height: 50,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
 });

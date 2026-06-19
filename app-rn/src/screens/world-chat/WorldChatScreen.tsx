@@ -52,7 +52,9 @@ import {
   setRoomNotifications,
   leaveRoomMembership,
   type WorldChatMessage,
+  type PlazaRosterUser,
 } from '../../api/worldChat';
+import { getFollowing } from '../../api/me';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { useRoomNotifPrefs } from '../../store/roomNotifPrefs';
 import { useKeptRooms } from '../../store/keptRooms';
@@ -66,8 +68,9 @@ import { DateDivider } from '../../components/chat/DateDivider';
 import { shouldShowDateDivider } from '../../utils/chatDate';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
-import { RoomSettingsSheet } from './RoomSettingsSheet';
+import { RoomSettingsContent } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
+import { OnlineAvatarStrip } from './OnlineAvatarStrip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import { roomShareUrl } from '../../utils/roomLink';
@@ -142,9 +145,19 @@ export function WorldChatScreen({
   const creatorId = room?.creator?.id ?? null;
   const closed = room?.status === 'closed';
 
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-  // Which sub-screen the settings sheet opens on ('main' = ⋮ menu, 'invite' = +).
-  const [settingsTab, setSettingsTab] = React.useState<'main' | 'invite'>('main');
+  // Who I follow — lifts followed users toward the front of the v3.1.8 avatar
+  // strip. Lazy/cached; failure just means no follow-priority (non-blocking).
+  const followingQ = useQuery({
+    queryKey: ['users', 'following', myId],
+    queryFn: () => getFollowing(myId),
+    enabled: !!myId,
+    staleTime: 60_000,
+  });
+  const followedIds = React.useMemo(
+    () => new Set((followingQ.data ?? []).map((f) => f._id)),
+    [followingQ.data],
+  );
+
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
   const openRoster = React.useCallback(() => setRosterOpen(true), []);
@@ -160,23 +173,6 @@ export function WorldChatScreen({
     const message = t('worldChat.rooms.shareMessage', { name: headerTitle, link: url });
     Share.share({ message }).catch(() => {});
   }, [roomId, headerTitle, t]);
-
-  const openInvite = React.useCallback(() => {
-    setSettingsTab('invite');
-    setSettingsOpen(true);
-  }, []);
-
-  // v3.1.6: the header ⋮ moved into the 👥 roster sheet. Close the sheet, then
-  // open RoomSettingsSheet on its main tab (edit / members / kick / invite / close
-  // / delete-room for the creator; invite / view-members / leave for members).
-  // The roster itself is a Modal-backed Sheet; opening the settings Sheet
-  // in the same frame drops it mid-dismiss — the next sheet can fail to show.
-  // Defer past the teardown, mirroring navigateAfterSheetClose.
-  const openRoomSettings = React.useCallback(() => {
-    setRosterOpen(false);
-    setSettingsTab('main');
-    deferOpen(() => setSettingsOpen(true));
-  }, []);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
   // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
@@ -344,7 +340,10 @@ export function WorldChatScreen({
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [online, setOnline] = React.useState<number | null>(null);
-  const [rosterUsers, setRosterUsers] = React.useState<{ userId: string; name: string }[]>([]);
+  // Full live roster (tier/level/avatar) — drives both @mention autocomplete and
+  // the v3.1.8 avatar strip. PlazaRosterUser is a superset of {userId,name}, so
+  // the mention consumer keeps working.
+  const [rosterUsers, setRosterUsers] = React.useState<PlazaRosterUser[]>([]);
   const [loadingOlder, setLoadingOlder] = React.useState(false);
   // Whether older history might still exist. Without this, onEndReached on a
   // short list fires repeatedly and loadOlder loops → the footer spinner never
@@ -606,7 +605,13 @@ export function WorldChatScreen({
         if (typeof r?.online === 'number') setOnline(r.online);
         setRosterUsers(
           (r?.users || [])
-            .map((u: any) => ({ userId: String(u.userId), name: u.name }))
+            .map((u: any) => ({
+              userId: String(u.userId),
+              name: u.name,
+              avatarUrl: u.avatarUrl,
+              tier: u.tier,
+              level: u.level,
+            }))
             .filter((u: any) => u.name),
         );
       });
@@ -990,11 +995,26 @@ export function WorldChatScreen({
             {/* v3.1.6 header unification: every room (official / user / new) now shows
                 exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
                 settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
-                👥 roster sheet's "房间设置" row (openRoomSettings → RoomSettingsSheet),
+                👥 roster sheet's "房间设置" row (inline RoomSettingsContent),
                 so nothing is lost — official rooms simply have no settings row. Report
                 already lives in the message long-press menu (openMessageMenu). */}
           </View>
         </View>
+      )}
+
+      {/* v3.1.8 在线人数 redesign — horizontal avatar strip pinned under the header
+          (replaces the old "在线 N 人" → sheet entry point). 👁 N opens the full
+          OnlineUsersList screen. A flex child (not absolute) per the vc117 lesson. */}
+      {!embedded && (
+        <OnlineAvatarStrip
+          users={rosterUsers}
+          online={online ?? rosterUsers.length}
+          myId={myId}
+          creatorId={creatorId}
+          followedIds={followedIds}
+          onPressUser={openRosterUser}
+          onViewAll={() => nav.navigate('OnlineUsersList', { roomId, roomTitle: headerTitle })}
+        />
       )}
 
       <KeyboardAvoidingView
@@ -1135,27 +1155,6 @@ export function WorldChatScreen({
       {/* Long-press menu is now the NATIVE action sheet (openMessageMenu) — the old
           RN-Modal <Sheet> here could fly to the top under Android 15 edge-to-edge. */}
 
-      {/* Custom-room settings (creator) / leave (member). */}
-      {isCustom && room && (
-        <RoomSettingsSheet
-          open={settingsOpen}
-          initialTab={settingsTab}
-          onClose={() => setSettingsOpen(false)}
-          room={room}
-          onChanged={() => {
-            setSettingsOpen(false);
-            roomQ.refetch();
-          }}
-          onExit={() => {
-            setSettingsOpen(false);
-            // The settings sheet already left the room → treat as an explicit
-            // leave so the unmount announces it loudly (and skips mark-read).
-            explicitLeaveRef.current = true;
-            nav.goBack();
-          }}
-        />
-      )}
-
       {/* Preview + optional caption before sending a photo */}
       <PhotoConfirmModal
         uri={pendingPhoto}
@@ -1192,7 +1191,27 @@ export function WorldChatScreen({
         onOpenUser={openRosterUser}
         // Custom rooms only: surfaces the relocated room-settings entry (was the
         // header ⋮). Official / country rooms have no settings → no row.
-        onOpenSettings={isCustom && room ? openRoomSettings : undefined}
+        settingsContent={
+          isCustom && room ? (
+            <RoomSettingsContent
+              open={rosterOpen}
+              initialTab="main"
+              onClose={() => setRosterOpen(false)}
+              room={room}
+              onChanged={() => {
+                setRosterOpen(false);
+                roomQ.refetch();
+              }}
+              onExit={() => {
+                setRosterOpen(false);
+                // The settings content already left the room → treat as an explicit
+                // leave so the unmount announces it loudly (and skips mark-read).
+                explicitLeaveRef.current = true;
+                nav.goBack();
+              }}
+            />
+          ) : undefined
+        }
       />
 
     </SafeAreaView>

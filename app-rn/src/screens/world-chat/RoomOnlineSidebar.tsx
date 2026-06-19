@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
-import { X, Settings } from 'lucide-react-native';
+import { ChevronLeft, X, Settings } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Avatar } from '../../components/Avatar';
 import { on as wsOn, emit as wsEmit } from '../../api/ws';
@@ -18,9 +19,18 @@ function idxFor(id: string) {
 /**
  * mIRC 在线名单 (spec §9.1) — the room's live online roster. On desktop it's a
  * fixed 240px right sidebar; on mobile (this app) it opens as a bottom sheet.
- * Header shows "在线 N 人"; each row = identity color + emoji
- * + name + level badge, sorted server-side (身份 → 等级 → 加入顺序). Tap a row to
- * open the user (profile / DM).
+ * Header shows "在线 N 人"; each row = identity color + emoji + name + level badge,
+ * sorted server-side (身份 → 等级 → 加入顺序). Tap a row to open the user.
+ *
+ * IMPORTANT (vc117): this MUST render inside the shared <Sheet> (a real RN
+ * <Modal>), NOT an in-screen absolute-fill overlay. The vc115/116 in-screen
+ * version drew correctly but its rows were UNTAPPABLE on Android: (a) an
+ * `position:absolute` root gets a broken hit region under Fabric and swallows
+ * child touches, and (b) as a mere sibling of the chat it never won touch order
+ * against the message list + composer that overlap it — so taps landed on the
+ * chat behind, not the roster rows. A <Modal> is a separate window that always
+ * wins touch and never overlaps the chat. The settings view stays INLINE (mode
+ * switch within this same Modal) so there's no second-Modal handoff race.
  */
 export function RoomOnlineSidebar({
   open,
@@ -28,25 +38,31 @@ export function RoomOnlineSidebar({
   roomId,
   onOpenUser,
   onOpenSettings,
+  settingsContent,
 }: {
   open: boolean;
   onClose: () => void;
   roomId: string;
   onOpenUser: (userId: string) => void;
-  /** Custom rooms only: opens RoomSettingsSheet (relocated header ⋮). */
+  /** Fallback custom-room settings opener for callers that do not pass inline content. */
   onOpenSettings?: () => void;
+  /** Custom rooms only: inline settings content, rendered in the SAME Modal (no handoff). */
+  settingsContent?: React.ReactNode;
 }) {
   const [roster, setRoster] = React.useState<PlazaRoster | null>(null);
+  const [mode, setMode] = React.useState<'roster' | 'settings'>('roster');
+
+  React.useEffect(() => {
+    if (open) setMode('roster');
+  }, [open, roomId]);
 
   // Subscribe to roster pushes for this room, THEN request a fresh one — strictly
   // in that order, within ONE effect. The request must go out only after the
   // listener is live: the global lobby ('world') is a backend no-op re-join that
   // triggers no follow-up roster broadcast, so a request racing ahead of the
   // (async) listener registration is lost forever and the drawer stays empty.
-  // Sub-rooms happened to recover via their real join's re-broadcast, which is
-  // why the 总聊天室 在线名单 looked broken while sub-boards worked. Re-runs on
-  // open so the list is fresh each time, and stays live (server re-broadcasts on
-  // join/leave) while the drawer is shown.
+  // Re-runs on open so the list is fresh each time, and stays live (server
+  // re-broadcasts on join/leave) while the drawer is shown.
   React.useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -68,60 +84,50 @@ export function RoomOnlineSidebar({
     };
   }, [open, roomId]);
 
-  if (!open) return null;
-
   return (
-    <RosterModalSurface onClose={onClose}>
-      <RosterSheetContent
-        onClose={onClose}
-        users={roster?.users ?? []}
-        online={roster?.online ?? roster?.users?.length ?? 0}
-        onOpenUser={onOpenUser}
-        onOpenSettings={onOpenSettings}
-      />
-    </RosterModalSurface>
+    <Sheet open={open} onClose={onClose} maxHeight="80%">
+      {mode === 'settings' && settingsContent ? (
+        <SettingsSheetContent onBack={() => setMode('roster')} onClose={onClose}>
+          {settingsContent}
+        </SettingsSheetContent>
+      ) : (
+        <RosterSheetContent
+          onClose={onClose}
+          users={roster?.users ?? []}
+          online={roster?.online ?? roster?.users?.length ?? 0}
+          onOpenUser={onOpenUser}
+          onOpenSettings={settingsContent ? () => setMode('settings') : onOpenSettings}
+        />
+      )}
+    </Sheet>
   );
 }
 
-function RosterModalSurface({
+function SettingsSheetContent({
+  onBack,
   onClose,
   children,
 }: {
+  onBack: () => void;
   onClose: () => void;
   children: React.ReactNode;
 }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   return (
-    <View style={styles.modalRoot} pointerEvents="box-none">
-      <View style={[StyleSheet.absoluteFill, styles.backdrop]} pointerEvents="none" />
-      <View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: theme.colors.surface,
-            borderTopLeftRadius: theme.radius.xxl,
-            borderTopRightRadius: theme.radius.xxl,
-            paddingHorizontal: theme.spacing.xl,
-            paddingTop: theme.spacing.l,
-            paddingBottom: theme.spacing.xxxl,
-          },
-          theme.shadows.pop,
-        ]}
-      >
-        <View
-          style={[
-            styles.grabber,
-            {
-              backgroundColor: theme.colors.line,
-              width: theme.spacing.xxxl + theme.spacing.xs,
-              height: theme.spacing.xs,
-              borderRadius: theme.radius.s,
-              marginBottom: theme.spacing.m,
-            },
-          ]}
-        />
-        {children}
+    <View>
+      <View style={[styles.header, { borderBottomColor: theme.colors.line }]}>
+        <Pressable onPress={onBack} hitSlop={8}>
+          <ChevronLeft size={24} color={theme.colors.text} />
+        </Pressable>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: theme.colors.text }}>
+          {t('worldChat.rooms.settings')}
+        </Text>
+        <Pressable onPress={onClose} hitSlop={8}>
+          <X size={22} color={theme.colors.muted} />
+        </Pressable>
       </View>
+      <View style={{ paddingTop: theme.spacing.l }}>{children}</View>
     </View>
   );
 }
@@ -184,10 +190,7 @@ function RosterRow({ user, onPress }: { user: PlazaRosterUser; onPress: () => vo
   const theme = useTheme();
   const color = tierColor(theme, user.tier);
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}>
       <Avatar name={user.name || '?'} uri={user.avatarUrl} avatarIdx={idxFor(user.userId)} size={32} />
       <Text style={{ fontSize: 13 }}>{tierEmoji(user.tier)}</Text>
       <Text numberOfLines={1} style={{ flex: 1, fontSize: 14.5, fontWeight: '700', color }}>
@@ -201,27 +204,6 @@ function RosterRow({ user, onPress }: { user: PlazaRosterUser; onPress: () => vo
 }
 
 const styles = StyleSheet.create({
-  modalRoot: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  backdrop: {
-    backgroundColor: 'rgba(30,15,5,0.35)',
-    zIndex: 0,
-  },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    maxHeight: '78%',
-    zIndex: 1,
-    elevation: 1001,
-  },
-  grabber: {
-    alignSelf: 'center',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
