@@ -71,6 +71,12 @@ export type RootStackParamList = {
   /** v3.1.8 在线人数 redesign — full-screen room-members list (在线/离线/你关注的)
    *  reached from the World Chat avatar strip's 👁 N pill. */
   OnlineUsersList: { roomId: string; roomTitle?: string };
+  /** v3.1.10 — full-screen room invite (QR + link + copy + external apps).
+   *  Replaces the OS Share sheet. Reached from the room header 🔗 / ➕. */
+  InviteRoom: { roomId: string; roomTitle?: string };
+  /** v3.1.10 — full-screen room password manager (creator only). Reached from
+   *  the room header 🔑. */
+  ChangeRoomPassword: { roomId: string; roomTitle?: string };
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;

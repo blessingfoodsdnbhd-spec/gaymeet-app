@@ -45,6 +45,8 @@ import { ViewersScreen } from '../screens/profile/ViewersScreen';
 import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { OnlineUsersListScreen } from '../screens/world-chat/OnlineUsersListScreen';
+import { InviteRoomScreen } from '../screens/InviteRoomScreen';
+import { ChangeRoomPasswordScreen } from '../screens/ChangeRoomPasswordScreen';
 import { ChannelRoomsScreen } from '../screens/world-chat/ChannelRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
@@ -180,6 +182,16 @@ export function RootNavigator() {
           <Stack.Screen
             name="OnlineUsersList"
             component={OnlineUsersListScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="InviteRoom"
+            component={InviteRoomScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="ChangeRoomPassword"
+            component={ChangeRoomPasswordScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen
