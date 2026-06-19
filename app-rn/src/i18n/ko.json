@@ -1649,6 +1649,8 @@
     "earn": {
       "checkin": "매일 출석",
       "invite": "친구 초대",
+      "inviteDesc": "나와 친구가 각각 30일 멤버십을 받아요 (계정당 1회)",
+      "inviteReward": "30일 멤버십",
       "profile": "프로필 완성",
       "vote": "투표 참여"
     }

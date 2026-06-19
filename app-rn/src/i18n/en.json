@@ -1649,6 +1649,8 @@
     "earn": {
       "checkin": "Daily check-in",
       "invite": "Invite a friend",
+      "inviteDesc": "You and your friend each get 30 days of membership — once per account",
+      "inviteReward": "30-day membership",
       "profile": "Complete your profile",
       "vote": "Vote in contests"
     }

@@ -297,3 +297,24 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
 - `app-rn/src/i18n/{zh,en,ja,ko}.json`
 - `app-rn/app.json` (3.1.10→3.1.11, vc120→121, bn120→121)
+
+---
+
+## [2026-06-20 02:40 MYT] cowork → codex
+
+**Backend TODO for v3.1.11 wallet changes (frontend already隐藏 UI / 改文案 in vc122):**
+
+1. **DB migration:** `UPDATE users SET coin_balance = 0` — 所有用户金币清零。
+2. **邀请奖励重做:**
+   - 老逻辑: 邀请人成功邀新人 → 邀请人 +100 coins。
+   - 新逻辑: 邀请人成功邀新人 → **邀请人 +30 天 premium, 被邀人 +30 天 premium**。
+   - 防套利: `users` 表加 `inviter_bonus_claimed: boolean` (邀请奖励是否已领) + `invitee_bonus_claimed: boolean` (被邀奖励是否已领);任一字段为 true 时不再发放对应奖励。
+   - 30 天 premium 实现: `users` 表加 `premium_expires_at: datetime`,发奖励就 `premium_expires_at = MAX(now, current_expires_at) + 30 days`。
+3. **`me` 接口返回新字段:** `coinBalance = 0` (所有人)、`premiumExpiresAt: datetime | null`、`inviterBonusClaimed / inviteeBonusClaimed: bool`。
+4. **充值接口暂时挂起** — 前端已 `RECHARGE_ENABLED = false` 隐藏 UI (WalletScreen.tsx),`getCoinPackages`/`purchaseCoins` 不会被调用;后端可保留接口不动。
+
+**前端 (vc122) 已做:** 钱包页隐藏整个充值 section (feature flag),"如何赚取金币" 删掉旧"邀请好友加入 +100",换成"邀请好友 → 30 天会员 (双方各得,每账号一次)";余额数字读 `getCoinBalance()` (非 hardcode,后端清零后自然显示 0)。
+
+**前端等你完成的:** `me` 返回 `premiumExpiresAt` + 两个 claimed 字段;邀请流程的 30天premium 奖励逻辑 (替换 +100 coins)。
+
+**另一个独立 backend TODO (来自 vc121 EditRoom):** `POST /world-chat/rooms/:id/reopen` 还没有 (只有 /close) — `reopenChatRoom` 客户端 stub 会 404,EditRoom 已 catch+toast;照 /close 路由写,把 status 设成 'open'。

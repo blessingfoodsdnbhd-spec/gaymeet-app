@@ -7,13 +7,20 @@ import { SettingsShell, SettingsCard } from './settings/SettingsShell';
 import { useAuth } from '../../store/auth';
 import { getCoinBalance, getCoinPackages, purchaseCoins, type CoinPackage } from '../../api/coins';
 
+// Recharge (coin purchase) is hidden for now — flip this one flag to bring the
+// whole 充值 section back. The balance hero + "how to earn" card stay visible.
+const RECHARGE_ENABLED = false;
+
 // Earn sources surfaced in the "how to earn" card. Amounts mirror the backend
-// COIN_REWARDS / streak coinReward tiers.
-const EARN_ROWS: { key: string; coins: string }[] = [
+// COIN_REWARDS / streak coinReward tiers. `membership` rows reward premium days
+// (not coins) and show a sub-line.
+const EARN_ROWS: { key: string; coins: string; membership?: boolean }[] = [
   { key: 'checkin', coins: '+5~200' },
-  { key: 'invite', coins: '+100' },
   { key: 'profile', coins: '+50' },
   { key: 'vote', coins: '+5' },
+  // 邀请好友 — both sides get 30 days of membership (once per account), replacing
+  // the old +100 coins invite reward. Backend rework tracked in collab.md.
+  { key: 'invite', coins: '+30d', membership: true },
 ];
 
 export function WalletScreen() {
@@ -76,49 +83,53 @@ export function WalletScreen() {
           </Text>
         </View>
 
-        {/* Recharge packs */}
-        <Text style={[styles.section, { color: theme.colors.muted }]}>{t('wallet.rechargeSection')}</Text>
-        {loading ? (
-          <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
-        ) : (
-          <SettingsCard flat style={{ paddingVertical: 4 }}>
-            {packages.map((p, i) => (
-              <Pressable
-                key={p.id}
-                onPress={() => onBuy(p)}
-                disabled={!!buying}
-                style={({ pressed }) => [
-                  styles.packRow,
-                  { borderTopColor: theme.colors.line, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={styles.packEmoji}>🪙</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.text }}>
-                    {p.coins + p.bonus} {t('wallet.coins')}
-                    {p.bonus > 0 ? `  (+${p.bonus})` : ''}
-                  </Text>
-                  {(p.popular || p.bestValue) && (
-                    <Text style={{ fontSize: 12, color: theme.colors.primaryDeep, fontWeight: '600', marginTop: 2 }}>
-                      {p.bestValue ? t('wallet.bestValue') : t('wallet.popular')}
-                    </Text>
-                  )}
-                </View>
-                {buying === p.id ? (
-                  <ActivityIndicator color={theme.colors.primary} />
-                ) : (
-                  <View style={[styles.priceTag, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.pill }]}>
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                      {p.currency} {p.price.toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            ))}
-          </SettingsCard>
+        {/* Recharge packs — hidden behind RECHARGE_ENABLED (coin purchase paused). */}
+        {RECHARGE_ENABLED && (
+          <>
+            <Text style={[styles.section, { color: theme.colors.muted }]}>{t('wallet.rechargeSection')}</Text>
+            {loading ? (
+              <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 24 }} />
+            ) : (
+              <SettingsCard flat style={{ paddingVertical: 4 }}>
+                {packages.map((p, i) => (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => onBuy(p)}
+                    disabled={!!buying}
+                    style={({ pressed }) => [
+                      styles.packRow,
+                      { borderTopColor: theme.colors.line, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text style={styles.packEmoji}>🪙</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.text }}>
+                        {p.coins + p.bonus} {t('wallet.coins')}
+                        {p.bonus > 0 ? `  (+${p.bonus})` : ''}
+                      </Text>
+                      {(p.popular || p.bestValue) && (
+                        <Text style={{ fontSize: 12, color: theme.colors.primaryDeep, fontWeight: '600', marginTop: 2 }}>
+                          {p.bestValue ? t('wallet.bestValue') : t('wallet.popular')}
+                        </Text>
+                      )}
+                    </View>
+                    {buying === p.id ? (
+                      <ActivityIndicator color={theme.colors.primary} />
+                    ) : (
+                      <View style={[styles.priceTag, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.pill }]}>
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                          {p.currency} {p.price.toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </SettingsCard>
+            )}
+            <Text style={[styles.mockNote, { color: theme.colors.muted }]}>{t('wallet.mockNote')}</Text>
+          </>
         )}
-        <Text style={[styles.mockNote, { color: theme.colors.muted }]}>{t('wallet.mockNote')}</Text>
 
         {/* How to earn */}
         <Text style={[styles.section, { color: theme.colors.muted }]}>{t('wallet.earnSection')}</Text>
@@ -131,10 +142,17 @@ export function WalletScreen() {
                 { borderTopColor: theme.colors.line, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
               ]}
             >
-              <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
-                {t(`wallet.earn.${row.key}`)}
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ fontSize: 15, color: theme.colors.text }}>{t(`wallet.earn.${row.key}`)}</Text>
+                {row.membership && (
+                  <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, lineHeight: 17 }}>
+                    {t('wallet.earn.inviteDesc')}
+                  </Text>
+                )}
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: row.membership ? theme.colors.secondary : theme.colors.success }}>
+                {row.membership ? t('wallet.earn.inviteReward') : row.coins}
               </Text>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: theme.colors.success }}>{row.coins}</Text>
             </View>
           ))}
         </SettingsCard>
