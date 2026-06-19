@@ -841,6 +841,16 @@
     "actionFailed": "問題が発生しました",
     "blockConfirmTitle": "ユーザーをブロックしますか？",
     "blockConfirmBody": "{{name}}のメッセージが今後表示されません。",
+    "onlineList": {
+      "title": "ルームメンバー",
+      "tabOnline": "オンライン",
+      "tabOffline": "オフライン",
+      "tabFollowing": "フォロー中",
+      "searchPlaceholder": "メンバーを検索…",
+      "online": "オンライン",
+      "offline": "オフライン",
+      "empty": "まだ誰もいません"
+    },
     "notif": {
       "toggle": "ルーム通知",
       "enableTitle": "ルーム通知をオンにしますか？",

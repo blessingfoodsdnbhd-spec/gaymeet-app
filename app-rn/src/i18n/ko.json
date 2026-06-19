@@ -841,6 +841,16 @@
     "actionFailed": "문제가 발생했습니다",
     "blockConfirmTitle": "사용자를 차단할까요?",
     "blockConfirmBody": "{{name}}님의 메시지를 더 이상 보지 않습니다.",
+    "onlineList": {
+      "title": "방 멤버",
+      "tabOnline": "온라인",
+      "tabOffline": "오프라인",
+      "tabFollowing": "팔로잉",
+      "searchPlaceholder": "멤버 검색…",
+      "online": "온라인",
+      "offline": "오프라인",
+      "empty": "아직 아무도 없어요"
+    },
     "notif": {
       "toggle": "방 알림",
       "enableTitle": "방 알림을 켤까요?",

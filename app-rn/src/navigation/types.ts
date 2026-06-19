@@ -68,6 +68,9 @@ export type RootStackParamList = {
     | undefined;
   Report: { userId: string; userName?: string };
   UserDetail: { userId: string; previewMode?: boolean };
+  /** v3.1.8 在线人数 redesign — full-screen room-members list (在线/离线/你关注的)
+   *  reached from the World Chat avatar strip's 👁 N pill. */
+  OnlineUsersList: { roomId: string; roomTitle?: string };
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;

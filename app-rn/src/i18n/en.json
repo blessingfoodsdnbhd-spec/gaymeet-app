@@ -576,6 +576,16 @@
     "actionFailed": "Something went wrong",
     "blockConfirmTitle": "Block user?",
     "blockConfirmBody": "You won't see messages from {{name}} anymore.",
+    "onlineList": {
+      "title": "Room members",
+      "tabOnline": "Online",
+      "tabOffline": "Offline",
+      "tabFollowing": "Following",
+      "searchPlaceholder": "Search members…",
+      "online": "Online",
+      "offline": "Offline",
+      "empty": "No one here yet"
+    },
     "notif": {
       "toggle": "Room notifications",
       "enableTitle": "Turn on room notifications?",

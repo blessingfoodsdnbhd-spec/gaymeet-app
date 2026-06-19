@@ -52,7 +52,9 @@ import {
   setRoomNotifications,
   leaveRoomMembership,
   type WorldChatMessage,
+  type PlazaRosterUser,
 } from '../../api/worldChat';
+import { getFollowing } from '../../api/me';
 import { useTranslatePrefs, resolveTarget } from '../../store/translatePrefs';
 import { useRoomNotifPrefs } from '../../store/roomNotifPrefs';
 import { useKeptRooms } from '../../store/keptRooms';
@@ -68,6 +70,7 @@ import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
 import { RoomSettingsContent } from './RoomSettingsSheet';
 import { RoomOnlineSidebar } from './RoomOnlineSidebar';
+import { OnlineAvatarStrip } from './OnlineAvatarStrip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
 import { roomShareUrl } from '../../utils/roomLink';
@@ -141,6 +144,19 @@ export function WorldChatScreen({
   const isCreator = !!room?.isCreator;
   const creatorId = room?.creator?.id ?? null;
   const closed = room?.status === 'closed';
+
+  // Who I follow — lifts followed users toward the front of the v3.1.8 avatar
+  // strip. Lazy/cached; failure just means no follow-priority (non-blocking).
+  const followingQ = useQuery({
+    queryKey: ['users', 'following', myId],
+    queryFn: () => getFollowing(myId),
+    enabled: !!myId,
+    staleTime: 60_000,
+  });
+  const followedIds = React.useMemo(
+    () => new Set((followingQ.data ?? []).map((f) => f._id)),
+    [followingQ.data],
+  );
 
   // mIRC online-roster drawer (spec §9.1).
   const [rosterOpen, setRosterOpen] = React.useState(false);
@@ -324,7 +340,10 @@ export function WorldChatScreen({
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [online, setOnline] = React.useState<number | null>(null);
-  const [rosterUsers, setRosterUsers] = React.useState<{ userId: string; name: string }[]>([]);
+  // Full live roster (tier/level/avatar) — drives both @mention autocomplete and
+  // the v3.1.8 avatar strip. PlazaRosterUser is a superset of {userId,name}, so
+  // the mention consumer keeps working.
+  const [rosterUsers, setRosterUsers] = React.useState<PlazaRosterUser[]>([]);
   const [loadingOlder, setLoadingOlder] = React.useState(false);
   // Whether older history might still exist. Without this, onEndReached on a
   // short list fires repeatedly and loadOlder loops → the footer spinner never
@@ -586,7 +605,13 @@ export function WorldChatScreen({
         if (typeof r?.online === 'number') setOnline(r.online);
         setRosterUsers(
           (r?.users || [])
-            .map((u: any) => ({ userId: String(u.userId), name: u.name }))
+            .map((u: any) => ({
+              userId: String(u.userId),
+              name: u.name,
+              avatarUrl: u.avatarUrl,
+              tier: u.tier,
+              level: u.level,
+            }))
             .filter((u: any) => u.name),
         );
       });
@@ -975,6 +1000,21 @@ export function WorldChatScreen({
                 already lives in the message long-press menu (openMessageMenu). */}
           </View>
         </View>
+      )}
+
+      {/* v3.1.8 在线人数 redesign — horizontal avatar strip pinned under the header
+          (replaces the old "在线 N 人" → sheet entry point). 👁 N opens the full
+          OnlineUsersList screen. A flex child (not absolute) per the vc117 lesson. */}
+      {!embedded && (
+        <OnlineAvatarStrip
+          users={rosterUsers}
+          online={online ?? rosterUsers.length}
+          myId={myId}
+          creatorId={creatorId}
+          followedIds={followedIds}
+          onPressUser={openRosterUser}
+          onViewAll={() => nav.navigate('OnlineUsersList', { roomId, roomTitle: headerTitle })}
+        />
       )}
 
       <KeyboardAvoidingView
