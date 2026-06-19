@@ -204,3 +204,42 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 **Files:**
 - `app-rn/src/screens/world-chat/PlazaHotList.tsx`
 - `app-rn/app.json` (3.1.8→3.1.9, vc118→119, bn118→119)
+
+---
+
+## [2026-06-20 01:20 MYT] cowork → all
+
+**Done:** v3.1.10 vc120/bn120 — sheet 彻底拿掉,房主功能改 header icon + 全屏页 + native alert. Android-15 emulator-verified all 6, shipped BOTH platforms.
+- **Android vc120 → Play Internal:** ✓ All done (EAS sub `55612a03-ec6a-43a9-aea8-cc30a9d5e6cd`).
+- **iOS bn120 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `30944a03-74b9-4797-beb5-3ea2cea07d83`).
+- Branch `feat/owner-header-fullscreen`, commit `8baf3e2`, PR #279.
+
+**删了:** `app-rn/src/screens/world-chat/RoomOnlineSidebar.tsx` (the last buggy room RN Modal/Sheet — the "看人数" roster).
+**新增:** `app-rn/src/screens/InviteRoomScreen.tsx`, `app-rn/src/screens/ChangeRoomPasswordScreen.tsx`.
+**改了:** `WorldChatScreen.tsx` (header conditional + nav calls + native delete Alert; removed 👥 + rosterOpen/openRoster + RoomOnlineSidebar render + RoomSettingsContent import + Share import).
+**路由:** RootStackParamList 加 `InviteRoom`, `ChangeRoomPassword` (no-`Screen` route names, matching convention). Registered in types.ts + RootNavigator.tsx.
+**新依赖:** `react-native-qrcode-svg@6.3.2` (JS-only, renders via the already-linked `react-native-svg` — no new native autolink).
+**i18n:** `inviteRoom.*` + `changePassword.*` + `worldChat.rooms.deleteCta` in zh/en/ja/ko.
+
+**Header (conditional):** member = 🔔 🔗; creator += ➕ 🔑 🗑️. Owner gate = backend `isCreator` (server `sameId(creatorId,user)` — equivalent to the spec's ownerId===me.id||me._id). 👥 gone; title taps → OnlineUsersList.
+**3 owner functions, zero RN Modal/Sheet, zero OS share sheet:**
+- ➕ / 🔗 → `InviteRoom` Screen: QR (`react-native-qrcode-svg`) + copyable `meyou.uk/r/<slug>` + direct deep-links WhatsApp `whatsapp://send?text=` / Telegram `tg://msg?text=` / SMS `sms:?body=` / WeChat `weixin://` (Linking.openURL, copy-fallback if app missing).
+- 🔑 → `ChangeRoomPassword` Screen: new+confirm → `updateChatRoom` PATCH `{ isPrivate:true, password }`. KAV `behavior="padding"` iOS-only (Android none — v3.1.7 KAV trap).
+- 🗑️ → `Alert.alert` (native window) → `deleteChatRoom(id, true)` → goBack.
+
+**Emulator-verified (Android 15, qa-premium, vc120 universal APK) — all 6 PASS, no crashes:** 1. member (世界大厅) header = 🔔 🔗 only; 2. creator (vc120owner) header = 🔔 🔗 ➕ 🔑 🗑️ (uiautomator confirmed all 5 a11y labels); 3. ➕ → InviteRoom (QR/link/复制+toast/WhatsApp/Telegram/短信/微信 all visible, clipboard got the link); 4. 🔑 → ChangeRoomPassword → fill → 保存 → API ok (room flipped to 🔒 private + "房间密码已更新" toast); 5. 🗑️ → native Alert "删除聊天室?" → 删除 → room真删 + back to 广场; 6. avatar strip present + scrollable.
+
+**⚠️ 给 codex 的提醒 (FLAGGED — feature loss):** Deleting RoomOnlineSidebar orphaned `RoomSettingsSheet.tsx` (`RoomSettingsContent`) — its **edit room (title/desc/color/retention), kick member, close room** flows are now **UNREACHABLE** (they lived only in the sidebar's 房间设置 row). The v3.1.10 spec only surfaced 3 owner functions (invite/password/delete). If 老板 wants edit/kick/close back, they need their own entry (e.g. a 编辑 header icon → full-screen RoomEditScreen) — NOT a Modal/Sheet. File kept (compiles, unused). Also: backend has NO old-password verification (PATCH authorizes by creator identity), so ChangeRoomPassword asks new+confirm only — if old-pw check is wanted, codex needs a backend endpoint.
+
+**No more RN Modal/Sheet for room/owner actions** — everything is a full-screen Screen or native Alert.alert. Never reintroduce a Sheet here.
+
+**Blocker:** 无.
+
+**Files:**
+- DELETE `app-rn/src/screens/world-chat/RoomOnlineSidebar.tsx`
+- NEW `app-rn/src/screens/InviteRoomScreen.tsx`, `app-rn/src/screens/ChangeRoomPasswordScreen.tsx`
+- `app-rn/src/screens/world-chat/WorldChatScreen.tsx`
+- `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/package.json` (+react-native-qrcode-svg)
+- `app-rn/app.json` (3.1.9→3.1.10, vc119→120, bn119→120)
