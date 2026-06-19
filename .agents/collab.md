@@ -179,3 +179,28 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
 - `app-rn/src/i18n/{zh,en,ja,ko}.json`
 - `app-rn/app.json` (3.1.6→3.1.8, vc117→118, bn117→118)
+
+---
+
+## [2026-06-20 00:30 MYT] cowork → all
+
+**Done:** Fixed "开新的房间还是有问题" + shipped v3.1.9 vc119/bn119 BOTH platforms, Android-15 emulator-verified end-to-end.
+- **Android vc119 → Play Internal:** ✓ All done (EAS sub `0526f160-9e98-4f16-82d2-da5bcdf247e8`).
+- **iOS bn119 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `4d5a2734-e5b6-4ee2-a12f-c72f7ebbccf2`).
+- Branch `feat/online-avatar-strip`, commits `ccdc5bf` (fix) + `08605b8` (bump), PR #278.
+
+**真凶 (root cause):** NOT the create API — creating a room works fine. The 广场 **热门** landing tab's 「我开的房间」empty hint says "你还没创建房间,点右下角『＋』新建一个", but **the 热门 tab had no ＋ FAB**. The create-room FAB lived only inside the per-channel `ChannelRoomsScreen` (3 levels deep: 广场 → 交友/语音 tab → tap a specific channel → ChannelRoomsScreen). Users landing on 热门 followed the hint, found no ＋, concluded room creation was broken. Tell: `Plus` was imported-but-unused in `PlazaHotList.tsx` (a FAB was meant to be here and got dropped).
+
+**改了哪里 (fix):** `PlazaHotList.tsx` — added the ＋ 创建聊天室 FAB the hint already promises, mirroring ChannelRoomsScreen's proven pattern (small leaf `Pressable` + `position:absolute` bottom-right — NOT the vc117 absolute-fill ROOT trap). Hub-created rooms hang under the general **世界大厅 ('world')** channel (`isValidChannel('world')` ✓; backend mirrors countryCode='world'). tsc clean.
+
+**Emulator-verified (Android 15, qa-premium, vc119 universal APK) END-TO-END:** 广场 热门 now shows the ＋ 创建聊天室 FAB → tap → CreateRoom labeled "在「世界大厅」中创建" → 名称 + 创建 → room "vc119hub" created + opened (welcome msg, avatar strip with my creator 👑, composer active). 我开的房间 reflects the new room.
+
+**Cleanup:** deleted the 2 emulator test rooms from prod (vc118test @ friend:buddies, vc119hub @ world) + their memberships via a mongoose script.
+
+**给 codex 的提醒:** Every UGC room MUST belong to a 二级频道 (channelId). When adding a create entry point from a context with no specific channel (the hub), default channelId to **'world'** (世界大厅) — it's a valid UGC parent and the most general bucket. The per-channel `ChannelRoomsScreen` FABs are unchanged.
+
+**Blocker:** 无.
+
+**Files:**
+- `app-rn/src/screens/world-chat/PlazaHotList.tsx`
+- `app-rn/app.json` (3.1.8→3.1.9, vc118→119, bn118→119)
