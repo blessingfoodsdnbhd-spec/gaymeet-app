@@ -478,6 +478,32 @@
     "auto": "Follow app language",
     "autoHint": "Translate into your current app language"
   },
+  "inviteRoom": {
+    "title": "Invite friends",
+    "scanHint": "Scan to join the room",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "shareVia": "Share via app",
+    "sms": "SMS",
+    "wechat": "WeChat",
+    "appMissing": "App not installed — link copied"
+  },
+  "changePassword": {
+    "title": "Change room password",
+    "titleSet": "Set room password",
+    "hint": "Set a new password for \"{{name}}\". Current members are unaffected.",
+    "hintSet": "Setting a password makes \"{{name}}\" private — new members will need it to join.",
+    "newPw": "New password",
+    "newPwPh": "Enter a new password",
+    "confirmPw": "Confirm new password",
+    "confirmPwPh": "Re-enter the new password",
+    "tooShort": "Password must be at least {{n}} characters",
+    "mismatch": "Passwords don't match",
+    "save": "Save",
+    "saving": "Saving…",
+    "done": "Room password updated",
+    "failed": "Update failed"
+  },
   "worldChat": {
     "title": "Plaza",
     "online": "{{n}} online",
@@ -545,6 +571,7 @@
       "deleteRoom": "Delete room",
       "deleteConfirmTitle": "Delete this room?",
       "deleteConfirmBody": "The room and all its messages will be permanently deleted.",
+      "deleteCta": "Delete",
       "leave": "Leave room",
       "viewMembers": "View members",
       "leaveConfirmTitle": "Leave this room?",

@@ -478,6 +478,32 @@
     "auto": "跟随应用语言",
     "autoHint": "翻译为你当前的应用语言"
   },
+  "inviteRoom": {
+    "title": "邀请朋友",
+    "scanHint": "扫码加入房间",
+    "copy": "复制链接",
+    "copied": "链接已复制",
+    "shareVia": "通过应用分享",
+    "sms": "短信",
+    "wechat": "微信",
+    "appMissing": "未安装该应用，链接已复制"
+  },
+  "changePassword": {
+    "title": "修改房间密码",
+    "titleSet": "设置房间密码",
+    "hint": "为「{{name}}」设置一个新密码。已在房间的成员不受影响。",
+    "hintSet": "设置密码后，「{{name}}」将变为私密房间，新成员需要密码才能加入。",
+    "newPw": "新密码",
+    "newPwPh": "输入新密码",
+    "confirmPw": "确认新密码",
+    "confirmPwPh": "再次输入新密码",
+    "tooShort": "密码至少 {{n}} 位",
+    "mismatch": "两次输入的密码不一致",
+    "save": "保存",
+    "saving": "保存中…",
+    "done": "房间密码已更新",
+    "failed": "更新失败"
+  },
   "worldChat": {
     "title": "广场",
     "online": "{{n}} 人在线",
@@ -545,6 +571,7 @@
       "deleteRoom": "删除聊天室",
       "deleteConfirmTitle": "删除聊天室?",
       "deleteConfirmBody": "聊天室和所有消息将被永久删除。",
+      "deleteCta": "删除",
       "leave": "退出聊天室",
       "viewMembers": "查看成员",
       "leaveConfirmTitle": "退出聊天室?",

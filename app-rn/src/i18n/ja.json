@@ -743,6 +743,32 @@
     "auto": "アプリの言語に従う",
     "autoHint": "現在のアプリ言語に翻訳します"
   },
+  "inviteRoom": {
+    "title": "友達を招待",
+    "scanHint": "スキャンしてルームに参加",
+    "copy": "リンクをコピー",
+    "copied": "リンクをコピーしました",
+    "shareVia": "アプリで共有",
+    "sms": "SMS",
+    "wechat": "WeChat",
+    "appMissing": "アプリが未インストール — リンクをコピーしました"
+  },
+  "changePassword": {
+    "title": "ルームのパスワード変更",
+    "titleSet": "ルームのパスワード設定",
+    "hint": "「{{name}}」の新しいパスワードを設定します。既存のメンバーには影響しません。",
+    "hintSet": "パスワードを設定すると「{{name}}」は非公開になり、新しいメンバーは参加にパスワードが必要です。",
+    "newPw": "新しいパスワード",
+    "newPwPh": "新しいパスワードを入力",
+    "confirmPw": "新しいパスワード（確認）",
+    "confirmPwPh": "もう一度入力",
+    "tooShort": "パスワードは{{n}}文字以上",
+    "mismatch": "パスワードが一致しません",
+    "save": "保存",
+    "saving": "保存中…",
+    "done": "ルームのパスワードを更新しました",
+    "failed": "更新に失敗しました"
+  },
   "worldChat": {
     "title": "広場",
     "online": "{{n}}人オンライン",
@@ -810,6 +836,7 @@
       "deleteRoom": "ルームを削除",
       "deleteConfirmTitle": "このルームを削除しますか？",
       "deleteConfirmBody": "ルームとすべてのメッセージが完全に削除されます。",
+      "deleteCta": "削除",
       "leave": "ルームを退出",
       "viewMembers": "メンバーを見る",
       "leaveConfirmTitle": "このルームを退出しますか？",

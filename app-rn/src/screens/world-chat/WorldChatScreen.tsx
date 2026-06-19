@@ -12,13 +12,12 @@ import {
   Modal,
   Animated,
   InteractionManager,
-  Share,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Lock, Share2, Users, Bell, BellOff } from 'lucide-react-native';
+import { ChevronLeft, Crown, Lock, Share2, Bell, BellOff, UserPlus, KeyRound, Trash2 } from 'lucide-react-native';
 import { nativeActionSheet } from '../../../modules/native-sheet';
 import { deferOpen } from '../../utils/deferOpen';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +50,7 @@ import {
   markRoomRead,
   setRoomNotifications,
   leaveRoomMembership,
+  deleteChatRoom,
   type WorldChatMessage,
   type PlazaRosterUser,
 } from '../../api/worldChat';
@@ -68,12 +68,9 @@ import { DateDivider } from '../../components/chat/DateDivider';
 import { shouldShowDateDivider } from '../../utils/chatDate';
 import { countryCodeToFlag } from '../../utils/countryFlag';
 import { nativePlaceholder } from '../../utils/worldChatRooms';
-import { RoomSettingsContent } from './RoomSettingsSheet';
-import { RoomOnlineSidebar } from './RoomOnlineSidebar';
 import { OnlineAvatarStrip } from './OnlineAvatarStrip';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import { tierColor, tierEmoji } from '../../utils/plazaIdentity';
-import { roomShareUrl } from '../../utils/roomLink';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -158,21 +155,43 @@ export function WorldChatScreen({
     [followingQ.data],
   );
 
-  // mIRC online-roster drawer (spec §9.1).
-  const [rosterOpen, setRosterOpen] = React.useState(false);
-  const openRoster = React.useCallback(() => setRosterOpen(true), []);
+  // v3.1.10 — the old roster sheet (RoomOnlineSidebar) is GONE; "see who's online"
+  // is the avatar strip + the OnlineUsersList screen. Owner room actions are now
+  // header icons → full-screen Screens / native Alert (no RN Modal/Sheet, no OS
+  // share sheet — kills the Android touch bugs once and for all).
 
-  // Share the room via the system share sheet using the friendly meyou.uk/r/{slug}
-  // short link. Works for every room — custom, country, or the global world room.
-  // The link lives in `message` only: passing `url` too makes iOS hand both the
-  // body text AND the url attachment to the share target (e.g. WhatsApp pastes
-  // both), duplicating the link. The receiving app still builds a link preview
-  // from the URL in the body (meyou.uk/r/* serves OG tags). Android ignores `url`.
-  const onShareRoom = React.useCallback(() => {
-    const url = roomShareUrl(roomId);
-    const message = t('worldChat.rooms.shareMessage', { name: headerTitle, link: url });
-    Share.share({ message }).catch(() => {});
-  }, [roomId, headerTitle, t]);
+  // 🔗 / ➕ → full-screen InviteRoom (QR + link + copy + external app deep-links).
+  // Replaces the OS Share sheet.
+  const openInvite = React.useCallback(() => {
+    nav.navigate('InviteRoom', { roomId, roomTitle: headerTitle });
+  }, [nav, roomId, headerTitle]);
+
+  // 🗑️ → native Alert (OS window, never an RN Modal). Confirm → hard-delete →
+  // pop back to the room list.
+  const onDeleteRoom = React.useCallback(() => {
+    Alert.alert(
+      t('worldChat.rooms.deleteConfirmTitle'),
+      t('worldChat.rooms.deleteConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('worldChat.rooms.deleteCta'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteChatRoom(roomId, true);
+              qc.invalidateQueries({ queryKey: ['worldChat', 'rooms'] });
+              qc.invalidateQueries({ queryKey: ['worldChat', 'myRooms'] });
+              explicitLeaveRef.current = true; // skip mark-read on unmount
+              nav.goBack();
+            } catch (e: any) {
+              Alert.alert(t('worldChat.rooms.createFailed'), e?.response?.data?.error ?? '');
+            }
+          },
+        },
+      ],
+    );
+  }, [nav, roomId, qc, t]);
 
   // Tapping a user (roster row OR an in-chat avatar) opens a NATIVE action sheet:
   // 查看资料 / 添加好友 / 发私信. v3.1.6 relocates the old header 👤+ "add friend"
@@ -187,7 +206,6 @@ export function WorldChatScreen({
   const openRosterUser = React.useCallback(
     (userId: string) => {
       const targetId = String(userId ?? '');
-      setRosterOpen(false);
       if (!targetId || targetId === myId) return;
       deferOpen(async () => {
         const viewProfile = t('worldChat.viewProfile');
@@ -948,7 +966,7 @@ export function WorldChatScreen({
             <ChevronLeft size={26} color={theme.colors.text} />
           </Pressable>
           <Pressable
-            onPress={openRoster}
+            onPress={() => nav.navigate('OnlineUsersList', { roomId, roomTitle: headerTitle })}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={t('plaza.onlineList')}
@@ -980,24 +998,33 @@ export function WorldChatScreen({
               area and taps near the screen edge miss (the buttons looked dead).
               A laid-out box hit-tests reliably; the icon stays centered so iOS
               looks the same. marginRight pulls the box's padding back to the edge. */}
+          {/* v3.1.10 header: members see 🔔 🔗; the room CREATOR additionally sees
+              ➕ (invite) 🔑 (password) 🗑️ (delete). The 👥 roster button is gone —
+              "who's online" is the avatar strip + 👁 N → OnlineUsersList. Every
+              owner action is a full-screen Screen or a native Alert (NO RN
+              Modal/Sheet, NO OS share sheet) → no Android touch bugs. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 4, marginRight: -6 }}>
-            <Pressable onPress={openRoster} hitSlop={8} accessibilityLabel={t('plaza.onlineList')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
-              <Users size={22} color={theme.colors.text} />
-            </Pressable>
             <Pressable onPress={onToggleNotif} hitSlop={8} accessibilityLabel={t('worldChat.notif.toggle')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               {notifMuted
                 ? <BellOff size={21} color={theme.colors.muted} />
                 : <Bell size={21} color={theme.colors.text} />}
             </Pressable>
-            <Pressable onPress={onShareRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
+            <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('worldChat.rooms.share')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
               <Share2 size={21} color={theme.colors.text} />
             </Pressable>
-            {/* v3.1.6 header unification: every room (official / user / new) now shows
-                exactly 👥 🔔 🔗. The old custom-room-only 👤+ (invite) and ⋮ (room
-                settings: edit/members/kick/close/DELETE-ROOM/leave) moved into the
-                👥 roster sheet's "房间设置" row (inline RoomSettingsContent),
-                so nothing is lost — official rooms simply have no settings row. Report
-                already lives in the message long-press menu (openMessageMenu). */}
+            {isCreator && (
+              <>
+                <Pressable onPress={openInvite} hitSlop={8} accessibilityLabel={t('inviteRoom.title')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
+                  <UserPlus size={21} color={theme.colors.text} />
+                </Pressable>
+                <Pressable onPress={() => nav.navigate('ChangeRoomPassword', { roomId, roomTitle: headerTitle })} hitSlop={8} accessibilityLabel={t('changePassword.title')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
+                  <KeyRound size={20} color={theme.colors.text} />
+                </Pressable>
+                <Pressable onPress={onDeleteRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.deleteCta')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
+                  <Trash2 size={20} color={theme.colors.error} />
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       )}
@@ -1183,36 +1210,6 @@ export function WorldChatScreen({
         reason={upsellReason ?? undefined}
       />
 
-      {/* mIRC 在线名单 — bottom sheet on mobile (stable on Android 15/16). */}
-      <RoomOnlineSidebar
-        open={rosterOpen}
-        onClose={() => setRosterOpen(false)}
-        roomId={roomId}
-        onOpenUser={openRosterUser}
-        // Custom rooms only: surfaces the relocated room-settings entry (was the
-        // header ⋮). Official / country rooms have no settings → no row.
-        settingsContent={
-          isCustom && room ? (
-            <RoomSettingsContent
-              open={rosterOpen}
-              initialTab="main"
-              onClose={() => setRosterOpen(false)}
-              room={room}
-              onChanged={() => {
-                setRosterOpen(false);
-                roomQ.refetch();
-              }}
-              onExit={() => {
-                setRosterOpen(false);
-                // The settings content already left the room → treat as an explicit
-                // leave so the unmount announces it loudly (and skips mark-read).
-                explicitLeaveRef.current = true;
-                nav.goBack();
-              }}
-            />
-          ) : undefined
-        }
-      />
 
     </SafeAreaView>
   );
