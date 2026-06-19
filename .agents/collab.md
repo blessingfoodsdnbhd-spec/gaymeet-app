@@ -147,3 +147,35 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/screens/world-chat/RoomOnlineSidebar.tsx`
 - `app-rn/app.json` (vc117)
 - `.agents/collab.md`
+
+---
+
+## [2026-06-19 22:25 MYT] cowork → all
+
+**Done:** Built v3.1.8 vc118/bn118 (在线人数 redesign), Android-15 emulator-verified, shipped BOTH platforms.
+- **Android vc118 → Play Internal:** ✓ "Submitted to Google Play Store" (EAS submission `58f3b2ab-369c-4459-93fe-920f0dc68a93`).
+- **iOS bn118 → TestFlight:** ✓ uploaded to App Store Connect, processing (EAS submission `3dae8b6a-b8ce-496b-b261-fc6ec99e40df`); appears at appstoreconnect.apple.com/apps/6762375260/testflight/ios.
+- Branch `feat/online-avatar-strip`, commit `31b13c7`, PR #278.
+
+**改了什么 (在线人数: sheet → inline strip + 全屏 list):**
+- **NEW** `OnlineAvatarStrip.tsx` — horizontal avatar strip pinned under the room header (replaces the old "在线 N 人" → sheet entry). Live WS roster, sorted self → creator → admin → followed → rest (stable index tiebreak). Self = green ring, creator = 👑. Trailing **👁 N** pill → full-screen list. A **flex child, NOT `position:absolute`** (carries the vc117 Fabric hit-region lesson forward).
+- **NEW** `OnlineUsersListScreen.tsx` — a real **Screen** (route `OnlineUsersList`, `slide_from_right`), NOT a Sheet — sidesteps the vc115/117 sheet touch bugs entirely. 3 tabs 在线/离线/你关注的 + 🔍 search (autofocus) + virtualized FlatList. Data: `getRoomMembers` + `getFollowing`; optimistic 关注 toggle; EmptyState for empty rooms. Row tap → shared action sheet.
+- **NEW** `utils/useUserActionSheet.ts` — shared 查看资料/添加好友/私聊 native action sheet (deferOpen guard), reused by the strip, the full list, and the existing roster sheet.
+- `WorldChatScreen.tsx` — roster WS handler now stores the FULL `PlazaRosterUser[]` (superset of mention candidates, so @mention still works); `followingQ` drives strip follow-priority; strip wired under header; new route registered in `types.ts` + `RootNavigator.tsx`.
+- i18n `worldChat.onlineList.*` in zh/en/ja/ko. `tsc --noEmit` clean.
+
+**Emulator verification (Android 15, qa-premium, vc118 universal APK) — all 6 PASS, no crashes:**
+1. Strip renders under header (flex, no hit bug); 2. self green ring + creator 👑 crown (seen on 憨 in list); 3. 👁 N → full-screen list; 4. 3 tabs + search toggle (pink active icon + autofocus); 5. row tap → native action sheet (查看资料/添加好友/私聊/取消), self correctly skipped (QA Premium row has no 添加好友); 6. rows load from getRoomMembers with badges/crown/online-offline/follow button, correct sort; EmptyState for empty rooms (world lobby REST roster is empty — strip still shows live WS online via 👁 N).
+
+**给 codex 的提醒:** 在线人数 is no longer a Sheet — it's the inline strip + the `OnlineUsersList` Screen. The strip reflects the **live WS roster** (online presence); the full list reflects **REST `getRoomMembers`** (all members, `isOnline` from REST which lags WS — that's why the world-lobby 在线 tab can be empty while 👁 shows 1). If you extend presence, reconcile those two sources.
+
+**Blocker:** 无.
+
+**Files:**
+- `app-rn/src/screens/world-chat/OnlineAvatarStrip.tsx` (new)
+- `app-rn/src/screens/world-chat/OnlineUsersListScreen.tsx` (new)
+- `app-rn/src/utils/useUserActionSheet.ts` (new)
+- `app-rn/src/screens/world-chat/WorldChatScreen.tsx`
+- `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/app.json` (3.1.6→3.1.8, vc117→118, bn117→118)
