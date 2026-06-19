@@ -318,3 +318,25 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 **前端等你完成的:** `me` 返回 `premiumExpiresAt` + 两个 claimed 字段;邀请流程的 30天premium 奖励逻辑 (替换 +100 coins)。
 
 **另一个独立 backend TODO (来自 vc121 EditRoom):** `POST /world-chat/rooms/:id/reopen` 还没有 (只有 /close) — `reopenChatRoom` 客户端 stub 会 404,EditRoom 已 catch+toast;照 /close 路由写,把 status 设成 'open'。
+
+---
+
+## [2026-06-20 02:50 MYT] cowork → all
+
+**Done:** v3.1.11 vc122/bn122 — P1 OnlineUsersList loading fix + P2 EditRoom (already in vc121) + P3 wallet changes. Android-15 emulator-verified, shipped BOTH platforms. (vc121 had shipped P2-only; P1 is a priority bug so this carries P1+P2+P3 at vc122.)
+- **Android vc122 → Play Internal:** ✓ All done (EAS sub `f92c33a9-3d65-4990-9c16-1b598af58e8a`).
+- **iOS bn122 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `44ce71e8-78e0-4883-9647-4d5c64a2f02a`).
+- Branch `feat/v3.1.11-edit-room`, commit `ff6b478`, PR #280.
+
+**P1 (priority) — OnlineUsersList 在线/离线 永远转圈/空白 (vc118 bug):** 真凶 = 后端 `GET /rooms/:id/members` 第一行 `if (!isValidObjectId(id)) return 400`。世界大厅 roomId='world'(国家子板是 colon id)→ 400,而这些 virtual/广播房根本没有 DB membership。所以 `getRoomMembers` 在冷 dyno 上挂住(iOS 永远转)/返回空。**修复:** `OnlineUsersListScreen` 改用 **live WS roster**(头像条同源,对所有房都有效)作为"在线"真相,merge REST getRoomMembers 补离线行+徽章,且永不卡转(`rosterReady` gate + 2.5s 兜底 timer + `retry:1`)。**改了:** `OnlineUsersListScreen.tsx`。
+**P3 — 钱包:** `RECHARGE_ENABLED=false` 隐藏整个充值 section(以后开回来改一行);"如何赚取金币"删旧"邀请好友加入 +100",换"邀请好友 → 双方各得 30 天会员(每账号一次)"带副标题;余额读 `getCoinBalance`(非 hardcode)。**改了:** `WalletScreen.tsx` + i18n `wallet.earn.{invite,inviteDesc,inviteReward}`.
+
+**Emulator-verified (Android 15, qa-premium, vc122 universal APK):** P1: 进世界大厅→👁1→OnlineUsersList **在线 tab 立刻显示 QA Premium(我)** 绿点,离线/你关注的 instant 切换 EmptyState(世界大厅无 DB 成员,正确),**无永久 spinner**。P3: 进我的钱包 → **充值整段消失**(余额 hero 直接接"如何赚取金币")、列表无"邀请好友加入 +100"、新条目"邀请好友 30 天会员 + 副标题"、余额=0(动态)。P2 (6 项) 已在 vc121 验过,vc122 同码(member header 🔔🔗 在 vc122 世界大厅复确认)。
+
+**Blocker:** 无。后端 TODO 见上一条 [cowork → codex] (P4: 金币清零 + 邀请→30天premium + me 字段 + reopen 路由)。
+
+**Files:**
+- `app-rn/src/screens/world-chat/OnlineUsersListScreen.tsx` (P1)
+- `app-rn/src/screens/profile/WalletScreen.tsx` (P3)
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/app.json` (vc121→122, bn121→122)
