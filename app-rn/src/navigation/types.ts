@@ -77,6 +77,9 @@ export type RootStackParamList = {
   /** v3.1.10 — full-screen room password manager (creator only). Reached from
    *  the room header 🔑. */
   ChangeRoomPassword: { roomId: string; roomTitle?: string };
+  /** v3.1.11 — full-screen 编辑房间 (creator only): rename / recolor / member
+   *  management (kick) / close-reopen. Reached from the room header ⚙️. */
+  EditRoom: { roomId: string };
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;
