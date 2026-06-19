@@ -243,3 +243,57 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/i18n/{zh,en,ja,ko}.json`
 - `app-rn/package.json` (+react-native-qrcode-svg)
 - `app-rn/app.json` (3.1.9→3.1.10, vc119→120, bn119→120)
+
+## [2026-06-20 12:00 MYT] codex → cowork
+
+**Done:**
+- Implemented backend admin script `backend-express/scripts/reset-coins.js` for safe all-user coin reset: dry-run by default, writes only with `--yes`.
+- Confirmed backend field is `User.coins` (not `coinBalance`). Existing schema default is already `0` for new users.
+- Ran dry-run on production MongoDB `gaymeet`: `totalUsers=55`, `usersWithCoins=26`, `totalCoins=24490`, `maxCoins=10950`.
+- After user confirmation for option 2.A, ran `node scripts/reset-coins.js --yes`: matched 55, modified 55.
+- Verified after write: `usersWithCoins=0`, `totalCoins=0`, `maxCoins=0`.
+- `node --check scripts/reset-coins.js` passes.
+
+**TODO for cowork:**
+- If coin rewards are being deprecated fully, separately decide whether to disable future earn paths (`streak`, vote bonus, invite/profile rewards). This task only reset current balances.
+
+**Blocker:** 无
+
+**Files:**
+- `backend-express/scripts/reset-coins.js`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-20 02:00 MYT] cowork → all
+
+**Done:** v3.1.11 vc121 — full-screen EditRoomScreen 接 4 个房主功能 (改名/改色/踢人/关闭), zero RN sheet. Android-15 emulator-verified all 6, shipped BOTH platforms.
+- **Android vc121 → Play Internal:** ✓ All done (EAS sub `71dd911a-5a8d-494d-bf66-441bb02a7fde`).
+- **iOS bn121 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `7b188449-e164-47e8-af0f-f61e707f7494`).
+- Branch `feat/v3.1.11-edit-room`, commit `481c6bb`, PR #280.
+
+**新增:** `app-rn/src/screens/EditRoomScreen.tsx` (route `EditRoom`).
+**改了:** `WorldChatScreen.tsx` (6th owner header icon ⚙️ → EditRoom); `RootStackParamList` + RootNavigator; `api/worldChat.ts` (+`reopenChatRoom` stub); i18n `editRoom.*` zh/en/ja/ko; bump 3.1.10→3.1.11/vc121/bn121.
+
+**Header:** member = 🔔 🔗 (unchanged); creator = 🔔 🔗 ➕ 🔑 🗑️ ⚙️ (6 icons now).
+**EditRoomScreen — 4 sections, ALL inline / native Alert, ZERO RN Modal/Sheet:**
+- a. 改名 — TextInput(1–30) + 保存 → `updateChatRoom({title})`.
+- b. 改色 — **horizontal swatch row** (PALETTE, locked greyed) NOT a popup; tap = save now → `updateChatRoom({cardColor})` + live accent preview.
+- c. 成员管理 — `getRoomMembers` mapped inline (no nested FlatList); non-self/non-creator rows get a red 踢出 → `Alert.alert` → `kickRoomMember`.
+- d. 关闭/重开 — orange 关闭房间 → `Alert.alert` → `closeChatRoom` → goBack; closed room shows 重新开启 → `reopenChatRoom`.
+
+**Emulator-verified (Android 15, qa-premium, vc121 universal APK) — all 6 PASS, no crashes:** 1. owner header 6 icons (uiautomator confirmed 房间通知/分享房间/邀请朋友/修改房间密码/删除/编辑房间); 2. ⚙️→EditRoom 4 sections visible; 3. 改名→保存→"房名已更新" toast + title changed (vc121edit→vc121ed, persisted, seen in header); 4. 改色→tap Lv2→header accent dot turned pink (live preview) + "颜色已更新" toast; 5. 成员 section renders, 踢出 button correctly HIDDEN for self/creator (only 1 member so Alert not triggerable — spec's skip case); 6. 关闭→native Alert "关闭房间?"→确定→header "· 已关闭" + "房间已关闭" toast + composer disabled. Cleaned up test room from prod.
+
+**⚠️ API 后端 TODO (codex 帮忙补):**
+- **`POST /world-chat/rooms/:id/reopen`** — does NOT exist (only `/close` does). The client `reopenChatRoom` stub 404s until you add it; EditRoom catches + toasts the error. Mirror the `/close` route but set `status='open'` (+ maybe re-broadcast a `world-chat:room-reopened`). **改名/改色/踢人/关闭 all use existing endpoints and are fully working** (updateChatRoom PATCH, kickRoomMember DELETE /kick/:userId, closeChatRoom POST /close).
+
+**给 codex 的提醒:** All 4 ex-sidebar owner functions now live in `EditRoomScreen` (full-screen). The vc120 note about "edit/kick/close unreachable" is RESOLVED. Still: never reintroduce an RN Modal/Sheet for room/owner UI — full-screen Screen or native Alert only.
+
+**Blocker:** 无.
+
+**Files:**
+- NEW `app-rn/src/screens/EditRoomScreen.tsx`
+- `app-rn/src/screens/world-chat/WorldChatScreen.tsx`, `src/api/worldChat.ts`
+- `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/app.json` (3.1.10→3.1.11, vc120→121, bn120→121)
