@@ -478,6 +478,13 @@
     "auto": "跟随应用语言",
     "autoHint": "翻译为你当前的应用语言"
   },
+  "mapPicker": {
+    "locateMe": "找我位置",
+    "locDeniedTitle": "需要定位权限",
+    "locDeniedBody": "请在系统设置里允许 Meyou 访问你的位置。",
+    "openSettings": "去设置",
+    "locFailed": "无法获取位置"
+  },
   "editRoom": {
     "title": "编辑房间",
     "nameSection": "房间名称",

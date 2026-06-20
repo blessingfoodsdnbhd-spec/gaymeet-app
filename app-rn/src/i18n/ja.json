@@ -743,6 +743,13 @@
     "auto": "アプリの言語に従う",
     "autoHint": "現在のアプリ言語に翻訳します"
   },
+  "mapPicker": {
+    "locateMe": "現在地",
+    "locDeniedTitle": "位置情報の許可が必要",
+    "locDeniedBody": "設定で Meyou に位置情報へのアクセスを許可してください。",
+    "openSettings": "設定を開く",
+    "locFailed": "位置情報を取得できませんでした"
+  },
   "editRoom": {
     "title": "ルームを編集",
     "nameSection": "ルーム名",

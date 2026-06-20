@@ -478,6 +478,13 @@
     "auto": "Follow app language",
     "autoHint": "Translate into your current app language"
   },
+  "mapPicker": {
+    "locateMe": "Find my location",
+    "locDeniedTitle": "Location needed",
+    "locDeniedBody": "Allow Meyou to access your location in Settings.",
+    "openSettings": "Open Settings",
+    "locFailed": "Couldn't get your location"
+  },
   "editRoom": {
     "title": "Edit room",
     "nameSection": "Room name",

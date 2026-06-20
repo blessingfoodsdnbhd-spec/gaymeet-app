@@ -9,11 +9,12 @@ import {
   ActivityIndicator,
   Alert,
   Keyboard,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { ChevronLeft, Search, Crown } from 'lucide-react-native';
+import { ChevronLeft, Search, Crown, LocateFixed } from 'lucide-react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -107,11 +108,43 @@ export function MapPickerScreen() {
   const { results, loading: searching } = useNominatimSearch(query);
 
   // Move the (WebView) map + marker to coords and arm the pin for saving.
-  const goTo = (lat: number, lng: number) => {
+  const goTo = (lat: number, lng: number, zoom = 12) => {
     setPicked({ lat, lng });
     webRef.current?.injectJavaScript(
-      `try{map.setView([${lat}, ${lng}], 12);marker.setLatLng([${lat}, ${lng}]);}catch(e){};true;`,
+      `try{map.setView([${lat}, ${lng}], ${zoom});marker.setLatLng([${lat}, ${lng}]);}catch(e){};true;`,
     );
+  };
+
+  // v3.1.12 "找我位置" — center the map on the device's real GPS position. Checks
+  // permission first (requests once if undetermined); a denial routes to system
+  // settings via a native Alert (never silently no-ops).
+  const [locating, setLocating] = useState(false);
+  const onLocateMe = async () => {
+    if (locating) return;
+    setLocating(true);
+    try {
+      let perm = await Location.getForegroundPermissionsAsync();
+      if (perm.status !== 'granted' && perm.canAskAgain) {
+        perm = await Location.requestForegroundPermissionsAsync();
+      }
+      if (perm.status !== 'granted') {
+        Alert.alert(
+          t('mapPicker.locDeniedTitle'),
+          t('mapPicker.locDeniedBody'),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('mapPicker.openSettings'), onPress: () => Linking.openSettings() },
+          ],
+        );
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      goTo(pos.coords.latitude, pos.coords.longitude, 16);
+    } catch (e: any) {
+      Alert.alert(t('mapPicker.locFailed'), e?.message || '');
+    } finally {
+      setLocating(false);
+    }
   };
   const pickResult = (lat: number, lng: number, name?: string) => {
     Keyboard.dismiss();
@@ -405,6 +438,25 @@ ${
           </View>
         )}
 
+        {/* v3.1.12 "找我位置" — circular GPS button, bottom-right. Lifted above the
+            moment-mode confirm chip so they never overlap. */}
+        <Pressable
+          onPress={onLocateMe}
+          disabled={locating}
+          accessibilityRole="button"
+          accessibilityLabel={t('mapPicker.locateMe')}
+          style={({ pressed }) => [
+            styles.locateBtn,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, bottom: momentMode ? 76 : 24, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          {locating ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <LocateFixed size={22} color={theme.colors.primary} strokeWidth={2} />
+          )}
+        </Pressable>
+
         {/* Reset-to-GPS overlay — virtual-location only; hidden in moment mode. */}
         {!momentMode && (isPremium || (prefs?.virtualLat != null && prefs?.virtualLng != null)) && (
           <Pressable
@@ -476,6 +528,22 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  // Circular "找我位置" GPS button, bottom-right (v3.1.12).
+  locateBtn: {
+    position: 'absolute',
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOpacity: 0.18,
