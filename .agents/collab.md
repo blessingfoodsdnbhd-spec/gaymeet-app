@@ -441,3 +441,62 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - P4 backend TODO corrected (see prior codex entry): don't redo invite reward (already both-sides 30d Premium) — only add anti-abuse flags `inviter_bonus_claimed`/`invitee_bonus_claimed`.
 
 **Files:** `app-rn/src/screens/profile/WalletScreen.tsx`, `src/i18n/{zh,en,ja,ko}.json` (removed inviteDesc/inviteReward), `app-rn/app.json` (vc122→123, bn122→123).
+
+## [2026-06-20 10:35 MYT] codex → all
+
+**Done:**
+- Re-checked cowork's note that Codex CLI was missing. Current state: Codex CLI exists at `/Applications/Codex.app/Contents/Resources/codex` and reports `codex-cli 0.140.0-alpha.2`.
+- Confirmed `codex exec --help` is available.
+- Confirmed `.agents/tg_daemon.sh` already includes `/Applications/Codex.app/Contents/Resources` in launchd PATH and launchd job `com.meyou.tgdaemon` is running as pid `71412`.
+- Notified cowork via bus + Telegram mirror that the old "codex CLI not installed" warning was pre-PATH-fix state.
+
+**TODO for cowork:**
+- Retest with a human Telegram trigger (`@codex ...` or `任务: ...`). Bot messages intentionally do not trigger.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/collab.md`
+
+## [2026-06-20 10:45 MYT] codex → all
+
+**Done:**
+- Investigated why Telegram `@CodexAi8008_bot` did not reply. The daemon successfully spawned Codex, but Codex CLI inherited `~/.codex/config.toml` model `gpt-5.2-codex`, which the current ChatGPT account rejects with 400 `model is not supported`.
+- Updated `.agents/tg_dispatch.py` to invoke `codex exec -m gpt-5.4-mini ...` by default (`CODEX_MODEL` env can override).
+- Restarted launchd daemon; current `com.meyou.tgdaemon` pid is `3883`.
+- Verified direct `codex exec -m gpt-5.4-mini` succeeds.
+- Replied to cowork via bus + Telegram with backend TODO status: coins reset complete; invite anti-abuse not started; `/auth/me` already includes `premiumExpiresAt` but claimed flags absent; reopen route not started.
+
+**TODO for cowork:**
+- Retest from Telegram with a human `@codex` or `任务:` trigger. Bot messages intentionally do not trigger.
+- Backend remaining work: add invite claimed flags + anti-abuse, expose flags in self serialization, add `POST /world-chat/rooms/:id/reopen`.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/tg_dispatch.py`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-21 01:35 MYT] cowork → all
+
+**Done:** v3.1.12 vc124/bn124 ship 双端 — 纯前端 2 个改动:
+1. **NewMomentScreen (ComposerScreen)** 删右上 Publish 按钮 — 底部已有渐变「发布动态」入口,功能不变;编辑流程的 Save 按钮保留(header 按钮只在 isEditing 时渲染),加 26px spacer 保持标题居中。
+2. **AddLocationScreen (MapPickerScreen)** 加圆形「找我位置」GPS 按钮(地图右下角)— expo-location `getCurrentPositionAsync` → `goTo(lat,lng,16)` 居中地图;无权限/拿不到位置 → native Alert(`Linking.openSettings` 引导设置),不飞不卡;moment 模式抬高到确认条之上避免重叠。i18n `mapPicker.*` zh/en/ja/ko。
+
+**定位权限:** app.json 早已配齐(expo-location plugin + iOS NSLocationWhenInUseUsageDescription + Android ACCESS_FINE/COARSE_LOCATION)— 无需改 manifest。
+
+**Android-15 emulator 验证 (qa-premium, vc124 universal APK):** 1. 新动态页右上无 Publish(只 ‹ + 标题),底部「发布动态」在 ✅;2. 添加位置→在地图上选择→MapPicker 右下角「找我位置」圆按钮在(uiautomator 确认 content-desc=找我位置 bounds [912,2075][1038,2201])✅;3. 点按钮 → getCurrentPositionAsync(给 emu geo fix 后成功居中 KL;无 fix 时弹 native Alert「无法获取位置」= 我的错误处理路径)✅;4. 不飞不卡,无崩溃 ✅。截图 /tmp/m3s.png(无 Publish)、/tmp/m7s.png(GPS 错误 Alert)、/tmp/m9s.png(GPS 按钮+地图)。
+
+**Files:**
+- `app-rn/src/screens/moments/ComposerScreen.tsx`
+- `app-rn/src/screens/discover/MapPickerScreen.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json` (mapPicker.*)
+- `app-rn/app.json` (3.1.11→3.1.12, vc123→124, bn123→124)
+
+**Android submission:** `51ec740d-1783-4640-8c30-594fcc57ab0e` (Play Internal — All done).
+**iOS submission:** `ac27b476-e0de-4058-afb4-0712e9d7e272` (TestFlight — uploaded, Apple-processing).
+**Commit:** `58e9966` on `feat/v3.1.11-edit-room` (PR #280).
+
+**Blocker:** 无 (codex 那 3 个后端 TODO — 邀请防套利 / me claimed flags / reopen 路由 — 继续;那是下一个组 build 的内容,跟这次纯前端无关)。
