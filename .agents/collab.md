@@ -371,3 +371,73 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 3. **充值接口暂时挂起**(前端已 `RECHARGE_ENABLED=false` 隐藏 UI).
 
 (The `POST /world-chat/rooms/:id/reopen` route from P2 EditRoom is still TODO too.)
+
+## [2026-06-20 10:15 MYT] codex → all
+
+**Done:**
+- Checked Telegram polling work after user asked "检查工作".
+- Confirmed `tg_daemon.sh` + `tg_dispatch.py` exist and launchd job `com.meyou.tgdaemon` is running.
+- Verified trigger policy in code: human messages are logged to `telegram_inbox.jsonl`; bot messages never trigger; `@codex`/`任务:`/`plan:`/`开始:` route to Codex; `@claude`/`@cowork` route to cowork alerts.
+- Found and fixed daemon PATH gap: launchd script did not include `/Applications/Codex.app/Contents/Resources`, so it could fail to find the Codex CLI even though interactive shell can.
+- Restarted launchd daemon successfully; new pid `71412` started and daemon PATH can resolve `/Applications/Codex.app/Contents/Resources/codex`.
+
+**TODO for cowork:**
+- If validating end-to-end, send a real human Telegram message containing `@codex` or `任务:`; bot-sent messages intentionally do not trigger.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/tg_daemon.sh`
+- `.agents/collab.md`
+
+## [2026-06-20 10:25 MYT] codex → all
+
+**Done:**
+- Added local agent bus so Codex/Cowork can discuss work reliably while mirroring important messages to Telegram for the user.
+- New tools: `.agents/bus_send.py` writes one bus message and mirrors it to Telegram; `.agents/bus_recv.py` reads messages addressed to an agent; `.agents/BUS.md` documents protocol.
+- Updated `.agents/tg_dispatch.py` so human Telegram triggers (`@codex`, `任务:`, `plan:`, `开始:`, `@cowork`) are also appended to `.agents/bus.jsonl`.
+- Updated `.gitignore` to exclude runtime bus/inbox/log/alert files.
+- Validated Python syntax via `ast.parse` and tested dispatch in a temp directory: human `任务:` produced a `user → codex` bus entry and advanced last update id.
+- Notified cowork via `bus_send.py codex cowork ...`, which wrote bus and mirrored to Telegram.
+
+**TODO for cowork:**
+- Use `python3 .agents/bus_send.py cowork codex "..."` for visible Cowork → Codex discussion, and `python3 .agents/bus_recv.py cowork` to read bus messages.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/BUS.md`
+- `.agents/bus_send.py`
+- `.agents/bus_recv.py`
+- `.agents/tg_dispatch.py`
+- `.gitignore`
+- `.agents/collab.md`
+
+## [2026-06-20 10:30 MYT] codex → all
+
+**Done:**
+- Updated agent bus protocol per user instruction: the user should only chat in Telegram, not split attention across Telegram + bus/collab/logs.
+- Clarified `.agents/BUS.md`: Telegram is the user's single chat surface; `bus.jsonl` and `collab.md` are agent-only coordination layers.
+- Notified cowork/Claude via `bus_send.py` and Telegram mirror: do not ask the user to inspect bus/collab/alerts; mirror user-relevant agent discussion to Telegram.
+
+**TODO for cowork:**
+- Follow single user-facing channel rule: user-facing discussion in Telegram only; backend sync through bus/collab internally.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/BUS.md`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-20 03:25 MYT] cowork → all
+
+**Done:** v3.1.11 vc123/bn123 — wallet P3 duplicate fix. Removed the duplicate 邀请好友 row from the 钱包 "如何赚取金币" list (it duplicated the dedicated 邀请朋友 screen). List now = 每日签到 / 完成个人资料 / 参与投票 only. Recharge-hiding kept. Android-15 emulator-verified, shipped BOTH.
+- **Android vc123 → Play Internal:** ✓ All done (EAS sub `bed4b1ab-af6f-4217-8ab3-7d60a9a96e3a`).
+- **iOS bn123 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `f9781c51-4e2e-4ef0-b1bb-12442f0dff8a`).
+- Branch `feat/v3.1.11-edit-room`, commit `7c774db`, PR #280.
+- Emulator-verified: 我的钱包 → 充值 hidden + earn list shows exactly 3 rows, no 邀请好友 entry.
+- P4 backend TODO corrected (see prior codex entry): don't redo invite reward (already both-sides 30d Premium) — only add anti-abuse flags `inviter_bonus_claimed`/`invitee_bonus_claimed`.
+
+**Files:** `app-rn/src/screens/profile/WalletScreen.tsx`, `src/i18n/{zh,en,ja,ko}.json` (removed inviteDesc/inviteReward), `app-rn/app.json` (vc122→123, bn122→123).
