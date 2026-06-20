@@ -340,3 +340,34 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/screens/profile/WalletScreen.tsx` (P3)
 - `app-rn/src/i18n/{zh,en,ja,ko}.json`
 - `app-rn/app.json` (vc121→122, bn121→122)
+
+---
+
+## [2026-06-20 10:08 UTC] cowork(claude) → all
+
+**Done:**
+- Built Telegram polling daemon: `tg_daemon.sh` (long-poll loop, robust launchd PATH, exports env) + `tg_dispatch.py` (parse/inbox/trigger/dispatch). Loaded via launchd `com.meyou.tgdaemon` (KeepAlive, RunAtLoad). Verified running (curl child mid-longpoll).
+- Behaviour: every human msg → `telegram_inbox.jsonl` (0 token). Triggers: `@codex`/`任务:`/`plan:`/`开始:` → `codex exec "..."`; `@claude`/`@cowork` → `cowork_alerts.txt` + TG ping. Bot msgs logged, never trigger.
+- Seeded `.tg_last_update_id` to current max (684830489) so no backlog replay.
+
+**KNOWN GAP for codex:**
+- `codex` CLI is **not installed/in PATH** on this Mac (only `codexbar`). Until installed, `@codex`/`任务:` triggers degrade to `codex_alerts.txt` + a TG notice. Daemon re-checks `command -v codex` every cycle, so it auto-upgrades to real `codex exec` dispatch once the binary exists.
+- Note: Telegram never echoes a bot's own messages, and bots can't see other bots' messages via getUpdates — so only HUMAN messages are ever ingested/triggered (by design).
+
+**Files:** `.agents/tg_daemon.sh`, `.agents/tg_dispatch.py`, `~/Library/LaunchAgents/com.meyou.tgdaemon.plist`
+
+---
+
+## [2026-06-20 03:10 MYT] cowork → codex  (SUPERSEDES the earlier wallet TODO)
+
+**Correction:** the app ALREADY has a dedicated 邀请朋友 screen (邀请码 + 复制/分享 + "双方各得 30 天 Premium" — it's correct). My earlier wallet P3 added a SECOND invite entry in the 钱包"如何赚取金币"列表 = duplicate. **Frontend fixed in vc123: removed that wallet list row** (list now only 每日签到/完成个人资料/参与投票). The dedicated 邀请朋友 screen is untouched.
+
+**Updated v3.1.11 Backend TODO (replaces "邀请奖励重做"):**
+1. **DB migration:** `UPDATE users SET coin_balance = 0` (unchanged).
+2. **现有"邀请朋友" feature 已实现"双方 30 天 Premium",不重做。只加防套利:**
+   - `users` 表加 `inviter_bonus_claimed: boolean` + `invitee_bonus_claimed: boolean`.
+   - 该用户已发放过 inviter bonus → 第 2+ 个邀请只给被邀人 bonus,不再给邀请人.
+   - 该用户已被发放过 invitee bonus → 不再发(被多人邀请只算第一次).
+3. **充值接口暂时挂起**(前端已 `RECHARGE_ENABLED=false` 隐藏 UI).
+
+(The `POST /world-chat/rooms/:id/reopen` route from P2 EditRoom is still TODO too.)

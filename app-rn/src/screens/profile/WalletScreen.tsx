@@ -12,15 +12,13 @@ import { getCoinBalance, getCoinPackages, purchaseCoins, type CoinPackage } from
 const RECHARGE_ENABLED = false;
 
 // Earn sources surfaced in the "how to earn" card. Amounts mirror the backend
-// COIN_REWARDS / streak coinReward tiers. `membership` rows reward premium days
-// (not coins) and show a sub-line.
-const EARN_ROWS: { key: string; coins: string; membership?: boolean }[] = [
+// COIN_REWARDS / streak coinReward tiers. Invite is intentionally NOT here — it
+// has its own dedicated 邀请朋友 screen (邀请码 + both-sides 30-day Premium), so a
+// second wallet entry would duplicate it.
+const EARN_ROWS: { key: string; coins: string }[] = [
   { key: 'checkin', coins: '+5~200' },
   { key: 'profile', coins: '+50' },
   { key: 'vote', coins: '+5' },
-  // 邀请好友 — both sides get 30 days of membership (once per account), replacing
-  // the old +100 coins invite reward. Backend rework tracked in collab.md.
-  { key: 'invite', coins: '+30d', membership: true },
 ];
 
 export function WalletScreen() {
@@ -142,17 +140,10 @@ export function WalletScreen() {
                 { borderTopColor: theme.colors.line, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
               ]}
             >
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={{ fontSize: 15, color: theme.colors.text }}>{t(`wallet.earn.${row.key}`)}</Text>
-                {row.membership && (
-                  <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, lineHeight: 17 }}>
-                    {t('wallet.earn.inviteDesc')}
-                  </Text>
-                )}
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: row.membership ? theme.colors.secondary : theme.colors.success }}>
-                {row.membership ? t('wallet.earn.inviteReward') : row.coins}
+              <Text style={{ flex: 1, fontSize: 15, color: theme.colors.text }}>
+                {t(`wallet.earn.${row.key}`)}
               </Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: theme.colors.success }}>{row.coins}</Text>
             </View>
           ))}
         </SettingsCard>

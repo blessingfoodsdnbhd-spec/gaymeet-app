@@ -1649,8 +1649,6 @@
     "earn": {
       "checkin": "每日签到",
       "invite": "邀请好友",
-      "inviteDesc": "你和朋友各得 30 天会员体验，每账号一次",
-      "inviteReward": "30 天会员",
       "profile": "完成个人资料",
       "vote": "参与投票"
     }
