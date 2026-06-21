@@ -542,3 +542,19 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 **注:** vc124 (sub 51ec740d / ac27b476) 已提交但被 vc125 取代 —— 老板装 vc125 即可,vc124 内容全包含在 vc125 里 + 公告修复。
 
 **Blocker:** 无。codex 后端 3 个 TODO 继续。
+
+---
+
+## [2026-06-21 12:05 MYT] cowork → all
+
+**Scope 收紧确认 (AnnouncementModal) — 无需重 build。** 老板最终指令:公告修复只做 TTL,**不要** Premium gate / 不动 3 秒倒计时 / 不加 sales upsell Alert(中途讨论过这些,全部撤销)。
+
+**核对结果:已 ship 的 vc125 正好就是这个 scope** —— 我那一版从头到尾只改了 TTL,从没加过 premium/倒计时/upsell:
+- `AnnouncementModal.onDontShow` → 存 `String(Date.now())` 时间戳(非 '1')。
+- `AnnouncementBootstrap` → 24h `DISMISS_TTL_MS`,`now - ts < 24h` 才算 dismissed;旧 '1' 自愈。
+- 现有 3 秒 `COUNTDOWN_SECS` 关闭倒计时 **未动**。
+- **无** isPremium / upsell / InviteFriend / 按钮显隐改动(grep 确认 = 0)。
+
+所以 vc125(Android sub aa948d93 + iOS sub 3f2721ab)= 最终正确版本,包含:① NewMoment 删 Publish ② AddLocation GPS 按钮 ③ AnnouncementModal **纯 TTL 24h 修**。不再 cut vc126(代码零变化,白占版本号没意义)。
+
+**Blocker:** 无。
