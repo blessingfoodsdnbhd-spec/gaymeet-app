@@ -500,3 +500,45 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 **Commit:** `58e9966` on `feat/v3.1.11-edit-room` (PR #280).
 
 **Blocker:** 无 (codex 那 3 个后端 TODO — 邀请防套利 / me claimed flags / reopen 路由 — 继续;那是下一个组 build 的内容,跟这次纯前端无关)。
+
+---
+
+## [claude] meyou.uk 网站 audit + 内测 email 收集 (web only, 不动 app-rn/build)
+
+**Phase 1 — 现状:** 落地页源码**不在本 repo**(direct-upload 到 Cloudflare Pages `meyou`,源 HTML 在 repo 外)。本 repo 只版本控制 `webpage/functions/`(r/ 房间分享 + .well-known + 现新增 api/)。Hosting = Cloudflare(headers `server: cloudflare` 确认)。线上结构:hero(遇見懂你/Real connection + App Store/Google Play "即將上線SOON" 占位 badge)→ 4 特色(实名/E2E/0容忍/24/7)→ 兴趣选择 demo → 三步如何运作 → 今日推荐卡 → 安全聊天 → 左右滑 → AI 破冰 → 我们的承诺 → FAQ → **email 表单(已存在)** → footer。中英双语 toggle 已具备。
+
+**关键发现:** 表单 `#waitlist` **早已存在且写好**(校验 email、存 localStorage、若 `data-endpoint` 有值则 POST `{email,source}` JSON、成功显示 🎉「你已搶先入座」)——**但 `data-endpoint=""` 是空的,所以提交全丢进 localStorage,老板永远收不到。** 不需要从零做表单,只需接后端 + 填 endpoint。
+
+**Phase 3 实现(已落地 repo):** 新增 `webpage/functions/api/waitlist.js` — Cloudflare Pages Function + KV(老板偏好的 A 方案,自管数据、免费、贴合现有 functions 架构):
+- POST: 校验 email→写 KV `WAITLIST`(key=`email:<lower>`,天然去重)+ honeypot 防 bot + `meta:count` 计数;未绑 KV 也返回 ok 让前端正常显示感谢。
+- GET `?key=<WAITLIST_ADMIN_KEY>` 导出 JSON;`&format=csv` 下 CSV;`?count=1` 公开计数(可做"N 人已预约"徽章)。
+- node ESM 语法检查通过。README 已补文档 + 一次性 setup(建 KV namespace → 绑 `WAITLIST` → 设 `WAITLIST_ADMIN_KEY`)。
+
+**需老板按一下(缺 CF 凭据,无法代部署):** 1) 源 index.html 把 `data-endpoint=""` 改成 `data-endpoint="/api/waitlist"`(一处);2) Pages 建 KV + 绑定 + 设 admin key;3) 把 `functions/` 随站点重新 upload。详见 `webpage/functions/README.md`。
+
+**未动:** app-rn / vc124 build / 任何线上文件(read-only audit 完成,代码改动仅限 webpage/functions/)。Phase 2 audit 建议见我给老板的回复(P0:把下载 badge 改成"加入内测"指向表单;P1:首屏真机截图、隐私/条款已在 footer ✓、媒体/用户数信任信号;P2:暗黑模式等)。
+
+---
+
+## [2026-06-21 11:55 MYT] cowork → all
+
+**Done:** v3.1.12 vc125/bn125 ship 双端 — vc124 已提交(Play 占用 124),所以 3 项一起进 vc125:
+1. NewMomentScreen 删右上 Publish 按钮 (底部渐变 Post 入口保留, 编辑 Save 保留) — 同 vc124。
+2. AddLocationScreen/MapPicker 加圆形「找我位置」GPS 按钮 (expo-location, 无权限 native Alert→openSettings) — 同 vc124。
+3. **NEW BUG FIX — AnnouncementModal「今天不显示」永久消失:** 用户报 "按了今天不显示之后就再也不出来"。
+
+**真凶:** dismiss handler 存了永久 `'1'` flag (`announcementDismissKey(id)='meyou:announcement:dismissed:<id>'`),AnnouncementBootstrap 把 `v==='1'` 当永久 dismissed 过滤掉 → 再也不显示。
+**修法 (24h TTL):**
+- `AnnouncementModal.onDontShow` → `multiSet([key, String(Date.now())])` (存时间戳, 不是 '1')。
+- `AnnouncementBootstrap` → `DISMISS_TTL_MS=24h`;只在 `now - ts < 24h` 才算 dismissed。旧 `'1'` 解析成 ts=1 (1970) → 永远 > TTL → 当过期处理 → **stuck-forever bug 自愈** (无需显式 migration,下次 dismiss 自动覆盖成新时间戳)。
+**Files:** `app-rn/src/components/AnnouncementModal.tsx`, `app-rn/src/components/AnnouncementBootstrap.tsx`。
+
+**验证:** Android-15 emulator: 公告开机弹出 ✅;点「今後不顯示」→ relaunch → 隐藏 (24h 内, uiautomator 确认 count=0) ✅。TTL 边界 + 旧'1'自愈用 Node 逻辑测验全过 (fresh→隐藏, 23h→隐藏, 25h→显示, '1'→显示自愈, null/garbage→显示) —— emulator 无 root 无法改系统时钟做 +24h 实测,故用确定性逻辑测验证 24h 边界。NewMoment/GPS 同 vc124 已验。
+
+**Android submission:** `aa948d93-658f-4215-9e4f-798a0dccb9ab` (Play Internal — All done)。
+**iOS submission:** `3f2721ab-2b81-47df-a955-5e56ac5a2a2b` (TestFlight — uploaded, processing)。
+**Commit:** `2558fab` on `feat/v3.1.11-edit-room` (PR #280)。
+
+**注:** vc124 (sub 51ec740d / ac27b476) 已提交但被 vc125 取代 —— 老板装 vc125 即可,vc124 内容全包含在 vc125 里 + 公告修复。
+
+**Blocker:** 无。codex 后端 3 个 TODO 继续。
