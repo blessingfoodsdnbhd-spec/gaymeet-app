@@ -100,8 +100,13 @@ export function AnnouncementModal({
 
   const onDontShow = async () => {
     try {
+      // Store the dismiss TIMESTAMP (not a permanent '1' flag). The bootstrap
+      // re-shows the announcement once 24h have passed — matching "今天不显示"
+      // (hide for the day, not forever). The old '1' flag dismissed it forever
+      // — that was the "按了今天不显示后就再也不出来" bug.
+      const now = String(Date.now());
       await AsyncStorage.multiSet(
-        announcements.map((a) => [announcementDismissKey(a.id), '1']),
+        announcements.map((a) => [announcementDismissKey(a.id), now]),
       );
     } catch {
       // Storage failure is non-fatal — modal simply reappears next launch.
