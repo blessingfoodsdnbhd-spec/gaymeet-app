@@ -260,6 +260,13 @@ export const leaveChatRoom = (id: string) => api.post(`/world-chat/rooms/${id}/l
 
 export const closeChatRoom = (id: string) => api.post(`/world-chat/rooms/${id}/close`, {});
 
+/**
+ * Re-open a closed room. v3.1.11 STUB — the backend POST /rooms/:id/reopen route
+ * does NOT exist yet (only /close does); this 404s until codex adds it. The
+ * EditRoom UI catches the error and toasts. See .agents/collab.md.
+ */
+export const reopenChatRoom = (id: string) => api.post(`/world-chat/rooms/${id}/reopen`, {});
+
 export const deleteChatRoom = (id: string, confirm = false) =>
   api.delete(`/world-chat/rooms/${id}`, { data: { confirm } });
 

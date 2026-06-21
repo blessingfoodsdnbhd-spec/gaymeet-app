@@ -47,6 +47,7 @@ import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { OnlineUsersListScreen } from '../screens/world-chat/OnlineUsersListScreen';
 import { InviteRoomScreen } from '../screens/InviteRoomScreen';
 import { ChangeRoomPasswordScreen } from '../screens/ChangeRoomPasswordScreen';
+import { EditRoomScreen } from '../screens/EditRoomScreen';
 import { ChannelRoomsScreen } from '../screens/world-chat/ChannelRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
 import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
@@ -192,6 +193,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="ChangeRoomPassword"
             component={ChangeRoomPasswordScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="EditRoom"
+            component={EditRoomScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

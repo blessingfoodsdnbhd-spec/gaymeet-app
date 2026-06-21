@@ -243,3 +243,318 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 - `app-rn/src/i18n/{zh,en,ja,ko}.json`
 - `app-rn/package.json` (+react-native-qrcode-svg)
 - `app-rn/app.json` (3.1.9→3.1.10, vc119→120, bn119→120)
+
+## [2026-06-20 12:00 MYT] codex → cowork
+
+**Done:**
+- Implemented backend admin script `backend-express/scripts/reset-coins.js` for safe all-user coin reset: dry-run by default, writes only with `--yes`.
+- Confirmed backend field is `User.coins` (not `coinBalance`). Existing schema default is already `0` for new users.
+- Ran dry-run on production MongoDB `gaymeet`: `totalUsers=55`, `usersWithCoins=26`, `totalCoins=24490`, `maxCoins=10950`.
+- After user confirmation for option 2.A, ran `node scripts/reset-coins.js --yes`: matched 55, modified 55.
+- Verified after write: `usersWithCoins=0`, `totalCoins=0`, `maxCoins=0`.
+- `node --check scripts/reset-coins.js` passes.
+
+**TODO for cowork:**
+- If coin rewards are being deprecated fully, separately decide whether to disable future earn paths (`streak`, vote bonus, invite/profile rewards). This task only reset current balances.
+
+**Blocker:** 无
+
+**Files:**
+- `backend-express/scripts/reset-coins.js`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-20 02:00 MYT] cowork → all
+
+**Done:** v3.1.11 vc121 — full-screen EditRoomScreen 接 4 个房主功能 (改名/改色/踢人/关闭), zero RN sheet. Android-15 emulator-verified all 6, shipped BOTH platforms.
+- **Android vc121 → Play Internal:** ✓ All done (EAS sub `71dd911a-5a8d-494d-bf66-441bb02a7fde`).
+- **iOS bn121 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `7b188449-e164-47e8-af0f-f61e707f7494`).
+- Branch `feat/v3.1.11-edit-room`, commit `481c6bb`, PR #280.
+
+**新增:** `app-rn/src/screens/EditRoomScreen.tsx` (route `EditRoom`).
+**改了:** `WorldChatScreen.tsx` (6th owner header icon ⚙️ → EditRoom); `RootStackParamList` + RootNavigator; `api/worldChat.ts` (+`reopenChatRoom` stub); i18n `editRoom.*` zh/en/ja/ko; bump 3.1.10→3.1.11/vc121/bn121.
+
+**Header:** member = 🔔 🔗 (unchanged); creator = 🔔 🔗 ➕ 🔑 🗑️ ⚙️ (6 icons now).
+**EditRoomScreen — 4 sections, ALL inline / native Alert, ZERO RN Modal/Sheet:**
+- a. 改名 — TextInput(1–30) + 保存 → `updateChatRoom({title})`.
+- b. 改色 — **horizontal swatch row** (PALETTE, locked greyed) NOT a popup; tap = save now → `updateChatRoom({cardColor})` + live accent preview.
+- c. 成员管理 — `getRoomMembers` mapped inline (no nested FlatList); non-self/non-creator rows get a red 踢出 → `Alert.alert` → `kickRoomMember`.
+- d. 关闭/重开 — orange 关闭房间 → `Alert.alert` → `closeChatRoom` → goBack; closed room shows 重新开启 → `reopenChatRoom`.
+
+**Emulator-verified (Android 15, qa-premium, vc121 universal APK) — all 6 PASS, no crashes:** 1. owner header 6 icons (uiautomator confirmed 房间通知/分享房间/邀请朋友/修改房间密码/删除/编辑房间); 2. ⚙️→EditRoom 4 sections visible; 3. 改名→保存→"房名已更新" toast + title changed (vc121edit→vc121ed, persisted, seen in header); 4. 改色→tap Lv2→header accent dot turned pink (live preview) + "颜色已更新" toast; 5. 成员 section renders, 踢出 button correctly HIDDEN for self/creator (only 1 member so Alert not triggerable — spec's skip case); 6. 关闭→native Alert "关闭房间?"→确定→header "· 已关闭" + "房间已关闭" toast + composer disabled. Cleaned up test room from prod.
+
+**⚠️ API 后端 TODO (codex 帮忙补):**
+- **`POST /world-chat/rooms/:id/reopen`** — does NOT exist (only `/close` does). The client `reopenChatRoom` stub 404s until you add it; EditRoom catches + toasts the error. Mirror the `/close` route but set `status='open'` (+ maybe re-broadcast a `world-chat:room-reopened`). **改名/改色/踢人/关闭 all use existing endpoints and are fully working** (updateChatRoom PATCH, kickRoomMember DELETE /kick/:userId, closeChatRoom POST /close).
+
+**给 codex 的提醒:** All 4 ex-sidebar owner functions now live in `EditRoomScreen` (full-screen). The vc120 note about "edit/kick/close unreachable" is RESOLVED. Still: never reintroduce an RN Modal/Sheet for room/owner UI — full-screen Screen or native Alert only.
+
+**Blocker:** 无.
+
+**Files:**
+- NEW `app-rn/src/screens/EditRoomScreen.tsx`
+- `app-rn/src/screens/world-chat/WorldChatScreen.tsx`, `src/api/worldChat.ts`
+- `app-rn/src/navigation/types.ts`, `RootNavigator.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/app.json` (3.1.10→3.1.11, vc120→121, bn120→121)
+
+---
+
+## [2026-06-20 02:40 MYT] cowork → codex
+
+**Backend TODO for v3.1.11 wallet changes (frontend already隐藏 UI / 改文案 in vc122):**
+
+1. **DB migration:** `UPDATE users SET coin_balance = 0` — 所有用户金币清零。
+2. **邀请奖励重做:**
+   - 老逻辑: 邀请人成功邀新人 → 邀请人 +100 coins。
+   - 新逻辑: 邀请人成功邀新人 → **邀请人 +30 天 premium, 被邀人 +30 天 premium**。
+   - 防套利: `users` 表加 `inviter_bonus_claimed: boolean` (邀请奖励是否已领) + `invitee_bonus_claimed: boolean` (被邀奖励是否已领);任一字段为 true 时不再发放对应奖励。
+   - 30 天 premium 实现: `users` 表加 `premium_expires_at: datetime`,发奖励就 `premium_expires_at = MAX(now, current_expires_at) + 30 days`。
+3. **`me` 接口返回新字段:** `coinBalance = 0` (所有人)、`premiumExpiresAt: datetime | null`、`inviterBonusClaimed / inviteeBonusClaimed: bool`。
+4. **充值接口暂时挂起** — 前端已 `RECHARGE_ENABLED = false` 隐藏 UI (WalletScreen.tsx),`getCoinPackages`/`purchaseCoins` 不会被调用;后端可保留接口不动。
+
+**前端 (vc122) 已做:** 钱包页隐藏整个充值 section (feature flag),"如何赚取金币" 删掉旧"邀请好友加入 +100",换成"邀请好友 → 30 天会员 (双方各得,每账号一次)";余额数字读 `getCoinBalance()` (非 hardcode,后端清零后自然显示 0)。
+
+**前端等你完成的:** `me` 返回 `premiumExpiresAt` + 两个 claimed 字段;邀请流程的 30天premium 奖励逻辑 (替换 +100 coins)。
+
+**另一个独立 backend TODO (来自 vc121 EditRoom):** `POST /world-chat/rooms/:id/reopen` 还没有 (只有 /close) — `reopenChatRoom` 客户端 stub 会 404,EditRoom 已 catch+toast;照 /close 路由写,把 status 设成 'open'。
+
+---
+
+## [2026-06-20 02:50 MYT] cowork → all
+
+**Done:** v3.1.11 vc122/bn122 — P1 OnlineUsersList loading fix + P2 EditRoom (already in vc121) + P3 wallet changes. Android-15 emulator-verified, shipped BOTH platforms. (vc121 had shipped P2-only; P1 is a priority bug so this carries P1+P2+P3 at vc122.)
+- **Android vc122 → Play Internal:** ✓ All done (EAS sub `f92c33a9-3d65-4990-9c16-1b598af58e8a`).
+- **iOS bn122 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `44ce71e8-78e0-4883-9647-4d5c64a2f02a`).
+- Branch `feat/v3.1.11-edit-room`, commit `ff6b478`, PR #280.
+
+**P1 (priority) — OnlineUsersList 在线/离线 永远转圈/空白 (vc118 bug):** 真凶 = 后端 `GET /rooms/:id/members` 第一行 `if (!isValidObjectId(id)) return 400`。世界大厅 roomId='world'(国家子板是 colon id)→ 400,而这些 virtual/广播房根本没有 DB membership。所以 `getRoomMembers` 在冷 dyno 上挂住(iOS 永远转)/返回空。**修复:** `OnlineUsersListScreen` 改用 **live WS roster**(头像条同源,对所有房都有效)作为"在线"真相,merge REST getRoomMembers 补离线行+徽章,且永不卡转(`rosterReady` gate + 2.5s 兜底 timer + `retry:1`)。**改了:** `OnlineUsersListScreen.tsx`。
+**P3 — 钱包:** `RECHARGE_ENABLED=false` 隐藏整个充值 section(以后开回来改一行);"如何赚取金币"删旧"邀请好友加入 +100",换"邀请好友 → 双方各得 30 天会员(每账号一次)"带副标题;余额读 `getCoinBalance`(非 hardcode)。**改了:** `WalletScreen.tsx` + i18n `wallet.earn.{invite,inviteDesc,inviteReward}`.
+
+**Emulator-verified (Android 15, qa-premium, vc122 universal APK):** P1: 进世界大厅→👁1→OnlineUsersList **在线 tab 立刻显示 QA Premium(我)** 绿点,离线/你关注的 instant 切换 EmptyState(世界大厅无 DB 成员,正确),**无永久 spinner**。P3: 进我的钱包 → **充值整段消失**(余额 hero 直接接"如何赚取金币")、列表无"邀请好友加入 +100"、新条目"邀请好友 30 天会员 + 副标题"、余额=0(动态)。P2 (6 项) 已在 vc121 验过,vc122 同码(member header 🔔🔗 在 vc122 世界大厅复确认)。
+
+**Blocker:** 无。后端 TODO 见上一条 [cowork → codex] (P4: 金币清零 + 邀请→30天premium + me 字段 + reopen 路由)。
+
+**Files:**
+- `app-rn/src/screens/world-chat/OnlineUsersListScreen.tsx` (P1)
+- `app-rn/src/screens/profile/WalletScreen.tsx` (P3)
+- `app-rn/src/i18n/{zh,en,ja,ko}.json`
+- `app-rn/app.json` (vc121→122, bn121→122)
+
+---
+
+## [2026-06-20 10:08 UTC] cowork(claude) → all
+
+**Done:**
+- Built Telegram polling daemon: `tg_daemon.sh` (long-poll loop, robust launchd PATH, exports env) + `tg_dispatch.py` (parse/inbox/trigger/dispatch). Loaded via launchd `com.meyou.tgdaemon` (KeepAlive, RunAtLoad). Verified running (curl child mid-longpoll).
+- Behaviour: every human msg → `telegram_inbox.jsonl` (0 token). Triggers: `@codex`/`任务:`/`plan:`/`开始:` → `codex exec "..."`; `@claude`/`@cowork` → `cowork_alerts.txt` + TG ping. Bot msgs logged, never trigger.
+- Seeded `.tg_last_update_id` to current max (684830489) so no backlog replay.
+
+**KNOWN GAP for codex:**
+- `codex` CLI is **not installed/in PATH** on this Mac (only `codexbar`). Until installed, `@codex`/`任务:` triggers degrade to `codex_alerts.txt` + a TG notice. Daemon re-checks `command -v codex` every cycle, so it auto-upgrades to real `codex exec` dispatch once the binary exists.
+- Note: Telegram never echoes a bot's own messages, and bots can't see other bots' messages via getUpdates — so only HUMAN messages are ever ingested/triggered (by design).
+
+**Files:** `.agents/tg_daemon.sh`, `.agents/tg_dispatch.py`, `~/Library/LaunchAgents/com.meyou.tgdaemon.plist`
+
+---
+
+## [2026-06-20 03:10 MYT] cowork → codex  (SUPERSEDES the earlier wallet TODO)
+
+**Correction:** the app ALREADY has a dedicated 邀请朋友 screen (邀请码 + 复制/分享 + "双方各得 30 天 Premium" — it's correct). My earlier wallet P3 added a SECOND invite entry in the 钱包"如何赚取金币"列表 = duplicate. **Frontend fixed in vc123: removed that wallet list row** (list now only 每日签到/完成个人资料/参与投票). The dedicated 邀请朋友 screen is untouched.
+
+**Updated v3.1.11 Backend TODO (replaces "邀请奖励重做"):**
+1. **DB migration:** `UPDATE users SET coin_balance = 0` (unchanged).
+2. **现有"邀请朋友" feature 已实现"双方 30 天 Premium",不重做。只加防套利:**
+   - `users` 表加 `inviter_bonus_claimed: boolean` + `invitee_bonus_claimed: boolean`.
+   - 该用户已发放过 inviter bonus → 第 2+ 个邀请只给被邀人 bonus,不再给邀请人.
+   - 该用户已被发放过 invitee bonus → 不再发(被多人邀请只算第一次).
+3. **充值接口暂时挂起**(前端已 `RECHARGE_ENABLED=false` 隐藏 UI).
+
+(The `POST /world-chat/rooms/:id/reopen` route from P2 EditRoom is still TODO too.)
+
+## [2026-06-20 10:15 MYT] codex → all
+
+**Done:**
+- Checked Telegram polling work after user asked "检查工作".
+- Confirmed `tg_daemon.sh` + `tg_dispatch.py` exist and launchd job `com.meyou.tgdaemon` is running.
+- Verified trigger policy in code: human messages are logged to `telegram_inbox.jsonl`; bot messages never trigger; `@codex`/`任务:`/`plan:`/`开始:` route to Codex; `@claude`/`@cowork` route to cowork alerts.
+- Found and fixed daemon PATH gap: launchd script did not include `/Applications/Codex.app/Contents/Resources`, so it could fail to find the Codex CLI even though interactive shell can.
+- Restarted launchd daemon successfully; new pid `71412` started and daemon PATH can resolve `/Applications/Codex.app/Contents/Resources/codex`.
+
+**TODO for cowork:**
+- If validating end-to-end, send a real human Telegram message containing `@codex` or `任务:`; bot-sent messages intentionally do not trigger.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/tg_daemon.sh`
+- `.agents/collab.md`
+
+## [2026-06-20 10:25 MYT] codex → all
+
+**Done:**
+- Added local agent bus so Codex/Cowork can discuss work reliably while mirroring important messages to Telegram for the user.
+- New tools: `.agents/bus_send.py` writes one bus message and mirrors it to Telegram; `.agents/bus_recv.py` reads messages addressed to an agent; `.agents/BUS.md` documents protocol.
+- Updated `.agents/tg_dispatch.py` so human Telegram triggers (`@codex`, `任务:`, `plan:`, `开始:`, `@cowork`) are also appended to `.agents/bus.jsonl`.
+- Updated `.gitignore` to exclude runtime bus/inbox/log/alert files.
+- Validated Python syntax via `ast.parse` and tested dispatch in a temp directory: human `任务:` produced a `user → codex` bus entry and advanced last update id.
+- Notified cowork via `bus_send.py codex cowork ...`, which wrote bus and mirrored to Telegram.
+
+**TODO for cowork:**
+- Use `python3 .agents/bus_send.py cowork codex "..."` for visible Cowork → Codex discussion, and `python3 .agents/bus_recv.py cowork` to read bus messages.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/BUS.md`
+- `.agents/bus_send.py`
+- `.agents/bus_recv.py`
+- `.agents/tg_dispatch.py`
+- `.gitignore`
+- `.agents/collab.md`
+
+## [2026-06-20 10:30 MYT] codex → all
+
+**Done:**
+- Updated agent bus protocol per user instruction: the user should only chat in Telegram, not split attention across Telegram + bus/collab/logs.
+- Clarified `.agents/BUS.md`: Telegram is the user's single chat surface; `bus.jsonl` and `collab.md` are agent-only coordination layers.
+- Notified cowork/Claude via `bus_send.py` and Telegram mirror: do not ask the user to inspect bus/collab/alerts; mirror user-relevant agent discussion to Telegram.
+
+**TODO for cowork:**
+- Follow single user-facing channel rule: user-facing discussion in Telegram only; backend sync through bus/collab internally.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/BUS.md`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-20 03:25 MYT] cowork → all
+
+**Done:** v3.1.11 vc123/bn123 — wallet P3 duplicate fix. Removed the duplicate 邀请好友 row from the 钱包 "如何赚取金币" list (it duplicated the dedicated 邀请朋友 screen). List now = 每日签到 / 完成个人资料 / 参与投票 only. Recharge-hiding kept. Android-15 emulator-verified, shipped BOTH.
+- **Android vc123 → Play Internal:** ✓ All done (EAS sub `bed4b1ab-af6f-4217-8ab3-7d60a9a96e3a`).
+- **iOS bn123 → TestFlight:** ✓ uploaded, Apple-processing (EAS sub `f9781c51-4e2e-4ef0-b1bb-12442f0dff8a`).
+- Branch `feat/v3.1.11-edit-room`, commit `7c774db`, PR #280.
+- Emulator-verified: 我的钱包 → 充值 hidden + earn list shows exactly 3 rows, no 邀请好友 entry.
+- P4 backend TODO corrected (see prior codex entry): don't redo invite reward (already both-sides 30d Premium) — only add anti-abuse flags `inviter_bonus_claimed`/`invitee_bonus_claimed`.
+
+**Files:** `app-rn/src/screens/profile/WalletScreen.tsx`, `src/i18n/{zh,en,ja,ko}.json` (removed inviteDesc/inviteReward), `app-rn/app.json` (vc122→123, bn122→123).
+
+## [2026-06-20 10:35 MYT] codex → all
+
+**Done:**
+- Re-checked cowork's note that Codex CLI was missing. Current state: Codex CLI exists at `/Applications/Codex.app/Contents/Resources/codex` and reports `codex-cli 0.140.0-alpha.2`.
+- Confirmed `codex exec --help` is available.
+- Confirmed `.agents/tg_daemon.sh` already includes `/Applications/Codex.app/Contents/Resources` in launchd PATH and launchd job `com.meyou.tgdaemon` is running as pid `71412`.
+- Notified cowork via bus + Telegram mirror that the old "codex CLI not installed" warning was pre-PATH-fix state.
+
+**TODO for cowork:**
+- Retest with a human Telegram trigger (`@codex ...` or `任务: ...`). Bot messages intentionally do not trigger.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/collab.md`
+
+## [2026-06-20 10:45 MYT] codex → all
+
+**Done:**
+- Investigated why Telegram `@CodexAi8008_bot` did not reply. The daemon successfully spawned Codex, but Codex CLI inherited `~/.codex/config.toml` model `gpt-5.2-codex`, which the current ChatGPT account rejects with 400 `model is not supported`.
+- Updated `.agents/tg_dispatch.py` to invoke `codex exec -m gpt-5.4-mini ...` by default (`CODEX_MODEL` env can override).
+- Restarted launchd daemon; current `com.meyou.tgdaemon` pid is `3883`.
+- Verified direct `codex exec -m gpt-5.4-mini` succeeds.
+- Replied to cowork via bus + Telegram with backend TODO status: coins reset complete; invite anti-abuse not started; `/auth/me` already includes `premiumExpiresAt` but claimed flags absent; reopen route not started.
+
+**TODO for cowork:**
+- Retest from Telegram with a human `@codex` or `任务:` trigger. Bot messages intentionally do not trigger.
+- Backend remaining work: add invite claimed flags + anti-abuse, expose flags in self serialization, add `POST /world-chat/rooms/:id/reopen`.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/tg_dispatch.py`
+- `.agents/collab.md`
+
+---
+
+## [2026-06-21 01:35 MYT] cowork → all
+
+**Done:** v3.1.12 vc124/bn124 ship 双端 — 纯前端 2 个改动:
+1. **NewMomentScreen (ComposerScreen)** 删右上 Publish 按钮 — 底部已有渐变「发布动态」入口,功能不变;编辑流程的 Save 按钮保留(header 按钮只在 isEditing 时渲染),加 26px spacer 保持标题居中。
+2. **AddLocationScreen (MapPickerScreen)** 加圆形「找我位置」GPS 按钮(地图右下角)— expo-location `getCurrentPositionAsync` → `goTo(lat,lng,16)` 居中地图;无权限/拿不到位置 → native Alert(`Linking.openSettings` 引导设置),不飞不卡;moment 模式抬高到确认条之上避免重叠。i18n `mapPicker.*` zh/en/ja/ko。
+
+**定位权限:** app.json 早已配齐(expo-location plugin + iOS NSLocationWhenInUseUsageDescription + Android ACCESS_FINE/COARSE_LOCATION)— 无需改 manifest。
+
+**Android-15 emulator 验证 (qa-premium, vc124 universal APK):** 1. 新动态页右上无 Publish(只 ‹ + 标题),底部「发布动态」在 ✅;2. 添加位置→在地图上选择→MapPicker 右下角「找我位置」圆按钮在(uiautomator 确认 content-desc=找我位置 bounds [912,2075][1038,2201])✅;3. 点按钮 → getCurrentPositionAsync(给 emu geo fix 后成功居中 KL;无 fix 时弹 native Alert「无法获取位置」= 我的错误处理路径)✅;4. 不飞不卡,无崩溃 ✅。截图 /tmp/m3s.png(无 Publish)、/tmp/m7s.png(GPS 错误 Alert)、/tmp/m9s.png(GPS 按钮+地图)。
+
+**Files:**
+- `app-rn/src/screens/moments/ComposerScreen.tsx`
+- `app-rn/src/screens/discover/MapPickerScreen.tsx`
+- `app-rn/src/i18n/{zh,en,ja,ko}.json` (mapPicker.*)
+- `app-rn/app.json` (3.1.11→3.1.12, vc123→124, bn123→124)
+
+**Android submission:** `51ec740d-1783-4640-8c30-594fcc57ab0e` (Play Internal — All done).
+**iOS submission:** `ac27b476-e0de-4058-afb4-0712e9d7e272` (TestFlight — uploaded, Apple-processing).
+**Commit:** `58e9966` on `feat/v3.1.11-edit-room` (PR #280).
+
+**Blocker:** 无 (codex 那 3 个后端 TODO — 邀请防套利 / me claimed flags / reopen 路由 — 继续;那是下一个组 build 的内容,跟这次纯前端无关)。
+
+---
+
+## [claude] meyou.uk 网站 audit + 内测 email 收集 (web only, 不动 app-rn/build)
+
+**Phase 1 — 现状:** 落地页源码**不在本 repo**(direct-upload 到 Cloudflare Pages `meyou`,源 HTML 在 repo 外)。本 repo 只版本控制 `webpage/functions/`(r/ 房间分享 + .well-known + 现新增 api/)。Hosting = Cloudflare(headers `server: cloudflare` 确认)。线上结构:hero(遇見懂你/Real connection + App Store/Google Play "即將上線SOON" 占位 badge)→ 4 特色(实名/E2E/0容忍/24/7)→ 兴趣选择 demo → 三步如何运作 → 今日推荐卡 → 安全聊天 → 左右滑 → AI 破冰 → 我们的承诺 → FAQ → **email 表单(已存在)** → footer。中英双语 toggle 已具备。
+
+**关键发现:** 表单 `#waitlist` **早已存在且写好**(校验 email、存 localStorage、若 `data-endpoint` 有值则 POST `{email,source}` JSON、成功显示 🎉「你已搶先入座」)——**但 `data-endpoint=""` 是空的,所以提交全丢进 localStorage,老板永远收不到。** 不需要从零做表单,只需接后端 + 填 endpoint。
+
+**Phase 3 实现(已落地 repo):** 新增 `webpage/functions/api/waitlist.js` — Cloudflare Pages Function + KV(老板偏好的 A 方案,自管数据、免费、贴合现有 functions 架构):
+- POST: 校验 email→写 KV `WAITLIST`(key=`email:<lower>`,天然去重)+ honeypot 防 bot + `meta:count` 计数;未绑 KV 也返回 ok 让前端正常显示感谢。
+- GET `?key=<WAITLIST_ADMIN_KEY>` 导出 JSON;`&format=csv` 下 CSV;`?count=1` 公开计数(可做"N 人已预约"徽章)。
+- node ESM 语法检查通过。README 已补文档 + 一次性 setup(建 KV namespace → 绑 `WAITLIST` → 设 `WAITLIST_ADMIN_KEY`)。
+
+**需老板按一下(缺 CF 凭据,无法代部署):** 1) 源 index.html 把 `data-endpoint=""` 改成 `data-endpoint="/api/waitlist"`(一处);2) Pages 建 KV + 绑定 + 设 admin key;3) 把 `functions/` 随站点重新 upload。详见 `webpage/functions/README.md`。
+
+**未动:** app-rn / vc124 build / 任何线上文件(read-only audit 完成,代码改动仅限 webpage/functions/)。Phase 2 audit 建议见我给老板的回复(P0:把下载 badge 改成"加入内测"指向表单;P1:首屏真机截图、隐私/条款已在 footer ✓、媒体/用户数信任信号;P2:暗黑模式等)。
+
+---
+
+## [2026-06-21 11:55 MYT] cowork → all
+
+**Done:** v3.1.12 vc125/bn125 ship 双端 — vc124 已提交(Play 占用 124),所以 3 项一起进 vc125:
+1. NewMomentScreen 删右上 Publish 按钮 (底部渐变 Post 入口保留, 编辑 Save 保留) — 同 vc124。
+2. AddLocationScreen/MapPicker 加圆形「找我位置」GPS 按钮 (expo-location, 无权限 native Alert→openSettings) — 同 vc124。
+3. **NEW BUG FIX — AnnouncementModal「今天不显示」永久消失:** 用户报 "按了今天不显示之后就再也不出来"。
+
+**真凶:** dismiss handler 存了永久 `'1'` flag (`announcementDismissKey(id)='meyou:announcement:dismissed:<id>'`),AnnouncementBootstrap 把 `v==='1'` 当永久 dismissed 过滤掉 → 再也不显示。
+**修法 (24h TTL):**
+- `AnnouncementModal.onDontShow` → `multiSet([key, String(Date.now())])` (存时间戳, 不是 '1')。
+- `AnnouncementBootstrap` → `DISMISS_TTL_MS=24h`;只在 `now - ts < 24h` 才算 dismissed。旧 `'1'` 解析成 ts=1 (1970) → 永远 > TTL → 当过期处理 → **stuck-forever bug 自愈** (无需显式 migration,下次 dismiss 自动覆盖成新时间戳)。
+**Files:** `app-rn/src/components/AnnouncementModal.tsx`, `app-rn/src/components/AnnouncementBootstrap.tsx`。
+
+**验证:** Android-15 emulator: 公告开机弹出 ✅;点「今後不顯示」→ relaunch → 隐藏 (24h 内, uiautomator 确认 count=0) ✅。TTL 边界 + 旧'1'自愈用 Node 逻辑测验全过 (fresh→隐藏, 23h→隐藏, 25h→显示, '1'→显示自愈, null/garbage→显示) —— emulator 无 root 无法改系统时钟做 +24h 实测,故用确定性逻辑测验证 24h 边界。NewMoment/GPS 同 vc124 已验。
+
+**Android submission:** `aa948d93-658f-4215-9e4f-798a0dccb9ab` (Play Internal — All done)。
+**iOS submission:** `3f2721ab-2b81-47df-a955-5e56ac5a2a2b` (TestFlight — uploaded, processing)。
+**Commit:** `2558fab` on `feat/v3.1.11-edit-room` (PR #280)。
+
+**注:** vc124 (sub 51ec740d / ac27b476) 已提交但被 vc125 取代 —— 老板装 vc125 即可,vc124 内容全包含在 vc125 里 + 公告修复。
+
+**Blocker:** 无。codex 后端 3 个 TODO 继续。
+
+---
+
+## [2026-06-21 12:05 MYT] cowork → all
+
+**Scope 收紧确认 (AnnouncementModal) — 无需重 build。** 老板最终指令:公告修复只做 TTL,**不要** Premium gate / 不动 3 秒倒计时 / 不加 sales upsell Alert(中途讨论过这些,全部撤销)。
+
+**核对结果:已 ship 的 vc125 正好就是这个 scope** —— 我那一版从头到尾只改了 TTL,从没加过 premium/倒计时/upsell:
+- `AnnouncementModal.onDontShow` → 存 `String(Date.now())` 时间戳(非 '1')。
+- `AnnouncementBootstrap` → 24h `DISMISS_TTL_MS`,`now - ts < 24h` 才算 dismissed;旧 '1' 自愈。
+- 现有 3 秒 `COUNTDOWN_SECS` 关闭倒计时 **未动**。
+- **无** isPremium / upsell / InviteFriend / 按钮显隐改动(grep 确认 = 0)。
+
+所以 vc125(Android sub aa948d93 + iOS sub 3f2721ab)= 最终正确版本,包含:① NewMoment 删 Publish ② AddLocation GPS 按钮 ③ AnnouncementModal **纯 TTL 24h 修**。不再 cut vc126(代码零变化,白占版本号没意义)。
+
+**Blocker:** 无。

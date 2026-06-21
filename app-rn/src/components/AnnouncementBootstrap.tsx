@@ -9,6 +9,10 @@ import {
   announcementDismissKey,
 } from './AnnouncementModal';
 
+// "今天不显示" hides an announcement for 24h, then it may surface again — NOT
+// forever (the old permanent flag was the dismiss-forever bug).
+const DISMISS_TTL_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Mounts once at the App root. Watches the auth state and, the first
  * time a user is present in a given session (cold-start with cached
@@ -51,12 +55,23 @@ export function AnnouncementBootstrap() {
     }
     (async () => {
       try {
-        // Drop the ones this user has permanently dismissed.
+        // Drop the ones dismissed WITHIN THE LAST 24h. The dismiss value is a
+        // timestamp (ms); anything older than the TTL re-surfaces. Legacy '1'
+        // flags (pre-vc125, permanent) parse to ts=1 → always older than the
+        // TTL → treated as expired, so the old "dismissed forever" bug
+        // self-heals on first launch of this build.
         const flags = await AsyncStorage.multiGet(
           all.map((a) => announcementDismissKey(a.id)),
         );
+        const now = Date.now();
         const dismissed = new Set(
-          flags.filter(([, v]) => v === '1').map(([k]) => k),
+          flags
+            .filter(([, v]) => {
+              if (!v) return false;
+              const ts = Number(v);
+              return Number.isFinite(ts) && ts > 0 && now - ts < DISMISS_TTL_MS;
+            })
+            .map(([k]) => k),
         );
         setToShow(all.filter((a) => !dismissed.has(announcementDismissKey(a.id))));
       } catch {

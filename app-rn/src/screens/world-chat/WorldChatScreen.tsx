@@ -17,7 +17,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Image as ExpoImage } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Lock, Share2, Bell, BellOff, UserPlus, KeyRound, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Crown, Lock, Share2, Bell, BellOff, UserPlus, KeyRound, Trash2, Settings } from 'lucide-react-native';
 import { nativeActionSheet } from '../../../modules/native-sheet';
 import { deferOpen } from '../../utils/deferOpen';
 import { useTranslation } from 'react-i18next';
@@ -1022,6 +1022,9 @@ export function WorldChatScreen({
                 </Pressable>
                 <Pressable onPress={onDeleteRoom} hitSlop={8} accessibilityLabel={t('worldChat.rooms.deleteCta')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
                   <Trash2 size={20} color={theme.colors.error} />
+                </Pressable>
+                <Pressable onPress={() => nav.navigate('EditRoom', { roomId })} hitSlop={8} accessibilityLabel={t('editRoom.title')} style={[styles.headerBtn, isCustom && styles.headerBtnCompact]}>
+                  <Settings size={20} color={theme.colors.text} />
                 </Pressable>
               </>
             )}
