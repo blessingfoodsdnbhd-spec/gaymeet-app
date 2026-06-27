@@ -9,7 +9,9 @@
  * chat in text. TODO: wire up live audio (mic, mixing) and flip these to voice.
  */
 module.exports = [
-  { id: 'voice:random-match', emoji: '🎲', name: '随机配对', i18nKey: 'plaza.voice.randomMatch' },
+  // '随机配对' (voice:random-match) removed per App Review 1.2 — anonymous
+  // random pairing is UGC we no longer offer. The Plaza voice tab also filters
+  // this id client-side as a belt-and-braces guard.
   { id: 'voice:singles', emoji: '💘', name: '单身交友', i18nKey: 'plaza.voice.singles' },
   { id: 'voice:cantonese', emoji: '🗣️', name: '广东话房', i18nKey: 'plaza.voice.cantonese' },
   { id: 'voice:mandarin', emoji: '🀄', name: '普通话房', i18nKey: 'plaza.voice.mandarin' },

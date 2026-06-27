@@ -55,9 +55,6 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!fromUserId) return safeNavigate('FriendsList');
       return safeNavigate('UserDetail', { userId: fromUserId });
     }
-    case 'note': {
-      return safeNavigate('NotesInbox');
-    }
     case 'vote_first_vote':
     case 'vote_ending_24h':
     case 'vote_ending_1h':

@@ -14,7 +14,8 @@ import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { useAuth } from '../../store/auth';
 import { useUserActionSheet } from '../../utils/useUserActionSheet';
-import { getRoomMembers, type RoomMember } from '../../api/worldChat';
+import { getRoomMembers, type RoomMember, type PlazaRosterUser } from '../../api/worldChat';
+import { on as wsOn, emit as wsEmit } from '../../api/ws';
 import { getFollowing } from '../../api/me';
 import { toggleFollow } from '../../api/follows';
 import type { RootStackParamList } from '../../navigation/types';
@@ -52,6 +53,10 @@ export function OnlineUsersListScreen() {
     queryKey: ['worldChat', 'roomMembers', roomId],
     queryFn: () => getRoomMembers(roomId),
     staleTime: 15_000,
+    // Virtual rooms (世界大厅 'world' / country sub-boards) 400 on /members
+    // (non-ObjectId id, no DB membership). Retry once so it settles fast instead
+    // of hanging the screen.
+    retry: 1,
     select: (d) => d.members,
   });
   const followingQ = useQuery({
@@ -60,6 +65,34 @@ export function OnlineUsersListScreen() {
     enabled: !!myId,
     staleTime: 60_000,
   });
+
+  // The live WS roster is the SOURCE OF TRUTH for who's online — it works for
+  // EVERY room incl. the virtual 世界大厅 ('world') / country sub-boards, where the
+  // REST /members endpoint 400s. Without this the 在线 tab was permanently empty
+  // and a hung /members fetch span the spinner forever (the vc118 bug).
+  const [rosterUsers, setRosterUsers] = React.useState<PlazaRosterUser[]>([]);
+  const [rosterReady, setRosterReady] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    (async () => {
+      const u = await wsOn('world-chat:roster', (r: any) => {
+        if (cancelled || (r?.roomId && r.roomId !== roomId)) return;
+        setRosterUsers(
+          (r?.users || [])
+            .map((x: any) => ({ userId: String(x.userId), name: x.name, avatarUrl: x.avatarUrl, tier: x.tier, level: x.level }))
+            .filter((x: any) => x.name),
+        );
+        setRosterReady(true);
+      });
+      if (cancelled) { u(); return; }
+      unsub = u;
+      wsEmit('world-chat:request-roster', { roomId });
+    })();
+    // Safety: never spin forever even if neither the roster nor /members arrives.
+    const timer = setTimeout(() => { if (!cancelled) setRosterReady(true); }, 2500);
+    return () => { cancelled = true; unsub?.(); clearTimeout(timer); };
+  }, [roomId]);
 
   // Locally-toggled follows so the 关注 button flips instantly without a refetch.
   const [followedOverride, setFollowedOverride] = React.useState<Record<string, boolean>>({});
@@ -70,7 +103,32 @@ export function OnlineUsersListScreen() {
   const isFollowed = (id: string) =>
     followedOverride[id] ?? baseFollowed.has(id);
 
-  const members = membersQ.data ?? [];
+  // Unify the two sources into one RoomMember[]: ONLINE rows come from the WS
+  // roster (enriched with REST badges when available); OFFLINE rows are the DB
+  // members not currently in the roster (empty for virtual rooms — fine).
+  const members = React.useMemo<RoomMember[]>(() => {
+    const rest = membersQ.data ?? [];
+    const restById = new Map(rest.map((m) => [m.id, m]));
+    const onlineIds = new Set(rosterUsers.map((u) => u.userId));
+    const onlineRows: RoomMember[] = rosterUsers.map((u) => {
+      const m = restById.get(u.userId);
+      return {
+        id: u.userId,
+        displayName: u.name || m?.displayName || '',
+        avatarUrl: u.avatarUrl ?? m?.avatarUrl ?? null,
+        isOnline: true,
+        lastActiveAt: m?.lastActiveAt ?? null,
+        isOfficial: m?.isOfficial,
+        isVerified: m?.isVerified,
+        isPremium: m?.isPremium,
+        isCreator: m?.isCreator ?? false,
+      };
+    });
+    const offlineRows: RoomMember[] = rest
+      .filter((m) => !onlineIds.has(m.id))
+      .map((m) => ({ ...m, isOnline: false }));
+    return [...onlineRows, ...offlineRows];
+  }, [membersQ.data, rosterUsers]);
 
   const rank = React.useCallback(
     (m: RoomMember) => {
@@ -164,7 +222,7 @@ export function OnlineUsersListScreen() {
         })}
       </View>
 
-      {membersQ.isLoading ? (
+      {!rosterReady && membersQ.isLoading ? (
         <View style={styles.center}><ActivityIndicator color={theme.colors.primary} /></View>
       ) : (
         <FlatList

@@ -230,21 +230,28 @@ export function ComposerScreen() {
         <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }}>
           {isEditing ? t('moments.composer.editTitle') : t('moments.composer.headerTitle')}
         </Text>
-        <Pressable
-          onPress={() => canSubmit && submitMut.mutate()}
-          disabled={!canSubmit}
-          hitSlop={8}
-        >
-          <Text
-            style={{
-              color: canSubmit ? theme.colors.primary : theme.colors.muted,
-              fontSize: 14,
-              fontWeight: '600',
-            }}
+        {/* v3.1.12: the header Publish button is removed for NEW moments — the
+            bottom full-width gradient button already publishes. The Save button
+            is KEPT for the edit flow. A spacer keeps the title centered. */}
+        {isEditing ? (
+          <Pressable
+            onPress={() => canSubmit && submitMut.mutate()}
+            disabled={!canSubmit}
+            hitSlop={8}
           >
-            {isEditing ? t('moments.composer.saveCta') : t('moments.composer.publish')}
-          </Text>
-        </Pressable>
+            <Text
+              style={{
+                color: canSubmit ? theme.colors.primary : theme.colors.muted,
+                fontSize: 14,
+                fontWeight: '600',
+              }}
+            >
+              {t('moments.composer.saveCta')}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 26 }} />
+        )}
       </View>
 
       <KeyboardAvoidingView

@@ -85,7 +85,10 @@ export function PlazaScreen() {
   const channelsFor = React.useCallback(
     (kind: 'friend' | 'voice' | 'interest' | 'country'): ChannelItem[] =>
       rooms
-        .filter((r) => r.kind === kind)
+        // 'voice:random-match' (随机配对) removed per App Review 1.2 (anonymous
+        // pairing UGC). Filtered client-side so it never renders even if an
+        // older backend still serves it.
+        .filter((r) => r.kind === kind && r.id !== 'voice:random-match')
         .map((r) => ({
           id: r.id,
           flag: r.flag,
