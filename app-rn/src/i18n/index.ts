@@ -1,12 +1,25 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocales } from 'expo-localization';
 import en from './en.json';
 import zh from './zh.json';
 import ko from './ko.json';
 import ja from './ja.json';
 
 const STORAGE_KEY = 'meyou.lang';
+
+// Languages we ship translations for. Anything else falls back to English.
+const SUPPORTED = ['en', 'zh', 'ja', 'ko'] as const;
+
+// Default the UI to the device's language so the app shows in the user's own
+// language out of the box (App Review: an English reviewer device must show
+// English, not the previous hardcoded Chinese). We honour zh/ja/ko when the
+// device is set to one of those and we have curated copy; everything else —
+// including the reviewer's English locale — falls back to English. A saved
+// manual selection (below) still overrides this on the next boot.
+const deviceLang = getLocales()[0]?.languageCode ?? 'en';
+const initialLang = (SUPPORTED as readonly string[]).includes(deviceLang) ? deviceLang : 'en';
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -17,9 +30,9 @@ i18n.use(initReactI18next).init({
     ko: { translation: ko },
     ja: { translation: ja },
   },
-  // Bilingual UI in the wild — default to Chinese to match the design copy,
-  // user can switch in Settings → 语言 and we'll persist the choice below.
-  lng: 'zh',
+  // Follows the device locale (see initialLang above); the user can still
+  // switch in Settings → 语言 and we persist that choice below.
+  lng: initialLang,
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
   // RN doesn't ship a full Intl.PluralRules; this opts into the legacy

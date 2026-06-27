@@ -1,5 +1,4 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import type { InboxNote, SentNote } from '../api/notes';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -88,7 +87,6 @@ export type RootStackParamList = {
   CreateVote: { editEventId?: string } | undefined;
   SubmitEntry: { eventId: string };
   EventUpdates: { eventId: string; isCreator?: boolean };
-  NotesInbox: undefined;
   /** A World Chat room (广场). roomId 'world' = global; a country code; or a
    *  24-hex custom ChatRoom id. `custom` flags a user-created room. */
   WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
@@ -102,8 +100,6 @@ export type RootStackParamList = {
   };
   /** Create a user room inside a 二级频道. */
   CreateRoom: { channelId: string; title: string; kind?: 'country' | 'friend' | 'voice' | 'interest' };
-  /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
-  NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;
   TopicPersonaEdit: {
     topicSlug: string;

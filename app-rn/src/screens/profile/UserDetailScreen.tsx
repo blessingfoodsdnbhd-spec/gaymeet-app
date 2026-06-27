@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, ShieldAlert, StickyNote, X } from 'lucide-react-native';
+import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, ShieldAlert, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -45,9 +45,7 @@ import {
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
-import { deferOpen } from '../../utils/deferOpen';
 import { fetchIsAdmin } from '../../api/admin';
-import { SendNoteSheet } from '../discover/SendNoteSheet';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'UserDetail'>;
@@ -75,8 +73,6 @@ export function UserDetailScreen() {
   const insets = useSafeAreaInsets();
   const carouselH = Math.round(screenH * 0.5);
   const introVoice = useDiscoverPrefs((s) => s.introVoice);
-  // 小纸条 (anonymous note) composer — hidden on your own profile.
-  const [noteOpen, setNoteOpen] = React.useState(false);
   const myId = String((me as any)?.id ?? (me as any)?._id ?? '');
   const isSelf = !!myId && myId === String(userId);
 
@@ -271,18 +267,6 @@ export function UserDetailScreen() {
                   </View>
                 )}
 
-                {/* 小纸条 — anonymous note (PR J), mirrors AboutUserSheet.
-                    Hidden on own profile and in self-preview (can't note yourself). */}
-                {!isSelf && !previewMode && (
-                  <Pressable
-                    onPress={() => deferOpen(() => setNoteOpen(true))}
-                    hitSlop={8}
-                    style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
-                  >
-                    <StickyNote size={18} color="#FFFFFF" strokeWidth={2} />
-                  </Pressable>
-                )}
-
                 {/* Safety menu (report/block) — meaningless in self-preview. */}
                 {!previewMode && (
                   <Pressable onPress={onMore} hitSlop={8} style={[styles.floatBtn, { top: insets.top + 8, right: 14 }]}>
@@ -290,14 +274,13 @@ export function UserDetailScreen() {
                   </Pressable>
                 )}
 
-                {/* Admin "..." → moderation console (admin viewers only). When
-                    shown, the note (58) + safety (14) buttons are always present,
-                    so this third slot sits at 102. */}
+                {/* Admin "..." → moderation console (admin viewers only). The
+                    safety button sits at 14, so this slot sits at 58. */}
                 {showAdmin && (
                   <Pressable
                     onPress={() => nav.navigate('AdminUserModeration', { userId })}
                     hitSlop={8}
-                    style={[styles.floatBtn, { top: insets.top + 8, right: 102 }]}
+                    style={[styles.floatBtn, { top: insets.top + 8, right: 58 }]}
                   >
                     <ShieldAlert size={18} color="#FFFFFF" strokeWidth={2} />
                   </Pressable>
@@ -471,11 +454,6 @@ export function UserDetailScreen() {
         </ScrollView>
       )}
       {photoViewer.node}
-      <SendNoteSheet
-        open={noteOpen}
-        recipient={user ? { id: userId, nickname: user.nickname, avatarUrl: user.avatarUrl } : null}
-        onClose={() => setNoteOpen(false)}
-      />
     </SafeAreaView>
   );
 }

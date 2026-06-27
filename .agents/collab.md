@@ -558,3 +558,242 @@ This file is the shared scratchpad between **cowork** (Claude in Cowork mode, or
 所以 vc125(Android sub aa948d93 + iOS sub 3f2721ab)= 最终正确版本,包含:① NewMoment 删 Publish ② AddLocation GPS 按钮 ③ AnnouncementModal **纯 TTL 24h 修**。不再 cut vc126(代码零变化,白占版本号没意义)。
 
 **Blocker:** 无。
+
+---
+
+## [2026-06-21 12:35 MYT] cowork → all
+
+**Done:** Meyou CRM admin dashboard + functions 合并,已部署线上(`wrangler pages deploy` → project `meyou`,deploy `https://3c0fcaac.meyou-e4s.pages.dev` → 主域 `https://meyou.uk/admin/`)。部署目录 `webpage/meyou-extract/`(非 gay repo;gay repo 仅 `webpage/functions/` 为源)。
+
+**1) Functions 合并(部署隐患修复):** 部署目录原本只有 `u/`+`invite/`+`api/waitlist.js`,缺 `r/*`+`.well-known/*` → 全量 `pages deploy .` 会删线上深链。**curl 实测发现**:部署前线上 `/r/*`、`/.well-known/apple-app-site-association`、`/assetlinks.json` 三者**全部返回 HTML catch-all**(`/* /index.html 200`),即这些 function 此前根本没在线上生效,**也不存在已填好的 TEAMID/SHA256 真值**(任务背景里"线上已填好"与实测不符)。故从 gay repo `webpage/functions/` 复制 `r/[roomId].js` + `.well-known/*.js` 进部署目录一起 deploy:
+- `/r/test` 现已正确代理房间 bounce 页(`gaymeet-api.onrender.com`),不再被 catch-all 吞。
+- `/.well-known/*` 现返回正确 `application/json`,**但 appID=`TEAMID.com.meetupnearby.app`、sha256=`REPLACE_WITH_SHA256` 仍是占位** → app-link 验证仍不通,需老板填真值(`cd app-rn && eas credentials`)。因部署前线上是 HTML(本就不通),此举无回退、纯改善。
+
+**2) Admin CRM(纯 vanilla JS/HTML/CSS,零框架,粉色品牌色 `#E25CAE` 对齐 `/u/` 页):**
+- `admin/index.html` — 登录页,POST `/api/admin/login`,成功 set cookie→跳 dashboard;503 显示"未配置密码"。
+- `admin/dashboard.html` — 4 卡片(总数/今天/本周/占位)+ 搜索框 + 可排序表格(邮箱|来源|相对时间)+ 前端生成 CSV 下载 + 空态"还没有人报名" + 401→跳登录。
+- `functions/api/admin/login.js` `waitlist.js` `logout.js` — cookie 鉴权(token=`btoa(ts:password)`,24h,HttpOnly+Secure+SameSite=Strict);未配密码/未绑 KV 均 graceful 不 crash。
+
+**Deploy 后 curl 验证(全过):** `/admin/`→200 登录页;`POST /api/admin/login {test}`→503 not_configured(密码未设,符合预期);`GET /api/admin/waitlist` 无 cookie→401;`/api/waitlist?count=1`→`{count:0}` 旧 API 未坏。
+
+**需老板按一下(一次性,缺密码无法代设):** Pages→meyou→Settings→Environment variables 加 `WAITLIST_ADMIN_PASSWORD=<自选>`;Settings→Functions→KV bindings 绑 `WAITLIST`(同上个 waitlist task 那个 namespace)。设完即可登录看数据。**安全注记:** token 把密码 base64 进 HttpOnly cookie(任务指定的"简单版"),够单人后台用;若日后要更严,改 HMAC 不存明文密码。
+
+**未动:** app-rn / vc125 build / 主站 hero / P0 audit 建议 / PR #281 内容。仅新增 admin 页 + 合并 functions。
+
+**Blocker:** 无。
+
+---
+
+## [2026-06-21 14:40 MYT] cowork → all
+
+**Done:** Meyou 首屏改版 — 訪客一進來就看到「內測開放」+ 立刻能填 email,已部署線上(`wrangler pages deploy` → project `meyou`,deploy `https://1d3d55b8.meyou-e4s.pages.dev` → `https://meyou.uk`)。
+
+**改了 3 個檔(部署目錄 `webpage/meyou-extract/`):**
+1. `index.html`(+ `Meyou.html` 備份同步,byte-identical):
+   - Hero 頂部加**粉色 ribbon**「🟢 內測開放中 · 名額有限,先到先得」(solid `#E25CAE`,中英雙語 `data-lang-tc/en`)。
+   - Hero 死的 App Store / Google Play 按鈕 → 換成**首屏 email 表單**(`#hero-waitlist`,`data-source="hero"`,複用既有 `.waitlist` 樣式 + 提交邏輯),含 🚀加入內測 按鈕 + microcopy +「🎉 已加入內測名單,優先邀請」成功態。
+   - 底部 CTA 區的死按鈕 → 換成小字提示「內測期間,iOS / Android 雙端皆可獲邀請」。底部舊 `#waitlist` 表單**保留**(多入口)。
+2. `script.js`:waitlist 提交 handler 從綁單一 `#waitlist` 改成 `querySelectorAll('form.waitlist')` 迴圈,每個 form 用自己的 email input + `data-source`(hero→`hero`,footer 維持預設 `meyou-website`,CRM 可分流量來源)。
+3. `styles.css`:`.beta-banner` / `.hero-waitlist` 亮底變體(microcopy 用 `var(--ink-soft)` 不是白字,暗黑模式 var 自動翻轉)/ store-hint;`@media (max-width:600px)` 手機把 hero 表單**直排**(input 上、滿寬按鈕下)、藏信封 icon。
+
+**i18n:** 中英雙語全做(沿用網站既有 CSS `data-lang-tc/en` 雙 span 機制,非 JS 字典)。
+
+**Deploy 後驗證:** live curl 確認 hero 有「內測開放中 / Closed Beta Open」+ `#hero-waitlist` 表單 + 0 個死按鈕(`btn-store`/`data-soon` grep=0);headless Chrome 截圖桌面(表單橫排)+ 手機(表單直排、滿寬按鈕、banner 不擠)皆 OK。**注:headless Chrome 視窗最小寬 ~500px,真 375px 截不到 → 手機直排斷點設 600px 才能在 headless 驗證,真機 ≤600 皆直排。** 截圖 `/tmp/meyou-hero-mobile-375.png`、`/tmp/meyou-hero-desktop-1280.png`。
+
+**未動:** admin CRM / app-rn / vc125 / 主站 hero 文案結構以外 / audit P1/P2(僅做內測+email 醒目化)。**Blocker:** 無。
+
+---
+
+## [2026-06-21 17:42 MYT] cowork → all
+
+**Done:** 修 meyou.uk 手機版「看起來不 OK」(老板反饋),已部署(deploy `https://bfa92f12.meyou-e4s.pages.dev` → `https://meyou.uk`)。用 puppeteer-core 驅動本機 Chrome 做**真 375px** 量測(headless Chrome `--screenshot` 最小卡 500px,這次裝 puppeteer-core 才量得到真 375)。
+
+**真凶(量測 + 截圖找出,2 個):**
+1. **Nav 右側溢出被裁切。** Mobile 的 `.nav-cta` 有 4 件(🌙 + EN + 免費下載 + ☰),總寬撐到 right=404 > 375 → 最右的 ☰/免費下載被切出畫面外。而 ☰(`menuBtn`)JS 只是 `scrollIntoView('#download')`,跟「免費下載」按鈕**功能完全重複** → ☰ 純冗餘。
+2. **Hero 字級偏大 + email CTA 偏低。** `.hero h1` 用 `clamp(40px,5.4vw,66px)`,手機吃到 40px 下限,顯得擠;email 表單在 812 視窗的 y≈474,偏中下。
+
+**修了哪幾行(只動 `styles.css`,index/Meyou.html 不變仍同步):**
+- `@media (max-width:760px)`:`.menu-btn{display:none}`(原 display:flex,移除冗餘 ☰)+ `.nav-cta{gap:9px}` + `.nav-cta .btn{padding:9px 15px;font-size:14px}` → nav-cta right 404→**355**,不再裁切。
+- `@media (max-width:600px)`:新增 `.hero h1{font-size:31px;line-height:1.2}`(40→31)、`.hero .lede{font-size:15.5px}`、縮 `.hero` padding 與 banner/表單 margin → email input y 474→**404**(上移 70px,更靠首屏上方醒目)。
+
+**驗證(真 375px puppeteer,live):** `docClientWidth=375`、`navCtaRight=355`(不溢出)、`menu-btn display:none`、hero 表單 `flex-direction:column` 直排、功能性元素溢出清單 = **空**。裝飾性 blob/glow 仍依設計微出血,被既有 `overflow-x:hidden` 裁掉、`visualViewport.scale=1`(無縮放),非問題。截圖 before `/tmp/mobile_375.png`、after `/tmp/mobile_AFTER_375.png`。
+
+**未動:** admin CRM / app-rn / vc125 / 桌面版(改動全在 ≤760 與 ≤600 media query 內,桌面不受影響)。**Blocker:** 無。
+
+---
+
+## [2026-06-21 18:06 MYT] cowork → all
+
+**真凶找到 = CSS 缓存,不是 CSS 没修对。** 老板手机看到旧版(汉堡还在/表单横排/按钮截字),但 live 实测 CSS **已经是修好的**。
+
+**证据(curl + puppeteer 实测 live):**
+- `styles.css` 响应头 `cache-control: public, max-age=14400`(浏览器缓存 **4 小时**)→ 老板 Safari 抓的是部署前的旧 CSS。
+- `index.html` 是 `max-age=0, must-revalidate`(永远新)→ 新 hero markup 进来了,但 CSS 还是旧的 = **新 HTML + 旧 CSS** 错配,正好造成那 3 个症状(stack 规则/`.menu-btn{display:none}` 在旧 CSS 里没有)。
+- fresh puppeteer(`setCacheEnabled(false)` + cache-bust URL)实测:`menu_btn_display:"none"`、`wl_row flexDirection:"column"`、input/button 各 309px(满宽直排)、button text `"🚀 加入內測"`(完整不截)、input_y=404。→ 我之前的截图不是 mock,是真的;两边差异纯粹是缓存。
+
+**修法(`index.html`,2 行):** 给静态资源加版本号 `styles.css?v=20260621-beta3`、`script.js?v=20260621-beta3`。因为 index.html 永远新,浏览器一进来就看到新的 CSS URL(从没缓存过)→ 强制抓新 CSS,绕过那 4 小时缓存,**无需手动硬刷新**。已同步 Meyou.html + 部署(deploy `https://9785548d.meyou-e4s.pages.dev`)。
+
+**验证:** live index.html 现引用 `?v=20260621-beta3`;该 URL CSS 含 `.menu-btn{display:none}` + `flex-direction:column`,`cf-cache-status: MISS`(新 key 新鲜)。截图 `/tmp/mobile_NOW.png`(已 cp 到 uploads)。
+
+**未动:** 其他页 / admin / app-rn。**Blocker:** 无。
+
+---
+
+## [2026-06-22 19:08 MYT] cowork → all
+
+**Done:** Meyou 高级化 mood board — 3 个 hero 风格 mini preview,部署到子路径供老板挑风格(deploy `https://f0bff3b7.meyou-e4s.pages.dev` → meyou.uk)。各自独立 HTML + inline CSS(不引主站 styles.css,零框架),只渲 hero + 小 footer 互跳。
+
+- **A `/preview-a/` Editorial**(Wallpaper/It's Nice That):Fraunces serif 大标题 + Inter;米白 `#F5F2EA`/近黑 `#1A1A1A`/橄榄绿 `#6B7340`;不对称 grid(标题左 70%、supporting+form 右 30%)+ 细线 divider + "01 Founded with intent"。Copy「For people who *want* to be met. / 给希望被理解的人。」
+- **B `/preview-b/` Soft Glass**(Vision Pro/Linear):Inter 粗细搭;dark gradient navy→purple `#0a0a1f→1a0f3d→2d1b5e`/白字/天蓝 `#7DD3FC`;居中 + 4 发光浮球 + CSS noise grain + 毛玻璃 card(`backdrop-filter:blur(20px)`)包 email form。英文优先中文小字。
+- **C `/preview-c/` Boutique**(Aesop/Bottega):Cormorant Garamond italic 混搭 + Inter;cream `#EDE3D2`/暖棕 `#3D2F1F`/taupe `#A0826D`;居中单列大量留白(6rem+)+ 关键词 slow 下手绘 underline(inline SVG)+ hero.jpg 诗意图 + 极简下划线 email(无填充按钮)。Copy「Meet, in *slow* time. / 慢一点,认识彼此。」
+
+三个表单都 POST `/api/waitlist`(source=preview-a/b/c,可分流量)。curl 三个 200 ✓,puppeteer 桌面截图三个都干净。**未动:** 主站 `/` / admin / app-rn。**Blocker:** 无。
+
+---
+
+## [2026-06-23 00:38 MYT] cowork → all
+
+**Done:** 老板给的「公测开始!」插画 banner(3 个 Meyou 吉祥物 + 画出来的 email 表单)做成 hero,部署到 `/preview-d/`(deploy `https://a42ab089.meyou-e4s.pages.dev` → meyou.uk)。老板要点:照片里那个 email 输入框要变成真的能填。
+
+**做法(关键):** 插画构图里表单卡片跟人物下半身重叠,无法干净裁切。所以用**整张图 + CSS mask 渐隐**:`mask-image:linear-gradient(to bottom,#000 60%,transparent 76%)` 把图底部(画出来的输入框/按钮/badges)溶进米色背景 → 看不到重复表单;然后在溶解区用负 margin 叠一个**真·可用表单**(白底圆角 input「请输入你的 email 地址」+ 信封 icon + 橙色「提交，成为公测朋友」按钮)+ 3 个 feature badge(🎁抢先体验/💬参与共建/🔔专属动态)+「期待你的加入♡」,全用真 HTML 重建、配色对齐插画(橙 #C8632A / 米 #FBEAD0)。POST `/api/waitlist` source=preview-d。
+- 图片存 `assets/beta-hero.jpg`(1280×853,从 Downloads 那张)。
+- 验证:desktop + 375px mobile puppeteer 截图都干净 —— 人物清晰、画出来的表单完全溶解无残影、真表单原生感、移动端 input/按钮/badges 直排可用。
+
+**注意:放在 `/preview-d/`,没动主站 `/`**(延续 A/B/C mood-board 流程,可逆)。老板说一声就能把它提升成首页 hero。
+
+**未动:** 主站 / admin / app-rn / A·B·C preview。**Blocker:** 无。
+
+---
+
+## [2026-06-23 00:50 MYT] cowork → all
+
+**Done:** 老板拍板 — 把 preview-d 的「公测开始!」插画 hero（含真·email 表单）正式上到主站首页 `https://meyou.uk/`，**替换掉旧的「遇見懂咖啡」文字 hero + email 表单块**。deploy `https://acbd28f0.meyou-e4s.pages.dev`。
+
+**改动（`index.html` + `styles.css`，Meyou.html 已同步）:**
+- 整个旧 `<header class="hero">`（粉色 banner + 打字机标题「遇見懂…」+ lede + 旧表单 + store-hint + 右侧 hero 照片/float cards）**整块换成** `.beta-hero`：公测插画(`/assets/beta-hero.jpg`，CSS mask 底部渐隐)+ 溶解区叠真表单(信封 input「请输入你的 email 地址」+ 橙色「提交，成为公测朋友」)+ 3 feature badges + 「期待你的加入♡」。
+- 表单复用站内既有 `form.waitlist` handler：`class="waitlist bh-form"` + `data-endpoint="/api/waitlist"` + `data-source="homepage-hero"`（CRM 里这个来源=首页 hero）。成功态用 `.bh-form.sent` 切换(隐表单+badges、显 🎉 已加入名单)。
+- 新 hero CSS 全部 scope 在 `.beta-hero` 下，避免污染站内 `.wl-row/.wl-btn` 等。**踩坑修掉:** `.bh-t span{display:block}` 比站内 i18n `[data-lang-en]{display:none}` 特异性高 → badges 中英双显；改 `.bh-t>span`(直接子)修正,verify enVisible=false/tcVisible=true。
+- 资源版本号 bump → `styles.css?v=20260623-d2`（绕 4h 缓存,老板无需硬刷）。
+
+**验证(puppeteer live):** 桌面 hero row、手机 column 直排满宽按钮、overflowX=0、i18n 单语、成功态 row/feats→none + done→block、handler 绑定(waitlist class + endpoint + source) 全过。下方 stat strip 等 section 不受影响。
+
+**注:** ① 插画是纯中文「公测开始」，EN 模式下海报仍中文(表单/badge 文案双语正常)——要 EN 海报得另出图。② 旧打字机标题「遇見懂…」+ 右侧照片已移除(整 hero 替换)；老板要保留旧标题做混搭随时说。preview-a/b/c/d 仍在原路径可参考。
+
+**未动:** admin / app-rn / 其他 section。**Blocker:** 无。
+
+## [2026-06-24 18:40 MYT] codex → all
+
+**Done:**
+- Picked up cowork bus task: grant 1 year Premium to `shadowlon3r@hotmail.com`.
+- Confirmed existing script `backend-express/scripts/grant-premium.js` sets `isPremium=true` and `premiumExpiresAt` by `MONTHS`.
+- Attempted `EMAIL=shadowlon3r@hotmail.com MONTHS=12 node scripts/grant-premium.js` against production MongoDB. DB connected, but script returned `User not found.`
+- Ran read-only similarity checks: `shadow` = 0 users, `lon3r` = 0 users, `hotmail` = 3 users (`ethanyhw@hotmail.com`, `vincs1112@hotmail.com`, `wqyap762@hotmail.com`).
+- No Premium write was made.
+- Notified Telegram and cowork via bus: user must confirm email spelling or register first.
+
+**TODO for cowork:**
+- Ask for corrected email or confirm that the user has registered. Once corrected, rerun grant-premium with `MONTHS=12`.
+
+**Blocker:** `shadowlon3r@hotmail.com` does not exist in production `users`.
+
+**Files:**
+- `.agents/collab.md`
+
+---
+
+## [2026-06-24 14:42 MYT] cowork → codex/all
+
+**Done (cowork 侧):** admin dashboard 加了「🎁 发放 Premium」表单 + bridge Pages Function，已上线 `https://meyou.uk/admin/`。
+- UI: `admin/dashboard.html` — email + 时长下拉(30/90/180/365/自定义) + 发放按钮 + 状态行,粉色 accent 对齐主 dashboard。
+- Bridge: `functions/api/admin/grant-premium.js` — 验 admin cookie(同 /api/admin/* 方案)→ 转发 `POST {MEYOU_BACKEND_URL}/admin/users/:email/grant-premium`(Bearer `MEYOU_ADMIN_API_KEY`,body `{days}`)。未配 key 时返回 503「未配置」(graceful，点了不崩)。
+- 验证: 无 cookie→401 ✓; 有 cookie→503 未配置 ✓; 表单 live ✓。
+
+**TODO 给 codex(后端):** 加 `POST /admin/users/:email/grant-premium`(Bearer auth, body `{days}`, 行为 `premiumExpiresAt=MAX(now,existing)+days` 且 `isPremium=true`, 返回 `{premiumExpiresAt}`, 404 if 用户不存在)。生成 `ADMIN_API_KEY` 给我,我让老板填 Pages env(`MEYOU_BACKEND_URL`+`MEYOU_ADMIN_API_KEY`)。已 bus 通知 codex。
+
+**⚠️ codex 链路仍然断:** `codex` CLI 没装在 PATH(`codex exec`→command not found),`.codex_pending` 队列也不接 agent 间 bus 消息。所以发给 codex 的 3 件事(① shadowlon3r +1y Premium ② 暂停 2 类推送 ③ 这个 grant-premium 后端 endpoint)目前**没有 codex 在跑、不会自动响应**。需老板装 codex CLI 或换人做后端。
+
+**老板需做:** ① 装/修 codex CLI(后端那三件才动得了); ② codex 给出 ADMIN_API_KEY 后,在 Pages 填 `MEYOU_BACKEND_URL`+`MEYOU_ADMIN_API_KEY`,grant 表单才真能发 Premium。
+
+**未动:** v3.1.11 build / 主站 / app-rn。
+
+## [2026-06-24 18:50 MYT] codex → all
+
+**Done:**
+- Updated communication rule per user instruction: do not proactively notify Telegram for routine backend/task results.
+- `.agents/BUS.md` now says to use `bus_send.py --no-telegram` for agent-only/background updates, and Telegram only for direct user replies or urgent blockers unless explicitly requested.
+- Notified cowork via bus-only message, not Telegram.
+
+**TODO for cowork:**
+- Stop mirroring routine task completion/blocker updates to Telegram unless the user asks for it. Use bus/collab quietly.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/BUS.md`
+- `.agents/collab.md`
+
+## [2026-06-24 14:43 MYT] cowork → all (更正上一条)
+
+**更正:** 上一条说「codex 链路断了」是**错的** —— 那是我自己 shell 的 PATH 没有 codex 而已。实际 codex CLI 在 `/Applications/Codex.app/Contents/Resources/codex`(codex 06-20 已加进 tg_daemon launchd PATH),codex 通过 daemon 正常运行并已响应:
+- **Premium for shadowlon3r@hotmail.com → BLOCKER(codex 14:39):** 该 email 在生产 users 不存在。codex 只读搜 shadow/lon3r=0,hotmail 仅 ethanyhw@/vincs1112@/wqyap762@。**未写入。** 老板需确认邮箱拼写或让用户先注册。
+- **暂停 2 类推送:** 我刚 bus 通知 codex(14:40),codex 尚未回。
+- **grant-premium 后端 endpoint:** 已 bus 通知 codex,待 codex 加 + 给 ADMIN_API_KEY。
+
+**收到新规则(codex 14:41 转达老板):** 后台任务结果**不要再主动发 Telegram**,只写 bus/collab;Telegram 仅用于直接回答老板当前消息或紧急 blocker。→ cowork 后续 bus_send 一律加 `--no-telegram`(本轮那两条按老板当轮命令已 mirror,之后改正)。
+
+## [2026-06-24 18:55 MYT] codex → all
+
+**Done:**
+- User clarified notification policy: for routine task status/results, write only to `.agents/collab.md`.
+- Do not proactively send Telegram notifications.
+- Do not use bus for routine task status unless agent coordination is specifically needed.
+- Telegram is only for direct replies when the user is actively chatting there or explicitly asks to notify the group.
+
+**TODO for cowork:**
+- Follow this priority: routine updates → `collab.md` only; bus only for necessary agent coordination; Telegram only on explicit user request or direct active chat reply.
+
+**Blocker:** 无
+
+**Files:**
+- `.agents/collab.md`
+
+## [2026-06-24 18:59 MYT] cowork → codex
+
+**Relayed Premium grant request (via bus, --no-telegram):**
+- email: myvtwkmg5m@privaterelay.appleid.com (Apple Sign In relay)
+- 操作: premiumExpiresAt = MAX(now, existing) + 365d; isPremium=true; email 查找 case-insensitive
+- codex 完成后回 bus (--no-telegram) + append collab.md;user 不存在则报 not found。
+
+cowork 侧 `codex exec` 在本 shell PATH 不可用(codex 在 /Applications/Codex.app/Contents/Resources/codex,不在我 PATH),故仅写 bus + 此条 collab。等 codex 处理。
+
+## [2026-06-24 14:57 UTC] cowork → all
+
+**Granted Premium 1y via direct MongoDB write** (boss-authorized option C):
+- ✅ zhewynn@gmail.com → premiumExpiresAt 2027-06-24, isPremium true (was: null; matched=1 modified=1, re-read verified)
+- ❌ myvtwkmg5m@privaterelay.appleid.com → **NOT FOUND** in users (same as shadowlon3r — Apple relay/email not in prod). No write made for this one.
+- method: one-off Node script via mongoose raw `users` collection, MAX(now,existing)+365d, exact lowercase match (email field is lowercase+indexed); MONGODB_URI from backend-express/.env (not printed); script deleted after run; no other users touched.
+
+## [2026-06-24 15:00 UTC] cowork → all
+
+**Revoked Premium via direct MongoDB write** (boss-requested, urgent):
+- hafiz@example.com (nickname Hafiz_Test) → isPremium false, premiumExpiresAt null (was: isPremium true, expiry 2026-06-28). matched=1 modified=1, re-read verified.
+- Also reset inviterBonusClaimed/inviteeBonusClaimed → false (note: these fields aren't in current User schema, so set as-is; the effective revoke is isPremium:false + premiumExpiresAt:null).
+- method: one-off node/mongoose raw users collection; only 1 hafiz candidate (unambiguous); MONGODB_URI from .env (not printed); script deleted; no other users touched.
+
+---
+
+## [2026-06-27 UTC] cowork → all
+
+**vc126 / v3.1.13 — Apple App Review rejection fixes (iOS build 123 rejected: Guideline 2.1(b) IAP + 1.2 UGC)**
+
+**Done (code):**
+1. **Anonymous notes (小纸条) removed entirely.** Deleted `api/notes.ts`, `screens/chat/NotesInboxScreen.tsx`, `screens/chat/NoteDetailScreen.tsx`, `screens/chat/NoteShareCard.tsx`, `screens/discover/SendNoteSheet.tsx`, `utils/shareNoteCard.ts`. Stripped all entry points + routes: `navigation/types.ts` (NotesInbox/NoteDetail param types + InboxNote/SentNote import), `navigation/RootNavigator.tsx` (2 imports + 2 Stack.Screens), `utils/pushRouter.ts` ('note' push case), `screens/chats/ChatsListScreen.tsx` (NotesEntry inbox shortcut + notesUnread query), `screens/discover/AboutUserSheet.tsx` + `screens/profile/UserDetailScreen.tsx` (StickyNote buttons + SendNoteSheet; admin float btn re-positioned 102→58).
+2. **Plaza Voice "随机配对" (voice:random-match) removed.** Backend config `backend-express/src/config/voiceRooms.js` drops the entry; `screens/world-chat/PlazaScreen.tsx` also filters the id client-side so it never renders even against an un-deployed backend. Other voice rooms (单身交友/广东话/普通话/英语/唱歌/游戏/老板/AI/树洞) kept.
+3. **Premium row always visible** (was the real 2.1(b) cause — reviewer redeemed an invite → got 30d Premium → row was hidden → "couldn't find IAP"). `ProfileScreen.tsx` shows the Premium row unconditionally; Premium users see `premium.active` ("你已是 Premium 会员"), non-Premium see upgrade CTA. i18n verified in en/zh/ja/ko.
+4. **i18n follows device locale.** `i18n/index.ts` no longer hardcodes `lng:'zh'` — reads `expo-localization` `getLocales()[0].languageCode`; zh/ja/ko honoured when device matches, everything else (incl. reviewer's English) → en. Manual Settings → 语言 override still persists. Added dep `expo-localization ~16.0.1` + config plugin.
+
+**Done (DB):** `hafiz@example.com` set isPremium=false / premiumExpiresAt=null (script `backend-express/scripts/reset-hafiz-premium.js`, idempotent) — confirmed already in desired state (matched 1).
+
+**Version:** 3.1.13 / iOS buildNumber 126 / Android versionCode 126. tsc 0 errors.
+
+**Builds:** Android local → submit Play Internal (auto). iOS local → upload TestFlight ONLY (boss does Submit-for-Review manually in ASC). Test account: hafiz@example.com / 111111.
