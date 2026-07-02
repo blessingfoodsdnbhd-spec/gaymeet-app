@@ -278,9 +278,25 @@ async function roomMessageSweep() {
 
 function startNotificationJobs() {
   if (process.env.NODE_ENV === 'test') return;
-  setInterval(voteDeadlineSweep, 60 * 1000).unref?.();
-  setInterval(comebackSweep, 60 * 60 * 1000).unref?.();
-  setInterval(dailyTick, 15 * 60 * 1000).unref?.();
+
+  // App-initiated scheduled "digest / promotional" pushes are OFF by default:
+  //   - voteDeadlineSweep → vote_ending_24h / vote_ending_1h (投票倒计时)
+  //   - comebackSweep     → comeback (想你了)
+  //   - dailyTick         → daily_matches (今日缘分), daily_digest (今日热门活动),
+  //                         viewers_digest (看了你), wants_you_digest (想认识你)
+  // Set ENABLE_DIGEST_PUSH=1 in the API env to re-enable them. This does NOT
+  // affect event-driven pushes (message / match / dm / @mention / room invite /
+  // vote result) or the data-cleanup sweeps below — those always run.
+  if (process.env.ENABLE_DIGEST_PUSH === '1') {
+    setInterval(voteDeadlineSweep, 60 * 1000).unref?.();
+    setInterval(comebackSweep, 60 * 60 * 1000).unref?.();
+    setInterval(dailyTick, 15 * 60 * 1000).unref?.();
+    console.log('[notifications] digest/promo push jobs ENABLED (ENABLE_DIGEST_PUSH=1)');
+  } else {
+    console.log('[notifications] digest/promo push jobs DISABLED (set ENABLE_DIGEST_PUSH=1 to enable)');
+  }
+
+  // Data-cleanup sweeps — these never push to users; always run.
   setInterval(emptyRoomSweep, 10 * 60 * 1000).unref?.();
   setTimeout(roomMessageSweep, 60 * 1000).unref?.(); // first pass ~1min after boot
   setInterval(roomMessageSweep, 6 * 60 * 60 * 1000).unref?.();
