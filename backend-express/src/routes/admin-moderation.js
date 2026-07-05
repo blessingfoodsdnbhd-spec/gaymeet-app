@@ -278,6 +278,153 @@ router.delete('/vote-entries/:entryId', async (req, res, next) => {
   }
 });
 
+// ══ Auto-hidden content moderation (auto-hide-3-reports) ═════════════════════
+// Content auto-hidden after 3 unique reports (services/report.js). Admins review
+// here: unhide (clears the flag, locks against re-hide) or delete permanently.
+const CONTENT_TYPES = {
+  moment: { Model: Moment, owner: 'user', label: '动态' },
+  voteEvent: { Model: VoteEvent, owner: 'creatorId', label: '投票活动' },
+  voteEntry: { Model: VoteEntry, owner: 'submitterId', label: '投票作品' },
+};
+
+// ── GET /api/admin/hidden — all currently auto-hidden content ─────────────────
+router.get('/hidden', async (_req, res, next) => {
+  try {
+    const ContentReport = require('../models/ContentReport');
+    const out = [];
+    for (const [type, { Model, owner, label }] of Object.entries(CONTENT_TYPES)) {
+      const docs = await Model.find({ hidden: true })
+        .populate(owner, 'nickname avatarUrl')
+        .sort({ hiddenAt: -1 })
+        .limit(200)
+        .lean();
+      for (const d of docs) {
+        // Attach the distinct report reasons for context.
+        const reports = await ContentReport.find({ targetType: type, targetId: d._id })
+          .select('reason createdAt')
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean();
+        const author = d[owner] && typeof d[owner] === 'object' ? d[owner] : null;
+        out.push({
+          id: String(d._id),
+          type,
+          typeLabel: label,
+          author: author ? { id: String(author._id), nickname: author.nickname, avatarUrl: author.avatarUrl || null } : null,
+          content: d.content ?? d.title ?? d.caption ?? '',
+          images: d.images || (d.photoUrl ? [d.photoUrl] : d.coverPhotos || []),
+          reportCount: d.reportCount || 0,
+          hiddenReason: d.hiddenReason || null,
+          hiddenAt: d.hiddenAt || null,
+          reasons: reports.map((r) => ({ reason: r.reason || '', at: r.createdAt })),
+          createdAt: d.createdAt,
+        });
+      }
+    }
+    out.sort((a, b) => new Date(b.hiddenAt || 0) - new Date(a.hiddenAt || 0));
+    ok(res, { hidden: out, count: out.length });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── PUT /api/admin/content/:type/:id/hide — admin hides directly (no report) ──
+// hiddenReason='admin-manual' distinguishes it from auto-hide-3-reports and the
+// admin-report path. Does NOT touch reportCount.
+router.put('/content/:type/:id/hide', async (req, res, next) => {
+  try {
+    const cfg = CONTENT_TYPES[req.params.type];
+    if (!cfg) return err(res, 'Invalid content type');
+    if (!isId(req.params.id)) return err(res, 'Invalid id');
+    const doc = await cfg.Model.findByIdAndUpdate(
+      req.params.id,
+      { $set: { hidden: true, hiddenReason: 'admin-manual', hiddenAt: new Date(), moderationLocked: false } },
+      { new: true },
+    ).lean();
+    if (!doc) return err(res, 'Content not found', 404);
+
+    await logAdminAction(req.user, 'hide_content', {
+      targetUser: doc[cfg.owner] || null, targetType: req.params.type, targetId: doc._id,
+      reason: reasonOf(req), meta: { via: 'admin-manual' },
+    });
+    ok(res, { id: String(doc._id), hidden: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── PUT /api/admin/content/:type/:id/unhide — restore, keep reportCount ───────
+// Sets moderationLocked so the auto-hide engine won't re-hide on the next report.
+router.put('/content/:type/:id/unhide', async (req, res, next) => {
+  try {
+    const cfg = CONTENT_TYPES[req.params.type];
+    if (!cfg) return err(res, 'Invalid content type');
+    if (!isId(req.params.id)) return err(res, 'Invalid id');
+    const doc = await cfg.Model.findByIdAndUpdate(
+      req.params.id,
+      { $set: { hidden: false, hiddenReason: 'admin-unhidden', hiddenAt: null, moderationLocked: true } },
+      { new: true },
+    ).lean();
+    if (!doc) return err(res, 'Content not found', 404);
+
+    await logAdminAction(req.user, 'unhide_content', {
+      targetUser: doc[cfg.owner] || null, targetType: req.params.type, targetId: doc._id,
+      reason: reasonOf(req), meta: { reportCount: doc.reportCount || 0 },
+    });
+    ok(res, { id: String(doc._id), hidden: false });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── DELETE /api/admin/content/:type/:id — permanent removal ───────────────────
+// moment → soft-delete (isActive=false). voteEntry → hard-delete + counter fix.
+// voteEvent → permanent hidden-lock (avoids cascading child deletes here; the
+// full purge path stays in routes/votes.js DELETE /admin/:id).
+router.delete('/content/:type/:id', async (req, res, next) => {
+  try {
+    const { type, id } = req.params;
+    const cfg = CONTENT_TYPES[type];
+    if (!cfg) return err(res, 'Invalid content type');
+    if (!isId(id)) return err(res, 'Invalid id');
+
+    if (type === 'moment') {
+      const m = await Moment.findByIdAndUpdate(id, { isActive: false }, { new: true }).lean();
+      if (!m) return err(res, 'Content not found', 404);
+      await logAdminAction(req.user, 'delete_moment', {
+        targetUser: m.user, targetType: 'moment', targetId: m._id, reason: reasonOf(req), meta: { via: 'hidden-queue' },
+      });
+    } else if (type === 'voteEntry') {
+      const entry = await VoteEntry.findById(id);
+      if (!entry) return err(res, 'Content not found', 404);
+      const votes = await Vote.deleteMany({ entryId: entry._id });
+      await VoteEntry.deleteOne({ _id: entry._id });
+      await VoteEvent.updateOne(
+        { _id: entry.eventId },
+        { $inc: { entryCount: -1, voteCount: -(votes.deletedCount || 0) } },
+      );
+      await logAdminAction(req.user, 'delete_vote_entry', {
+        targetUser: entry.submitterId, targetType: 'vote_entry', targetId: entry._id,
+        reason: reasonOf(req), meta: { via: 'hidden-queue', eventId: String(entry.eventId) },
+      });
+    } else {
+      // voteEvent — permanent hidden-lock.
+      const ev = await VoteEvent.findByIdAndUpdate(
+        id,
+        { $set: { hidden: true, hiddenReason: 'admin-deleted', hiddenAt: new Date(), moderationLocked: true } },
+        { new: true },
+      ).lean();
+      if (!ev) return err(res, 'Content not found', 404);
+      await logAdminAction(req.user, 'delete_vote_event', {
+        targetUser: ev.creatorId, targetType: 'vote_event', targetId: ev._id, reason: reasonOf(req), meta: { via: 'hidden-queue' },
+      });
+    }
+    ok(res, { id, deleted: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── GET /api/admin/audit-log — recent admin actions, newest first ─────────────
 // Query: ?targetUser=<id>&limit=<n> (default 100, max 200).
 router.get('/audit-log', async (req, res, next) => {

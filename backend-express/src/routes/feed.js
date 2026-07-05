@@ -5,6 +5,7 @@ const Follow = require('../models/Follow');
 const Place = require('../models/Place');
 const { auth } = require('../middleware/auth');
 const { ok } = require('../utils/respond');
+const { hiddenFilter } = require('../services/report');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -112,14 +113,17 @@ router.get('/', auth, async (req, res, next) => {
       followingIds = followDocs.map((f) => f.following);
     }
 
+    // Auto-hidden moments drop from the feed for everyone except their author.
+    const notHidden = hiddenFilter(req.user._id, 'user');
     const momentFilter =
       tab === 'following'
         ? {
             isActive: true,
             user: { $in: followingIds },
             visibility: { $in: ['public', 'friends'] },
+            ...notHidden,
           }
-        : { isActive: true, visibility: 'public' };
+        : { isActive: true, visibility: 'public', ...notHidden };
 
     // Events: only future + active. In following tab, only followed organizers;
     // in discover, all public events.

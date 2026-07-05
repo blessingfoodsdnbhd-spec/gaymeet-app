@@ -8,6 +8,7 @@ const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
 const { blockedIdSet } = require('../utils/blocking');
+const { recordContentReport, hiddenFilter } = require('../services/report');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
 const MOMENTS_NEARBY_KM = 50;
@@ -110,7 +111,10 @@ router.get('/', auth, async (req, res, next) => {
     // every feed variant, including the single-user `?userId=` view).
     const blockedArr = [...(await blockedIdSet(req.user))];
     const notBlocked = { user: { $nin: blockedArr } };
-    const moments = await Moment.find({ $and: [filter, notExpired, notBlocked] })
+    // Auto-hidden moments drop out of the feed for everyone except their author,
+    // who still sees them (client renders an 审核中 badge).
+    const notHidden = hiddenFilter(req.user._id, 'user');
+    const moments = await Moment.find({ $and: [filter, notExpired, notBlocked, notHidden] })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -157,6 +161,12 @@ router.get('/:id', auth, async (req, res, next) => {
     // Mutual block: a blocked author's moment is "not found" to the viewer.
     const blocked = await blockedIdSet(req.user);
     if (moment.user && blocked.has(String(moment.user._id ?? moment.user))) {
+      return err(res, 'Moment not found', 404);
+    }
+
+    // Auto-hidden moment: invisible to everyone except its author (审核中).
+    const authorStr = String(moment.user?._id ?? moment.user);
+    if (moment.hidden && authorStr !== req.user._id.toString()) {
       return err(res, 'Moment not found', 404);
     }
 
@@ -553,6 +563,31 @@ router.get('/:id/comments', auth, async (req, res, next) => {
       .lean();
 
     ok(res, comments.map((c) => serializeComment(c, moment.user)));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/moments/:id/report (Apple 1.2) ─────────────────────────────────
+// Report a moment/post. Idempotent per user; at 3 UNIQUE reporters the moment
+// is auto-hidden from public feeds (services/report.js). Reporting your own post
+// is a no-op refusal.
+router.post('/:id/report', auth, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    const moment = await Moment.findById(req.params.id).select('user').lean();
+    if (!moment) return err(res, 'Moment not found', 404);
+    if (String(moment.user) === req.user._id.toString()) {
+      return err(res, 'Cannot report your own post');
+    }
+    const result = await recordContentReport({
+      reporterId: req.user._id,
+      reporter: req.user, // admin reporter → immediate hide (weight 3)
+      targetType: 'moment',
+      targetId: req.params.id,
+      reason: req.body?.reason,
+    });
+    ok(res, { reported: true, hidden: result.hidden });
   } catch (e) {
     next(e);
   }

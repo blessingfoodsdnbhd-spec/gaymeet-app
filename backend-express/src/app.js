@@ -127,6 +127,7 @@ app.use('/api/shouts', shoutsRoutes);
 app.use('/api/search', require('./routes/search')); // GET / unified search (SEARCH1)
 app.use('/api/popular', popularRoutes);
 app.use('/api/moments', momentsRoutes);
+app.use('/api/reports', require('./routes/reports')); // POST / unified content report → auto-hide at 3 unique reporters
 app.use('/api/gifts', giftsRoutes);
 app.use('/api/coins', giftsRoutes); // /api/coins/balance and /api/coins/purchase
 app.use('/api/events', eventsRoutes);

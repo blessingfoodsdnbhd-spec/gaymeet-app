@@ -44,7 +44,7 @@ router.get('/', auth, async (req, res, next) => {
             .lean()
         : [],
       wantVotes
-        ? VoteEvent.find({ title: rx })
+        ? VoteEvent.find({ title: rx, hidden: { $ne: true } })
             .select('title status category')
             .sort({ startAt: -1 })
             .limit(20)

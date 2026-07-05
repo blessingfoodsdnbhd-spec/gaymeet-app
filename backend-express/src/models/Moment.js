@@ -29,6 +29,17 @@ const momentSchema = new mongoose.Schema(
     // Ephemeral "24h story" moments (STORY1). null = permanent. Past expiry is
     // hidden from feeds and swept by the cleanup job.
     expiresAt: { type: Date, default: null },
+    // Auto-hide moderation (services/report.js). `reportCount` counts UNIQUE
+    // reporters (enforced by ContentReport's unique index); at 3 the moment is
+    // `hidden` from public feeds but still visible to its author (审核中 badge)
+    // and to admins. Admins can unhide/delete via the moderation dashboard.
+    reportCount: { type: Number, default: 0 },
+    hidden: { type: Boolean, default: false },
+    hiddenReason: { type: String, default: null },
+    hiddenAt: { type: Date, default: null },
+    // Set true once an admin unhides the content — prevents the auto-hide engine
+    // from immediately re-hiding it on the next report (admin decision wins).
+    moderationLocked: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

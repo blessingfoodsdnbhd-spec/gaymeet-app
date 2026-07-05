@@ -26,7 +26,7 @@ router.get('/points', auth, async (req, res, next) => {
       ).lean(),
 
       Moment.find(
-        { hasLocation: true, isActive: true, visibility: 'public' },
+        { hasLocation: true, isActive: true, visibility: 'public', hidden: { $ne: true } },
         { _id: 1, content: 1, location: 1, likes: 1, commentsCount: 1, createdAt: 1 }
       ).lean(),
 
