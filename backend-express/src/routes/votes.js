@@ -7,6 +7,7 @@ const VoteReadState = require('../models/VoteReadState');
 const UserHighlight = require('../models/UserHighlight');
 const VoteReport = require('../models/VoteReport');
 const VoteEventUpdate = require('../models/VoteEventUpdate');
+const { recordContentReport, hiddenFilter } = require('../services/report');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
 const { requireAdminAuth } = require('../middleware/adminAuth');
@@ -104,9 +105,12 @@ async function attachFeedEntries(events, viewerId, blockedSet) {
   const votedSet = new Set(myVoteEntryIds.map((id) => id.toString()));
   const readByEvent = new Map(readStates.map((r) => [r.voteEventId.toString(), r]));
   const byEvent = new Map();
+  const viewerStr = viewerId?.toString();
   for (const e of allEntries) {
     if (!e.submitterId) continue; // skip entries whose submitter was deleted
     if (blocked.has(e.submitterId._id.toString())) continue; // mutual block: hide their entry
+    // Auto-hidden entry: skip unless the viewer is its submitter (审核中).
+    if (e.hidden && e.submitterId._id.toString() !== viewerStr) continue;
     const k = e.eventId.toString();
     (byEvent.get(k) || byEvent.set(k, []).get(k)).push(e);
   }
@@ -471,6 +475,11 @@ router.get('/', auth, async (req, res, next) => {
       }
     }
 
+    // Auto-hidden events are dropped for everyone except their own creator
+    // (who still sees them with an 审核中 badge). In `mine` scope the creator==viewer
+    // clause always matches, so own hidden events remain visible.
+    Object.assign(q, hiddenFilter(req.user._id, 'creatorId'));
+
     // Active first, then newest. ($near already imposes distance order when used.)
     const sort = q.location ? undefined : { status: 1, _id: -1 };
     let cursor = VoteEvent.find(q).limit(limit).populate('creatorId', 'nickname avatarUrl isOfficial isVerified isPremium');
@@ -499,6 +508,10 @@ router.get('/:id', auth, async (req, res, next) => {
     const creatorIdStr = ev.creatorId?._id?.toString() ?? ev.creatorId?.toString();
     if (blockedSet.has(creatorIdStr)) return err(res, 'Not found', 404);
 
+    // Auto-hidden event: invisible to everyone except its creator (审核中).
+    const viewerStr = req.user._id.toString();
+    if (ev.hidden && creatorIdStr !== viewerStr) return err(res, 'Not found', 404);
+
     const entriesRaw = await VoteEntry.find({ eventId: ev._id })
       .sort({ voteCount: -1, createdAt: 1 })
       .populate('submitterId', 'nickname avatarUrl isOfficial isVerified isPremium')
@@ -521,6 +534,8 @@ router.get('/:id', auth, async (req, res, next) => {
       myEntryId: myEntry ? myEntry._id.toString() : null,
       entries: entries
         .filter((e) => e.submitterId && !blockedSet.has(e.submitterId._id.toString()))
+        // Auto-hidden entries drop out for everyone except their own submitter.
+        .filter((e) => !e.hidden || e.submitterId._id.toString() === viewerStr)
         .map((e) => ({
           id: e._id.toString(),
           submitter: {
@@ -801,12 +816,21 @@ router.delete('/:id/updates/:updateId', auth, async (req, res, next) => {
 router.post('/:id/report', auth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return err(res, 'Invalid id');
+    // Admin triage queue (VoteReport) — one row per report.
     await VoteReport.create({
       reporterId: req.user._id,
       targetType: 'event',
       eventId: req.params.id,
       reason: String(req.body?.reason ?? '').slice(0, 300),
     });
+    // Auto-hide engine (unique-reporter count → hide at 3). Best-effort so a
+    // moderation hiccup never fails the user's report.
+    recordContentReport({
+      reporterId: req.user._id,
+      targetType: 'voteEvent',
+      targetId: req.params.id,
+      reason: req.body?.reason,
+    }).catch(() => {});
     ok(res, { ok: true });
   } catch (e) {
     next(e);
@@ -817,6 +841,7 @@ router.post('/:id/entries/:entryId/report', auth, async (req, res, next) => {
   try {
     const { id, entryId } = req.params;
     if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(entryId)) return err(res, 'Invalid id');
+    // Admin triage queue (VoteReport) — one row per report.
     await VoteReport.create({
       reporterId: req.user._id,
       targetType: 'entry',
@@ -824,6 +849,13 @@ router.post('/:id/entries/:entryId/report', auth, async (req, res, next) => {
       entryId,
       reason: String(req.body?.reason ?? '').slice(0, 300),
     });
+    // Auto-hide engine (unique-reporter count → hide at 3).
+    recordContentReport({
+      reporterId: req.user._id,
+      targetType: 'voteEntry',
+      targetId: entryId,
+      reason: req.body?.reason,
+    }).catch(() => {});
     ok(res, { ok: true });
   } catch (e) {
     next(e);

@@ -60,6 +60,15 @@ const voteEventSchema = new mongoose.Schema(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], default: [0, 0] },
     },
+    // Auto-hide moderation (services/report.js). At 3 UNIQUE reporters the event
+    // is `hidden` from public listings but still visible to its creator (审核中)
+    // and to admins, who can unhide/delete it.
+    reportCount: { type: Number, default: 0 },
+    hidden: { type: Boolean, default: false },
+    hiddenReason: { type: String, default: null },
+    hiddenAt: { type: Date, default: null },
+    // Admin unhide lock — see Moment.moderationLocked.
+    moderationLocked: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

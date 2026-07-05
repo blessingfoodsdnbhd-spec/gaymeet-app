@@ -16,6 +16,15 @@ const voteEntrySchema = new mongoose.Schema(
       default: 'active',
     },
     eliminatedAtRoundIndex: { type: Number, default: null },
+    // Auto-hide moderation (services/report.js). At 3 UNIQUE reporters the entry
+    // is `hidden` from public leaderboards but still visible to its submitter
+    // (审核中) and to admins, who can unhide/delete it.
+    reportCount: { type: Number, default: 0 },
+    hidden: { type: Boolean, default: false },
+    hiddenReason: { type: String, default: null },
+    hiddenAt: { type: Date, default: null },
+    // Admin unhide lock — see Moment.moderationLocked.
+    moderationLocked: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
