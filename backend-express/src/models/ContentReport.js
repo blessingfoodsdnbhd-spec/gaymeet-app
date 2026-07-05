@@ -20,6 +20,9 @@ const contentReportSchema = new mongoose.Schema(
     targetType: { type: String, enum: ['moment', 'voteEvent', 'voteEntry'], required: true },
     targetId: { type: mongoose.Schema.Types.ObjectId, required: true },
     reason: { type: String, default: '' },
+    // True if the reporter is an admin (isOfficial / ADMIN_EMAILS). An admin
+    // report carries weight 3 → hides the target immediately (see services/report.js).
+    byAdmin: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

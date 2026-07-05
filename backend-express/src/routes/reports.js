@@ -24,6 +24,7 @@ router.post('/', auth, async (req, res, next) => {
 
     const result = await recordContentReport({
       reporterId: req.user._id,
+      reporter: req.user, // admin reporter → immediate hide (weight 3)
       targetType,
       targetId,
       reason: req.body?.reason,

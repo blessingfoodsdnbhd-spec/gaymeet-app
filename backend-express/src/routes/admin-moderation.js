@@ -328,6 +328,31 @@ router.get('/hidden', async (_req, res, next) => {
   }
 });
 
+// ── PUT /api/admin/content/:type/:id/hide — admin hides directly (no report) ──
+// hiddenReason='admin-manual' distinguishes it from auto-hide-3-reports and the
+// admin-report path. Does NOT touch reportCount.
+router.put('/content/:type/:id/hide', async (req, res, next) => {
+  try {
+    const cfg = CONTENT_TYPES[req.params.type];
+    if (!cfg) return err(res, 'Invalid content type');
+    if (!isId(req.params.id)) return err(res, 'Invalid id');
+    const doc = await cfg.Model.findByIdAndUpdate(
+      req.params.id,
+      { $set: { hidden: true, hiddenReason: 'admin-manual', hiddenAt: new Date(), moderationLocked: false } },
+      { new: true },
+    ).lean();
+    if (!doc) return err(res, 'Content not found', 404);
+
+    await logAdminAction(req.user, 'hide_content', {
+      targetUser: doc[cfg.owner] || null, targetType: req.params.type, targetId: doc._id,
+      reason: reasonOf(req), meta: { via: 'admin-manual' },
+    });
+    ok(res, { id: String(doc._id), hidden: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── PUT /api/admin/content/:type/:id/unhide — restore, keep reportCount ───────
 // Sets moderationLocked so the auto-hide engine won't re-hide on the next report.
 router.put('/content/:type/:id/unhide', async (req, res, next) => {

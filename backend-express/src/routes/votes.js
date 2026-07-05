@@ -827,6 +827,7 @@ router.post('/:id/report', auth, async (req, res, next) => {
     // moderation hiccup never fails the user's report.
     recordContentReport({
       reporterId: req.user._id,
+      reporter: req.user, // admin reporter → immediate hide (weight 3)
       targetType: 'voteEvent',
       targetId: req.params.id,
       reason: req.body?.reason,
@@ -852,6 +853,7 @@ router.post('/:id/entries/:entryId/report', auth, async (req, res, next) => {
     // Auto-hide engine (unique-reporter count → hide at 3).
     recordContentReport({
       reporterId: req.user._id,
+      reporter: req.user, // admin reporter → immediate hide (weight 3)
       targetType: 'voteEntry',
       targetId: entryId,
       reason: req.body?.reason,
