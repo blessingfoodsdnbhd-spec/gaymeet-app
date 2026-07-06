@@ -71,29 +71,12 @@ const signupLimiter = createLimiter({
   message: '注册请求过频，请稍后再试 / Too many signup attempts, please wait an hour.',
 });
 
-/** Vote/contest creation — per IP: 3 per hour (blocks bot rings on one network). */
-const voteCreateIpLimiter = createLimiter({
-  windowMs: HOUR,
-  max: 3,
-  prefix: 'voteip:',
-  message: '发布过频，请稍后再试 / Too many contests from your network, please wait.',
-});
-
-/** Vote/contest creation — per user: 3 per hour (independent of IP). Must run
- *  after the auth middleware so req.user is populated. */
-const voteCreateUserLimiter = createLimiter({
-  windowMs: HOUR,
-  max: 3,
-  prefix: 'voteuser:',
-  keyGenerator: (req) => req.user?._id?.toString() || clientIp(req),
-  message: '你发布投票过频，请稍后再试 / You are creating contests too fast, please wait.',
-});
+// Vote-creation limits are enforced in the route handler itself (1/day per user,
+// 5/day per IP → auto-ban), not via a generic hourly limiter — see routes/votes.js.
 
 module.exports = {
   globalLimiter,
   authLimiter,
   signupLimiter,
-  voteCreateIpLimiter,
-  voteCreateUserLimiter,
   createLimiter,
 };

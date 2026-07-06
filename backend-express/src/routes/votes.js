@@ -10,7 +10,7 @@ const VoteEventUpdate = require('../models/VoteEventUpdate');
 const { recordContentReport, hiddenFilter } = require('../services/report');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
-const { voteCreateIpLimiter, voteCreateUserLimiter } = require('../middleware/rateLimit');
+const { autoBanIp } = require('../utils/ipMassBan');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
@@ -289,8 +289,10 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ── POST /api/votes ───────────────────────────────────────────────────────────
-// Rate limited: 3/hour per IP AND 3/hour per user (anti spam-bot contest floods).
-router.post('/', auth, voteCreateIpLimiter, voteCreateUserLimiter, async (req, res, next) => {
+// Anti-spam: 1 vote/day per user (429), 5 votes/day per IP → the 6th auto-bans
+// the IP AND cascade-bans every account seen on that IP + hides their votes.
+// (The app-level ipBlocklist middleware already rejects an already-banned IP.)
+router.post('/', auth, async (req, res, next) => {
   try {
     const b = req.body || {};
     const title = String(b.title ?? '').trim();
@@ -299,6 +301,36 @@ router.post('/', auth, voteCreateIpLimiter, voteCreateUserLimiter, async (req, r
     const description = String(b.description ?? '').trim();
     if (!description) return err(res, 'Description is required');
     if (!CATEGORIES.includes(b.category)) return err(res, 'Invalid category');
+
+    // ── Anti-spam limits ──────────────────────────────────────────────────────
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Per-user: at most 1 vote/day.
+    const myTodayCount = await VoteEvent.countDocuments({
+      creatorId: req.user._id,
+      createdAt: { $gte: startOfDay },
+    });
+    if (myTodayCount >= 1) {
+      return res.status(429).json({
+        error: '每天最多发布 1 个投票 / Only 1 vote per day allowed',
+        resetAt: new Date(startOfDay.getTime() + 24 * 3600 * 1000),
+      });
+    }
+
+    // Per-IP: at most 5 vote/day. The 6th auto-bans the IP + cascade-bans every
+    // account seen on it + hides their votes (see ipMassBan util).
+    const ip = req.clientIp || null;
+    if (ip) {
+      const ipTodayCount = await VoteEvent.countDocuments({
+        createdIp: ip,
+        createdAt: { $gte: startOfDay },
+      });
+      if (ipTodayCount >= 5) {
+        await autoBanIp(ip, 'auto-ban-5-vote-per-day');
+        return res.status(403).json({ error: 'IP blocked / 此 IP 已因当日超过 5 个投票被自动封禁' });
+      }
+    }
 
     // The initiator is now a contestant: creating a contest requires the
     // creator's own entry photo, auto-added as VoteEntry #1 below. That entry
