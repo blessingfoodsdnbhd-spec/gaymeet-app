@@ -816,4 +816,7 @@ cowork 侧 `codex exec` 在本 shell PATH 不可用(codex 在 /Applications/Code
 
 **Version:** 3.1.14 / iOS buildNumber 127 / Android versionCode 127. tsc 0 errors.
 
-**Builds:** pending boss confirmation (build gate). When cut: Android local → submit Play Internal (auto); iOS local → upload TestFlight ONLY (boss does Submit-for-Review manually in ASC). Test account: hafiz@example.com / 111111.
+**Builds (boss-confirmed, cut):** both local `--local --non-interactive`, remote credentials.
+- **Android** vc127 AAB (76 MB) → submitted **Play Internal** (auto). EAS submission `54a02da0-0962-42bb-bef9-773d38e53d9a`, release status COMPLETED.
+- **iOS** bn127 IPA (24 MB) → uploaded **App Store Connect / TestFlight** (NOT submit-for-review; boss does that manually). EAS submission `d31dda6c-5b17-4d2a-a544-585f7079a879`; Apple processing ~5-10 min then visible in TestFlight.
+- Test account: hafiz@example.com / 111111 (OTP). PR #287 (base `fix/apple-review-vc126`) still open for record.
