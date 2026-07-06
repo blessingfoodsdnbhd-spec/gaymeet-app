@@ -797,3 +797,23 @@ cowork 侧 `codex exec` 在本 shell PATH 不可用(codex 在 /Applications/Code
 **Version:** 3.1.13 / iOS buildNumber 126 / Android versionCode 126. tsc 0 errors.
 
 **Builds:** Android local → submit Play Internal (auto). iOS local → upload TestFlight ONLY (boss does Submit-for-Review manually in ASC). Test account: hafiz@example.com / 111111.
+
+---
+
+## [2026-07-06 UTC] claude → all
+
+**vc127 / v3.1.14 — frontend OTP error messages + report UI + moment 审核中 badge**
+
+⚠️ **BASE = `fix/apple-review-vc126` (3.1.13/vc126), NOT `main`.** The prompt said "checkout main", but `origin/main` is a **stale vc120 (3.1.10) baseline** and does NOT contain the vc126 Apple-review fixes (removed notes/random-match, premium row, device-locale i18n) or any vc121-126 feature work. Building vc127 off main would regress all of that → certain Apple re-rejection. Verified target frontend files are byte-identical between main and vc126, so the deltas apply cleanly on the correct base. The verify-otp backend (#285) lives on main only, but that's server code already deployed to Render — the RN app just calls the live API, so it doesn't need to be in the app build tree.
+
+**Done (code, RN app):**
+1. **OTPCodeScreen** — verify failures now surface the backend's *specific* reason (expired / wrong / not-found) instead of one generic `t('otp.invalid')`. Backend returns bilingual `"中文 / English"`; client shows the half matching the active UI language. 429 → 30s cooldown with live countdown + Continue disabled. Continue also disabled while verifying (busy). Added a "验证码 30 分钟内有效" validity hint under the code input. Success path unchanged: `signIn()` swaps the whole auth stack (no route to swipe back to → can't re-enter a code), so an explicit `navigation.replace` isn't applicable to this architecture.
+2. **AdminReportsScreen** — `adminReports.resolve` label 已处理 → **标记已处理** (en "Mark as resolved") so it reads as an action, not a status. i18n-only; ja was already "対応済みにする", ko tightened to "처리 완료로 표시".
+3. **MomentItem** — author's own auto-hidden post (backend only returns `hidden:true` moments to their author) now shows a 🔒 **审核中 · 他人暂时看不到** badge + dimmed body. Added `hidden?` to the `Moment` type (backend already spreads it in the feed serialization).
+4. **i18n** zh/en/ja/ko: `otp.expired/wrong/notFound/rateLimit/expiresIn`, `moments.pendingReview`.
+
+**P2 (resolve → auto-hide content) — NOT shipped; needs a BACKEND change (TODO):** `AdminReportsScreen` resolve only has the *report* id + a `kind` of worldChat/vote/user/scamMessage/nsfwImage. The `PUT /admin/content/:type/:id/hide` endpoint takes a *content* id and a `type` of moment/voteEntry/voteEvent — the report rows don't expose the underlying content id and the kinds don't map, so a frontend "resolve-then-hide" isn't feasible. Cleanest fix is server-side (hide content inside the resolve route, or have `GET /admin/reports` return the content id+type). Deferred per "不动 backend" constraint. Note: the newer ContentReport auto-hide system (#284) already auto-hides moment/voteEntry/voteEvent at 3 unique reports, which covers the main content types anyway.
+
+**Version:** 3.1.14 / iOS buildNumber 127 / Android versionCode 127. tsc 0 errors.
+
+**Builds:** pending boss confirmation (build gate). When cut: Android local → submit Play Internal (auto); iOS local → upload TestFlight ONLY (boss does Submit-for-Review manually in ASC). Test account: hafiz@example.com / 111111.
