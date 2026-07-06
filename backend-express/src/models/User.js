@@ -302,6 +302,11 @@ const userSchema = new mongoose.Schema(
     registrationIp: { type: String, default: null }, // first signup IP
     lastLoginIp: { type: String, default: null }, // most recent login IP
     ipAddresses: { type: [String], default: [] }, // distinct IPs seen (deduped)
+
+    // ── Posting suspension (IP quarantine — pending admin review) ───────────────
+    postingSuspended: { type: Boolean, default: false }, // blocks create endpoints
+    postingSuspendedReason: { type: String, default: null },
+    postingSuspendedAt: { type: Date, default: null },
     // Granular capability bans — the account stays usable but the capability is
     // revoked. chatBanned blocks sending chat messages (read still works);
     // photoUploadBanned blocks uploading public/private photos.

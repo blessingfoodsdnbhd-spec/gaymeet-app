@@ -10,7 +10,8 @@ const VoteEventUpdate = require('../models/VoteEventUpdate');
 const { recordContentReport, hiddenFilter } = require('../services/report');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
-const { autoBanIp } = require('../utils/ipMassBan');
+const Quarantine = require('../models/QuarantineEvent');
+const postingSuspended = require('../middleware/postingSuspended');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
@@ -292,7 +293,7 @@ if (process.env.NODE_ENV !== 'test') {
 // Anti-spam: 1 vote/day per user (429), 5 votes/day per IP → the 6th auto-bans
 // the IP AND cascade-bans every account seen on that IP + hides their votes.
 // (The app-level ipBlocklist middleware already rejects an already-banned IP.)
-router.post('/', auth, async (req, res, next) => {
+router.post('/', auth, postingSuspended, async (req, res, next) => {
   try {
     const b = req.body || {};
     const title = String(b.title ?? '').trim();
@@ -318,8 +319,9 @@ router.post('/', auth, async (req, res, next) => {
       });
     }
 
-    // Per-IP: at most 5 vote/day. The 6th auto-bans the IP + cascade-bans every
-    // account seen on it + hides their votes (see ipMassBan util).
+    // Per-IP: at most 5 vote/day. The 6th QUARANTINES the IP — suspend posting
+    // for every account on it, hide their votes, record a pending review — rather
+    // than auto-banning. An admin then Bans or Approves via /api/admin/quarantine.
     const ip = req.clientIp || null;
     if (ip) {
       const ipTodayCount = await VoteEvent.countDocuments({
@@ -327,8 +329,37 @@ router.post('/', auth, async (req, res, next) => {
         createdAt: { $gte: startOfDay },
       });
       if (ipTodayCount >= 5) {
-        await autoBanIp(ip, 'auto-ban-5-vote-per-day');
-        return res.status(403).json({ error: 'IP blocked / 此 IP 已因当日超过 5 个投票被自动封禁' });
+        // 24h whitelist: if an admin recently Approved this IP, just cap the 6th
+        // vote (429) without re-quarantining the (legit) accounts.
+        const recentApproved = await Quarantine.findOne({
+          ip,
+          resolution: 'approved',
+          resolvedAt: { $gte: new Date(Date.now() - 24 * 3600 * 1000) },
+        });
+        if (recentApproved) {
+          return res.status(429).json({ error: '此 IP 今日 vote 已达上限，请明天再来 / Daily IP vote cap reached' });
+        }
+        // Avoid stacking duplicate pending quarantines for the same IP.
+        const already = await Quarantine.findOne({ ip, resolvedAt: null });
+        if (!already) {
+          const users = await User.find(
+            { $or: [{ registrationIp: ip }, { lastLoginIp: ip }, { ipAddresses: ip }] },
+            { _id: 1 }
+          ).lean();
+          const userIds = users.map((u) => u._id);
+          const voteIds = (await VoteEvent.find({ createdIp: ip }, { _id: 1 }).lean()).map((v) => v._id);
+          await User.updateMany(
+            { _id: { $in: userIds } },
+            { $set: { postingSuspended: true, postingSuspendedReason: 'ip-quarantine-5-vote-day', postingSuspendedAt: new Date() } }
+          );
+          await VoteEvent.updateMany(
+            { _id: { $in: voteIds }, hidden: { $ne: true } },
+            { $set: { hidden: true, hiddenReason: 'ip-quarantine', hiddenAt: new Date() } }
+          );
+          await Quarantine.create({ ip, affectedUserIds: userIds, affectedVoteIds: voteIds, triggeredAt: new Date() });
+          console.warn(`[quarantine] IP ${ip} triggered — ${userIds.length} users suspended, ${voteIds.length} votes hidden`);
+        }
+        return res.status(403).json({ error: 'IP quarantined pending review / 此 IP 已进入审核，暂停发布' });
       }
     }
 
