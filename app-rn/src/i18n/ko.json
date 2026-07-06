@@ -584,7 +584,12 @@
     "passwordMismatch": "비밀번호가 일치하지 않습니다.",
     "loginFailedInvalid": "이메일 또는 비밀번호가 올바르지 않습니다.",
     "accountExists": "이미 등록된 이메일입니다. 로그인해 주세요.",
-    "genericError": "문제가 발생했습니다. 다시 시도해 주세요."
+    "genericError": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "setPasswordPromptTitle": "다음 로그인을 위해 비밀번호를 설정할까요?",
+    "setPasswordPromptSubtitle": "다음부터는 이메일과 비밀번호만으로 로그인할 수 있어요. 코드가 필요 없습니다.",
+    "setNow": "비밀번호 설정",
+    "skip": "건너뛰기 — 코드 계속 사용",
+    "passwordSetSuccess": "비밀번호가 설정되었습니다. 이제 이 비밀번호로 로그인할 수 있어요."
   },
   "adminReports": {
     "title": "신고 관리",

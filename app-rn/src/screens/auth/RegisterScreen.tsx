@@ -94,7 +94,7 @@ export function RegisterScreen() {
         code.trim(),
         inviteCode.trim().toUpperCase() || undefined,
       );
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
     } catch (e: any) {
       const detail = e?.response?.data?.error || e?.response?.data?.message;
       setErr(detail || t('auth.genericError'));

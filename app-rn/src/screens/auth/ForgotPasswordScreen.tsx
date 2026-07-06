@@ -72,7 +72,7 @@ export function ForgotPasswordScreen() {
       await resetPassword(clean, code.trim(), password);
       // Reset revokes all sessions server-side — log in fresh with the new password.
       const res = await loginWithPassword(clean, password);
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
     } catch (e: any) {
       const detail = e?.response?.data?.error || e?.response?.data?.message;
       setErr(detail || t('auth.genericError'));

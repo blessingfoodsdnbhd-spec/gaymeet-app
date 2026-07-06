@@ -68,7 +68,7 @@ export function WelcomeScreen() {
       const res = await signInApple(credential.identityToken, name, {
         onWaking: () => setWaking(true),
       });
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
     } catch (e: any) {
       const status = e?.response?.status;
       const body = e?.response?.data;
@@ -124,7 +124,7 @@ export function WelcomeScreen() {
         `interestsOnboardedAt=${res.user?.interestsOnboardedAt ?? 'null'}`,
       );
 
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
       diag.push('auth store signIn done');
       // RootNavigator should now flip: if interestsOnboardedAt is null,
       // needsTags becomes true and (thanks to the key-remount fix in

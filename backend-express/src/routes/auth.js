@@ -295,7 +295,16 @@ async function issueSession(res, user) {
   const accessToken = signAccess(user._id.toString());
   const refreshToken = signRefresh(user._id.toString());
   await RefreshToken.record(user._id, refreshToken);
-  return ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+  // hasPassword lets the client decide whether to prompt an OTP-only account to
+  // set a password for faster next login — without ever exposing the hash.
+  // `user.password` is select:false, so it's only in memory when the caller
+  // selected it (password login / a just-set password); otherwise do a tiny
+  // existence check.
+  const hasPassword =
+    user.password != null
+      ? true
+      : !!(await User.exists({ _id: user._id, password: { $exists: true, $ne: null } }));
+  return ok(res, { accessToken, refreshToken, user: user.toPublicJSON(), hasPassword });
 }
 
 // ── POST /api/auth/send-otp ───────────────────────────────────────────────────
@@ -531,7 +540,29 @@ router.post('/register-with-password', async (req, res, next) => {
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
     await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
-    created(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+    // hasPassword is always true here (we just set it) → client won't prompt.
+    created(res, { accessToken, refreshToken, user: user.toPublicJSON(), hasPassword: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/set-password ───────────────────────────────────────────────
+// Authed. Lets a signed-in user set their FIRST password (or change it) — powers
+// the "set a password for faster login?" prompt shown to OTP-only accounts after
+// sign-in. Writes User.password (bcrypt-hashed by the userSchema pre-save hook);
+// never returns the hash.
+router.post('/set-password', auth, async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return err(res, '密码至少 6 位 / Password must be at least 6 characters', 400);
+    }
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return err(res, 'User not found', 404);
+    user.password = password; // hashed by the userSchema pre-save hook
+    await user.save();
+    ok(res, { success: true, hasPassword: true });
   } catch (e) {
     next(e);
   }

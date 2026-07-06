@@ -6,6 +6,9 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   user: User;
+  /** False → OTP-only account with no password yet; the client offers to set
+   *  one after login. Undefined (social login) → no prompt. */
+  hasPassword?: boolean;
 }
 
 /** Server wraps payloads as { success: true, data: ... } via utils/respond.
@@ -130,6 +133,11 @@ export const sendResetCode = (email: string) =>
 
 export const resetPassword = (email: string, code: string, newPassword: string) =>
   postAuth<{ success: true }>('/auth/reset-password', { email, code, newPassword });
+
+// Authed — sets the signed-in user's first password (or changes it). Powers the
+// post-login "set a password?" prompt for OTP-only accounts.
+export const setPassword = (password: string) =>
+  postAuth<{ success: true; hasPassword: true }>('/auth/set-password', { password });
 
 export const signInApple = (identityToken: string, name?: string, opts?: PostAuthOpts) =>
   postAuth<AuthResponse>('/auth/apple', { identityToken, name }, opts);

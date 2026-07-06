@@ -40,7 +40,7 @@ export function EmailLoginScreen() {
     setErr(null);
     try {
       const res = await loginWithPassword(clean, password);
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
       // On success RootNavigator swaps to the app — nothing else to do.
     } catch (e: any) {
       const detail = e?.response?.data?.error || e?.response?.data?.message;

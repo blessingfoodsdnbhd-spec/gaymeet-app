@@ -184,7 +184,12 @@
     "passwordMismatch": "两次密码不一致。",
     "loginFailedInvalid": "邮箱或密码错误。",
     "accountExists": "此邮箱已注册,请直接登录。",
-    "genericError": "出错了,请重试。"
+    "genericError": "出错了,请重试。",
+    "setPasswordPromptTitle": "为下次快速登录,设置密码?",
+    "setPasswordPromptSubtitle": "下次可以直接用邮箱和密码登录,不用再输验证码。",
+    "setNow": "立即设置",
+    "skip": "跳过 - 下次继续用验证码",
+    "passwordSetSuccess": "密码已设置,下次可用它登录。"
   },
   "errors": {
     "reservedName": "此名称为官方保留"

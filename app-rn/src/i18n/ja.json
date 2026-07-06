@@ -584,7 +584,12 @@
     "passwordMismatch": "パスワードが一致しません。",
     "loginFailedInvalid": "メールアドレスまたはパスワードが正しくありません。",
     "accountExists": "このメールアドレスは登録済みです。ログインしてください。",
-    "genericError": "エラーが発生しました。もう一度お試しください。"
+    "genericError": "エラーが発生しました。もう一度お試しください。",
+    "setPasswordPromptTitle": "次回のログインを簡単にするためパスワードを設定しますか?",
+    "setPasswordPromptSubtitle": "次回からはメールアドレスとパスワードだけでログインできます。コードは不要です。",
+    "setNow": "パスワードを設定",
+    "skip": "スキップ — コードを使い続ける",
+    "passwordSetSuccess": "パスワードを設定しました。次回からこれでログインできます。"
   },
   "adminReports": {
     "title": "通報管理",
