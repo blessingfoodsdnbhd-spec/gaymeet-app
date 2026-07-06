@@ -384,18 +384,24 @@ export function ProfileScreen() {
             onPress={() => nav.navigate('Wallet')}
           />
           <Divider />
-          {/* Active Premium users get the name badge instead — the row is redundant (SSSSS). */}
-          {!(user as any).isPremium && (
-            <>
-              <SettingsRow
-                icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
-                label={t('profile.rows.premium')}
-                detail={t('profile.rows.premiumUpgrade')}
-                onPress={() => nav.navigate('Premium')}
-              />
-              <Divider />
-            </>
-          )}
+          {/* Premium / subscription entry — ALWAYS visible (Apple 2.1(b)): the
+              App Store reviewer must be able to reach the IAP regardless of
+              their account state. Previously this row was hidden for active
+              Premium users; a reviewer who redeemed an invite (both sides get
+              30d Premium) thus saw NO path to the subscription and the build
+              was rejected for "couldn't find the in-app purchase". Active
+              members just see "已订阅" and land on the manage/restore screen. */}
+          <SettingsRow
+            icon={<Crown size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+            label={t('profile.rows.premium')}
+            detail={
+              (user as any).isPremium
+                ? t('premium.active')
+                : t('profile.rows.premiumUpgrade')
+            }
+            onPress={() => nav.navigate('Premium')}
+          />
+          <Divider />
           {/* Gifting Premium is Premium-only (SSSSSS) — free users would mint
               free Premium for the recipient at no cost. Hide the entry; the
               backend also returns 403 PREMIUM_REQUIRED as the real gate. */}

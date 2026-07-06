@@ -520,6 +520,40 @@
     "auto": "跟随应用语言",
     "autoHint": "翻译为你当前的应用语言"
   },
+  "mapPicker": {
+    "locateMe": "找我位置",
+    "locDeniedTitle": "需要定位权限",
+    "locDeniedBody": "请在系统设置里允许 Meyou 访问你的位置。",
+    "openSettings": "去设置",
+    "locFailed": "无法获取位置"
+  },
+  "editRoom": {
+    "title": "编辑房间",
+    "nameSection": "房间名称",
+    "namePh": "输入房间名",
+    "saveName": "保存名称",
+    "saving": "保存中…",
+    "nameSaved": "房名已更新",
+    "saveFailed": "保存失败",
+    "colorSection": "房间颜色",
+    "colorSaved": "颜色已更新",
+    "membersSection": "成员（{{n}}）",
+    "kick": "踢出",
+    "kickTitle": "踢出 {{name}}？",
+    "kickBody": "踢出后该用户将无法再进入此房间。",
+    "kickCta": "踢出",
+    "kicked": "已踢出 {{name}}",
+    "statusSection": "房间状态",
+    "closeHint": "关闭后房间锁定，成员不能再发消息，但消息记录保留。可以再重新开启。",
+    "closeTitle": "关闭房间？",
+    "closeBody": "关闭后成员将无法发送消息，消息记录会保留。",
+    "closeCta": "关闭房间",
+    "closed": "房间已关闭",
+    "reopenTitle": "重新开启房间？",
+    "reopenBody": "重新开启后成员可以继续发消息。",
+    "reopenCta": "重新开启",
+    "reopened": "房间已重新开启"
+  },
   "inviteRoom": {
     "title": "邀请朋友",
     "scanHint": "扫码加入房间",
@@ -1664,7 +1698,7 @@
     "earnSection": "如何赚取金币",
     "earn": {
       "checkin": "每日签到",
-      "invite": "邀请好友加入",
+      "invite": "邀请好友",
       "profile": "完成个人资料",
       "vote": "参与投票"
     }
