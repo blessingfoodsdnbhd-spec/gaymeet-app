@@ -8,6 +8,17 @@ const appleSignin = require('apple-signin-auth');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
 const { signupLimiter } = require('../middleware/rateLimit');
+
+// Fire-and-forget: record the client IP on the user for anti-spam forensics.
+// Never blocks or throws — sign-in must succeed regardless of this write.
+function recordUserIp(userId, ip) {
+  if (!userId || !ip) return;
+  User.updateOne({ _id: userId }, { $set: { lastLoginIp: ip }, $addToSet: { ipAddresses: ip } }).catch(() => {});
+  User.updateOne(
+    { _id: userId, $or: [{ registrationIp: null }, { registrationIp: { $exists: false } }] },
+    { $set: { registrationIp: ip } },
+  ).catch(() => {});
+}
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
@@ -97,8 +108,9 @@ router.post('/login', async (req, res, next) => {
     const valid = await user.comparePassword(password);
     if (!valid) return err(res, '密码不正确', 401);
 
-    // Permanent ban — refuse to issue a session (登录拦截).
-    if (user.isBanned) return err(res, '账号已被封禁', 403);
+    // Permanent ban / soft-deletion — refuse to issue a session (登录拦截).
+    if (user.isBanned || user.isDeleted) return err(res, '账号已被停用', 403);
+    recordUserIp(user._id, req.clientIp);
 
     const tfa = await TwoFactorAuth.findOne({ user: user._id });
     if (tfa && tfa.isEnabled) {
@@ -212,7 +224,7 @@ router.post('/google', async (req, res, next) => {
       });
     }
 
-    if (user.isBanned) return err(res, '账号已被封禁', 403); // 登录拦截
+    if (user.isBanned || user.isDeleted) return err(res, '账号已被停用', 403); // 登录拦截
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
@@ -261,7 +273,7 @@ router.post('/apple', async (req, res, next) => {
       });
     }
 
-    if (user.isBanned) return err(res, '账号已被封禁', 403); // 登录拦截
+    if (user.isBanned || user.isDeleted) return err(res, '账号已被停用', 403); // 登录拦截
 
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
@@ -439,8 +451,9 @@ router.post('/verify-otp', async (req, res, next) => {
       }
     }
 
-    // Returning banned users can't sign in even via OTP (新用户不会被封禁).
-    if (!isNewUser && user.isBanned) return err(res, '账号已被封禁', 403);
+    // Returning banned / soft-deleted users can't sign in even via OTP.
+    if (!isNewUser && (user.isBanned || user.isDeleted)) return err(res, '账号已被停用', 403);
+    recordUserIp(user._id, req.clientIp);
 
     // Stamp this success so an immediate re-submit of the same code is idempotent
     // (see block at top). Best-effort — must never block a valid sign-in. Skip

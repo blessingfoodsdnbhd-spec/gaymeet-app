@@ -314,6 +314,7 @@ router.post('/', auth, voteCreateIpLimiter, voteCreateUserLimiter, async (req, r
 
     const ev = await VoteEvent.create({
       creatorId: req.user._id,
+      createdIp: req.clientIp || null,
       title,
       description: description.slice(0, DESC_MAX),
       category: b.category,
