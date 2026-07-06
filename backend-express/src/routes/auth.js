@@ -13,6 +13,7 @@ const { supported: supportedCurrencies } = require('../utils/currency');
 const { sendEmail } = require('../utils/email');
 const RefreshToken = require('../models/RefreshToken');
 const OtpCode = require('../models/OtpCode');
+const RecentVerification = require('../models/RecentVerification');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -287,9 +288,19 @@ const BYPASS_LOGINS = {
   'qa-premium@meyou.test': '222222',
 };
 
+// Issue an access+refresh session for a user and return the standard auth
+// payload. Shared by the normal verify-otp success path and its idempotent
+// re-submit path so both mint sessions identically (HIGH-C: session tracking).
+async function issueSession(res, user) {
+  const accessToken = signAccess(user._id.toString());
+  const refreshToken = signRefresh(user._id.toString());
+  await RefreshToken.record(user._id, refreshToken);
+  return ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+}
+
 // ── POST /api/auth/send-otp ───────────────────────────────────────────────────
 // Body: { email: string }
-// Generates a 6-digit OTP valid for 10 minutes and logs it to console.
+// Generates a 6-digit OTP valid for 30 minutes and emails it (rate-limited 30s).
 // TODO: replace console.log with a real email transport (nodemailer/SES/Resend).
 router.post('/send-otp', async (req, res, next) => {
   try {
@@ -302,8 +313,22 @@ router.post('/send-otp', async (req, res, next) => {
     // They sign in with their fixed code in verify-otp.
     if (BYPASS_LOGINS[normalizedEmail]) return ok(res, { success: true });
 
+    // Rate limit: at most one code per email per 30s. Each send upserts the
+    // same row and OVERWRITES the previous code, so a user who taps "resend"
+    // (or bounces back into the screen re-triggering send-otp) would invalidate
+    // the code from the email they already opened — the exact confusion behind
+    // the 2026-07-06 "received a code but it's wrong" reports. `updatedAt`
+    // (not createdAt) is the time of the LAST send: createdAt is frozen at the
+    // first-ever send by the upsert, so it can't gate resends.
+    const existing = await OtpCode.findOne({ email: normalizedEmail });
+    if (existing && existing.updatedAt && Date.now() - existing.updatedAt.getTime() < 30 * 1000) {
+      return err(res, '请稍候再试（30秒后可重发）/ Please wait 30s before resending', 429);
+    }
+
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    // 30-minute validity (was 10). A short TTL turned normal email delivery +
+    // typing latency into "expired" failures; 30m is the common OTP default.
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     // Persist in MongoDB (durable + shared across instances) — upsert so a
     // re-send overwrites any prior code for this email.
@@ -324,7 +349,7 @@ router.post('/send-otp', async (req, res, next) => {
     await sendEmail(
       normalizedEmail,
       'Your Meyou login code',
-      `Your Meyou verification code is ${code}. It expires in 10 minutes.`
+      `Your Meyou verification code is ${code}. It expires in 30 minutes.`
     );
 
     ok(res, { success: true });
@@ -342,22 +367,51 @@ router.post('/verify-otp', async (req, res, next) => {
     if (!email || !code) return err(res, 'email and code are required');
 
     const normalizedEmail = email.toLowerCase().trim();
+    const trimmedCode = code.trim();
+
+    // ── Idempotency ───────────────────────────────────────────────────────────
+    // A successful verify DELETES the OtpCode row (one-time use). If the client
+    // hangs on its loading spinner and the user re-submits the SAME code, the
+    // OtpCode lookup below finds nothing → we'd wrongly report "wrong code"
+    // (observed: meyousocialmedia@gmail.com, 2026-07-06 — account was created,
+    // proving the code WAS correct, yet a re-submit errored). So first check the
+    // short-lived RecentVerification stamp: same (email, code) verified in the
+    // last 3 min → just re-issue a session. Never blocks on ban here re-check
+    // below via issueSession's caller path.
+    const recent = await RecentVerification.findOne({ email: normalizedEmail, code: trimmedCode });
+    if (recent) {
+      const ru = await User.findById(recent.userId);
+      if (ru) {
+        if (ru.isBanned) return err(res, '账号已被封禁 / Account banned', 403);
+        return issueSession(res, ru);
+      }
+      // Stamp exists but user vanished (deleted) — fall through to normal path.
+    }
 
     // ── Fixed-code bypass ─────────────────────────────────────────────────────
     // Reviewers + the Meyou bot can't receive email (no provider wired / fake
     // address), so each accepts a scoped fixed code (see BYPASS_LOGINS above).
     // Everyone else still goes through the real OTP.
     const isReviewBypass =
-      !!BYPASS_LOGINS[normalizedEmail] && code.trim() === BYPASS_LOGINS[normalizedEmail];
+      !!BYPASS_LOGINS[normalizedEmail] && trimmedCode === BYPASS_LOGINS[normalizedEmail];
 
     if (!isReviewBypass) {
       const stored = await OtpCode.findOne({ email: normalizedEmail });
-      if (!stored) return err(res, '验证码无效或已过期', 401);
+      // Distinct, bilingual messages so each failure is actionable instead of a
+      // single ambiguous "code is wrong" (root cause of the 2026-07-06 signup
+      // drop-off). The shipped RN app still shows its own local string; these
+      // land in the resend Alert and future app versions (vc127+).
+      if (!stored) {
+        // No row: never requested, already consumed (>3 min ago), or TTL-purged.
+        return err(res, '请重新申请验证码（可能已过期或已使用过）/ Please request a new code (may have expired or been used)', 401);
+      }
       if (Date.now() > stored.expiresAt.getTime()) {
         await OtpCode.deleteOne({ email: normalizedEmail });
-        return err(res, '验证码已过期，请重新获取', 401);
+        return err(res, '验证码已过期，请重新申请 / Code expired, please request a new one', 401);
       }
-      if (stored.code !== code.trim()) return err(res, '验证码不正确', 401);
+      if (stored.code !== trimmedCode) {
+        return err(res, '验证码错误，请检查邮件 / Wrong code, please check the email again', 401);
+      }
       await OtpCode.deleteOne({ email: normalizedEmail }); // one-time use
     }
 
@@ -387,10 +441,18 @@ router.post('/verify-otp', async (req, res, next) => {
     // Returning banned users can't sign in even via OTP (新用户不会被封禁).
     if (!isNewUser && user.isBanned) return err(res, '账号已被封禁', 403);
 
-    const accessToken = signAccess(user._id.toString());
-    const refreshToken = signRefresh(user._id.toString());
-    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
-    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+    // Stamp this success so an immediate re-submit of the same code is idempotent
+    // (see block at top). Best-effort — must never block a valid sign-in. Skip
+    // for the fixed-code bypass (those codes are reusable by design).
+    if (!isReviewBypass) {
+      try {
+        await RecentVerification.create({ email: normalizedEmail, code: trimmedCode, userId: user._id });
+      } catch (_) {
+        /* ignore — idempotency is a nicety, not required for this sign-in */
+      }
+    }
+
+    return issueSession(res, user);
   } catch (e) {
     next(e);
   }
