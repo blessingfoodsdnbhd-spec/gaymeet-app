@@ -56,6 +56,9 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
   const tag = moment.tag ? tagById(moment.tag) : null;
   const tagLabel = tag ? (i18n.language?.startsWith('zh') ? tag.zh : tag.en) : '';
   const isMine = !!me && moment.user._id === me.id;
+  // Auto-hidden posts only reach the client for their own author, so a hidden
+  // flag on a rendered card means the viewer IS the author (审核中 · 他人看不到).
+  const pendingReview = isMine && !!moment.hidden;
 
   // Soft-delete the moment. Optimistically removes the row from every
   // moments query in the cache (MomentsScreen's ['moments', filter] and
@@ -161,6 +164,21 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         </Pressable>
       </View>
 
+      {/* 审核中 badge — this post was auto-hidden (3 reports); only the author
+          sees it, greyed out, with a note that others can't. */}
+      {pendingReview && (
+        <View
+          style={[
+            styles.reviewBanner,
+            { backgroundColor: theme.colors.surface2, borderColor: theme.colors.line },
+          ]}
+        >
+          <Text style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.text2 }}>
+            🔒 {t('moments.pendingReview')}
+          </Text>
+        </View>
+      )}
+
       {moment.content ? (
         // Wrap the caption in its own View. Under the New Architecture
         // (Fabric/Bridgeless, which this project has on) a bare <Text>
@@ -170,7 +188,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
         // visible as the second half of the caption getting clipped.
         // An isolating View pins the text's own layout box so the image's
         // reflow can't shift it.
-        <View style={styles.contentWrap}>
+        <View style={[styles.contentWrap, pendingReview && styles.dimmed]}>
           <Text style={[styles.content, { color: theme.colors.text }]}>
             {moment.content}
           </Text>
@@ -224,7 +242,7 @@ export function MomentItem({ moment, onToggleLike, onTapAuthor, onOpenComments }
       ) : null}
 
       {photos.length > 0 && (
-        <View style={styles.photoArea}>
+        <View style={[styles.photoArea, pendingReview && styles.dimmed]}>
           <PhotoGrid
             photos={photos}
             maxWidth={width}
@@ -410,6 +428,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 10,
   },
+  reviewBanner: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  // Grey-out the post body/photos while under review so the author sees at a
+  // glance it isn't live.
+  dimmed: { opacity: 0.5 },
   metaRow: {
     paddingHorizontal: 20,
     marginTop: 6,

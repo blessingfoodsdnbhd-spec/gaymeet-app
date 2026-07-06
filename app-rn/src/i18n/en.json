@@ -190,7 +190,7 @@
   "adminReports": {
     "title": "Reports",
     "empty": "No open reports 🎉",
-    "resolve": "Resolve",
+    "resolve": "Mark as resolved",
     "noReason": "(no reason given)",
     "kind": {
       "worldChat": "Plaza",
@@ -313,7 +313,12 @@
     "resendCta": "Resend code",
     "resendFailed": "Resend failed",
     "verify": "Continue",
-    "invalid": "That code isn't right — try again"
+    "invalid": "That code isn't right — try again",
+    "expired": "Code expired — request a new one",
+    "wrong": "Wrong code — check the email again",
+    "notFound": "Please request a new code",
+    "rateLimit": "Please wait 30 seconds and try again",
+    "expiresIn": "Code valid for {{minutes}} minutes"
   },
   "tags": {
     "title": "What are you into?",
@@ -804,6 +809,7 @@
     "mapApproxNote": "Approximate positions — exact locations are never shown"
   },
   "moments": {
+    "pendingReview": "Under review · others can't see it yet",
     "compose": {
       "ephemeral": "Disappears after 24h",
       "tag": "Tag Friends",

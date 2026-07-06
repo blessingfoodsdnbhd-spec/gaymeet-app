@@ -190,7 +190,7 @@
   "adminReports": {
     "title": "举报管理",
     "empty": "没有待处理举报 🎉",
-    "resolve": "已处理",
+    "resolve": "标记已处理",
     "noReason": "(未填写原因)",
     "kind": {
       "worldChat": "广场",
@@ -313,7 +313,12 @@
     "resendCta": "重发验证码",
     "resendFailed": "重发失败",
     "verify": "继续",
-    "invalid": "验证码不正确,请重试"
+    "invalid": "验证码不正确,请重试",
+    "expired": "验证码已过期,请重新申请",
+    "wrong": "验证码错误,请检查邮件",
+    "notFound": "请重新申请验证码",
+    "rateLimit": "请稍候 30 秒再试",
+    "expiresIn": "验证码 {{minutes}} 分钟内有效"
   },
   "tags": {
     "title": "你的兴趣?",
@@ -804,6 +809,7 @@
     "mapApproxNote": "位置为近似显示——绝不显示精确位置"
   },
   "moments": {
+    "pendingReview": "审核中 · 他人暂时看不到",
     "compose": {
       "ephemeral": "24 小时后消失",
       "tag": "标记朋友",
