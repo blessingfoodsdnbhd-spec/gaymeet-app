@@ -7,6 +7,8 @@ const env = require('./config/env');
 const { initSentry, captureException } = require('./lib/sentry');
 initSentry();
 const { globalLimiter, authLimiter } = require('./middleware/rateLimit');
+const recordIp = require('./middleware/recordIp');
+const ipBlocklist = require('./middleware/ipBlocklist');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -82,6 +84,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// ── Client IP + blocklist ───────────────────────────────────────────────────
+// recordIp sets req.clientIp (Cloudflare cf-connecting-ip); ipBlocklist rejects
+// blocked IPs (cached, fail-open). Must run before the routes.
+app.use(recordIp);
+app.use(ipBlocklist);
 
 // ── Rate limiting ──────────────────────────────────────────────────────────────
 app.use(globalLimiter);
@@ -168,6 +176,7 @@ app.use('/api/world-chat', worldChatRoutes); // 世界聊天室 — send/recent/
 app.use('/api/votes', votesRoutes); // 投票活動 — events/entries/votes/highlights + admin
 app.use('/api/admin', require('./routes/admin-users')); // POST /users/:id/popularity (X-Admin-Token)
 app.use('/api/admin', require('./routes/admin-moderation')); // ban/unban, chat/photo bans, delete photo/moment/vote, audit-log (ADMIN1)
+app.use('/api/admin', require('./routes/admin-ip')); // ban-ip / ban-user-ip / blocked-ips (IP blocklist)
 app.use('/api/admin', require('./routes/admin-discover')); // POST /discover/reset-all, /discover/reset-user/:userId — reset passed swipes
 app.use('/api/safe-dates', safeRoutesRoutes);
 app.use('/api/business', businessRoutes);

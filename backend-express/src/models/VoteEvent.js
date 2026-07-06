@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const voteEventSchema = new mongoose.Schema(
   {
     creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    createdIp: { type: String, default: null }, // client IP at creation (anti-spam forensics)
     title: { type: String, required: true, maxlength: 80 },
     description: { type: String, default: '', maxlength: 500 },
     category: {

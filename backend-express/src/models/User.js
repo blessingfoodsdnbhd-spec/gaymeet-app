@@ -297,6 +297,11 @@ const userSchema = new mongoose.Schema(
     bannedAt: { type: Date, default: null },
     banReason: { type: String, default: null },
     bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    // ── IP tracking (anti-spam forensics) ──────────────────────────────────────
+    registrationIp: { type: String, default: null }, // first signup IP
+    lastLoginIp: { type: String, default: null }, // most recent login IP
+    ipAddresses: { type: [String], default: [] }, // distinct IPs seen (deduped)
     // Granular capability bans — the account stays usable but the capability is
     // revoked. chatBanned blocks sending chat messages (read still works);
     // photoUploadBanned blocks uploading public/private photos.
