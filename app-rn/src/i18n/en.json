@@ -158,7 +158,38 @@
     "editNickname": "Edit nickname"
   },
   "auth": {
-    "sessionExpired": "Your session expired — please log in again"
+    "sessionExpired": "Your session expired — please log in again",
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Log in with your email and password.",
+    "login": "Log in",
+    "register": "Sign up",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "newPassword": "New password",
+    "codePlaceholder": "6-digit code",
+    "forgotPassword": "Forgot password?",
+    "useOtpLogin": "Sign in with a code",
+    "noAccount": "Don't have an account?",
+    "resend": "Resend code",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Enter your email — we'll send a verification code.",
+    "registerSetTitle": "Set your password",
+    "registerSetSubtitle": "Enter the code we emailed and choose a password.",
+    "resetTitle": "Reset your password",
+    "resetSubtitle": "Enter your email — we'll send a reset code.",
+    "resetSetTitle": "Choose a new password",
+    "resetSent": "If an account exists, a reset code has been sent.",
+    "resetPassword": "Reset password",
+    "passwordMinLength": "Password must be at least 6 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "loginFailedInvalid": "Incorrect email or password.",
+    "accountExists": "This email is already registered — please log in.",
+    "genericError": "Something went wrong — please try again.",
+    "setPasswordPromptTitle": "Set a password for faster login?",
+    "setPasswordPromptSubtitle": "Next time you can sign in with just your email and password — no code needed.",
+    "setNow": "Set password",
+    "skip": "Skip — keep using codes",
+    "passwordSetSuccess": "Password set. You can now log in with it."
   },
   "errors": {
     "reservedName": "This name is reserved for official use"
@@ -199,6 +230,17 @@
       "nsfwImage": "NSFW?",
       "user": "User"
     }
+  },
+  "adminQuarantine": {
+    "title": "IP quarantine",
+    "empty": "No quarantines pending",
+    "ban": "Ban IP + users",
+    "approve": "Approve + restore",
+    "userCount": "{{n}} users",
+    "voteCount": "{{n}} votes",
+    "confirmBanTitle": "Ban this IP?",
+    "confirmBanBody": "This bans {{ip}} and every account under it. This can't be undone here.",
+    "actionFailed": "Action failed — please try again."
   },
   "adminStats": {
     "title": "Analytics",
@@ -477,6 +519,40 @@
     "translateTo": "TRANSLATE TO",
     "auto": "Follow app language",
     "autoHint": "Translate into your current app language"
+  },
+  "mapPicker": {
+    "locateMe": "Find my location",
+    "locDeniedTitle": "Location needed",
+    "locDeniedBody": "Allow Meyou to access your location in Settings.",
+    "openSettings": "Open Settings",
+    "locFailed": "Couldn't get your location"
+  },
+  "editRoom": {
+    "title": "Edit room",
+    "nameSection": "Room name",
+    "namePh": "Enter a room name",
+    "saveName": "Save name",
+    "saving": "Saving…",
+    "nameSaved": "Room name updated",
+    "saveFailed": "Couldn't save",
+    "colorSection": "Room color",
+    "colorSaved": "Color updated",
+    "membersSection": "Members ({{n}})",
+    "kick": "Remove",
+    "kickTitle": "Remove {{name}}?",
+    "kickBody": "They won't be able to enter this room again.",
+    "kickCta": "Remove",
+    "kicked": "Removed {{name}}",
+    "statusSection": "Room status",
+    "closeHint": "Closing locks the room — members can't send messages, but the history is kept. You can re-open it later.",
+    "closeTitle": "Close room?",
+    "closeBody": "Members won't be able to send messages. The history is kept.",
+    "closeCta": "Close room",
+    "closed": "Room closed",
+    "reopenTitle": "Re-open room?",
+    "reopenBody": "Members will be able to send messages again.",
+    "reopenCta": "Re-open",
+    "reopened": "Room re-opened"
   },
   "inviteRoom": {
     "title": "Invite friends",
@@ -1127,6 +1203,7 @@
       "account": "Account & security",
       "photoRequests": "Photo requests",
       "adminReports": "Reports",
+      "adminQuarantine": "IP quarantine",
       "adminStats": "Analytics",
       "announcementAdmin": "Announcement manager",
       "verification": "Get verified",

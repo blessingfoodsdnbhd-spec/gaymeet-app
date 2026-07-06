@@ -50,7 +50,7 @@ export function OTPCodeScreen() {
     setErr(null);
     try {
       const res = await verifyOtp(route.params.email, c, inviteCode.trim().toUpperCase() || undefined);
-      await signIn(res.accessToken, res.refreshToken, res.user);
+      await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
       // On success the RootNavigator swaps to the app — nothing else to do.
     } catch {
       setErr('invalid');

@@ -301,3 +301,41 @@ export async function getAuditLog(
   const r = await api.get('/admin/audit-log', { params: { targetUser, limit } });
   return unwrap<{ actions: AdminAuditAction[]; count: number }>(r.data);
 }
+
+// ── IP quarantine review (anti-spam) ─────────────────────────────────────────
+// When >5 signups/day come from one IP the backend quarantines every user under
+// that IP + hides their content, pending an admin decision here: ban the lot or
+// approve (restore) them.
+
+export interface QuarantineUser {
+  id?: string;
+  email: string;
+  nickname: string;
+  createdAt: string;
+}
+
+export interface AdminQuarantine {
+  ip: string;
+  triggeredAt: string;
+  users: QuarantineUser[];
+  /** Number of votes/entries created by the quarantined users (hidden pending review). */
+  voteCount: number;
+}
+
+export async function getQuarantines(): Promise<{ quarantines: AdminQuarantine[]; count: number }> {
+  const r = await api.get('/admin/quarantine');
+  const data = unwrap<any>(r.data);
+  // Tolerate either { quarantines, count } or a bare array from the backend.
+  const quarantines: AdminQuarantine[] = Array.isArray(data) ? data : (data?.quarantines ?? []);
+  return { quarantines, count: data?.count ?? quarantines.length };
+}
+
+/** Ban the IP + every user under it (irreversible from here). */
+export async function banQuarantine(ip: string): Promise<void> {
+  await api.post(`/admin/quarantine/${encodeURIComponent(ip)}/ban`);
+}
+
+/** Approve the IP + restore its users' accounts and content. */
+export async function approveQuarantine(ip: string): Promise<void> {
+  await api.post(`/admin/quarantine/${encodeURIComponent(ip)}/approve`);
+}

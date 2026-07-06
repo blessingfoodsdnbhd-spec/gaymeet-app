@@ -28,6 +28,7 @@ import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScree
 import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
 import { AdminStatsScreen } from '../screens/admin/AdminStatsScreen';
 import { AdminVerificationsScreen } from '../screens/admin/AdminVerificationsScreen';
+import { AdminQuarantineScreen } from '../screens/admin/AdminQuarantineScreen';
 import { AdminUserModerationScreen } from '../screens/admin/AdminUserModerationScreen';
 import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { MyAnalyticsScreen } from '../screens/profile/MyAnalyticsScreen';
@@ -42,14 +43,13 @@ import { PremiumScreen } from '../screens/premium/PremiumScreen';
 import { UserDetailScreen } from '../screens/profile/UserDetailScreen';
 import { LikedMeScreen } from '../screens/profile/LikedMeScreen';
 import { ViewersScreen } from '../screens/profile/ViewersScreen';
-import { NotesInboxScreen } from '../screens/chat/NotesInboxScreen';
 import { WorldChatScreen } from '../screens/world-chat/WorldChatScreen';
 import { OnlineUsersListScreen } from '../screens/world-chat/OnlineUsersListScreen';
 import { InviteRoomScreen } from '../screens/InviteRoomScreen';
 import { ChangeRoomPasswordScreen } from '../screens/ChangeRoomPasswordScreen';
+import { EditRoomScreen } from '../screens/EditRoomScreen';
 import { ChannelRoomsScreen } from '../screens/world-chat/ChannelRoomsScreen';
 import { CreateRoomScreen } from '../screens/world-chat/CreateRoomScreen';
-import { NoteDetailScreen } from '../screens/chat/NoteDetailScreen';
 import { VotesListScreen } from '../screens/votes/VotesListScreen';
 import { VoteDetailScreen } from '../screens/votes/VoteDetailScreen';
 import { CreateVoteScreen } from '../screens/votes/CreateVoteScreen';
@@ -195,6 +195,11 @@ export function RootNavigator() {
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen
+            name="EditRoom"
+            component={EditRoomScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
             name="LikedMe"
             component={LikedMeScreen}
             options={{ animation: 'slide_from_right' }}
@@ -220,11 +225,6 @@ export function RootNavigator() {
             options={{ animation: 'slide_from_bottom' }}
           />
           <Stack.Screen
-            name="NotesInbox"
-            component={NotesInboxScreen}
-            options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
             name="ChannelRooms"
             component={ChannelRoomsScreen}
             options={{ animation: 'slide_from_right' }}
@@ -238,11 +238,6 @@ export function RootNavigator() {
             name="CreateRoom"
             component={CreateRoomScreen}
             options={{ animation: 'slide_from_bottom' }}
-          />
-          <Stack.Screen
-            name="NoteDetail"
-            component={NoteDetailScreen}
-            options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen name="VotesList" component={VotesListScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="VoteDetail" component={VoteDetailScreen} options={{ animation: 'slide_from_right' }} />
@@ -270,6 +265,7 @@ export function RootNavigator() {
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="AdminQuarantine" component={AdminQuarantineScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminStats" component={AdminStatsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminVerifications" component={AdminVerificationsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminUserModeration" component={AdminUserModerationScreen} options={{ animation: 'slide_from_right' }} />

@@ -22,6 +22,7 @@ import { requestLocation, getCurrentLocation } from '../utils/permissions';
 import { updateLocation, patchMe } from '../api/me';
 import { useAuth } from '../store/auth';
 import { useOnboarding } from '../store/onboarding';
+import { SetPasswordPromptModal } from '../components/auth/SetPasswordPromptModal';
 import { getConversations } from '../api/chats';
 import { on as wsOn } from '../api/ws';
 
@@ -205,6 +206,7 @@ export function MainTabs() {
   }, [queryClient]);
 
   return (
+    <>
     <Tab.Navigator
       initialRouteName={landProfile ? 'Profile' : 'Votes'}
       screenOptions={({ route }) => ({
@@ -300,5 +302,8 @@ export function MainTabs() {
         options={{ tabBarLabel: t('tabs.profile') }}
       />
     </Tab.Navigator>
+    {/* One-time post-login prompt for OTP-only accounts to set a password. */}
+    <SetPasswordPromptModal />
+    </>
   );
 }

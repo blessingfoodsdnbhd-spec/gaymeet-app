@@ -308,7 +308,16 @@ async function issueSession(res, user) {
   const accessToken = signAccess(user._id.toString());
   const refreshToken = signRefresh(user._id.toString());
   await RefreshToken.record(user._id, refreshToken);
-  return ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+  // hasPassword lets the client decide whether to prompt an OTP-only account to
+  // set a password for faster next login — without ever exposing the hash.
+  // `user.password` is select:false, so it's only in memory when the caller
+  // selected it (password login / a just-set password); otherwise do a tiny
+  // existence check.
+  const hasPassword =
+    user.password != null
+      ? true
+      : !!(await User.exists({ _id: user._id, password: { $exists: true, $ne: null } }));
+  return ok(res, { accessToken, refreshToken, user: user.toPublicJSON(), hasPassword });
 }
 
 // ── POST /api/auth/send-otp ───────────────────────────────────────────────────
@@ -465,6 +474,137 @@ router.post('/verify-otp', async (req, res, next) => {
         /* ignore — idempotency is a nicety, not required for this sign-in */
       }
     }
+
+    return issueSession(res, user);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/register-with-password ─────────────────────────────────────
+// Body: { email, password, otpCode, inviteCode? }
+// Email+password registration, gated by an OTP the user already received via
+// /send-otp (proves email ownership). Writes User.password (bcrypt-hashed by the
+// userSchema pre-save hook) — the SAME field /login and /reset-password use, NOT
+// a second passwordHash. Does NOT touch /verify-otp. An OTP-only user who never
+// set a password can call this to add one to their existing account.
+router.post('/register-with-password', async (req, res, next) => {
+  try {
+    const { email, password, otpCode, inviteCode } = req.body;
+    if (!email || !password || password.length < 6 || !otpCode) {
+      return err(res, '请填写有效邮箱、验证码和至少6位密码 / Enter a valid email, code and 6+ character password', 400);
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+    const trimmedCode = String(otpCode).trim();
+
+    // Verify the OTP against the same store /verify-otp reads (reviewer/bot fixed
+    // codes also accepted). We read the row but only consume it once the account
+    // write below succeeds, so a failed write doesn't burn the code.
+    const isBypass =
+      !!BYPASS_LOGINS[normalizedEmail] && trimmedCode === BYPASS_LOGINS[normalizedEmail];
+    if (!isBypass) {
+      const stored = await OtpCode.findOne({ email: normalizedEmail });
+      if (!stored) return err(res, '请重新申请验证码 / Please request a new code', 401);
+      if (Date.now() > stored.expiresAt.getTime()) {
+        await OtpCode.deleteOne({ email: normalizedEmail });
+        return err(res, '验证码已过期，请重新申请 / Code expired, please request a new one', 401);
+      }
+      if (stored.code !== trimmedCode) return err(res, '验证码错误 / Wrong code', 401);
+    }
+
+    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const isNewUser = !user;
+    // Already has a password → tell them to log in instead of silently overwriting it.
+    if (user && user.password) {
+      return err(res, '此邮箱已注册，请直接登录 / This email is already registered — please log in', 409);
+    }
+
+    if (!user) {
+      const myReferralCode = await generateUniqueReferralCode();
+      user = await User.create({
+        email: normalizedEmail,
+        password, // hashed by the userSchema pre-save hook
+        nickname: normalizedEmail.split('@')[0],
+        referralCode: myReferralCode,
+        // Match /register: default to KL centre so new users appear in nearby.
+        location: { type: 'Point', coordinates: [101.6869, 3.1390] },
+      });
+    } else {
+      // Existing OTP-only user adding a password to their account for the first time.
+      user.password = password;
+      await user.save();
+    }
+
+    // Consume the OTP now that the account write succeeded (skip reusable fixed codes).
+    if (!isBypass) await OtpCode.deleteOne({ email: normalizedEmail });
+
+    // Brand-new users may redeem an invite (best-effort — never blocks signup).
+    if (isNewUser && inviteCode) {
+      try {
+        const { redeemInvite } = require('../services/inviteService');
+        await redeemInvite(user._id, inviteCode);
+        user = (await User.findById(user._id)) || user; // reflect granted Premium
+      } catch (_) {
+        /* ignore — signup proceeds without the reward */
+      }
+    }
+
+    if (!isNewUser && user.isBanned) return err(res, '账号已被封禁 / Account banned', 403);
+
+    const accessToken = signAccess(user._id.toString());
+    const refreshToken = signRefresh(user._id.toString());
+    await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
+    // hasPassword is always true here (we just set it) → client won't prompt.
+    created(res, { accessToken, refreshToken, user: user.toPublicJSON(), hasPassword: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/set-password ───────────────────────────────────────────────
+// Authed. Lets a signed-in user set their FIRST password (or change it) — powers
+// the "set a password for faster login?" prompt shown to OTP-only accounts after
+// sign-in. Writes User.password (bcrypt-hashed by the userSchema pre-save hook);
+// never returns the hash.
+router.post('/set-password', auth, async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return err(res, '密码至少 6 位 / Password must be at least 6 characters', 400);
+    }
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return err(res, 'User not found', 404);
+    user.password = password; // hashed by the userSchema pre-save hook
+    await user.save();
+    ok(res, { success: true, hasPassword: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/auth/login-with-password ────────────────────────────────────────
+// Body: { email, password }
+// Password login for the RN app. Deliberately returns ONE error for both "no
+// such account" and "wrong password" to avoid account enumeration (the older
+// /login, kept untouched for the Flutter client, returns distinct messages).
+// Doesn't track devices — parity with the OTP path.
+router.post('/login-with-password', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return err(res, '请输入邮箱和密码 / Enter your email and password', 400);
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    if (!user || !user.password) return err(res, '邮箱或密码错误 / Incorrect email or password', 401);
+
+    const match = await user.comparePassword(password);
+    if (!match) return err(res, '邮箱或密码错误 / Incorrect email or password', 401);
+
+    if (user.isBanned) return err(res, '账号已被封禁 / Account banned', 403);
+    if (user.isDeleted) return err(res, '账号已停用 / Account deactivated', 403);
+
+    user.isOnline = true;
+    user.lastActiveAt = new Date();
+    await user.save();
 
     return issueSession(res, user);
   } catch (e) {

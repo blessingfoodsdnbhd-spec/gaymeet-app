@@ -12,6 +12,7 @@ import {
   Lock,
   Megaphone,
   RotateCcw,
+  ShieldAlert,
   ShieldCheck,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -142,6 +143,12 @@ export function SettingsScreen() {
                 icon={<ShieldCheck size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
                 label={t('profile.rows.adminReports')}
                 onPress={() => nav.navigate('AdminReports')}
+              />
+              <Divider />
+              <SettingsRow
+                icon={<ShieldAlert size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('profile.rows.adminQuarantine')}
+                onPress={() => nav.navigate('AdminQuarantine')}
               />
               <Divider />
               <SettingsRow

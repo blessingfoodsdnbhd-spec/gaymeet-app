@@ -27,8 +27,13 @@ export async function setTokens(access: string | null, refresh: string | null) {
 interface AuthState {
   user: User | null;
   hydrated: boolean;
+  /** True right after an OTP-only account (no password) signs in — drives the
+   *  one-time "set a password?" prompt. Reset on dismiss; only re-armed by the
+   *  next signIn (so a skip lasts the session, not forever). */
+  promptSetPassword: boolean;
   setUser: (u: User | null) => void;
-  signIn: (access: string, refresh: string, user: User) => Promise<void>;
+  signIn: (access: string, refresh: string, user: User, hasPassword?: boolean) => Promise<void>;
+  dismissPasswordPrompt: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -70,7 +75,7 @@ export async function expireSession() {
     wsDisconnect();
     await clearSessionCaches();
     await setTokens(null, null);
-    useAuth.setState({ user: null });
+    useAuth.setState({ user: null, promptSetPassword: false });
   } finally {
     setTimeout(() => {
       _expiring = false;
@@ -81,14 +86,19 @@ export async function expireSession() {
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   hydrated: false,
+  promptSetPassword: false,
 
   setUser: (u) => set({ user: u }),
 
-  signIn: async (access, refresh, user) => {
+  dismissPasswordPrompt: () => set({ promptSetPassword: false }),
+
+  signIn: async (access, refresh, user, hasPassword) => {
     // Start from a clean slate so no stale cache from a prior session shows.
     await clearSessionCaches();
     await setTokens(access, refresh);
-    set({ user });
+    // Offer to set a password only when the server says this account has none
+    // (OTP-only). Undefined (social login) leaves the prompt off.
+    set({ user, promptSetPassword: hasPassword === false });
     // Push registration is NO LONGER triggered here (PUSH1): firing it at
     // sign-in shows the OS permission prompt before a new user has even
     // finished onboarding. MainTabs now drives it — silently refreshing the
@@ -115,6 +125,6 @@ export const useAuth = create<AuthState>((set) => ({
     // discover cards or admin flag.
     await clearSessionCaches();
     await setTokens(null, null);
-    set({ user: null });
+    set({ user: null, promptSetPassword: false });
   },
 }));

@@ -1,8 +1,15 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import type { InboxNote, SentNote } from '../api/notes';
 
 export type AuthStackParamList = {
   Welcome: undefined;
+  /** vc128 — email + password login (primary email flow). Links out to
+   *  Register, ForgotPassword, and the OTP fallback (EmailEntry). */
+  EmailLogin: { email?: string } | undefined;
+  /** vc128 — email + password registration (email → OTP + password). */
+  Register: { inviteCode?: string } | undefined;
+  /** vc128 — forgot password (email → reset code + new password → auto login). */
+  ForgotPassword: { email?: string } | undefined;
+  /** OTP login/signup — kept as a fallback link from EmailLogin. */
   EmailEntry: undefined;
   OTPCode: { email: string; devCode?: string; inviteCode?: string };
   InterestTagsPicker: undefined;
@@ -29,6 +36,8 @@ export type RootStackParamList = {
   AdminReports: undefined;
   AdminStats: undefined;
   AdminVerifications: undefined;
+  /** vc128 — IP-quarantine review (anti-spam): ban or approve quarantined IPs. */
+  AdminQuarantine: undefined;
   AdminUserModeration: { userId: string };
   Verification: undefined;
   MyAnalytics: undefined;
@@ -77,6 +86,9 @@ export type RootStackParamList = {
   /** v3.1.10 — full-screen room password manager (creator only). Reached from
    *  the room header 🔑. */
   ChangeRoomPassword: { roomId: string; roomTitle?: string };
+  /** v3.1.11 — full-screen 编辑房间 (creator only): rename / recolor / member
+   *  management (kick) / close-reopen. Reached from the room header ⚙️. */
+  EditRoom: { roomId: string };
   Premium: undefined;
   LikedMe: undefined;
   Viewers: undefined;
@@ -85,7 +97,6 @@ export type RootStackParamList = {
   CreateVote: { editEventId?: string } | undefined;
   SubmitEntry: { eventId: string };
   EventUpdates: { eventId: string; isCreator?: boolean };
-  NotesInbox: undefined;
   /** A World Chat room (广场). roomId 'world' = global; a country code; or a
    *  24-hex custom ChatRoom id. `custom` flags a user-created room. */
   WorldChatRoom: { roomId?: string; title?: string; custom?: boolean; scrollToMessageId?: string };
@@ -99,8 +110,6 @@ export type RootStackParamList = {
   };
   /** Create a user room inside a 二级频道. */
   CreateRoom: { channelId: string; title: string; kind?: 'country' | 'friend' | 'voice' | 'interest' };
-  /** Inbox mode passes `note`; outbox (已发出) mode passes `sent`. */
-  NoteDetail: { note?: InboxNote; sent?: SentNote };
   PhotoRequests: undefined;
   TopicPersonaEdit: {
     topicSlug: string;
