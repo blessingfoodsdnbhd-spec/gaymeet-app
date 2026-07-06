@@ -4,6 +4,7 @@ const Moment = require('../models/Moment');
 const MomentComment = require('../models/MomentComment');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const postingSuspended = require('../middleware/postingSuspended');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
@@ -191,7 +192,7 @@ router.get('/:id', auth, async (req, res, next) => {
 });
 
 // ── POST /api/moments ─────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res, next) => {
+router.post('/', auth, postingSuspended, async (req, res, next) => {
   try {
     const {
       content = '', images = [], visibility = 'public', lat, lng,
@@ -469,7 +470,7 @@ function serializeComment(c, momentUserId) {
 }
 
 // ── POST /api/moments/:id/comment ─────────────────────────────────────────────
-router.post('/:id/comment', auth, async (req, res, next) => {
+router.post('/:id/comment', auth, postingSuspended, async (req, res, next) => {
   try {
     const { content, parentCommentId, photoUrl } = req.body;
     const text = (content || '').trim();

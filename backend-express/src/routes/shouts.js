@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Shout = require('../models/Shout');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const postingSuspended = require('../middleware/postingSuspended');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
 
@@ -84,7 +85,7 @@ router.get('/mine', auth, async (req, res, next) => {
 });
 
 // ── POST /api/shouts ──────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res, next) => {
+router.post('/', auth, postingSuspended, async (req, res, next) => {
   try {
     const { content } = req.body;
     if (!content) return err(res, 'content required');
