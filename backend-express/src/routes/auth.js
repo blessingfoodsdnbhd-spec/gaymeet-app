@@ -7,6 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const appleSignin = require('apple-signin-auth');
 const { signAccess, signRefresh, verifyRefresh } = require('../utils/jwt');
 const { auth } = require('../middleware/auth');
+const { signupLimiter } = require('../middleware/rateLimit');
 const { ok, created, err } = require('../utils/respond');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
@@ -302,7 +303,7 @@ async function issueSession(res, user) {
 // Body: { email: string }
 // Generates a 6-digit OTP valid for 30 minutes and emails it (rate-limited 30s).
 // TODO: replace console.log with a real email transport (nodemailer/SES/Resend).
-router.post('/send-otp', async (req, res, next) => {
+router.post('/send-otp', signupLimiter, async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email || !email.includes('@')) return err(res, '请输入有效的邮箱地址');

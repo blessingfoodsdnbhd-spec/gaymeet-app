@@ -10,6 +10,7 @@ const VoteEventUpdate = require('../models/VoteEventUpdate');
 const { recordContentReport, hiddenFilter } = require('../services/report');
 const Follow = require('../models/Follow');
 const { auth } = require('../middleware/auth');
+const { voteCreateIpLimiter, voteCreateUserLimiter } = require('../middleware/rateLimit');
 const { requireAdminAuth } = require('../middleware/adminAuth');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
@@ -288,7 +289,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ── POST /api/votes ───────────────────────────────────────────────────────────
-router.post('/', auth, async (req, res, next) => {
+// Rate limited: 3/hour per IP AND 3/hour per user (anti spam-bot contest floods).
+router.post('/', auth, voteCreateIpLimiter, voteCreateUserLimiter, async (req, res, next) => {
   try {
     const b = req.body || {};
     const title = String(b.title ?? '').trim();
