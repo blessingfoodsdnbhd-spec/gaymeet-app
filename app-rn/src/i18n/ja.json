@@ -252,6 +252,7 @@
       "chatTranslation": "チャット翻訳",
       "photoRequests": "写真リクエスト",
       "adminReports": "通報管理",
+      "adminQuarantine": "IP 隔離審査",
       "adminStats": "データ分析",
       "announcementAdmin": "お知らせ管理",
       "verification": "写真認証を受ける",
@@ -603,6 +604,17 @@
       "nsfwImage": "画像?",
       "user": "ユーザー"
     }
+  },
+  "adminQuarantine": {
+    "title": "IP 隔離審査",
+    "empty": "審査待ちの隔離はありません",
+    "ban": "IP + ユーザーを禁止",
+    "approve": "承認 + 復元",
+    "userCount": "{{n}} 人のユーザー",
+    "voteCount": "{{n}} 件の投票",
+    "confirmBanTitle": "この IP を禁止しますか?",
+    "confirmBanBody": "{{ip}} とその配下のすべてのアカウントを禁止します。ここからは取り消せません。",
+    "actionFailed": "操作に失敗しました。もう一度お試しください。"
   },
   "adminStats": {
     "title": "データ分析",

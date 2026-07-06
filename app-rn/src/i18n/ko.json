@@ -252,6 +252,7 @@
       "chatTranslation": "채팅 번역",
       "photoRequests": "사진 요청",
       "adminReports": "신고 관리",
+      "adminQuarantine": "IP 격리 심사",
       "adminStats": "데이터 분석",
       "announcementAdmin": "공지 관리",
       "verification": "사진 인증 받기",
@@ -603,6 +604,17 @@
       "nsfwImage": "이미지?",
       "user": "사용자"
     }
+  },
+  "adminQuarantine": {
+    "title": "IP 격리 심사",
+    "empty": "대기 중인 격리가 없습니다",
+    "ban": "IP + 사용자 차단",
+    "approve": "승인 + 복원",
+    "userCount": "{{n}}명의 사용자",
+    "voteCount": "{{n}}개의 투표",
+    "confirmBanTitle": "이 IP를 차단할까요?",
+    "confirmBanBody": "{{ip}} 및 그 아래의 모든 계정을 차단합니다. 여기서는 되돌릴 수 없습니다.",
+    "actionFailed": "작업에 실패했습니다. 다시 시도해 주세요."
   },
   "adminStats": {
     "title": "데이터 분석",

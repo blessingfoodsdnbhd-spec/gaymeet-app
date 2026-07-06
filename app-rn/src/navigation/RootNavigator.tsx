@@ -28,6 +28,7 @@ import { AnnouncementAdminScreen } from '../screens/admin/AnnouncementAdminScree
 import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
 import { AdminStatsScreen } from '../screens/admin/AdminStatsScreen';
 import { AdminVerificationsScreen } from '../screens/admin/AdminVerificationsScreen';
+import { AdminQuarantineScreen } from '../screens/admin/AdminQuarantineScreen';
 import { AdminUserModerationScreen } from '../screens/admin/AdminUserModerationScreen';
 import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { MyAnalyticsScreen } from '../screens/profile/MyAnalyticsScreen';
@@ -270,6 +271,7 @@ export function RootNavigator() {
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="AdminQuarantine" component={AdminQuarantineScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminStats" component={AdminStatsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminVerifications" component={AdminVerificationsScreen} options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="AdminUserModeration" component={AdminUserModerationScreen} options={{ animation: 'slide_from_right' }} />

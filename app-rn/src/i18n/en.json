@@ -231,6 +231,17 @@
       "user": "User"
     }
   },
+  "adminQuarantine": {
+    "title": "IP quarantine",
+    "empty": "No quarantines pending",
+    "ban": "Ban IP + users",
+    "approve": "Approve + restore",
+    "userCount": "{{n}} users",
+    "voteCount": "{{n}} votes",
+    "confirmBanTitle": "Ban this IP?",
+    "confirmBanBody": "This bans {{ip}} and every account under it. This can't be undone here.",
+    "actionFailed": "Action failed — please try again."
+  },
   "adminStats": {
     "title": "Analytics",
     "loadFailed": "Couldn't load stats",
@@ -1158,6 +1169,7 @@
       "account": "Account & security",
       "photoRequests": "Photo requests",
       "adminReports": "Reports",
+      "adminQuarantine": "IP quarantine",
       "adminStats": "Analytics",
       "announcementAdmin": "Announcement manager",
       "verification": "Get verified",

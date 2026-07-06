@@ -37,6 +37,8 @@ export type RootStackParamList = {
   AdminReports: undefined;
   AdminStats: undefined;
   AdminVerifications: undefined;
+  /** vc128 — IP-quarantine review (anti-spam): ban or approve quarantined IPs. */
+  AdminQuarantine: undefined;
   AdminUserModeration: { userId: string };
   Verification: undefined;
   MyAnalytics: undefined;

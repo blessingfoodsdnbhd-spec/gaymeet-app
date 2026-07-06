@@ -231,6 +231,17 @@
       "user": "用户"
     }
   },
+  "adminQuarantine": {
+    "title": "IP 隔离审核",
+    "empty": "目前没有隔离审核",
+    "ban": "封禁 IP + 用户",
+    "approve": "放行 + 恢复用户",
+    "userCount": "{{n}} 个用户",
+    "voteCount": "{{n}} 条投票",
+    "confirmBanTitle": "封禁此 IP?",
+    "confirmBanBody": "将封禁 {{ip}} 及其下所有账号,此操作无法在此撤销。",
+    "actionFailed": "操作失败,请重试。"
+  },
   "adminStats": {
     "title": "数据分析",
     "loadFailed": "加载失败",
@@ -1158,6 +1169,7 @@
       "account": "账户与安全",
       "photoRequests": "私密照申请",
       "adminReports": "举报管理",
+      "adminQuarantine": "IP 隔离审核",
       "adminStats": "数据分析",
       "announcementAdmin": "公告管理",
       "verification": "申请照片认证",
