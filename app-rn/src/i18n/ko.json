@@ -73,7 +73,12 @@
     "resendCta": "코드 재전송",
     "resendFailed": "재전송 실패",
     "verify": "계속",
-    "invalid": "코드가 올바르지 않습니다. 다시 시도해 주세요"
+    "invalid": "코드가 올바르지 않습니다. 다시 시도해 주세요",
+    "expired": "코드가 만료되었습니다. 다시 요청해 주세요",
+    "wrong": "코드가 틀립니다. 이메일을 확인해 주세요",
+    "notFound": "코드를 다시 요청해 주세요",
+    "rateLimit": "30초 후에 다시 시도해 주세요",
+    "expiresIn": "코드는 {{minutes}}분간 유효합니다"
   },
   "errors": {
     "reservedName": "이 이름은 공식 용도로 예약되어 있습니다"
@@ -147,6 +152,7 @@
     "mapApproxNote": "대략적인 위치입니다 — 정확한 위치는 표시되지 않습니다"
   },
   "moments": {
+    "pendingReview": "검토 중 · 다른 사람에게는 보이지 않습니다",
     "compose": {
       "ephemeral": "24시간 후 사라짐",
       "tag": "친구 태그",
@@ -563,7 +569,7 @@
   "adminReports": {
     "title": "신고 관리",
     "empty": "처리할 신고가 없습니다 🎉",
-    "resolve": "처리 완료",
+    "resolve": "처리 완료로 표시",
     "noReason": "(사유 없음)",
     "kind": {
       "worldChat": "광장",

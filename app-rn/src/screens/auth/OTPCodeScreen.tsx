@@ -30,20 +30,36 @@ export function OTPCodeScreen() {
   const nav = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const signIn = useAuth((s) => s.signIn);
 
   const [code, setCode] = useState('');
   const [inviteCode, setInviteCode] = useState(route.params.inviteCode ?? '');
   const [busy, setBusy] = useState(false);
+  // `err` now holds the exact string to display (the backend's specific reason
+  // when present) instead of a sentinel — so the user sees WHY the code failed
+  // (expired vs wrong vs not-found), not one generic line.
   const [err, setErr] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(59);
+  // Rate-limit cooldown (seconds). On a 429 we disable Continue + show a
+  // countdown so the user waits instead of hammering the endpoint.
+  const [cooldown, setCooldown] = useState(0);
   // Ref guard so the auto-submit effect + the Continue button can't double-fire
   // verifyOtp in the same tick (setBusy is async).
   const submittingRef = useRef(false);
 
+  // The backend returns bilingual messages as "中文 / English". Show the half
+  // that matches the active UI language.
+  const localizeBackend = (msg: string) => {
+    const parts = msg.split(' / ');
+    if (parts.length >= 2) {
+      return (i18n.language?.startsWith('zh') ? parts[0] : parts[parts.length - 1]).trim();
+    }
+    return msg.trim();
+  };
+
   const submit = async (c: string) => {
-    if (submittingRef.current || c.length !== 6) return;
+    if (submittingRef.current || c.length !== 6 || cooldown > 0) return;
     submittingRef.current = true;
     Keyboard.dismiss();
     setBusy(true);
@@ -51,9 +67,20 @@ export function OTPCodeScreen() {
     try {
       const res = await verifyOtp(route.params.email, c, inviteCode.trim().toUpperCase() || undefined);
       await signIn(res.accessToken, res.refreshToken, res.user);
-      // On success the RootNavigator swaps to the app — nothing else to do.
-    } catch {
-      setErr('invalid');
+      // On success the RootNavigator swaps the whole auth stack for the app —
+      // there's no route left to swipe back to, so the code can't be re-entered.
+    } catch (e: any) {
+      const status = e?.response?.status;
+      const backendMsg = e?.response?.data?.error || e?.response?.data?.message;
+      if (status === 429) {
+        setErr(t('otp.rateLimit'));
+        setCooldown(30);
+      } else if (backendMsg) {
+        // Surface the backend's specific reason (expired / wrong / not-found).
+        setErr(localizeBackend(backendMsg));
+      } else {
+        setErr(t('otp.invalid'));
+      }
       setCode('');
     } finally {
       submittingRef.current = false;
@@ -72,6 +99,13 @@ export function OTPCodeScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Tick down the rate-limit cooldown (re-enables Continue at 0).
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setTimeout(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
+
   // Auto-submit once the OTP is 6 digits AND the optional invite code is either
   // empty or complete (6+ chars) — so a user mid-typing an invite isn't cut off,
   // but the common no-invite login fires immediately.
@@ -89,6 +123,12 @@ export function OTPCodeScreen() {
       setResendIn(59);
     } catch (e: any) {
       const status = e?.response?.status;
+      if (status === 429) {
+        // Resent too fast — reflect the rate limit inline + restart the timer.
+        setErr(t('otp.rateLimit'));
+        setResendIn((s) => Math.max(s, 30));
+        return;
+      }
       const detail = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'unknown';
       Alert.alert(t('otp.resendFailed'), `${detail}${status ? ` (HTTP ${status})` : ''}`);
     }
@@ -155,8 +195,18 @@ export function OTPCodeScreen() {
                 marginTop: 24,
               }}
             />
-            {err && (
-              <Text style={{ color: theme.colors.danger, fontSize: 13, marginTop: 8 }}>{t('otp.invalid')}</Text>
+            {/* Error / cooldown / expiry hint — the row below the code input.
+                Cooldown wins, then any error, else the "valid for 30 min" hint. */}
+            {cooldown > 0 ? (
+              <Text style={{ color: theme.colors.danger, fontSize: 13, marginTop: 8 }}>
+                {t('otp.rateLimit')} ({cooldown})
+              </Text>
+            ) : err ? (
+              <Text style={{ color: theme.colors.danger, fontSize: 13, marginTop: 8 }}>{err}</Text>
+            ) : (
+              <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
+                {t('otp.expiresIn', { minutes: 30 })}
+              </Text>
             )}
 
             {/* Optional invite code — new users get 30 days Premium for both sides. */}
@@ -194,7 +244,7 @@ export function OTPCodeScreen() {
                 label={t('otp.verify')}
                 onPress={() => submit(code)}
                 loading={busy}
-                disabled={code.length !== 6}
+                disabled={code.length !== 6 || busy || cooldown > 0}
                 fullWidth
               />
             </View>

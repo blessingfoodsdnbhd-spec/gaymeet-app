@@ -39,6 +39,10 @@ export interface Moment {
   locationLabel?: string | null;
   /** GeoJSON point: coordinates are [lng, lat]. Drives the "View on map" link. */
   location?: { type?: string; coordinates?: number[] } | null;
+  /** Auto-hidden after 3 unique reports. The backend only returns hidden posts
+   *  to their own author — so when this is true on a card the viewer IS the
+   *  author, and we show an "under review · others can't see it" badge. */
+  hidden?: boolean;
 }
 
 function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
