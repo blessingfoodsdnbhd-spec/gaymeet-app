@@ -101,6 +101,36 @@ export const sendOtp = (email: string) =>
 export const verifyOtp = (email: string, code: string, inviteCode?: string) =>
   postAuth<AuthResponse>('/auth/verify-otp', { email, code, inviteCode: inviteCode || undefined });
 
+// ── Email + password auth (vc128) ───────────────────────────────────────────
+// Register requires an OTP the user already received via sendOtp() — this proves
+// email ownership before a password is set. Login uses a single ambiguous error
+// server-side (anti-enumeration). OTP login (sendOtp/verifyOtp) is kept as a
+// fallback path reachable from the login screen.
+export const registerWithPassword = (
+  email: string,
+  password: string,
+  otpCode: string,
+  inviteCode?: string,
+  opts?: PostAuthOpts,
+) =>
+  postAuth<AuthResponse>(
+    '/auth/register-with-password',
+    { email, password, otpCode, inviteCode: inviteCode || undefined },
+    opts,
+  );
+
+export const loginWithPassword = (email: string, password: string, opts?: PostAuthOpts) =>
+  postAuth<AuthResponse>('/auth/login-with-password', { email, password }, opts);
+
+// Forgot-password reuses the existing server endpoints. sendResetCode emails a
+// reset code (always resolves, even for unknown emails — anti-enumeration);
+// resetPassword sets the new password (the client then logs in with it).
+export const sendResetCode = (email: string) =>
+  postAuth<{ success: true }>('/auth/forgot-password', { email });
+
+export const resetPassword = (email: string, code: string, newPassword: string) =>
+  postAuth<{ success: true }>('/auth/reset-password', { email, code, newPassword });
+
 export const signInApple = (identityToken: string, name?: string, opts?: PostAuthOpts) =>
   postAuth<AuthResponse>('/auth/apple', { identityToken, name }, opts);
 

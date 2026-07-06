@@ -158,7 +158,33 @@
     "editNickname": "編輯暱稱"
   },
   "auth": {
-    "sessionExpired": "登入已过期,请重新登入"
+    "sessionExpired": "登入已过期,请重新登入",
+    "loginTitle": "欢迎回来",
+    "loginSubtitle": "使用邮箱和密码登录。",
+    "login": "登录",
+    "register": "注册",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "newPassword": "新密码",
+    "codePlaceholder": "6 位验证码",
+    "forgotPassword": "忘记密码?",
+    "useOtpLogin": "使用验证码登录",
+    "noAccount": "还没有账号?",
+    "resend": "重新发送验证码",
+    "registerTitle": "创建账号",
+    "registerSubtitle": "输入邮箱,我们会给你发送验证码。",
+    "registerSetTitle": "设置密码",
+    "registerSetSubtitle": "输入邮件中的验证码并设置密码。",
+    "resetTitle": "重设密码",
+    "resetSubtitle": "输入邮箱,我们会给你发送验证码。",
+    "resetSetTitle": "设置新密码",
+    "resetSent": "如果账号存在,验证码已发送。",
+    "resetPassword": "重设密码",
+    "passwordMinLength": "密码至少 6 位。",
+    "passwordMismatch": "两次密码不一致。",
+    "loginFailedInvalid": "邮箱或密码错误。",
+    "accountExists": "此邮箱已注册,请直接登录。",
+    "genericError": "出错了,请重试。"
   },
   "errors": {
     "reservedName": "此名称为官方保留"

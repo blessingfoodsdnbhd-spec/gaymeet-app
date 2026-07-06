@@ -3,6 +3,14 @@ import type { InboxNote, SentNote } from '../api/notes';
 
 export type AuthStackParamList = {
   Welcome: undefined;
+  /** vc128 — email + password login (primary email flow). Links out to
+   *  Register, ForgotPassword, and the OTP fallback (EmailEntry). */
+  EmailLogin: { email?: string } | undefined;
+  /** vc128 — email + password registration (email → OTP + password). */
+  Register: { inviteCode?: string } | undefined;
+  /** vc128 — forgot password (email → reset code + new password → auto login). */
+  ForgotPassword: { email?: string } | undefined;
+  /** OTP login/signup — kept as a fallback link from EmailLogin. */
   EmailEntry: undefined;
   OTPCode: { email: string; devCode?: string; inviteCode?: string };
   InterestTagsPicker: undefined;

@@ -158,7 +158,33 @@
     "editNickname": "Edit nickname"
   },
   "auth": {
-    "sessionExpired": "Your session expired — please log in again"
+    "sessionExpired": "Your session expired — please log in again",
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Log in with your email and password.",
+    "login": "Log in",
+    "register": "Sign up",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "newPassword": "New password",
+    "codePlaceholder": "6-digit code",
+    "forgotPassword": "Forgot password?",
+    "useOtpLogin": "Sign in with a code",
+    "noAccount": "Don't have an account?",
+    "resend": "Resend code",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Enter your email — we'll send a verification code.",
+    "registerSetTitle": "Set your password",
+    "registerSetSubtitle": "Enter the code we emailed and choose a password.",
+    "resetTitle": "Reset your password",
+    "resetSubtitle": "Enter your email — we'll send a reset code.",
+    "resetSetTitle": "Choose a new password",
+    "resetSent": "If an account exists, a reset code has been sent.",
+    "resetPassword": "Reset password",
+    "passwordMinLength": "Password must be at least 6 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "loginFailedInvalid": "Incorrect email or password.",
+    "accountExists": "This email is already registered — please log in.",
+    "genericError": "Something went wrong — please try again."
   },
   "errors": {
     "reservedName": "This name is reserved for official use"

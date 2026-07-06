@@ -213,7 +213,7 @@ export function WelcomeScreen() {
         <Button
           label={t('welcome.continueEmail')}
           variant="ghost"
-          onPress={() => nav.navigate('EmailEntry')}
+          onPress={() => nav.navigate('EmailLogin')}
           disabled={!!busy}
           fullWidth
         />
