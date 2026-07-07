@@ -64,12 +64,30 @@ async function refreshAccessToken(): Promise<string | null> {
 api.interceptors.response.use(
   (r) => r,
   async (err) => {
-    const cfg = err?.config as (AxiosRequestConfig & { _retried?: boolean }) | undefined;
+    const cfg = err?.config as
+      | (AxiosRequestConfig & { _retried?: boolean; skipAuthLogout?: boolean })
+      | undefined;
     // Auth endpoints (login / OTP / refresh) legitimately return 401 (wrong
     // code, etc.) — those must surface to the caller, NOT trigger a logout.
     const isAuthCall = (cfg?.url || '').includes('/auth/');
+    // Best-effort background calls (push-token register/unregister) opt out of
+    // the session-expiry logout. Their 401 is almost always a boot-time race —
+    // the FCM onTokenRefresh subscriber fires before the access token is stored
+    // (or moments after a fresh sign-in) — and letting the global handler run
+    // refresh→expireSession would WIPE a perfectly valid session, bouncing a
+    // just-registered/just-logged-in user back to Welcome. The callers already
+    // swallow the failure; the token re-registers on the next boot. (Root cause
+    // of the vc128 "new email users can't get in" report — social login never
+    // hit this because it doesn't ride the same early push-token race.)
+    const skipAuthLogout = cfg?.skipAuthLogout === true;
 
-    if (err?.response?.status === 401 && cfg && !cfg._retried && !isAuthCall) {
+    if (
+      err?.response?.status === 401 &&
+      cfg &&
+      !cfg._retried &&
+      !isAuthCall &&
+      !skipAuthLogout
+    ) {
       cfg._retried = true;
       const newAccess = await refreshAccessToken();
       if (newAccess) {

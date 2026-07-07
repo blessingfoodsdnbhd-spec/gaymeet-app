@@ -2,6 +2,14 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.16] — build 129 (2026-07-07)
+
+### English
+- **Fixed: email sign-up / sign-in could dump you back to the start screen.** New email accounts (and returning ones) could complete registration or password login yet land back on the "Create your account" / Welcome screen instead of entering the app. Two causes, both fixed: (1) the best-effort push-notification-token registration could return 401 during a boot-time race and wrongly log the session out; (2) the interest-picker onboarding step is now a reliable top-level screen, so a fresh sign-in always advances to it. Google / Apple sign-in were never affected.
+
+### 中文
+- **修复:邮箱注册 / 登录后被弹回起始页。** 新邮箱账号(以及老账号)完成注册或密码登录后,可能没有进入 App,而是弹回「创建账号 / 欢迎」页。两个原因均已修复:(1) 尽力而为的推送通知 token 注册在启动竞态下可能返回 401,被误判为会话过期而登出;(2) 兴趣选择这一 onboarding 步骤现改为可靠的顶层页面,新登录后必定进入该页。Google / Apple 登录一直不受影响。
+
 ## [3.1.15] — build 128 (2026-07-07)
 
 ### English
