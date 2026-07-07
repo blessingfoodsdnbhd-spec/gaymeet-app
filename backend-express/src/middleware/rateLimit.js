@@ -63,10 +63,31 @@ const authLimiter = createLimiter({
   message: 'Too many login attempts, please try again in 15 minutes.',
 });
 
-/** Signup / OTP: 3 send-otp requests per IP per hour (anti mass-account bots). */
+/**
+ * Signup / OTP send-otp limiter — a COARSE anti-abuse backstop only.
+ *
+ * WARNING (learned the hard way, vc128): this is keyed by IP, and `send-otp` is
+ * the FIRST step of BOTH email registration AND email OTP-login. The previous
+ * `max: 3` per hour blocked legitimate users almost immediately:
+ *   • a single user tapping "resend" or bouncing back into the screen re-fires
+ *     send-otp, so one honest sign-in easily costs 2-3 requests;
+ *   • many real users share one IP (office / campus Wi-Fi, and especially mobile
+ *     carrier CGNAT where thousands egress through a handful of addresses) — they
+ *     all draw from the SAME per-IP budget, so 3/hr is exhausted by a few people.
+ * Google / Apple sign-in never hits send-otp, so ONLY email users were affected —
+ * which is exactly the "email signup/login is broken but social login is fine"
+ * report this fixes.
+ *
+ * The precise per-account control is the per-email 30s cooldown inside the
+ * send-otp handler (routes/auth.js) — that, plus the requirement to receive the
+ * emailed code, is what actually stops per-address spam. This IP limiter exists
+ * only to cap a script fan-out (one IP cycling many addresses / email-bombing),
+ * so it can be generous: 100/hr/IP is far above any real human or shared-IP use
+ * yet still trips on runaway automation.
+ */
 const signupLimiter = createLimiter({
   windowMs: HOUR,
-  max: 3,
+  max: 100,
   prefix: 'signup:',
   message: '注册请求过频，请稍后再试 / Too many signup attempts, please wait an hour.',
 });
