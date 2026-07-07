@@ -7,13 +7,20 @@ function unwrap<T>(p: Promise<{ data: { data?: T } & T }>): Promise<T> {
   });
 }
 
-/** Register the device's FCM/APNs push token with the backend. */
+/** Register the device's FCM/APNs push token with the backend.
+ *  `skipAuthLogout`: this is a best-effort background call that can fire before
+ *  the access token is stored (FCM onTokenRefresh at boot) — a 401 here must
+ *  NOT log the user out. See the response interceptor in ./client. */
 export const registerToken = (token: string) =>
-  unwrap<{ success: true }>(api.post('/notifications/token', { token }));
+  unwrap<{ success: true }>(
+    api.post('/notifications/token', { token }, { skipAuthLogout: true } as any),
+  );
 
 /** Wipe the server-side token (on sign-out). */
 export const unregisterToken = () =>
-  unwrap<{ success: true }>(api.delete('/notifications/token'));
+  unwrap<{ success: true }>(
+    api.delete('/notifications/token', { skipAuthLogout: true } as any),
+  );
 
 // ── Notification Center (persisted records) ───────────────────────────────────
 

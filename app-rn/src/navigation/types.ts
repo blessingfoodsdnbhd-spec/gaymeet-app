@@ -26,6 +26,10 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
+  /** Interest onboarding gate — top-level, state-driven (shown while the
+   *  signed-in user has no interestsOnboardedAt). Replaces the old
+   *  AuthStack-nested InterestTagsPicker route. */
+  InterestGate: undefined;
   /** First-run intro for new accounts, shown before Main. */
   Onboarding: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;

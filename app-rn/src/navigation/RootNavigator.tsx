@@ -6,6 +6,7 @@ import { useAuth } from '../store/auth';
 import { useOnboarding } from '../store/onboarding';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
+import { InterestTagsPickerScreen } from '../screens/auth/InterestTagsPickerScreen';
 import { OnboardingFlow } from '../screens/onboarding/OnboardingFlow';
 import { ChatDetailScreen } from '../screens/chats/ChatDetailScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
@@ -80,22 +81,25 @@ export function RootNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!signedIn ? (
+      {!user ? (
         <Stack.Screen name="Auth">
-          {/* The `key` forces AuthStack to fully remount when needsTags
-              toggles. Without it, the inner navigator's initialRouteName
-              (which is only consulted at mount) is ignored — a new user
-              who just signed in via Google / email / Apple would stay
-              stuck on the Welcome screen instead of being routed to
-              InterestTagsPicker. That was the "Google sign-in completes
-              but app stays on Welcome with no error" bug from build #11. */}
-          {() => (
-            <AuthStack
-              key={needsTags ? 'auth-needs-tags' : 'auth-welcome'}
-              needsTags={needsTags}
-            />
-          )}
+          {() => <AuthStack needsTags={false} />}
         </Stack.Screen>
+      ) : needsTags ? (
+        /* Interest onboarding is a TOP-LEVEL, state-driven screen (like Main) —
+           NOT a route inside AuthStack. When a fresh sign-in flips needsTags
+           true, RootNavigator swaps the whole top-level screen, which React
+           Navigation always honours. The old approach (an InterestTagsPicker
+           route inside AuthStack, reached by remounting AuthStack via a changing
+           `key`) did NOT reliably remount: the <Stack.Screen name="Auth"> render
+           prop is memoized, so after email/Google sign-in from a deep screen the
+           user stayed stuck on the Register/Welcome screen instead of the picker
+           (vc128 "signed up but can't get into the app"). */
+        <Stack.Screen
+          name="InterestGate"
+          component={InterestTagsPickerScreen}
+          options={{ gestureEnabled: false }}
+        />
       ) : showOnboarding ? (
         <Stack.Screen name="Onboarding" component={OnboardingFlow} />
       ) : (
