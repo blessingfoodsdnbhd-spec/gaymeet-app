@@ -169,9 +169,8 @@ export function App() {
               {/* Daily login-streak check-in — shows once per UTC day after the
                   announcement modal settles. */}
               <StreakBootstrap />
-              {/* Self-hosted OTA check + force/soft upgrade gate. Kicks the
-                  background expo-updates fetch and, if this build is older than
-                  the /config/version floor, shows the (un)dismissable modal.
+              {/* Force/soft upgrade gate. If this build is older than the
+                  /config/version floor, shows the (un)dismissable modal.
                   Not auth-gated — an ancient build is blocked even at login. */}
               <VersionGateBootstrap />
             </NavigationContainer>

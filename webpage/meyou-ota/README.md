@@ -1,5 +1,11 @@
 # Meyou OTA — Cloudflare Worker (deploy)
 
+> ⏸ **Status: PARKED (decided 2026-07-08).** This Worker is a **verified but
+> un-deployed** stub kept for future use. The app is **not** integrated with
+> expo-updates, and the publish scripts were removed from the tree (restore from
+> PR #296 history to revive). Do **not** deploy this without also re-adding the
+> app-side integration — otherwise there's nothing to serve to.
+
 Self-hosted Expo Updates server. Replaces EAS Update. **$0/month** on the
 Cloudflare free tier (10M Worker req + 10GB R2 + 1GB KV — Meyou uses a tiny
 fraction of this).

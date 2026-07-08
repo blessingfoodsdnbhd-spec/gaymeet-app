@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getVersionConfig, type VersionGate } from '../api/config';
 import { isOlder } from './versionCompare';
 import { ForceUpdateModal, type GateMode } from './ForceUpdateModal';
-import { checkAndFetchUpdate } from './otaUpdates';
 
 /** The build's own marketing version, e.g. "3.1.16". */
 function currentVersion(): string {
@@ -34,22 +33,15 @@ function decide(cfg: { ios: VersionGate; android: VersionGate }): Decision {
 }
 
 /**
- * Mounts once at the App root (alongside AnnouncementBootstrap). Two jobs:
- *   1. Kick the background OTA check/fetch on mount (no-op unless the build
- *      ships expo-updates).
- *   2. Poll the public /config/version gate and show the force/soft upgrade
- *      modal when this build is too old. The query is NOT auth-gated — an
- *      ancient build should be blocked even at the login screen.
+ * Mounts once at the App root (alongside AnnouncementBootstrap). Polls the
+ * public /config/version gate and shows the force/soft upgrade modal when this
+ * build is too old. The query is NOT auth-gated — an ancient build should be
+ * blocked even at the login screen.
  *
  * Renders nothing when no upgrade is due, so it's safe anywhere in the tree.
  */
 export function VersionGateBootstrap() {
   const [softDismissed, setSoftDismissed] = useState(false);
-
-  // Fire-and-forget OTA check on cold start.
-  useEffect(() => {
-    checkAndFetchUpdate();
-  }, []);
 
   const q = useQuery({
     queryKey: ['config', 'version'],
