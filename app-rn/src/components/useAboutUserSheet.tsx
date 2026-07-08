@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../store/auth';
 import { getUserById } from '../api/me';
 import { swipe, type DiscoverCardUser } from '../api/discover';
 import { AboutUserSheet } from '../screens/discover/AboutUserSheet';
+import { showToast } from '../utils/toastBridge';
 
 // Deterministic 0–9 placeholder-gradient index. Mirrors the idxFor helpers in
 // MomentItem / CommentsScreen so the avatar gradient stays stable for a user
@@ -34,6 +36,7 @@ function idxFor(id: string) {
  *   ...{aboutSheet}   // render once at the screen root
  */
 export function useAboutUserSheet() {
+  const { t } = useTranslation();
   const myId = useAuth((s) => s.user?.id);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -78,10 +81,14 @@ export function useAboutUserSheet() {
       onClose={close}
       onLike={() => {
         const id = sheetUser?.id;
-        close();
-        // "想认识" records a like, same as from the Discover deck. Fire and
-        // forget — the sheet already greyed the button optimistically.
-        if (id) swipe(id, 'like').catch(() => {});
+        // Keep the sheet OPEN — the sheet greys its own button to "已喜欢".
+        // Previously we close()d here, so tapping "想认识" from a Moments /
+        // Comments avatar dismissed the profile with no feedback. Fire the
+        // like and forget (backend swipe is idempotent).
+        if (id) {
+          showToast(t('about.likeSentToast'), 'success');
+          swipe(id, 'like').catch(() => {});
+        }
       }}
     />
   );

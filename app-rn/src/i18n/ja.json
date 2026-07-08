@@ -1198,6 +1198,7 @@
     "unfollowAction": "フォロー解除",
     "like": "いいね",
     "liked": "いいね済み",
+    "likeSentToast": "いいねを送信しました",
     "becomeMatch": "マッチする",
     "matched": "マッチ済み",
     "message": "メッセージ",
