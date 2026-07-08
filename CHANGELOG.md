@@ -2,6 +2,14 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.18] — build 131 (2026-07-08)
+
+### English
+- **"Liked" now sticks on a profile.** After you like someone, their profile keeps showing "Liked" — even after re-opening the profile or restarting the app — instead of reverting to "Like". (Builds on the 3.1.17 fix where liking no longer bounced you back to the list.)
+
+### 中文
+- **资料页「已喜欢」状态现在会保留。** 点了「想认识」之后,重新打开该资料页或重启 App,按钮都会保持「已喜欢」,不再变回「想认识」。(接续 3.1.17 —— 点赞不再把你弹回列表。)
+
 ## [3.1.17] — build 130 (2026-07-08)
 
 ### English
