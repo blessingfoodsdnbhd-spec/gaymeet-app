@@ -99,6 +99,22 @@ export function NotificationCenter() {
     qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
   };
 
+  // Opening the Notification Center clears the unread tab badge (WeChat/IG
+  // style): mark everything read on the server, then refresh the badge query.
+  // We deliberately DON'T touch the ['notifications','list'] cache here, so the
+  // rows keep their "new" highlight for this visit even though the badge is
+  // already gone. Runs once per mount, only when there's actually unread.
+  const markedAllRef = React.useRef(false);
+  React.useEffect(() => {
+    if (markedAllRef.current || q.isLoading) return;
+    if (!items.some((n) => !n.read)) return;
+    markedAllRef.current = true;
+    markAllNotificationsRead()
+      .catch(() => {})
+      .finally(refreshBadges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.isLoading, items]);
+
   const onTap = (n: AppNotification) => {
     if (!n.read) {
       qc.setQueryData<{ notifications: AppNotification[] }>(KEY, (prev) =>
