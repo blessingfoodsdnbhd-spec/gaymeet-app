@@ -25,6 +25,7 @@ import { MessageBanner } from './components/MessageBanner';
 import { SafetyMenuSheet } from './components/SafetyMenuSheet';
 import { AnnouncementBootstrap } from './components/AnnouncementBootstrap';
 import { StreakBootstrap } from './components/StreakBootstrap';
+import { VersionGateBootstrap } from './updates/VersionGateBootstrap';
 import { runDailyCleanupIfDue } from './lib/cacheCleanup';
 import {
   registerPushToken,
@@ -168,6 +169,11 @@ export function App() {
               {/* Daily login-streak check-in — shows once per UTC day after the
                   announcement modal settles. */}
               <StreakBootstrap />
+              {/* Self-hosted OTA check + force/soft upgrade gate. Kicks the
+                  background expo-updates fetch and, if this build is older than
+                  the /config/version floor, shows the (un)dismissable modal.
+                  Not auth-gated — an ancient build is blocked even at login. */}
+              <VersionGateBootstrap />
             </NavigationContainer>
             </ToastProvider>
           </ThemeProvider>

@@ -1,0 +1,42 @@
+#:schema node_modules/wrangler/config-schema.json
+# Meyou 密友 — self-hosted OTA (Expo Updates) Worker.
+#
+# First-time setup (one-off, ~5 min — see README.md for the click-by-click):
+#   1. cd webpage/meyou-ota
+#   2. wrangler login                                     # opens browser
+#   3. wrangler r2 bucket create meyou-ota-bundles
+#   4. wrangler kv namespace create MANIFESTS             # copy the printed id
+#      → paste the id into [[kv_namespaces]] below
+#   5. wrangler secret put OTA_ADMIN_TOKEN                # any long random string
+#   6. wrangler deploy
+#   7. Add the custom domain `updates.meyou.uk` (Cloudflare dashboard →
+#      Workers & Pages → meyou-ota-updates → Settings → Domains & Routes →
+#      Add → updates.meyou.uk). DNS is auto-created since meyou.uk is on CF.
+
+name = "meyou-ota-updates"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Absolute origin used when building manifest URLs (must match the custom domain).
+[vars]
+HOSTNAME = "https://updates.meyou.uk"
+
+# R2 bucket that stores JS bundles + assets (content-addressed blobs).
+[[r2_buckets]]
+binding = "BUNDLES"
+bucket_name = "meyou-ota-bundles"
+
+# KV that stores the "latest" manifest pointer + rollback snapshots + history.
+# Replace `id` with the value printed by `wrangler kv namespace create MANIFESTS`.
+[[kv_namespaces]]
+binding = "MANIFESTS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Custom domain (uncomment after the bucket/KV exist and the first deploy ran;
+# or add it via the dashboard as in step 7 above).
+# [[routes]]
+# pattern = "updates.meyou.uk"
+# custom_domain = true
+
+# OTA_ADMIN_TOKEN is a *secret*, NOT a var — set it with:
+#   wrangler secret put OTA_ADMIN_TOKEN
