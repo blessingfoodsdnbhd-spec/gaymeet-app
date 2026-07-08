@@ -57,6 +57,9 @@ export interface User {
   /** True when this user already liked ("想认识") the viewer — tapping like
    *  would create a match, so the button shows "成为同频". */
   likedByThem?: boolean;
+  /** True when the viewer has already liked this user (one-way). Persists the
+   *  "已喜欢" button state across re-opens / cold restart. Not Premium-gated. */
+  iLiked?: boolean;
   isOnline?: boolean;
   /** ISO timestamp of last activity. null when a Premium user hides presence. */
   lastActiveAt?: string | null;

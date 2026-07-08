@@ -131,13 +131,15 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   const hasPrivate =
     PRIVATE_PHOTOS_ENABLED && !isSelf && (user?.privatePhotosCount ?? 0) > 0;
 
-  // Reset local liked flag when the target user changes.
+  // Reset local liked flag when the target user changes. Seed it from the
+  // server's `iLiked` so a like the viewer already sent shows "已喜欢" on
+  // re-open / cold restart (not just optimistically within the session).
   React.useEffect(() => {
-    setLiked(false);
+    setLiked(!!user?.iLiked);
     setPrivateViewerIndex(null);
     setViewerIndex(null);
     setPage(0);
-  }, [user?.id]);
+  }, [user?.id, user?.iLiked]);
 
   // "谁在看你": log a profile view when the sheet opens for someone else.
   // Fire-and-forget — the backend skips self and de-dups per viewer→viewed.

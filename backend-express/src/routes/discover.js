@@ -7,7 +7,7 @@ const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { NOT_OFFICIAL } = require('../utils/discovery');
 const { followStatusMap } = require('../utils/followStatus');
-const { incomingLikerSet } = require('../utils/incomingLikes');
+const { incomingLikerSet, outgoingLikeSet } = require('../utils/incomingLikes');
 const { isPremiumActive } = require('../utils/premium');
 
 const MAX_DISTANCE_M = 100_000; // 100 km — Meyou is Malaysia-only at launch
@@ -196,6 +196,7 @@ router.get('/cards', auth, async (req, res, next) => {
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
     const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
+    const myLikes = await outgoingLikeSet(me._id, docs.map((d) => d._id));
     const cards = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -204,6 +205,7 @@ router.get('/cards', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
+      iLiked: myLikes.has(u._id.toString()),
       popularity: popularityOf(u),
       // Identity badge — recompute premium with expiry/vipLevel awareness (the
       // aggregation bypasses toPublicJSON, so the raw isPremium field is neither
@@ -316,6 +318,7 @@ router.post('/search-new', auth, async (req, res, next) => {
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
     const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
+    const myLikes = await outgoingLikeSet(me._id, docs.map((d) => d._id));
     const cards = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -324,6 +327,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
+      iLiked: myLikes.has(u._id.toString()),
       popularity: popularityOf(u),
       // Expiry/vipLevel-aware premium for the identity M badge (see /cards note).
       isPremium: isPremiumActive(u),
@@ -499,6 +503,7 @@ router.get('/nearby', auth, async (req, res, next) => {
     const docs = await User.aggregate(pipeline);
     const fsMap = await followStatusMap(me._id, docs.map((d) => d._id));
     const likers = await incomingLikerSet(me._id, docs.map((d) => d._id));
+    const myLikes = await outgoingLikeSet(me._id, docs.map((d) => d._id));
     const others = docs.map((u) => ({
       ...u,
       id: u._id.toString(),
@@ -507,6 +512,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
+      iLiked: myLikes.has(u._id.toString()),
       popularity: popularityOf(u),
       // Expiry/vipLevel-aware premium for the identity M badge (see /cards note).
       isPremium: isPremiumActive(u),

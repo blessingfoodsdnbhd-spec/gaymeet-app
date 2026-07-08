@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../store/auth';
@@ -37,6 +37,7 @@ function idxFor(id: string) {
  */
 export function useAboutUserSheet() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const myId = useAuth((s) => s.user?.id);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -87,7 +88,15 @@ export function useAboutUserSheet() {
         // like and forget (backend swipe is idempotent).
         if (id) {
           showToast(t('about.likeSentToast'), 'success');
-          swipe(id, 'like').catch(() => {});
+          swipe(id, 'like')
+            .then(() => {
+              // Refresh cached status so a later re-open reflects the like
+              // (iLiked) and any resulting match — the sheet seeds `liked`
+              // and its match state from these queries.
+              queryClient.invalidateQueries({ queryKey: ['user', 'by-id', id] });
+              queryClient.invalidateQueries({ queryKey: ['match', id] });
+            })
+            .catch(() => {});
         }
       }}
     />

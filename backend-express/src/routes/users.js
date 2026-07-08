@@ -675,10 +675,14 @@ router.get('/:id', auth, async (req, res, next) => {
       // Did this user already like ("想认识") the viewer? Flips the like button
       // to "成为同频" since tapping it would create the mutual match.
       // Gated: only Premium viewers get the "成为同频" shortcut (PR H).
-      const { incomingLikerSet } = require('../utils/incomingLikes');
+      const { incomingLikerSet, outgoingLikeSet } = require('../utils/incomingLikes');
       const { isPremiumActive } = require('../utils/premium');
       const likers = await incomingLikerSet(req.user._id, [user._id]);
       json.likedByThem = isPremiumActive(req.user) && likers.has(user._id.toString());
+      // Did the viewer already like this user? Persists the "已喜欢" button state
+      // across re-opens / cold restart (not Premium-gated — it's my own action).
+      const iLiked = await outgoingLikeSet(req.user._id, [user._id]);
+      json.iLiked = iLiked.has(user._id.toString());
     }
     ok(res, json);
   } catch (e) {

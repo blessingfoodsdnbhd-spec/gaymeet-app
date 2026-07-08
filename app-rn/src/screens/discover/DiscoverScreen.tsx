@@ -244,6 +244,13 @@ export function DiscoverScreen() {
       { userId: user.id, action: liked ? 'like' : 'pass' },
       {
         onSuccess: (res) => {
+          if (liked) {
+            // Refresh cached status so re-opening this user's profile (from the
+            // Nearby grid) reflects the like (iLiked) / new match without a cold
+            // restart — the sheet seeds its state from these.
+            queryClient.invalidateQueries({ queryKey: ['discover', 'nearby'] });
+            queryClient.invalidateQueries({ queryKey: ['match', user.id] });
+          }
           if (res.match) {
             const matchId = res.match.id;
             const reveal = () => {
