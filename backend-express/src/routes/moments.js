@@ -8,6 +8,7 @@ const postingSuspended = require('../middleware/postingSuspended');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
+const { notify } = require('../services/notificationService');
 const { blockedIdSet } = require('../utils/blocking');
 const { recordContentReport, hiddenFilter } = require('../services/report');
 
@@ -258,15 +259,29 @@ router.post('/', auth, postingSuspended, async (req, res, next) => {
       { path: 'taggedUserIds', select: 'nickname avatarUrl' },
     ]);
 
-    // Notify tagged friends — fire-and-forget. Tap opens the moment.
+    // Notify tagged friends. notify() persists a record (Notification Center)
+    // AND fires the push. Tap opens the moment.
     if (taggedIds.length) {
       const author = req.user.nickname || 'Someone';
+      const authorAvatar = req.user.avatarUrl || '';
+      const preview = (moment.content || '').slice(0, 80);
       taggedIds.forEach((uid) => {
-        sendPushToUser(uid, {
-          title: author,
-          body: `${author} tagged you in a moment`,
-          data: { type: 'comment', momentId: moment._id.toString() },
-        }).catch(() => {});
+        notify(uid, 'moment_tag', {
+          title: `${author} tagged you in a moment`,
+          body: preview,
+          data: {
+            momentId: moment._id.toString(),
+            fromUserId: String(req.user._id),
+            fromUserName: author,
+            fromUserAvatarUrl: authorAvatar,
+          },
+          i18n: {
+            en: { title: `${author} tagged you in a moment`, body: preview },
+            zh: { title: `${author} 在动态中提到了你`, body: preview },
+            ko: { title: `${author}님이 게시물에서 회원님을 언급했습니다`, body: preview },
+            ja: { title: `${author}さんが投稿であなたをタグ付けしました`, body: preview },
+          },
+        });
       });
     }
 
@@ -394,17 +409,30 @@ router.post('/:id/like', auth, async (req, res, next) => {
 
     await moment.save();
 
-    // Push the moment author only when LIKING (not unliking) and only
-    // when the liker isn't the author themselves. Fire-and-forget.
+    // Notify the moment author only when LIKING (not unliking) and only when
+    // the liker isn't the author themselves. notify() persists a Notification
+    // record (so it shows in the in-app Notification Center) AND fires the push.
     if (idx === -1 && String(moment.user) !== String(uid)) {
       (async () => {
         try {
-          const liker = await User.findById(uid).select('nickname').lean();
+          const liker = await User.findById(uid).select('nickname avatarUrl').lean();
           const likerName = liker?.nickname || 'Someone';
-          await sendPushToUser(moment.user, {
+          const preview = moment.content?.slice(0, 80) || '';
+          notify(moment.user, 'moment_like', {
             title: `${likerName} liked your moment`,
-            body: moment.content?.slice(0, 80) || '',
-            data: { type: 'comment', momentId: String(moment._id) },
+            body: preview,
+            data: {
+              momentId: String(moment._id),
+              fromUserId: String(uid),
+              fromUserName: likerName,
+              fromUserAvatarUrl: liker?.avatarUrl || '',
+            },
+            i18n: {
+              en: { title: `${likerName} liked your moment`, body: preview },
+              zh: { title: `${likerName} 赞了你的动态`, body: preview },
+              ko: { title: `${likerName}님이 회원님의 게시물을 좋아합니다`, body: preview },
+              ja: { title: `${likerName}さんがあなたの投稿にいいねしました`, body: preview },
+            },
           });
         } catch { /* ignore */ }
       })();
@@ -504,22 +532,49 @@ router.post('/:id/comment', auth, postingSuspended, async (req, res, next) => {
     const preview = (text || '📷').slice(0, 120);
     const notified = new Set();
 
-    // Reply → notify the parent comment's author.
+    const commenterName = populated.user?.nickname || 'Someone';
+    const commenterAvatar = populated.user?.avatarUrl || '';
+
+    // Reply → notify the parent comment's author. notify() persists the record
+    // (in-app Notification Center) AND fires the push.
     if (parent && String(parent.user) !== me) {
       notified.add(String(parent.user));
-      sendPushToUser(parent.user, {
-        title: `${populated.user?.nickname || 'Someone'} replied`,
+      notify(parent.user, 'comment_reply', {
+        title: `${commenterName} replied`,
         body: preview,
-        data: { type: 'comment_reply', momentId: String(moment._id), commentId: String(comment._id) },
-      }).catch(() => {});
+        data: {
+          momentId: String(moment._id),
+          commentId: String(comment._id),
+          fromUserId: me,
+          fromUserName: commenterName,
+          fromUserAvatarUrl: commenterAvatar,
+        },
+        i18n: {
+          en: { title: `${commenterName} replied`, body: preview },
+          zh: { title: `${commenterName} 回复了你`, body: preview },
+          ko: { title: `${commenterName}님이 답글을 남겼습니다`, body: preview },
+          ja: { title: `${commenterName}さんが返信しました`, body: preview },
+        },
+      });
     }
     // Notify the moment author (skip self, and skip if already notified above).
     if (String(moment.user) !== me && !notified.has(String(moment.user))) {
-      sendPushToUser(moment.user, {
-        title: `${populated.user?.nickname || 'Someone'} commented`,
+      notify(moment.user, 'comment', {
+        title: `${commenterName} commented`,
         body: preview,
-        data: { type: 'comment', momentId: String(moment._id) },
-      }).catch(() => {});
+        data: {
+          momentId: String(moment._id),
+          fromUserId: me,
+          fromUserName: commenterName,
+          fromUserAvatarUrl: commenterAvatar,
+        },
+        i18n: {
+          en: { title: `${commenterName} commented`, body: preview },
+          zh: { title: `${commenterName} 评论了你的动态`, body: preview },
+          ko: { title: `${commenterName}님이 댓글을 남겼습니다`, body: preview },
+          ja: { title: `${commenterName}さんがコメントしました`, body: preview },
+        },
+      });
     }
 
     created(res, serializeComment(populated.toObject(), moment.user));

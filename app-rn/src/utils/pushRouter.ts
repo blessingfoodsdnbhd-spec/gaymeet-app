@@ -39,7 +39,12 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!id) return false;
       return safeNavigate('ChatDetail', { chatId: id });
     }
-    case 'comment': {
+    // Moment activity → open the moment's comments/detail. `moment_like` is a
+    // like on your MOMENT (distinct from `like`, which is a swipe-like feed).
+    case 'comment':
+    case 'comment_reply':
+    case 'moment_like':
+    case 'moment_tag': {
       const id = data.momentId ? String(data.momentId) : null;
       if (!id) return false;
       return safeNavigate('Comments', { momentId: id });

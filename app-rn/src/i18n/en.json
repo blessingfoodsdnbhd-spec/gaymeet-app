@@ -1053,6 +1053,7 @@
     "unfollowAction": "Unfollow",
     "like": "Like",
     "liked": "Liked",
+    "likeSentToast": "Like sent",
     "becomeMatch": "Become a match",
     "matched": "Matched",
     "message": "Message",

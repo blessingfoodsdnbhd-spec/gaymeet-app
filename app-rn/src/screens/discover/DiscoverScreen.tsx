@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { deferOpen } from '../../utils/deferOpen';
-import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Crown, Heart, MapPin, Search, SlidersHorizontal, Send, UserPlus, UserCheck, Volume2, VolumeX, X } from 'lucide-react-native';
@@ -245,12 +245,27 @@ export function DiscoverScreen() {
       {
         onSuccess: (res) => {
           if (res.match) {
-            // Capture the matchId — needed by the overlay's "Send a
-            // message" CTA to navigate into the new chat thread.
-            setMatched({ user, matchId: res.match.id });
-            // Freshen the chats list cache so when the user lands in
-            // ChatDetail, the new thread is also present in the list.
-            queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+            const matchId = res.match.id;
+            const reveal = () => {
+              // Capture the matchId — needed by the overlay's "Send a
+              // message" CTA to navigate into the new chat thread.
+              setMatched({ user, matchId });
+              // Freshen the chats list cache so when the user lands in
+              // ChatDetail, the new thread is also present in the list.
+              queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+            };
+            if (aboutUser) {
+              // Liked from the profile sheet: close it first so the full-screen
+              // match overlay isn't stacked BEHIND the sheet's Modal (Android
+              // nested-Modal limitation — a second Modal opened while one is up
+              // renders behind it), then reveal the overlay.
+              setAboutUser(null);
+              if (Platform.OS === 'android') setTimeout(reveal, 300);
+              else reveal();
+            } else {
+              // Liked from the card deck — no sheet in the way.
+              reveal();
+            }
           }
         },
         onError: (e: any) => {
@@ -410,8 +425,15 @@ export function DiscoverScreen() {
         onClose={() => setAboutUser(null)}
         onLike={() => {
           const u = aboutUser;
-          setAboutUser(null);
-          if (u) handleSwiped(u, true);
+          // Keep the profile open — the sheet greys its own button to "已喜欢"
+          // and gives feedback. Previously we closed the sheet here, so tapping
+          // "想认识" bounced the user straight back to the list with no
+          // confirmation. handleSwiped closes the sheet only on a mutual match
+          // (to reveal the full-screen MatchOverlay).
+          if (u) {
+            showToast(t('about.likeSentToast'), 'success');
+            handleSwiped(u, true);
+          }
         }}
       />
 

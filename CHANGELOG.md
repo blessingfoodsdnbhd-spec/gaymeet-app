@@ -2,6 +2,16 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.17] — build 130 (2026-07-08)
+
+### English
+- **Fixed: tapping "Like" on a profile no longer bounces you back to the list.** Liking someone from their profile now keeps the profile open and flips the button to "Liked" with a confirmation toast, instead of silently closing the profile — so you can see the like registered. A mutual match still triggers the full-screen match celebration.
+- **Fixed: moment likes / comments / mentions now reach your notifications.** These interactions are now persisted as notification records and route correctly when tapped, so you actually get notified when someone likes or comments on your moment.
+
+### 中文
+- **修复:在资料页点「想认识」不再被弹回列表。** 从对方资料页点「想认识」后,资料页会保留,按钮变成「已喜欢」并弹出提示,而不是无声关闭页面 —— 你能确认操作已生效。双向配对仍会触发全屏配对弹窗。
+- **修复:动态的点赞 / 评论 / @提及 现在会进通知中心。** 这些互动现已持久化为通知记录并可正确跳转,别人点赞或评论你的动态时你会收到通知。
+
 ## [3.1.16] — build 129 (2026-07-07)
 
 ### English
