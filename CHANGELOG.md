@@ -5,9 +5,11 @@ All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 ## [3.1.18] — build 131 (2026-07-08)
 
 ### English
+- **Unread notification badge on the "Me" tab.** A red badge (unread count, shown as `99+` when over 99) now appears on the "Me" tab icon so you can see new notifications without opening the page. It updates in real time and clears when you open the notification center.
 - **"Liked" now sticks on a profile.** After you like someone, their profile keeps showing "Liked" — even after re-opening the profile or restarting the app — instead of reverting to "Like". (Builds on the 3.1.17 fix where liking no longer bounced you back to the list.)
 
 ### 中文
+- **「我」tab 未读通知红点。** 底部「我」tab 图标右上角新增红色未读数徽标(超过 99 显示 `99+`),不用打开通知页就能看到有新通知。实时刷新,打开通知中心后自动消失。
 - **资料页「已喜欢」状态现在会保留。** 点了「想认识」之后,重新打开该资料页或重启 App,按钮都会保持「已喜欢」,不再变回「想认识」。(接续 3.1.17 —— 点赞不再把你弹回列表。)
 
 ## [3.1.17] — build 130 (2026-07-08)
