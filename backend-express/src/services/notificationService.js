@@ -98,6 +98,16 @@ async function notify(userId, type, { title = '', body = '', data = {}, push = t
     }
 
     const doc = await Notification.create({ userId, type, title, body, data: data || {} });
+
+    // Real-time nudge for the in-app unread badge: tell any connected client to
+    // re-fetch its unread count. Lazy-require the socket service to dodge a
+    // circular import, and never let a socket hiccup break notify(). Falls back
+    // to the client's 60 s poll when the user is offline.
+    try {
+      const { getIO } = require('./socketService');
+      getIO()?.to(`user:${userId}`).emit('notification:new', { type });
+    } catch (_) {}
+
     if (push) {
       const quiet = !high && inQuietHours(pref);
       if (!quiet) {

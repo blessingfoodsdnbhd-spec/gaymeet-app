@@ -178,6 +178,7 @@ export type WsWorldChatLevelUp = {
 export interface WsEventMap {
   'match:new': WsMatchNew;
   'chat:receive': WsChatReceive;
+  'notification:new': { type: string };
   'world-chat:receive': WsWorldChatReceive;
   'world-chat:online-count': WsWorldChatOnlineCount;
   'world-chat:user-joined': WsWorldChatPresence;

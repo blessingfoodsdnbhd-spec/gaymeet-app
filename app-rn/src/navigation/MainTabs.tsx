@@ -24,6 +24,7 @@ import { useAuth } from '../store/auth';
 import { useOnboarding } from '../store/onboarding';
 import { SetPasswordPromptModal } from '../components/auth/SetPasswordPromptModal';
 import { getConversations } from '../api/chats';
+import { getUnreadCount } from '../api/notifications';
 import { on as wsOn } from '../api/ws';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -139,6 +140,41 @@ export function MainTabs() {
     (async () => {
       const u = await wsOn('chat:receive', () => {
         if (!cancelled) queryClient.invalidateQueries({ queryKey: ['chats', 'list'] });
+      });
+      if (cancelled) {
+        u();
+        return;
+      }
+      unsub = u;
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, [queryClient]);
+
+  // Unread notification count for the Profile ("我") tab badge. Shares the
+  // ['notifications','unread-count'] key with ProfileScreen (React Query
+  // dedupes), so opening the Notification Center — which marks-all-read and
+  // invalidates this key — clears the badge instantly. A 60 s poll is the
+  // offline fallback; the notification:new socket event below refreshes it in
+  // real time while connected.
+  const unreadNotifQ = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: getUnreadCount,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    select: (d) => d.count,
+  });
+  const unreadNotif = unreadNotifQ.data ?? 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    (async () => {
+      const u = await wsOn('notification:new', () => {
+        if (!cancelled)
+          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
       });
       if (cancelled) {
         u();
@@ -299,7 +335,20 @@ export function MainTabs() {
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ tabBarLabel: t('tabs.profile') }}
+        options={{
+          tabBarLabel: t('tabs.profile'),
+          // Red unread-notification badge (WeChat/IG style). Shows the count,
+          // caps at 99+, and clears (undefined) once everything's read — the
+          // Notification Center marks-all-read on open and invalidates the
+          // shared query key.
+          tabBarBadge:
+            unreadNotif > 0 ? (unreadNotif > 99 ? '99+' : unreadNotif) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: theme.colors.error,
+            color: '#FFFFFF',
+            fontSize: 11,
+          },
+        }}
       />
     </Tab.Navigator>
     {/* One-time post-login prompt for OTP-only accounts to set a password. */}
