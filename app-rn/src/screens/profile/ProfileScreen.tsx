@@ -19,6 +19,7 @@ import {
   Eye,
   Gift,
   ImagePlus,
+  Lock,
   Mic,
   Pencil,
   Plus,
@@ -46,7 +47,7 @@ import { HighlightsSection } from '../votes/HighlightsSection';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
 import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
-import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
+import { PRIVATE_PHOTOS_ENABLED, HIDDEN_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { useAuth } from '../../store/auth';
 import { getMyStats, getViewers } from '../../api/me';
 import { getApprovedCount } from '../../api/privatePhotos';
@@ -422,6 +423,16 @@ export function ProfileScreen() {
             onPress={() => nav.navigate('Verification')}
           />
           <Divider />
+          {HIDDEN_PHOTOS_ENABLED && (
+            <>
+              <SettingsRow
+                icon={<Lock size={18} color={theme.colors.primaryDeep} strokeWidth={1.8} />}
+                label={t('hiddenPhotos.manageRow')}
+                onPress={() => nav.navigate('MyHiddenPhotos')}
+              />
+              <Divider />
+            </>
+          )}
           <SettingsRow
             icon={<Sparkles size={18} color={theme.colors.secondary} strokeWidth={1.8} />}
             label={t('profile.rows.appIcon')}

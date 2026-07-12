@@ -11,7 +11,9 @@
     "retry": "再試行",
     "save": "保存",
     "cancel": "キャンセル",
-    "ok": "OK"
+    "ok": "OK",
+    "someone": "誰か",
+    "error": "エラーが発生しました"
   },
   "tabs": {
     "discover": "発見",
@@ -1735,5 +1737,39 @@
     "clearChatTitle": "ローカル履歴を削除しますか?",
     "clearChatBody": "端末内キャッシュのみ削除され、サーバー上のメッセージには影響しません。",
     "note": "容量節約のため、メディアは7日、ローカル履歴は60日保持し、毎日1回自動整理します。"
+  },
+  "hiddenPhotos": {
+    "requestToView": "リクエストする",
+    "requested": "申請済み",
+    "requestAgain": "再度リクエスト",
+    "countLabel": "🔒 非公開写真 {{n}} 枚",
+    "requestSentToast": "リクエストを送信しました",
+    "alreadyApprovedToast": "すでに閲覧できます",
+    "rateLimited": "本日のリクエスト上限に達しました。明日お試しください。",
+    "requestFailed": "リクエストを送信できませんでした",
+    "editorTitle": "非公開写真",
+    "editorHint": "公開写真をタップして非公開にできます。承認した人だけが非公開写真を見られます。",
+    "noPublicPhotos": "先にプロフィール写真を追加してから、非公開にする写真を選んでください。",
+    "currentlyHidden": "非公開 ({{n}})",
+    "manageGrants": "{{n}} 人に許可済み",
+    "notifRequestTitle": "非公開写真のリクエスト",
+    "notifRequestBody": "{{name}} があなたの非公開写真を見たがっています",
+    "notifApprovedTitle": "非公開写真が解除されました",
+    "notifApprovedBody": "{{name}} があなたのリクエストを承認しました",
+    "approve": "承認",
+    "reject": "拒否",
+    "youApproved": "承認済み ✓",
+    "youRejected": "拒否しました",
+    "manageTitle": "非公開写真",
+    "manageRow": "非公開写真の管理",
+    "manageEmpty": "リクエストや許可した人はまだいません",
+    "pendingHeader": "リクエスト · {{n}}",
+    "grantedHeader": "許可済み · {{n}}",
+    "revoke": "取り消す",
+    "revokeConfirmTitle": "アクセスを取り消しますか?",
+    "revokeConfirmBody": "{{name}} はあなたの非公開写真を見られなくなります。",
+    "source_request": "リクエストを承認",
+    "source_manual": "自分で公開",
+    "source_match": "マッチ済み"
   }
 }

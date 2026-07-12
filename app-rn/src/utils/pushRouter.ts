@@ -120,6 +120,18 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
       if (!ownerId) return safeNavigate('Main');
       return safeNavigate('UserDetail', { userId: ownerId });
     }
+    case 'hidden_photo_request': {
+      // Owner side: someone asked to see their hidden photos → management hub
+      // (which shows the pending request with approve/reject).
+      return safeNavigate('MyHiddenPhotos');
+    }
+    case 'hidden_photo_approved': {
+      // Requester side: their request was approved (or the owner opened
+      // proactively) → open the owner's profile so the now-unlocked photos show.
+      const ownerId = data.ownerId ? String(data.ownerId) : null;
+      if (!ownerId) return safeNavigate('Main');
+      return safeNavigate('UserDetail', { userId: ownerId });
+    }
     case 'topic_unlock_requested': {
       // Owner side: jump into the unlock inbox.
       return safeNavigate('UnlockRequests');

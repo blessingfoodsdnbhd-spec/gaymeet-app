@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, Eye, MoreHorizontal, Send, ShieldAlert, X } from 'lucide-react-native';
+import { ChevronLeft, Crown, Eye, Lock, MoreHorizontal, Send, ShieldAlert, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -28,6 +28,7 @@ import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { ProfilePhotoCarousel } from '../../components/ProfilePhotoCarousel';
 import { LockedPhotosBlock } from '../../components/LockedPhotosBlock';
+import { HiddenPhotosBlock } from '../../components/HiddenPhotosBlock';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { TagChip } from '../../components/TagChip';
 import { ProfileStatsText } from '../../components/ProfileStatsText';
@@ -42,6 +43,8 @@ import {
   requestPrivatePhotos,
   type PhotoRequestStatus,
 } from '../../api/privatePhotos';
+import { getHiddenPhotos, requestHiddenPhotos } from '../../api/hiddenPhotos';
+import { HIDDEN_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { useAuth } from '../../store/auth';
 import { brandGradient } from '../../theme/tokens';
 import { showSafetyMenu } from '../../utils/safetyMenu';
@@ -157,6 +160,39 @@ export function UserDetailScreen() {
     }
     requestMut.mutate();
   };
+
+  // ── Hidden photos (隐藏照片) — separate from Private photos above. Grant is
+  // persistent (not view-once) and NOT Premium-gated. One query returns either
+  // the URLs (granted) or count + requestStatus (not granted).
+  const hiddenQ = useQuery({
+    queryKey: ['user', userId, 'hiddenPhotos'],
+    queryFn: () => getHiddenPhotos(userId),
+    enabled: HIDDEN_PHOTOS_ENABLED && !!user && (user.hiddenPhotosCount ?? 0) > 0 && !previewMode,
+    staleTime: 30_000,
+  });
+  const hiddenStatus = hiddenQ.data?.requestStatus ?? 'none';
+  const hiddenGranted = !!hiddenQ.data?.granted;
+
+  const hiddenRequestMut = useMutation({
+    mutationFn: () => requestHiddenPhotos(userId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['user', userId, 'hiddenPhotos'] });
+      if (res.status === 'approved') {
+        Alert.alert(t('hiddenPhotos.alreadyApprovedToast'));
+      } else {
+        Alert.alert(t('hiddenPhotos.requestSentToast'));
+      }
+    },
+    onError: (e: any) => {
+      const detail = e?.response?.data?.error || e?.message || '';
+      const status = e?.response?.status;
+      if (status === 429) {
+        Alert.alert(t('hiddenPhotos.rateLimited'));
+        return;
+      }
+      Alert.alert(t('hiddenPhotos.requestFailed'), detail);
+    },
+  });
 
   // "Send a message" CTA. Premium → openConversation (free if already
   // matched, else creates a DM). Non-premium → paywall. Mirrors
@@ -374,6 +410,55 @@ export function UserDetailScreen() {
             </View>
           )}
 
+          {/* Hidden photos (隐藏照片) — subset of the owner's profile photos
+              flagged hidden. Granted viewers see them inline (with a small 🔒
+              tag); everyone else sees the frosted teaser + "申请查看" CTA. */}
+          {HIDDEN_PHOTOS_ENABLED && (user.hiddenPhotosCount ?? 0) > 0 && (
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: theme.colors.muted }]}>
+                {t('hiddenPhotos.countLabel', { n: user.hiddenPhotosCount })}
+              </Text>
+
+              {hiddenGranted ? (
+                hiddenQ.isLoading ? (
+                  <ActivityIndicator color={theme.colors.primary} />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {(hiddenQ.data?.photos ?? []).map((url, i) => (
+                      <Pressable
+                        key={url}
+                        onPress={() => photoViewer.open(hiddenQ.data?.photos ?? [], i)}
+                        style={{ position: 'relative' }}
+                      >
+                        <ExpoImage
+                          source={{ uri: url }}
+                          style={{ width: 140, height: 180, borderRadius: 14 }}
+                          cachePolicy="memory-disk"
+                          contentFit="cover"
+                        />
+                        <View style={styles.hiddenTag}>
+                          <Lock size={12} color="#FFFFFF" strokeWidth={2.4} />
+                        </View>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )
+              ) : (
+                <HiddenPhotosBlock
+                  status={hiddenStatus}
+                  count={user.hiddenPhotosCount ?? 0}
+                  busy={!previewMode && hiddenRequestMut.isPending}
+                  onRequest={() => hiddenRequestMut.mutate()}
+                  disabled={previewMode}
+                />
+              )}
+            </View>
+          )}
+
           {/* 高光时刻 — contest placements (renders nothing if none). */}
           <View style={{ marginTop: 18 }}>
             <HighlightsSection userId={userId} />
@@ -513,6 +598,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  hiddenTag: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sendCta: {
     flexDirection: 'row',
     alignItems: 'center',

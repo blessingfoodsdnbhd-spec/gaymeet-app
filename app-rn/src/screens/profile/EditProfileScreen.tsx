@@ -33,6 +33,7 @@ import { Card } from '../../components/Card';
 import { TagChip } from '../../components/TagChip';
 import { DateField, formatYMD, parseYMD } from '../../components/DateField';
 import { PhotoGridEditor } from '../../components/PhotoGridEditor';
+import { HiddenPhotosEditor } from '../../components/HiddenPhotosEditor';
 import { usePhotoViewer } from '../../components/usePhotoViewer';
 import { shareProfile } from '../../utils/shareProfile';
 import { tagById, type InterestTagId } from '../../data/interestTags';
@@ -42,7 +43,7 @@ import { VoiceRecorderSheet } from './VoiceRecorderSheet';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { getMyPersonas, updatePersona } from '../../api/mePersonas';
 import { deferOpen } from '../../utils/deferOpen';
-import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
+import { TOPICS_ENABLED, PRIVATE_PHOTOS_ENABLED, HIDDEN_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { HighlightsSection } from '../votes/HighlightsSection';
 import { ProfileCompletionCard, useProfileCompletion } from '../../components/ProfileCompletionCard';
 import { UpgradePremiumSheet } from '../../components/UpgradePremiumSheet';
@@ -708,6 +709,19 @@ export function EditProfileScreen() {
             onSetAvatar={setAsAvatar}
             avatarUrl={user.avatarUrl}
           />
+
+          {/* Hidden photos (隐藏照片) — mark existing profile photos hidden;
+              only granted viewers see them. Separate from Private photos. */}
+          {HIDDEN_PHOTOS_ENABLED && (
+            <>
+              <SectionTitle>{t('hiddenPhotos.editorTitle')}</SectionTitle>
+              <HiddenPhotosEditor
+                userId={user.id}
+                publicPhotos={user.photos ?? []}
+                onPhotosChange={(photos) => setUser({ ...user, photos })}
+              />
+            </>
+          )}
 
           {/* Private photos — hidden behind PRIVATE_PHOTOS_ENABLED for the
               Apple 4.3(b) content strip. Public photos above are unaffected. */}

@@ -85,6 +85,9 @@ export interface User {
    *  from any public profile object — use getPrivatePhotos(userId) with
    *  an active grant to view them. */
   privatePhotosCount?: number;
+  /** Count of the user's hidden photos (隐藏照片). URLs are stripped from the
+   *  public profile — use getHiddenPhotos(userId) with a grant to view them. */
+  hiddenPhotosCount?: number;
   distanceLabel?: string | null;
   preferences?: {
     hideDistance?: boolean;

@@ -11,7 +11,9 @@
     "retry": "다시 시도",
     "save": "저장",
     "cancel": "취소",
-    "ok": "확인"
+    "ok": "확인",
+    "someone": "누군가",
+    "error": "오류가 발생했습니다"
   },
   "tabs": {
     "discover": "발견",
@@ -1735,5 +1737,39 @@
     "clearChatTitle": "로컬 채팅 기록을 지울까요?",
     "clearChatBody": "기기 내 캐시만 삭제되며 서버의 메시지는 영향받지 않습니다.",
     "note": "공간 절약을 위해 미디어는 7일, 로컬 채팅은 60일 보관하며 매일 한 번 자동 정리합니다."
+  },
+  "hiddenPhotos": {
+    "requestToView": "보기 요청",
+    "requested": "요청함",
+    "requestAgain": "다시 요청",
+    "countLabel": "🔒 숨긴 사진 {{n}}장",
+    "requestSentToast": "요청을 보냈습니다",
+    "alreadyApprovedToast": "이미 볼 수 있습니다",
+    "rateLimited": "오늘 요청 한도에 도달했습니다. 내일 다시 시도하세요.",
+    "requestFailed": "요청을 보내지 못했습니다",
+    "editorTitle": "숨긴 사진",
+    "editorHint": "공개 사진을 탭하면 숨길 수 있습니다. 승인한 사람만 숨긴 사진을 볼 수 있습니다.",
+    "noPublicPhotos": "먼저 프로필 사진을 추가한 뒤 숨길 사진을 선택하세요.",
+    "currentlyHidden": "숨김 ({{n}})",
+    "manageGrants": "{{n}}명에게 허용됨",
+    "notifRequestTitle": "숨긴 사진 요청",
+    "notifRequestBody": "{{name}}님이 회원님의 숨긴 사진을 보고 싶어합니다",
+    "notifApprovedTitle": "숨긴 사진이 공개되었습니다",
+    "notifApprovedBody": "{{name}}님이 회원님의 요청을 승인했습니다",
+    "approve": "승인",
+    "reject": "거절",
+    "youApproved": "승인함 ✓",
+    "youRejected": "거절함",
+    "manageTitle": "숨긴 사진",
+    "manageRow": "숨긴 사진 관리",
+    "manageEmpty": "아직 요청이나 허용한 사람이 없습니다",
+    "pendingHeader": "요청 · {{n}}",
+    "grantedHeader": "허용됨 · {{n}}",
+    "revoke": "해제",
+    "revokeConfirmTitle": "접근을 해제할까요?",
+    "revokeConfirmBody": "{{name}}님은 더 이상 회원님의 숨긴 사진을 볼 수 없습니다.",
+    "source_request": "요청 승인",
+    "source_manual": "직접 공개",
+    "source_match": "매칭됨"
   }
 }
