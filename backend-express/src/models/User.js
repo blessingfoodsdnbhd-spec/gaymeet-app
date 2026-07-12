@@ -206,6 +206,23 @@ const userSchema = new mongoose.Schema(
     // Private photos (locked, require request to view)
     privatePhotos: [{ type: String }],
 
+    // Hidden photos (隐藏照片) — a subset of the user's OWN profile photos the
+    // user flagged hidden. Strangers see only a "🔒 N hidden photos" teaser;
+    // the URLs are served only to viewers listed in hiddenPhotoGrants below.
+    // A toggle moves a URL between `photos` (public) and `hiddenPhotos`.
+    hiddenPhotos: [{ type: String }],
+    // Persistent grants: who may view my hidden photos, and how they got access.
+    //   source 'request' — approved a HiddenPhotoRequest
+    //   source 'manual'  — I proactively opened them to this person
+    //   source 'match'   — auto-granted on match (reserved; not wired yet)
+    hiddenPhotoGrants: [
+      {
+        toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        grantedAt: { type: Date, default: Date.now },
+        source: { type: String, enum: ['request', 'manual', 'match'], default: 'request' },
+      },
+    ],
+
     // Daily energy sends (for free-user rate limiting)
     dailyEnergySends: { type: Number, default: 0 },
     dailyEnergySendsDate: { type: String, default: null },
@@ -485,6 +502,14 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
   // the PhotoRequest table.
   obj.privatePhotosCount = Array.isArray(src.privatePhotos)
     ? src.privatePhotos.length
+    : 0;
+
+  // Hidden-photo count — same rationale as privatePhotosCount: the URLs never
+  // inline on the public profile, only a count so the UI can show the
+  // "🔒 N hidden · Request to view" CTA. Grant-checked URLs come from
+  // GET /api/hidden-photos/:userId.
+  obj.hiddenPhotosCount = Array.isArray(src.hiddenPhotos)
+    ? src.hiddenPhotos.length
     : 0;
 
   // Human-readable distance label.
