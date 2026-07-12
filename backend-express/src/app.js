@@ -159,6 +159,12 @@ app.use('/api/questions', questionsRoutes);  // /inbox, /ask/:id, /:id/answer, /
 app.use('/api/groups', groupsRoutes);
 app.use('/api/users', privatePhotosRoutes); // /private-photos, /:id/request-photos, /:id/private-photos
 app.use('/api/photo-requests', privatePhotosRoutes); // /inbox, /sent, /:id/respond
+// Hidden Photos (隐藏照片) — request-to-view + proactive open. Mounted at both
+// prefixes: cross-user actions under /hidden-photos, self-management under
+// /me/hidden-photos (see routes/hiddenPhotos.js header).
+const hiddenPhotosRoutes = require('./routes/hiddenPhotos');
+app.use('/api/hidden-photos', hiddenPhotosRoutes); // /request/:id, /respond/:id, /:userId
+app.use('/api/me/hidden-photos', hiddenPhotosRoutes); // /toggle, /grant/:id, /revoke/:id, /grants, /requests
 app.use('/api/photo-library', photoLibraryRoutes); // GET / POST / DELETE /:id / POST /:id/touch
 app.use('/api/admin', adminCleanupRoutes); // POST /cleanup-expired-photos (X-Admin-Token)
 app.use('/api/announcements', announcementsRoutes); // GET /current
