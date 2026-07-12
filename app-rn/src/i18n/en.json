@@ -1640,7 +1640,9 @@
     "retry": "Retry",
     "save": "Save",
     "cancel": "Cancel",
-    "ok": "OK"
+    "ok": "OK",
+    "someone": "Someone",
+    "error": "Something went wrong"
   },
   "admin": {
     "error": "Error",
@@ -1735,5 +1737,39 @@
     "clearChatTitle": "Clear local chat history?",
     "clearChatBody": "Only the on-device cache is removed; messages on the server are unaffected.",
     "note": "To save space, media is kept 7 days and local chat 60 days; the app cleans up once a day."
+  },
+  "hiddenPhotos": {
+    "requestToView": "Request to view",
+    "requested": "Requested",
+    "requestAgain": "Request again",
+    "countLabel": "🔒 {{n}} hidden photos",
+    "requestSentToast": "Request sent",
+    "alreadyApprovedToast": "You already have access",
+    "rateLimited": "You've reached today's request limit — try again tomorrow.",
+    "requestFailed": "Couldn't send request",
+    "editorTitle": "Hidden photos",
+    "editorHint": "Tap a public photo to hide it. Only people you approve can see hidden photos.",
+    "noPublicPhotos": "Add profile photos first, then choose which to hide.",
+    "currentlyHidden": "Hidden ({{n}})",
+    "manageGrants": "{{n}} people have access",
+    "notifRequestTitle": "Hidden photo request",
+    "notifRequestBody": "{{name}} wants to see your hidden photos",
+    "notifApprovedTitle": "Hidden photos unlocked",
+    "notifApprovedBody": "{{name}} approved your hidden photo request",
+    "approve": "Approve",
+    "reject": "Decline",
+    "youApproved": "Approved ✓",
+    "youRejected": "Declined",
+    "manageTitle": "Hidden photos",
+    "manageRow": "Manage hidden photos",
+    "manageEmpty": "No requests or granted viewers yet",
+    "pendingHeader": "Requests · {{n}}",
+    "grantedHeader": "Has access · {{n}}",
+    "revoke": "Revoke",
+    "revokeConfirmTitle": "Revoke access?",
+    "revokeConfirmBody": "{{name}} will no longer see your hidden photos.",
+    "source_request": "Approved a request",
+    "source_manual": "You opened access",
+    "source_match": "Matched"
   }
 }

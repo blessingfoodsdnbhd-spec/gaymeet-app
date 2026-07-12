@@ -1640,7 +1640,9 @@
     "retry": "重试",
     "save": "保存",
     "cancel": "取消",
-    "ok": "好"
+    "ok": "好",
+    "someone": "有人",
+    "error": "出错了"
   },
   "admin": {
     "error": "错误",
@@ -1735,5 +1737,39 @@
     "clearChatTitle": "清除本地聊天记录?",
     "clearChatBody": "仅删除本机缓存,服务器上的消息不受影响。",
     "note": "为节省空间,媒体缓存保留 7 天,本地聊天记录保留 60 天,App 每天自动清理一次。"
+  },
+  "hiddenPhotos": {
+    "requestToView": "申请查看",
+    "requested": "已申请",
+    "requestAgain": "再次申请",
+    "countLabel": "🔒 {{n}} 张隐藏照片",
+    "requestSentToast": "已发送申请",
+    "alreadyApprovedToast": "你已获得授权",
+    "rateLimited": "今天的申请次数已用完,明天再试。",
+    "requestFailed": "申请发送失败",
+    "editorTitle": "隐藏照片",
+    "editorHint": "点击公开照片即可隐藏。只有获得授权的人能看到隐藏照片。",
+    "noPublicPhotos": "请先添加资料照片,再选择要隐藏的照片。",
+    "currentlyHidden": "已隐藏 ({{n}})",
+    "manageGrants": "{{n}} 人已获得授权",
+    "notifRequestTitle": "隐藏照片申请",
+    "notifRequestBody": "{{name}} 申请查看你的隐藏照片",
+    "notifApprovedTitle": "隐藏照片已开放",
+    "notifApprovedBody": "{{name}} 同意了你的隐藏照片申请",
+    "approve": "同意",
+    "reject": "拒绝",
+    "youApproved": "已同意 ✓",
+    "youRejected": "已拒绝",
+    "manageTitle": "隐藏照片管理",
+    "manageRow": "隐藏照片管理",
+    "manageEmpty": "暂无申请或已授权的人",
+    "pendingHeader": "申请 · {{n}}",
+    "grantedHeader": "已授权 · {{n}}",
+    "revoke": "撤销",
+    "revokeConfirmTitle": "撤销授权?",
+    "revokeConfirmBody": "{{name}} 将无法再看到你的隐藏照片。",
+    "source_request": "通过申请",
+    "source_manual": "你主动开放",
+    "source_match": "已匹配"
   }
 }

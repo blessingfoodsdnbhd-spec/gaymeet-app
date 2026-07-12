@@ -13,3 +13,9 @@ export const TOPICS_ENABLED = false;
 /** Private Photos (私密照片) upload + request/unlock flow. Public photos are
  *  unaffected — they're normal social-app photos and stay visible. */
 export const PRIVATE_PHOTOS_ENABLED = false;
+
+/** Hidden Photos (隐藏照片) — mark existing profile photos hidden + request-to-
+ *  view / proactive-open grants. Unlike Private Photos these are a subset of
+ *  already-uploaded profile photos (not a separate NSFW channel), so they stay
+ *  enabled for review. Flip to false to hide the whole surface if needed. */
+export const HIDDEN_PHOTOS_ENABLED = true;

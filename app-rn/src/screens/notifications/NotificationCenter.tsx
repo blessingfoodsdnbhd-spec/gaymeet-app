@@ -18,6 +18,7 @@ import {
   markNotificationRead,
   type AppNotification,
 } from '../../api/notifications';
+import { respondHiddenRequest } from '../../api/hiddenPhotos';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -30,6 +31,8 @@ const EMOJI: Record<string, string> = {
   comment: '💬',
   comment_reply: '💬',
   moment_tag: '🏷️',
+  hidden_photo_request: '🔒',
+  hidden_photo_approved: '🔓',
   room_invite: '💬',
   vote_first_vote: '🗳️',
   vote_ending_24h: '⏳',
@@ -76,6 +79,16 @@ function localizeNotif(
       return { title: t('notifications.viewers.title'), body: t('notifications.viewers.body', { count: d.count ?? 0 }) };
     case 'wants_you_digest':
       return { title: t('notifications.wants.title'), body: t('notifications.wants.body', { count: d.count ?? 0 }) };
+    case 'hidden_photo_request':
+      return {
+        title: t('hiddenPhotos.notifRequestTitle'),
+        body: t('hiddenPhotos.notifRequestBody', { name: d.fromUserName || t('common.someone') }),
+      };
+    case 'hidden_photo_approved':
+      return {
+        title: t('hiddenPhotos.notifApprovedTitle'),
+        body: t('hiddenPhotos.notifApprovedBody', { name: d.fromUserName || t('common.someone') }),
+      };
     default:
       return { title: n.title, body: n.body };
   }
@@ -97,6 +110,27 @@ export function NotificationCenter() {
 
   const refreshBadges = () => {
     qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+  };
+
+  // Inline responses to hidden-photo requests. Track per-requestId outcome so
+  // the buttons collapse to a status line once the owner decides (and survive
+  // list refetches within this session).
+  const [responded, setResponded] = React.useState<Record<string, 'approved' | 'rejected'>>({});
+  const [respondingId, setRespondingId] = React.useState<string | null>(null);
+
+  const respondHidden = async (requestId: string, action: 'approve' | 'reject') => {
+    if (!requestId || respondingId) return;
+    setRespondingId(requestId);
+    try {
+      await respondHiddenRequest(requestId, action);
+      setResponded((m) => ({ ...m, [requestId]: action === 'approve' ? 'approved' : 'rejected' }));
+      qc.invalidateQueries({ queryKey: ['me', 'hiddenRequests'] });
+      qc.invalidateQueries({ queryKey: ['me', 'hiddenGrants'] });
+    } catch {
+      /* best-effort — leave buttons so the user can retry */
+    } finally {
+      setRespondingId(null);
+    }
   };
 
   // Opening the Notification Center clears the unread tab badge (WeChat/IG
@@ -206,6 +240,36 @@ export function NotificationCenter() {
                       </Text>
                     )}
                     <Text style={{ fontSize: 11, color: theme.colors.muted, marginTop: 3 }}>{shortTime(item.createdAt)}</Text>
+                    {item.type === 'hidden_photo_request' && item.data?.requestId && (() => {
+                      const rid = String(item.data.requestId);
+                      const outcome = responded[rid];
+                      if (outcome) {
+                        return (
+                          <Text style={{ fontSize: 12.5, fontWeight: '700', marginTop: 8, color: outcome === 'approved' ? theme.colors.success : theme.colors.muted }}>
+                            {outcome === 'approved' ? t('hiddenPhotos.youApproved') : t('hiddenPhotos.youRejected')}
+                          </Text>
+                        );
+                      }
+                      const loading = respondingId === rid;
+                      return (
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                          <Pressable
+                            disabled={loading}
+                            onPress={() => respondHidden(rid, 'approve')}
+                            style={({ pressed }) => [styles.inlineBtn, { backgroundColor: theme.colors.primary, opacity: pressed || loading ? 0.7 : 1 }]}
+                          >
+                            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>{t('hiddenPhotos.approve')}</Text>
+                          </Pressable>
+                          <Pressable
+                            disabled={loading}
+                            onPress={() => respondHidden(rid, 'reject')}
+                            style={({ pressed }) => [styles.inlineBtn, { backgroundColor: theme.colors.surface2, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.line, opacity: pressed || loading ? 0.7 : 1 }]}
+                          >
+                            <Text style={{ color: theme.colors.text2, fontSize: 13, fontWeight: '700' }}>{t('hiddenPhotos.reject')}</Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })()}
                   </View>
                 );
               })()}
@@ -231,4 +295,11 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
   iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 9, height: 9, borderRadius: 4.5 },
+  inlineBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
