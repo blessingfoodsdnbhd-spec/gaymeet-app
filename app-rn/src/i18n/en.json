@@ -223,6 +223,28 @@
     "empty": "No open reports 🎉",
     "resolve": "Resolve",
     "noReason": "(no reason given)",
+    "view": "View content",
+    "noContent": "No content to view",
+    "close": "Close",
+    "actionFailed": "Action failed, please try again.",
+    "actions": {
+      "approve": "Approve",
+      "removeContent": "Remove content",
+      "banUser": "Ban user",
+      "banIp": "Ban IP"
+    },
+    "confirm": {
+      "cancel": "Cancel",
+      "ok": "Confirm",
+      "approveTitle": "Approve this report?",
+      "approveBody": "Marks it resolved with no action taken.",
+      "removeContentTitle": "Remove reported content?",
+      "removeContentBody": "This deletes the content and cannot be undone.",
+      "banUserTitle": "Ban this user?",
+      "banUserBody": "The user will be banned and signed out. Are you sure?",
+      "banIpTitle": "Ban this IP?",
+      "banIpBody": "Bans the user + every account on their IP. This can't be undone here. Continue?"
+    },
     "kind": {
       "worldChat": "Plaza",
       "vote": "Vote",

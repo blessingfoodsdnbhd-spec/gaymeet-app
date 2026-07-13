@@ -597,6 +597,28 @@
     "empty": "未対応の通報はありません 🎉",
     "resolve": "対応済みにする",
     "noReason": "（理由なし）",
+    "view": "内容を見る",
+    "noContent": "表示できる内容がありません",
+    "close": "閉じる",
+    "actionFailed": "操作に失敗しました。もう一度お試しください。",
+    "actions": {
+      "approve": "許可",
+      "removeContent": "内容を削除",
+      "banUser": "ユーザーをBAN",
+      "banIp": "IPをBAN"
+    },
+    "confirm": {
+      "cancel": "キャンセル",
+      "ok": "確定",
+      "approveTitle": "この通報を許可しますか?",
+      "approveBody": "対応済みにするだけで、措置は行いません。",
+      "removeContentTitle": "通報された内容を削除しますか?",
+      "removeContentBody": "内容を削除します。この操作は取り消せません。",
+      "banUserTitle": "このユーザーをBANしますか?",
+      "banUserBody": "ユーザーはBANされ、ログアウトされます。よろしいですか?",
+      "banIpTitle": "このIPをBANしますか?",
+      "banIpBody": "ユーザーとそのIPの全アカウントをBANします。ここでは取り消せません。続行しますか?"
+    },
     "kind": {
       "worldChat": "広場",
       "vote": "投票",

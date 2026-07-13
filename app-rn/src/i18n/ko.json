@@ -597,6 +597,28 @@
     "empty": "처리할 신고가 없습니다 🎉",
     "resolve": "처리 완료",
     "noReason": "(사유 없음)",
+    "view": "내용 보기",
+    "noContent": "볼 수 있는 내용이 없습니다",
+    "close": "닫기",
+    "actionFailed": "작업에 실패했습니다. 다시 시도해 주세요.",
+    "actions": {
+      "approve": "승인",
+      "removeContent": "내용 삭제",
+      "banUser": "사용자 차단",
+      "banIp": "IP 차단"
+    },
+    "confirm": {
+      "cancel": "취소",
+      "ok": "확인",
+      "approveTitle": "이 신고를 승인할까요?",
+      "approveBody": "조치 없이 처리 완료로만 표시합니다.",
+      "removeContentTitle": "신고된 내용을 삭제할까요?",
+      "removeContentBody": "내용을 삭제하며 되돌릴 수 없습니다.",
+      "banUserTitle": "이 사용자를 차단할까요?",
+      "banUserBody": "사용자가 차단되고 로그아웃됩니다. 계속할까요?",
+      "banIpTitle": "이 IP를 차단할까요?",
+      "banIpBody": "사용자와 해당 IP의 모든 계정을 차단합니다. 여기서는 되돌릴 수 없습니다. 계속할까요?"
+    },
     "kind": {
       "worldChat": "광장",
       "vote": "투표",

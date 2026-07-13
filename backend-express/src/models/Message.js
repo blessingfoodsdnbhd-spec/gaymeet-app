@@ -75,6 +75,13 @@ const messageSchema = new mongoose.Schema(
     flagged: { type: Boolean, default: false },
     flagReason: { type: String, default: null },
     flagHandled: { type: Boolean, default: false },
+    // Moderator decision when a flagged message is triaged (REPORT2). null while
+    // pending / never flagged.
+    resolutionAction: {
+      type: String,
+      enum: ['approved', 'content_removed', 'user_banned', 'ip_banned', null],
+      default: null,
+    },
     // Emoji reactions (WhatsApp/iMessage-style). Map of emoji glyph → array of
     // userId strings who reacted with it, e.g. { "❤️": ["u1","u2"], "😂": ["u3"] }.
     // Left undefined (not an empty Map) for messages with no reactions so the

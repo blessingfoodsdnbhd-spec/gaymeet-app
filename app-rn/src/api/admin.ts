@@ -113,12 +113,27 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 
 // ── Reports dashboard (REPORT1) ──────────────────────────────────────────────
 
+export type AdminReportKind = 'worldChat' | 'vote' | 'user' | 'scamMessage' | 'nsfwImage';
+
+export interface AdminReportContent {
+  /** 'image' → enlarge imageUrl; 'message' → show text (+ optional imageUrl);
+   *  'vote' → jump to the vote entry/event; 'user' → jump to user moderation. */
+  type: 'image' | 'message' | 'vote' | 'user';
+  imageUrl?: string | null;
+  text?: string;
+  voteEntryId?: string | null;
+  voteEventId?: string | null;
+}
+
 export interface AdminReport {
   id: string;
-  kind: 'worldChat' | 'vote';
+  kind: AdminReportKind;
   reason: string;
   reporter: string;
   target: string;
+  /** The reported user's id (for ban + "view profile"); null if undeterminable. */
+  targetUserId?: string | null;
+  content?: AdminReportContent;
   createdAt: string;
 }
 
@@ -127,8 +142,23 @@ export async function getAdminReports(): Promise<{ reports: AdminReport[]; count
   return unwrap<{ reports: AdminReport[]; count: number }>(r.data);
 }
 
+/** Legacy single "mark handled" — kept for callers that don't use the 4 actions. */
 export async function resolveReport(kind: string, id: string): Promise<void> {
   await api.post(`/admin/reports/${kind}/${id}/resolve`);
+}
+
+// ── 4-action report triage (REPORT2) ─────────────────────────────────────────
+
+export type ReportAction = 'approve' | 'remove-content' | 'ban-user' | 'ban-ip';
+
+/** Run one of the four triage actions on a report. Resolves the report. */
+export async function actOnReport(
+  kind: string,
+  id: string,
+  action: ReportAction,
+  reason?: string,
+): Promise<void> {
+  await api.post(`/admin/reports/${kind}/${id}/${action}`, reason ? { reason } : {});
 }
 
 // ── Analytics dashboard (STATS1) ─────────────────────────────────────────────

@@ -19,6 +19,15 @@ const userReportSchema = new mongoose.Schema(
     note: { type: String, default: '' },
     context: { type: String, default: 'profile' },
     handled: { type: Boolean, default: false },
+    // What the moderator decided when handling this report (REPORT2 — 4-action
+    // triage). null while pending.
+    resolutionAction: {
+      type: String,
+      enum: ['approved', 'content_removed', 'user_banned', 'ip_banned', null],
+      default: null,
+    },
+    handledAt: { type: Date, default: null },
+    handledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true },
 );

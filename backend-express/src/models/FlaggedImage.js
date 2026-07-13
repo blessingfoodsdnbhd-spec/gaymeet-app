@@ -9,6 +9,12 @@ const flaggedImageSchema = new mongoose.Schema(
     context: { type: String, enum: ['photo', 'moment'], default: 'photo' },
     score: { type: Number, default: null },
     handled: { type: Boolean, default: false },
+    // Moderator decision when triaged (REPORT2). null while pending.
+    resolutionAction: {
+      type: String,
+      enum: ['approved', 'content_removed', 'user_banned', 'ip_banned', null],
+      default: null,
+    },
   },
   { timestamps: true }
 );

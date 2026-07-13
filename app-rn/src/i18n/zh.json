@@ -223,6 +223,28 @@
     "empty": "没有待处理举报 🎉",
     "resolve": "已处理",
     "noReason": "(未填写原因)",
+    "view": "查看内容",
+    "noContent": "无可查看的内容",
+    "close": "关闭",
+    "actionFailed": "操作失败,请重试。",
+    "actions": {
+      "approve": "放行",
+      "removeContent": "删除内容",
+      "banUser": "封禁用户",
+      "banIp": "封禁 IP"
+    },
+    "confirm": {
+      "cancel": "取消",
+      "ok": "确定",
+      "approveTitle": "放行此举报?",
+      "approveBody": "仅标记为已处理,不采取任何行动。",
+      "removeContentTitle": "删除被举报内容?",
+      "removeContentBody": "将删除该内容,此操作无法撤销。",
+      "banUserTitle": "封禁此用户?",
+      "banUserBody": "该用户将被封禁并退出登录,确定要 ban 吗?",
+      "banIpTitle": "封禁此 IP?",
+      "banIpBody": "将封禁该用户 + 其 IP 下所有账号,此操作无法在此撤销,确定吗?"
+    },
     "kind": {
       "worldChat": "广场",
       "vote": "投票",

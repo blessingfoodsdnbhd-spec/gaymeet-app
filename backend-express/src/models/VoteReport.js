@@ -12,6 +12,14 @@ const voteReportSchema = new mongoose.Schema(
     entryId: { type: mongoose.Schema.Types.ObjectId, ref: 'VoteEntry', default: null },
     reason: { type: String, default: '' },
     handled: { type: Boolean, default: false },
+    // Moderator decision (REPORT2 — 4-action triage). null while pending.
+    resolutionAction: {
+      type: String,
+      enum: ['approved', 'content_removed', 'user_banned', 'ip_banned', null],
+      default: null,
+    },
+    handledAt: { type: Date, default: null },
+    handledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true },
 );
