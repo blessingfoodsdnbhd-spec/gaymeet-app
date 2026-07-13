@@ -1719,7 +1719,13 @@
       "purple": "Purple",
       "blue": "Blue",
       "sunset": "Sunset",
-      "night": "Night"
+      "night": "Night",
+      "heartbeat": "Heart Beat",
+      "sakura": "Sakura",
+      "starry": "Starry",
+      "neon": "Neon",
+      "pixel": "Pixel",
+      "beary": "Beary"
     }
   },
   "storage": {

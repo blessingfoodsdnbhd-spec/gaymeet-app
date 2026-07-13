@@ -159,6 +159,54 @@
               "foregroundImage": "./src/assets/icons/icon-night.png",
               "backgroundColor": "#16151F"
             }
+          },
+          {
+            "name": "heartbeat",
+            "ios": "./src/assets/icons/icon-heartbeat.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-heartbeat.png",
+              "backgroundColor": "#FCD3E6"
+            }
+          },
+          {
+            "name": "sakura",
+            "ios": "./src/assets/icons/icon-sakura.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-sakura.png",
+              "backgroundColor": "#F7C6DD"
+            }
+          },
+          {
+            "name": "starry",
+            "ios": "./src/assets/icons/icon-starry.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-starry.png",
+              "backgroundColor": "#120C33"
+            }
+          },
+          {
+            "name": "neon",
+            "ios": "./src/assets/icons/icon-neon.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-neon.png",
+              "backgroundColor": "#050109"
+            }
+          },
+          {
+            "name": "pixel",
+            "ios": "./src/assets/icons/icon-pixel.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-pixel.png",
+              "backgroundColor": "#1E7E9C"
+            }
+          },
+          {
+            "name": "beary",
+            "ios": "./src/assets/icons/icon-beary.png",
+            "android": {
+              "foregroundImage": "./src/assets/icons/icon-beary.png",
+              "backgroundColor": "#FFC98C"
+            }
           }
         ]
       ],

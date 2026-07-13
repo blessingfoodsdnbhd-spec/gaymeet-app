@@ -1,0 +1,95 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Pixel (像素)</title>
+  <defs>
+    <linearGradient id="px-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2AA9B5"/>
+      <stop offset="1" stop-color="#1E7E9C"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#px-bg)"/>
+
+  <!-- 8x8 subtle checker to sell the retro grid -->
+  <g fill="#FFFFFF" opacity="0.05">
+    <rect x="0"   y="0"   width="128" height="128"/>
+    <rect x="256" y="0"   width="128" height="128"/>
+    <rect x="512" y="0"   width="128" height="128"/>
+    <rect x="768" y="0"   width="128" height="128"/>
+    <rect x="128" y="128" width="128" height="128"/>
+    <rect x="384" y="128" width="128" height="128"/>
+    <rect x="640" y="128" width="128" height="128"/>
+    <rect x="896" y="128" width="128" height="128"/>
+    <rect x="0"   y="768" width="128" height="128"/>
+    <rect x="256" y="768" width="128" height="128"/>
+    <rect x="512" y="768" width="128" height="128"/>
+    <rect x="768" y="768" width="128" height="128"/>
+    <rect x="128" y="896" width="128" height="128"/>
+    <rect x="384" y="896" width="128" height="128"/>
+    <rect x="640" y="896" width="128" height="128"/>
+    <rect x="896" y="896" width="128" height="128"/>
+  </g>
+
+  <!-- Pixel M on a 7-wide grid, cell = 96px, drawn from a bitmap.
+       Drop shadow layer (dark), then main (yellow), then highlight top-left. -->
+  <!-- bitmap rows (x from col 0..6), 1 = filled:
+       row0: X . . . . . X
+       row1: X X . . . X X
+       row2: X . X . X . X
+       row3: X . . X . . X
+       row4: X . . . . . X
+       row5: X . . . . . X
+       row6: X . . . . . X
+  -->
+  <!-- shadow -->
+  <g fill="#0E5163">
+    <g transform="translate(224 236)">
+      <!-- generated cells, offset +10,+10 -->
+      <g transform="translate(10 10)">
+        <!-- col0 full column rows0-6 -->
+        <rect x="0" y="0" width="96" height="96"/><rect x="0" y="96" width="96" height="96"/><rect x="0" y="192" width="96" height="96"/><rect x="0" y="288" width="96" height="96"/><rect x="0" y="384" width="96" height="96"/><rect x="0" y="480" width="96" height="96"/><rect x="0" y="576" width="96" height="96"/>
+        <!-- col6 full column -->
+        <rect x="576" y="0" width="96" height="96"/><rect x="576" y="96" width="96" height="96"/><rect x="576" y="192" width="96" height="96"/><rect x="576" y="288" width="96" height="96"/><rect x="576" y="384" width="96" height="96"/><rect x="576" y="480" width="96" height="96"/><rect x="576" y="576" width="96" height="96"/>
+        <!-- inner diagonals -->
+        <rect x="96" y="96" width="96" height="96"/>
+        <rect x="480" y="96" width="96" height="96"/>
+        <rect x="192" y="192" width="96" height="96"/>
+        <rect x="384" y="192" width="96" height="96"/>
+        <rect x="288" y="288" width="96" height="96"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- main yellow -->
+  <g fill="#FFD23E">
+    <g transform="translate(224 236)">
+      <rect x="0" y="0" width="96" height="96"/><rect x="0" y="96" width="96" height="96"/><rect x="0" y="192" width="96" height="96"/><rect x="0" y="288" width="96" height="96"/><rect x="0" y="384" width="96" height="96"/><rect x="0" y="480" width="96" height="96"/><rect x="0" y="576" width="96" height="96"/>
+      <rect x="576" y="0" width="96" height="96"/><rect x="576" y="96" width="96" height="96"/><rect x="576" y="192" width="96" height="96"/><rect x="576" y="288" width="96" height="96"/><rect x="576" y="384" width="96" height="96"/><rect x="576" y="480" width="96" height="96"/><rect x="576" y="576" width="96" height="96"/>
+      <rect x="96" y="96" width="96" height="96"/>
+      <rect x="480" y="96" width="96" height="96"/>
+      <rect x="192" y="192" width="96" height="96"/>
+      <rect x="384" y="192" width="96" height="96"/>
+      <rect x="288" y="288" width="96" height="96"/>
+    </g>
+  </g>
+
+  <!-- top/left highlight cells for 8-bit shading -->
+  <g fill="#FFE98A">
+    <g transform="translate(224 236)">
+      <rect x="0" y="0" width="96" height="30"/>
+      <rect x="576" y="0" width="96" height="30"/>
+      <rect x="96" y="96" width="96" height="30"/>
+      <rect x="480" y="96" width="96" height="30"/>
+      <rect x="192" y="192" width="96" height="30"/>
+      <rect x="384" y="192" width="96" height="30"/>
+      <rect x="288" y="288" width="96" height="30"/>
+    </g>
+  </g>
+
+  <!-- retro pixel sparkles -->
+  <g fill="#FF5D8F">
+    <rect x="150" y="150" width="34" height="34"/>
+    <rect x="840" y="150" width="34" height="34"/>
+    <rect x="150" y="840" width="34" height="34"/>
+    <rect x="840" y="840" width="34" height="34"/>
+  </g>
+</svg>

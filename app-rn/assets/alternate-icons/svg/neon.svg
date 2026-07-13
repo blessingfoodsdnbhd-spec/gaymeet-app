@@ -1,0 +1,56 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Neon (霓虹)</title>
+  <defs>
+    <linearGradient id="ne-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#140A24"/>
+      <stop offset="1" stop-color="#050109"/>
+    </linearGradient>
+    <linearGradient id="ne-stroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00F0FF"/>
+      <stop offset="0.5" stop-color="#FF3DD6"/>
+      <stop offset="1" stop-color="#B14BFF"/>
+    </linearGradient>
+    <linearGradient id="ne-grid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF3DD6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FF3DD6" stop-opacity="0.5"/>
+    </linearGradient>
+    <filter id="ne-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#ne-bg)"/>
+
+  <!-- perspective synth grid floor -->
+  <g stroke="url(#ne-grid)" stroke-width="3" opacity="0.7">
+    <line x1="512" y1="760" x2="-140" y2="1024"/>
+    <line x1="512" y1="760" x2="180" y2="1024"/>
+    <line x1="512" y1="760" x2="420" y2="1024"/>
+    <line x1="512" y1="760" x2="604" y2="1024"/>
+    <line x1="512" y1="760" x2="844" y2="1024"/>
+    <line x1="512" y1="760" x2="1164" y2="1024"/>
+    <line x1="60" y1="820" x2="964" y2="820"/>
+    <line x1="0" y1="892" x2="1024" y2="892"/>
+    <line x1="-40" y1="980" x2="1064" y2="980"/>
+  </g>
+
+  <!-- neon M -->
+  <g fill="none" stroke="url(#ne-stroke)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+    <path filter="url(#ne-glow)"
+          d="M 300 720 L 300 320 L 512 560 L 724 320 L 724 720"/>
+    <!-- bright inner core -->
+    <path stroke="#FFFFFF" stroke-width="14" opacity="0.9"
+          d="M 300 720 L 300 320 L 512 560 L 724 320 L 724 720"/>
+  </g>
+
+  <!-- reflection -->
+  <g fill="none" stroke="url(#ne-stroke)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"
+     opacity="0.22" transform="translate(0 1516) scale(1 -1)">
+    <path d="M 300 720 L 300 320 L 512 560 L 724 320 L 724 720"/>
+  </g>
+</svg>

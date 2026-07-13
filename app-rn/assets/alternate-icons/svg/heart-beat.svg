@@ -1,0 +1,51 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Heart Beat (心跳)</title>
+  <defs>
+    <linearGradient id="hb-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF0F6"/>
+      <stop offset="1" stop-color="#FCD3E6"/>
+    </linearGradient>
+    <linearGradient id="hb-line" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5FA2"/>
+      <stop offset="0.55" stop-color="#F0347F"/>
+      <stop offset="1" stop-color="#E11D74"/>
+    </linearGradient>
+    <filter id="hb-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#E11D74" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#hb-bg)"/>
+
+  <!-- faint baseline grid ticks -->
+  <g opacity="0.14" stroke="#E11D74" stroke-width="3">
+    <line x1="96" y1="540" x2="928" y2="540"/>
+  </g>
+
+  <!-- EKG pulse that draws an M and spikes into a heartbeat -->
+  <g fill="none" stroke="url(#hb-line)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round" filter="url(#hb-shadow)">
+    <path d="M 120 540
+             L 300 540
+             L 330 720
+             L 360 300
+             L 512 560
+             L 664 300
+             L 694 720
+             L 724 540
+             L 904 540"/>
+  </g>
+
+  <!-- heart sitting on the last flat lead as the 'pulse' -->
+  <g filter="url(#hb-shadow)">
+    <path d="M 820 452
+             c -34 -40 -104 -30 -112 22
+             c -6 34 22 64 62 96
+             l 50 42 50 -42
+             c 40 -32 68 -62 62 -96
+             c -8 -52 -78 -62 -112 -22 z"
+          fill="url(#hb-line)"/>
+  </g>
+
+  <!-- small pulse dots -->
+  <circle cx="120" cy="540" r="18" fill="#E11D74"/>
+</svg>

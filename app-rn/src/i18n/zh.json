@@ -1719,7 +1719,13 @@
       "purple": "紫",
       "blue": "蓝",
       "sunset": "日落",
-      "night": "暗夜"
+      "night": "暗夜",
+      "heartbeat": "心跳",
+      "sakura": "樱花",
+      "starry": "星空",
+      "neon": "霓虹",
+      "pixel": "像素",
+      "beary": "熊哥"
     }
   },
   "storage": {

@@ -1,0 +1,61 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Starry (星空)</title>
+  <defs>
+    <radialGradient id="st-bg" cx="0.5" cy="0.35" r="0.9">
+      <stop offset="0" stop-color="#3B2B73"/>
+      <stop offset="0.5" stop-color="#241A57"/>
+      <stop offset="1" stop-color="#120C33"/>
+    </radialGradient>
+    <radialGradient id="st-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#BFE0FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#BFE0FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="st-line" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8FB6FF"/>
+      <stop offset="1" stop-color="#C6A8FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#st-bg)"/>
+
+  <!-- scattered background stars -->
+  <g fill="#FFFFFF">
+    <circle cx="150" cy="170" r="4" opacity="0.8"/>
+    <circle cx="300" cy="110" r="2.5" opacity="0.6"/>
+    <circle cx="470" cy="180" r="3" opacity="0.5"/>
+    <circle cx="720" cy="120" r="2.5" opacity="0.7"/>
+    <circle cx="880" cy="200" r="4" opacity="0.8"/>
+    <circle cx="120" cy="470" r="2.5" opacity="0.5"/>
+    <circle cx="930" cy="470" r="3" opacity="0.6"/>
+    <circle cx="180" cy="820" r="3.5" opacity="0.7"/>
+    <circle cx="420" cy="900" r="2.5" opacity="0.5"/>
+    <circle cx="620" cy="880" r="3" opacity="0.6"/>
+    <circle cx="860" cy="840" r="4" opacity="0.8"/>
+    <circle cx="540" cy="90" r="2" opacity="0.5"/>
+    <circle cx="990" cy="650" r="2.5" opacity="0.6"/>
+    <circle cx="60" cy="640" r="3" opacity="0.6"/>
+  </g>
+
+  <!-- constellation M: connecting lines -->
+  <g stroke="url(#st-line)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.92">
+    <polyline points="300,700 340,330 512,600 684,330 724,700"/>
+  </g>
+
+  <!-- star nodes at the M vertices -->
+  <g>
+    <g id="st-star" transform="translate(300 700)">
+      <circle r="46" fill="url(#st-glow)"/>
+      <path d="M0,-26 6,-8 25,-8 10,4 16,23 0,11 -16,23 -10,4 -25,-8 -6,-8 Z" fill="#FFFFFF"/>
+    </g>
+    <use href="#st-star" transform="translate(40 -370)"/>
+    <use href="#st-star" transform="translate(212 -100)"/>
+    <use href="#st-star" transform="translate(384 -370)"/>
+    <use href="#st-star" transform="translate(424 0)"/>
+  </g>
+
+  <!-- crescent moon accent -->
+  <g transform="translate(830 260)">
+    <circle r="60" fill="#FFF6D8"/>
+    <circle r="60" cx="26" cy="-14" fill="#241A57"/>
+  </g>
+</svg>

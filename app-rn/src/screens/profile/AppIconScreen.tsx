@@ -17,7 +17,19 @@ import {
 const STREAK_NEEDED = 30;
 const REFERRALS_NEEDED = 3;
 
-const ALTERNATES: Exclude<AppIconId, 'default'>[] = ['pink', 'purple', 'blue', 'sunset', 'night'];
+const ALTERNATES: Exclude<AppIconId, 'default'>[] = [
+  'pink',
+  'purple',
+  'blue',
+  'sunset',
+  'night',
+  'heartbeat',
+  'sakura',
+  'starry',
+  'neon',
+  'pixel',
+  'beary',
+];
 
 export function AppIconScreen() {
   const theme = useTheme();

@@ -1,0 +1,68 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Beary (熊哥)</title>
+  <defs>
+    <linearGradient id="be-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE7C2"/>
+      <stop offset="1" stop-color="#FFC98C"/>
+    </linearGradient>
+    <radialGradient id="be-fur" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#B9793F"/>
+      <stop offset="1" stop-color="#9A5E2C"/>
+    </radialGradient>
+    <linearGradient id="be-muzzle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBE3C4"/>
+      <stop offset="1" stop-color="#F1CE9E"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#be-bg)"/>
+
+  <!-- soft glow halo -->
+  <circle cx="512" cy="520" r="360" fill="#FFFFFF" opacity="0.28"/>
+
+  <g transform="translate(512 520)">
+    <!-- ears -->
+    <g fill="url(#be-fur)">
+      <circle cx="-215" cy="-215" r="120"/>
+      <circle cx="215" cy="-215" r="120"/>
+    </g>
+    <g fill="#7C4A22">
+      <circle cx="-215" cy="-215" r="62"/>
+      <circle cx="215" cy="-215" r="62"/>
+    </g>
+
+    <!-- head -->
+    <circle cx="0" cy="0" r="292" fill="url(#be-fur)"/>
+
+    <!-- cheeks blush -->
+    <g fill="#F0808F" opacity="0.55">
+      <ellipse cx="-176" cy="86" rx="58" ry="40"/>
+      <ellipse cx="176" cy="86" rx="58" ry="40"/>
+    </g>
+
+    <!-- muzzle -->
+    <ellipse cx="0" cy="96" rx="168" ry="140" fill="url(#be-muzzle)"/>
+
+    <!-- eyes -->
+    <g fill="#2A1A0E">
+      <circle cx="-108" cy="-34" r="38"/>
+      <circle cx="108" cy="-34" r="38"/>
+    </g>
+    <g fill="#FFFFFF">
+      <circle cx="-96" cy="-46" r="12"/>
+      <circle cx="120" cy="-46" r="12"/>
+    </g>
+
+    <!-- nose + mouth -->
+    <ellipse cx="0" cy="46" rx="52" ry="38" fill="#2A1A0E"/>
+    <path d="M 0 84 L 0 128 M 0 128 C -34 176 -92 168 -110 132 M 0 128 C 34 176 92 168 110 132"
+          fill="none" stroke="#2A1A0E" stroke-width="14" stroke-linecap="round"/>
+
+    <!-- little M tag on collar to tie branding -->
+    <g transform="translate(0 300)">
+      <rect x="-70" y="-46" width="140" height="92" rx="24" fill="#E25CAE"/>
+      <path d="M -40 26 L -40 -26 L -18 -26 L 0 2 L 18 -26 L 40 -26 L 40 26 L 22 26 L 22 -6 L 6 18 L -6 18 L -22 -6 L -22 26 Z"
+            fill="#FFFFFF"/>
+    </g>
+  </g>
+</svg>

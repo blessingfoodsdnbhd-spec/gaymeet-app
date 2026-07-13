@@ -20,9 +20,34 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * doesn't visually change — zero build risk in the meantime.
  */
 
-export type AppIconId = 'default' | 'pink' | 'purple' | 'blue' | 'sunset' | 'night';
+export type AppIconId =
+  | 'default'
+  | 'pink'
+  | 'purple'
+  | 'blue'
+  | 'sunset'
+  | 'night'
+  | 'heartbeat'
+  | 'sakura'
+  | 'starry'
+  | 'neon'
+  | 'pixel'
+  | 'beary';
 
-export const APP_ICON_IDS: AppIconId[] = ['default', 'pink', 'purple', 'blue', 'sunset', 'night'];
+export const APP_ICON_IDS: AppIconId[] = [
+  'default',
+  'pink',
+  'purple',
+  'blue',
+  'sunset',
+  'night',
+  'heartbeat',
+  'sakura',
+  'starry',
+  'neon',
+  'pixel',
+  'beary',
+];
 
 const STORAGE_KEY = 'meyou:appIcon:selected';
 
@@ -33,6 +58,12 @@ export const APP_ICON_ASSETS: Record<Exclude<AppIconId, 'default'>, number> = {
   blue: require('../assets/icons/icon-blue.png'),
   sunset: require('../assets/icons/icon-sunset.png'),
   night: require('../assets/icons/icon-night.png'),
+  heartbeat: require('../assets/icons/icon-heartbeat.png'),
+  sakura: require('../assets/icons/icon-sakura.png'),
+  starry: require('../assets/icons/icon-starry.png'),
+  neon: require('../assets/icons/icon-neon.png'),
+  pixel: require('../assets/icons/icon-pixel.png'),
+  beary: require('../assets/icons/icon-beary.png'),
 };
 
 // Optional native module — present only once the plugin is installed + rebuilt.

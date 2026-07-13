@@ -1,0 +1,61 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>Meyou icon — Sakura (樱花)</title>
+  <defs>
+    <radialGradient id="sk-bg" cx="0.5" cy="0.42" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#FDE7F1"/>
+      <stop offset="1" stop-color="#F7C6DD"/>
+    </radialGradient>
+    <linearGradient id="sk-petal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFDDEC"/>
+      <stop offset="1" stop-color="#FF9EC4"/>
+    </linearGradient>
+    <linearGradient id="sk-m" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0559B"/>
+      <stop offset="1" stop-color="#D42E79"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#sk-bg)"/>
+
+  <!-- big blossom: 5 notched petals around center -->
+  <g transform="translate(512 500)">
+    <g fill="url(#sk-petal)" stroke="#F7ACCB" stroke-width="4">
+      <!-- one petal, cloned by rotation -->
+      <g id="sk-p">
+        <path transform="translate(0 -210)"
+              d="M 0 -160
+                 C 70 -150 96 -60 66 8
+                 C 52 40 24 46 0 24
+                 C -24 46 -52 40 -66 8
+                 C -96 -60 -70 -150 0 -160 Z"/>
+      </g>
+      <use href="#sk-p" transform="rotate(72)"/>
+      <use href="#sk-p" transform="rotate(144)"/>
+      <use href="#sk-p" transform="rotate(216)"/>
+      <use href="#sk-p" transform="rotate(288)"/>
+    </g>
+    <!-- soft center disc -->
+    <circle r="150" fill="#FFF4F9"/>
+    <circle r="150" fill="none" stroke="#FBC2DA" stroke-width="4"/>
+    <!-- stamens hint -->
+    <g stroke="#F5A9C9" stroke-width="6" stroke-linecap="round">
+      <line x1="0" y1="0" x2="0" y2="-118"/>
+      <line x1="0" y1="0" x2="112" y2="-36"/>
+      <line x1="0" y1="0" x2="70" y2="96"/>
+      <line x1="0" y1="0" x2="-70" y2="96"/>
+      <line x1="0" y1="0" x2="-112" y2="-36"/>
+    </g>
+    <!-- the M -->
+    <path d="M -78 66 L -78 -66 L -30 -66 L 0 -6 L 30 -66 L 78 -66 L 78 66 L 40 66 L 40 -10 L 12 44 L -12 44 L -40 -10 L -40 66 Z"
+          fill="url(#sk-m)"/>
+  </g>
+
+  <!-- falling petals -->
+  <g fill="url(#sk-petal)" opacity="0.9" stroke="#F7ACCB" stroke-width="3">
+    <path transform="translate(210 210) rotate(20) scale(0.42)" d="M 0 -160 C 70 -150 96 -60 66 8 C 52 40 24 46 0 24 C -24 46 -52 40 -66 8 C -96 -60 -70 -150 0 -160 Z"/>
+    <path transform="translate(830 300) rotate(-35) scale(0.34)" d="M 0 -160 C 70 -150 96 -60 66 8 C 52 40 24 46 0 24 C -24 46 -52 40 -66 8 C -96 -60 -70 -150 0 -160 Z"/>
+    <path transform="translate(788 820) rotate(60) scale(0.4)" d="M 0 -160 C 70 -150 96 -60 66 8 C 52 40 24 46 0 24 C -24 46 -52 40 -66 8 C -96 -60 -70 -150 0 -160 Z"/>
+    <path transform="translate(230 830) rotate(-15) scale(0.3)" d="M 0 -160 C 70 -150 96 -60 66 8 C 52 40 24 46 0 24 C -24 46 -52 40 -66 8 C -96 -60 -70 -150 0 -160 Z"/>
+  </g>
+</svg>
