@@ -87,7 +87,13 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
         theme.shadows.card,
       ]}
     >
-      <View style={styles.hero}>
+      {/* Explicit opaque hero background. The gradient/photo child fills the
+          hero, but the hero View itself must also be opaque: without it, any
+          frame where the child hasn't painted (scale/enter transitions, a
+          gradient that lags a frame) lets the card behind bleed through — the
+          "no-photo placeholder looks half-transparent, you can see the next
+          card's photo/name" bug. Same fix pattern as the info block below. */}
+      <View style={[styles.hero, { backgroundColor: theme.colors.surface2 }]}>
         {imageSource ? (
           <Image
             source={imageSource}
