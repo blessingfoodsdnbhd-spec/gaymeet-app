@@ -2,6 +2,18 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.19] — build 133 (2026-07-14)
+
+### English
+- **6 brand-new alternate app icons.** Pick a look that fits you — Heartbeat, Sakura, Starry, Neon, Pixel, or Beary — each a fully distinct design, switchable from settings.
+- **Fixed: no-photo profiles no longer show through in Discover.** The placeholder card for users without a photo is now fully opaque, so cards behind it no longer bleed through.
+- **Admin report review revamped.** The report page now lets moderators view the reported content and act with four one-tap buttons: Allow, Delete content, Ban user, or Ban IP.
+
+### 中文
+- **6 个全新风格 App 图标可选。** 心跳 / 樱花 / 星空 / 霓虹 / 像素 / 熊哥 —— 每款都是完全不同的独立设计,可在设置里随时切换。
+- **修复:Discover 无照片用户占位卡半透明穿透。** 没有照片用户的占位卡片现在完全不透明,后面的卡片不再透出来。
+- **Admin 举报页改造。** 举报页现在可以查看被举报内容,并用四个一键按钮处理:放行 / 删除内容 / 封禁用户 / 封禁 IP。
+
 ## [3.1.18] — build 131 (2026-07-08)
 
 ### English
