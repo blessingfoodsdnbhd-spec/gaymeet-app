@@ -57,6 +57,7 @@ import { CreateVoteScreen } from '../screens/votes/CreateVoteScreen';
 import { SubmitEntryScreen } from '../screens/votes/SubmitEntryScreen';
 import { EventUpdatesScreen } from '../screens/votes/EventUpdatesScreen';
 import { PhotoRequestsScreen } from '../screens/profile/PhotoRequestsScreen';
+import { MyPrivatePhotoAccessScreen } from '../screens/profile/MyPrivatePhotoAccessScreen';
 import { TopicPersonaEditScreen } from '../screens/profile/TopicPersonaEditScreen';
 import { UnlockRequestsScreen } from '../screens/profile/UnlockRequestsScreen';
 import { NotificationCenter } from '../screens/notifications/NotificationCenter';
@@ -261,6 +262,11 @@ export function RootNavigator() {
           <Stack.Screen
             name="PhotoRequests"
             component={PhotoRequestsScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="MyPrivatePhotoAccess"
+            component={MyPrivatePhotoAccessScreen}
             options={{ animation: 'slide_from_right' }}
           />
           <Stack.Screen

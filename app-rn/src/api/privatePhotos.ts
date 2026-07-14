@@ -86,6 +86,31 @@ export const relockAll = () =>
 export const getApprovedCount = () =>
   unwrap<{ count: number }>(api.get('/users/private-photos/approved-count'));
 
+/** One person who currently has access to my private photos. */
+export interface PrivatePhotoViewer {
+  requestId: string;
+  grantedAt: string | null;
+  user: PhotoRequestUser;
+}
+
+/** List everyone I've granted access to (for 私密照片管理). */
+export const getApprovedViewers = () =>
+  unwrap<{ viewers: PrivatePhotoViewer[] }>(
+    api.get('/users/private-photos/approved-viewers'),
+  );
+
+/** Silently revoke ONE viewer's access (no notification to them). */
+export const revokeViewer = (userId: string) =>
+  unwrap<{ revoked: number }>(
+    api.post(`/users/private-photos/revoke/${userId}`) as any,
+  );
+
+/** Silently revoke ALL viewers' access. */
+export const revokeAllViewers = () =>
+  unwrap<{ revoked: number }>(
+    api.post('/users/private-photos/revoke-all') as any,
+  );
+
 // ── Owner-side inbox / respond ───────────────────────────────────────────────
 
 /**

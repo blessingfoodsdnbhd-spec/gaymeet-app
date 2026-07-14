@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, CheckCheck } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { respondRequest } from '../../api/privatePhotos';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme/ThemeProvider';
@@ -41,6 +42,9 @@ const EMOJI: Record<string, string> = {
   daily_digest: '🔥',
   comeback: '👋',
   invite_redeemed: '🎁',
+  private_photo_request: '🔒',
+  photo_request: '🔒',
+  photo_request_approved: '🔓',
   // Admin moderation
   verification_submitted: '🪪',
   verification_result: '✅',
@@ -79,6 +83,75 @@ function localizeNotif(
     default:
       return { title: n.title, body: n.body };
   }
+}
+
+/**
+ * Inline 同意 / 拒绝 buttons rendered under a `private_photo_request` row so the
+ * owner can respond without leaving the Notification Center. Once responded (or
+ * if the request was already handled), collapses to a status label.
+ */
+function PhotoRequestActions({ requestId }: { requestId: string }) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [result, setResult] = React.useState<null | 'approved' | 'rejected'>(null);
+
+  const mut = useMutation({
+    mutationFn: (accept: boolean) => respondRequest(requestId, accept),
+    onSuccess: (_d, accept) => {
+      setResult(accept ? 'approved' : 'rejected');
+      qc.invalidateQueries({ queryKey: ['photoRequests'] });
+    },
+    onError: () => {
+      // Already handled elsewhere (404) or offline — show a neutral state.
+      setResult('rejected');
+    },
+  });
+
+  if (result) {
+    return (
+      <Text style={{ fontSize: 12.5, color: theme.colors.muted, marginTop: 8 }}>
+        {result === 'approved'
+          ? t('notifications.photoRequest.approved')
+          : t('notifications.photoRequest.rejected')}
+      </Text>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+      <Pressable
+        onPress={() => mut.mutate(true)}
+        disabled={mut.isPending}
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 7,
+          borderRadius: 999,
+          backgroundColor: theme.colors.primary,
+          opacity: mut.isPending ? 0.6 : 1,
+        }}
+      >
+        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>
+          {t('notifications.photoRequest.approve')}
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => mut.mutate(false)}
+        disabled={mut.isPending}
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 7,
+          borderRadius: 999,
+          backgroundColor: theme.colors.surface2,
+          opacity: mut.isPending ? 0.6 : 1,
+        }}
+      >
+        <Text style={{ color: theme.colors.text2, fontSize: 13, fontWeight: '700' }}>
+          {t('notifications.photoRequest.reject')}
+        </Text>
+      </Pressable>
+    </View>
+  );
 }
 
 export function NotificationCenter() {
@@ -206,6 +279,9 @@ export function NotificationCenter() {
                       </Text>
                     )}
                     <Text style={{ fontSize: 11, color: theme.colors.muted, marginTop: 3 }}>{shortTime(item.createdAt)}</Text>
+                    {item.type === 'private_photo_request' && item.data?.requestId && (
+                      <PhotoRequestActions requestId={String(item.data.requestId)} />
+                    )}
                   </View>
                 );
               })()}

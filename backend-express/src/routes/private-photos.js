@@ -8,6 +8,7 @@ const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2          = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
+const { notify } = require('../services/notificationService');
 
 const MAX_PRIVATE_PHOTOS = 6;
 const MAX_PUBLIC_PHOTOS = 6;
@@ -135,6 +136,60 @@ router.get('/private-photos/approved-count', auth, async (req, res, next) => {
       status: 'approved',
     });
     ok(res, { count });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /api/users/private-photos/approved-viewers — who can see my photos ────
+// Powers 私密照片管理 (MyPrivatePhotoAccessScreen): every active grant with the
+// viewer's slim profile so the owner can revoke individuals.
+router.get('/private-photos/approved-viewers', auth, async (req, res, next) => {
+  try {
+    const grants = await PhotoRequest.find({
+      owner: req.user._id,
+      status: 'approved',
+    })
+      .sort({ respondedAt: -1, updatedAt: -1 })
+      .populate('requester', 'nickname avatarUrl level isOnline isVerified isPremium');
+
+    const viewers = grants
+      .filter((g) => g.requester)
+      .map((g) => ({
+        requestId: g._id,
+        grantedAt: g.respondedAt || g.updatedAt,
+        user: g.requester,
+      }));
+    ok(res, { viewers });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/private-photos/revoke/:userId — revoke ONE viewer ─────────
+// Owner-initiated, SILENT (no notification to the viewer). Flips their approved
+// grant to 'revoked' so they immediately lose access on next fetch.
+router.post('/private-photos/revoke/:userId', auth, async (req, res, next) => {
+  try {
+    const result = await PhotoRequest.updateMany(
+      { owner: req.user._id, requester: req.params.userId, status: 'approved' },
+      { $set: { status: 'revoked', respondedAt: new Date(), revokedAt: new Date() } }
+    );
+    ok(res, { revoked: result.modifiedCount });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/private-photos/revoke-all — revoke every viewer ───────────
+// Silent bulk kill switch (alias of /relock with clearer naming).
+router.post('/private-photos/revoke-all', auth, async (req, res, next) => {
+  try {
+    const result = await PhotoRequest.updateMany(
+      { owner: req.user._id, status: 'approved' },
+      { $set: { status: 'revoked', respondedAt: new Date(), revokedAt: new Date() } }
+    );
+    ok(res, { revoked: result.modifiedCount });
   } catch (e) {
     next(e);
   }
@@ -370,14 +425,19 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       owner: ownerId,
     });
 
-    // Push the owner. Best-effort; never fail the request on push errors.
-    sendPushToUser(ownerId, {
+    // Persist a Notification (so it shows in the in-app Notification Center with
+    // inline 同意/拒绝 buttons) AND push. notify() does both. Carry the
+    // requester's name/avatar + requestId so the row renders + acts with no
+    // extra fetch.
+    notify(ownerId, 'private_photo_request', {
       title: 'New photo request',
       body: `${req.user.nickname || 'Someone'} wants to see your private photos`,
       data: {
-        type: 'photo_request',
+        type: 'private_photo_request',
         requestId: request._id.toString(),
         fromUserId: req.user._id.toString(),
+        fromUserName: req.user.nickname || '',
+        fromUserAvatarUrl: req.user.avatarUrl || '',
       },
     }).catch(() => {});
 

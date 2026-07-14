@@ -1243,6 +1243,7 @@
       "giftPremium": "Gift Premium 🎁",
       "wallet": "My Wallet",
       "appIcon": "App Icon",
+      "privatePhotoAccess": "Private photo access",
       "storage": "Storage & Cache"
     },
     "edit": {
@@ -1376,7 +1377,13 @@
       "body": "{{count}} people want to know you today"
     },
     "empty": "No notifications yet",
-    "markAllRead": "Mark all read"
+    "markAllRead": "Mark all read",
+    "photoRequest": {
+      "approve": "Approve",
+      "reject": "Decline",
+      "approved": "Approved ✓",
+      "rejected": "Declined"
+    }
   },
   "notificationSettings": {
     "title": "Notifications",
@@ -1450,6 +1457,19 @@
     "unmatchConfirmTitle": "Unmatch with {{name}}?",
     "unmatchConfirmBody": "The chat will be removed and cannot be restored.",
     "unmatchAction": "Unmatch"
+  },
+  "privateAccess": {
+    "title": "Private photo access",
+    "header": "{{n}} can view",
+    "revokeAll": "Revoke all",
+    "revoke": "Revoke",
+    "revokeFailed": "Couldn't revoke",
+    "loadFailed": "Couldn't load",
+    "emptyTitle": "No one has access yet",
+    "emptyBody": "People you approve will appear here.",
+    "grantedAt": "Granted {{time}}",
+    "revokeOneTitle": "Revoke {{name}}'s access?",
+    "revokeOneBody": "They'll no longer see your private photos (no notification is sent)."
   },
   "photoRequests": {
     "title": "Photo Requests",

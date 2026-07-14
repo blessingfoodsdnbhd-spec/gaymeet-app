@@ -1243,6 +1243,7 @@
       "giftPremium": "送 Premium 给朋友 🎁",
       "wallet": "我的钱包",
       "appIcon": "App 图标",
+      "privatePhotoAccess": "私密照片管理",
       "storage": "存储与缓存"
     },
     "edit": {
@@ -1376,7 +1377,13 @@
       "body": "今天有 {{count}} 人想认识你"
     },
     "empty": "暂无通知",
-    "markAllRead": "全部已读"
+    "markAllRead": "全部已读",
+    "photoRequest": {
+      "approve": "同意",
+      "reject": "拒绝",
+      "approved": "已同意 ✓",
+      "rejected": "已拒绝"
+    }
   },
   "notificationSettings": {
     "title": "通知",
@@ -1450,6 +1457,19 @@
     "unmatchConfirmTitle": "取消与 {{name}} 的同频?",
     "unmatchConfirmBody": "聊天将被移除,无法恢复。",
     "unmatchAction": "取消同频"
+  },
+  "privateAccess": {
+    "title": "私密照片管理",
+    "header": "{{n}} 人可查看",
+    "revokeAll": "全部收回",
+    "revoke": "收回",
+    "revokeFailed": "收回失败",
+    "loadFailed": "加载失败",
+    "emptyTitle": "还没有人获得授权",
+    "emptyBody": "别人申请并经你同意后会显示在这里。",
+    "grantedAt": "授权于 {{time}}",
+    "revokeOneTitle": "收回 {{name}} 的访问?",
+    "revokeOneBody": "对方将无法再查看你的私密照片(不会收到通知)。"
   },
   "photoRequests": {
     "title": "私密照申请",

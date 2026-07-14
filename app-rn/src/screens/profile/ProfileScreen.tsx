@@ -19,6 +19,7 @@ import {
   Eye,
   Gift,
   ImagePlus,
+  Lock,
   Mic,
   Pencil,
   Plus,
@@ -427,6 +428,17 @@ export function ProfileScreen() {
             label={t('profile.rows.appIcon')}
             onPress={() => nav.navigate('AppIcon')}
           />
+          {PRIVATE_PHOTOS_ENABLED && (
+            <>
+              <Divider />
+              <SettingsRow
+                icon={<Lock size={18} color={theme.colors.primary} strokeWidth={1.8} />}
+                label={t('profile.rows.privatePhotoAccess')}
+                detail={approvedQ.data?.count ? String(approvedQ.data.count) : undefined}
+                onPress={() => nav.navigate('MyPrivatePhotoAccess')}
+              />
+            </>
+          )}
         </Card>
 
         <Text style={{ textAlign: 'center', marginTop: 32, color: theme.colors.muted, fontSize: 11.5 }}>

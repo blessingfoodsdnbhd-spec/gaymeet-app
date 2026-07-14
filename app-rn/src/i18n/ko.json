@@ -261,6 +261,7 @@
       "giftPremium": "프리미엄 선물하기 🎁",
       "wallet": "내 지갑",
       "appIcon": "앱 아이콘",
+      "privatePhotoAccess": "비공개 사진 접근",
       "storage": "저장공간 및 캐시"
     },
     "edit": {
@@ -1322,7 +1323,13 @@
       "body": "오늘 {{count}}명이 당신을 알고 싶어해요"
     },
     "empty": "아직 알림이 없어요",
-    "markAllRead": "모두 읽음"
+    "markAllRead": "모두 읽음",
+    "photoRequest": {
+      "approve": "수락",
+      "reject": "거절",
+      "approved": "수락됨 ✓",
+      "rejected": "거절됨"
+    }
   },
   "notificationSettings": {
     "title": "알림",
@@ -1396,6 +1403,19 @@
     "unmatchConfirmTitle": "{{name}}님과 매칭을 취소할까요?",
     "unmatchConfirmBody": "채팅이 삭제되며 복구할 수 없습니다.",
     "unmatchAction": "매칭 취소"
+  },
+  "privateAccess": {
+    "title": "비공개 사진 접근",
+    "header": "{{n}}명이 볼 수 있음",
+    "revokeAll": "모두 회수",
+    "revoke": "회수",
+    "revokeFailed": "회수하지 못했습니다",
+    "loadFailed": "불러오지 못했습니다",
+    "emptyTitle": "아직 접근 권한이 없습니다",
+    "emptyBody": "승인한 사람이 여기에 표시됩니다.",
+    "grantedAt": "{{time}}에 허용",
+    "revokeOneTitle": "{{name}}의 접근을 회수할까요?",
+    "revokeOneBody": "상대는 더 이상 비공개 사진을 볼 수 없습니다(알림은 전송되지 않습니다)."
   },
   "photoRequests": {
     "title": "사진 요청",

@@ -261,6 +261,7 @@
       "giftPremium": "プレミアムを贈る 🎁",
       "wallet": "ウォレット",
       "appIcon": "アプリアイコン",
+      "privatePhotoAccess": "非公開写真のアクセス",
       "storage": "ストレージとキャッシュ"
     },
     "edit": {
@@ -1322,7 +1323,13 @@
       "body": "本日{{count}}人があなたを知りたがっています"
     },
     "empty": "まだ通知がありません",
-    "markAllRead": "すべて既読"
+    "markAllRead": "すべて既読",
+    "photoRequest": {
+      "approve": "許可",
+      "reject": "拒否",
+      "approved": "許可済み ✓",
+      "rejected": "拒否済み"
+    }
   },
   "notificationSettings": {
     "title": "通知",
@@ -1396,6 +1403,19 @@
     "unmatchConfirmTitle": "{{name}}とのマッチを解除しますか？",
     "unmatchConfirmBody": "チャットが削除され、復元できません。",
     "unmatchAction": "マッチ解除"
+  },
+  "privateAccess": {
+    "title": "非公開写真のアクセス",
+    "header": "{{n}} 人が閲覧可能",
+    "revokeAll": "すべて取り消す",
+    "revoke": "取り消す",
+    "revokeFailed": "取り消せませんでした",
+    "loadFailed": "読み込めませんでした",
+    "emptyTitle": "まだ誰にも許可していません",
+    "emptyBody": "あなたが許可した人がここに表示されます。",
+    "grantedAt": "{{time}} に許可",
+    "revokeOneTitle": "{{name}} のアクセスを取り消しますか?",
+    "revokeOneBody": "相手はあなたの非公開写真を見られなくなります(通知は送られません)。"
   },
   "photoRequests": {
     "title": "写真リクエスト",

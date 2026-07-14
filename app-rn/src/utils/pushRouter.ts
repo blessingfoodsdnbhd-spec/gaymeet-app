@@ -109,8 +109,10 @@ export function routeFromPushData(data: PushData | undefined | null): boolean {
     case 'invite_redeemed': {
       return safeNavigate('InviteFriends');
     }
-    case 'photo_request': {
-      // Owner side: new request landed in their inbox.
+    case 'photo_request':
+    case 'private_photo_request': {
+      // Owner side: new request landed in their inbox. (Tapping the row also
+      // works; the Notification Center offers inline 同意/拒绝 too.)
       return safeNavigate('PhotoRequests');
     }
     case 'photo_request_approved': {

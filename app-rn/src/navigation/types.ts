@@ -115,6 +115,7 @@ export type RootStackParamList = {
   /** Create a user room inside a 二级频道. */
   CreateRoom: { channelId: string; title: string; kind?: 'country' | 'friend' | 'voice' | 'interest' };
   PhotoRequests: undefined;
+  MyPrivatePhotoAccess: undefined;
   TopicPersonaEdit: {
     topicSlug: string;
     topicName: string;
