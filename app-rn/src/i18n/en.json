@@ -1097,6 +1097,7 @@
     "requestRevoked": "Previously had access · Request again",
     "requestSentToast": "Request sent",
     "requestFailed": "Couldn't send request",
+    "requestRateLimited": "You've already requested today · or hit the daily limit",
     "requestViewedAgain": "Viewed (one-time) · Request again",
     "oneTimeViewNotice": "⚠️ One-time view — locks again once you leave"
   },

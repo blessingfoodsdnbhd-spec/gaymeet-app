@@ -8,7 +8,6 @@ const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2          = require('../services/r2Service');
 const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
-const { isPremiumActive } = require('../utils/premium');
 
 const MAX_PRIVATE_PHOTOS = 6;
 const MAX_PUBLIC_PHOTOS = 6;
@@ -117,7 +116,7 @@ router.post('/private-photos/relock', auth, async (req, res, next) => {
   try {
     const result = await PhotoRequest.updateMany(
       { owner: req.user._id, status: 'approved' },
-      { $set: { status: 'revoked', respondedAt: new Date() } }
+      { $set: { status: 'revoked', respondedAt: new Date(), revokedAt: new Date() } }
     );
     console.log(
       `[private-photos.relock] owner=${req.user._id} revoked=${result.modifiedCount}`
@@ -314,16 +313,32 @@ router.post('/:id/request-photos', auth, async (req, res, next) => {
       return err(res, 'Cannot request your own photos');
     }
 
-    // Only Premium members may REQUEST private photos. Free users can still be
-    // requested + approve/deny their own; they just can't initiate requests.
-    if (!isPremiumActive(req.user)) {
-      return err(res, 'PREMIUM_REQUIRED', 402);
-    }
-
+    // Anyone may request private photos now (Premium gate removed). Abuse is
+    // bounded by the per-day rate limits below.
     const owner = await User.findById(ownerId);
     if (!owner) return err(res, 'User not found', 404);
     if (owner.privatePhotos.length === 0) {
       return err(res, 'This user has no private photos');
+    }
+
+    // Rate limits (per requester, rolling 24h):
+    //   • at most ONE request to the same owner per day
+    //   • at most 10 distinct owners requested per day
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const sameOwnerToday = await PhotoRequest.findOne({
+      requester: req.user._id,
+      owner: ownerId,
+      createdAt: { $gte: since },
+    });
+    if (sameOwnerToday) {
+      return err(res, 'You already requested this person today', 429);
+    }
+    const ownersToday = await PhotoRequest.distinct('owner', {
+      requester: req.user._id,
+      createdAt: { $gte: since },
+    });
+    if (ownersToday.length >= 10) {
+      return err(res, 'Daily request limit reached (10 people)', 429);
     }
 
     // Block check (both directions). Either party blocking the other should
@@ -472,26 +487,15 @@ router.get('/:id/private-photos', auth, async (req, res, next) => {
       return ok(res, { photos: [], photosDetailed: [], status: 'none' });
     }
 
-    // View-once: consume the grant atomically. The first GET returns the photos
-    // and flips approved→viewed; any later GET falls into the 'viewed' branch
-    // above and is locked again. The `status:'approved'` filter in the update is
-    // the race guard so two concurrent loads can't both consume.
-    const consumed = await PhotoRequest.findOneAndUpdate(
-      { _id: approved._id, status: 'approved' },
-      { $set: { status: 'viewed', viewedAt: new Date() } },
-    );
-    if (!consumed) {
-      // Lost the race — another request just consumed it.
-      return ok(res, { photos: [], photosDetailed: [], status: 'viewed' });
-    }
-
+    // PERMANENT grant: an approved request stays approved and viewable until
+    // the owner explicitly revokes it (relock / revoke / revoke-all). No more
+    // view-once consumption — repeat GETs keep returning the photos.
     const owner = await User.findById(ownerId).select('privatePhotos');
     const detailed = await resolvePrivatePhotos(owner.privatePhotos);
     ok(res, {
       photos: detailed.map((p) => p.url),
       photosDetailed: detailed,
       status: 'approved',
-      oneTimeView: true, // this response is the single allowed view
     });
   } catch (e) {
     next(e);

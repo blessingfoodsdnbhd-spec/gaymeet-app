@@ -140,21 +140,18 @@ export function UserDetailScreen() {
     onError: (e: any) => {
       const status = e?.response?.status;
       const detail = e?.response?.data?.error || e?.message || '';
-      // Requesting private photos is Premium-only (backend returns 402).
-      if (status === 402 || /premium/i.test(detail)) {
-        nav.navigate('Premium');
+      // Rate limited (already requested today / daily cap) — friendly notice.
+      if (status === 429) {
+        Alert.alert(t('userDetail.requestRateLimited'), detail);
         return;
       }
       Alert.alert(t('userDetail.requestFailed'), detail);
     },
   });
 
-  // Only Premium can request — short-circuit to the paywall before the call.
+  // Anyone can request private photos now (no Premium gate). Rate limits are
+  // enforced server-side.
   const onRequestPhotos = () => {
-    if (!isPremium) {
-      nav.navigate('Premium');
-      return;
-    }
     requestMut.mutate();
   };
 
@@ -336,11 +333,6 @@ export function UserDetailScreen() {
                   <ActivityIndicator color={theme.colors.primary} />
                 ) : (
                   <>
-                    {privatePhotosQ.data?.oneTimeView && (
-                      <Text style={{ color: theme.colors.warning, fontSize: 12.5, fontWeight: '700', marginBottom: 8 }}>
-                        {t('userDetail.oneTimeViewNotice')}
-                      </Text>
-                    )}
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}

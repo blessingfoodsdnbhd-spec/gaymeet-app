@@ -19,9 +19,13 @@ const photoRequestSchema = new mongoose.Schema(
       default: 'pending',
     },
     respondedAt: { type: Date, default: null },
-    // View-once: timestamp of the requester's single allowed viewing. Once set,
-    // the grant is consumed and the photos lock again.
+    // Legacy view-once timestamp. Grants are now PERMANENT (approved stays
+    // approved until the owner revokes), so this is no longer written for new
+    // grants — kept for backward-compat with any pre-existing 'viewed' rows.
     viewedAt: { type: Date, default: null },
+    // When the owner revoked this (previously approved) grant. status flips to
+    // 'revoked' at the same time; kept for audit + to drive re-request cooldown.
+    revokedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -1249,6 +1249,7 @@
     "requestRevoked": "以前アクセス権あり · 再申請",
     "requestSentToast": "リクエストを送りました",
     "requestFailed": "リクエストを送れませんでした",
+    "requestRateLimited": "今日はすでにリクエスト済み · または上限に達しました",
     "requestViewedAgain": "閲覧済み(1回限り)· 再リクエスト",
     "oneTimeViewNotice": "⚠️ 一度だけ閲覧可能。離れると再ロックされます"
   },

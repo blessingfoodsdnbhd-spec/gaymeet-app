@@ -1097,6 +1097,7 @@
     "requestRevoked": "之前有访问权 · 重新申请",
     "requestSentToast": "申请已发送",
     "requestFailed": "发送申请失败",
+    "requestRateLimited": "你今天已经申请过了 · 或已达每日上限",
     "requestViewedAgain": "已查看(仅一次)· 再次请求",
     "oneTimeViewNotice": "⚠️ 仅可查看这一次,关闭后将重新上锁"
   },
