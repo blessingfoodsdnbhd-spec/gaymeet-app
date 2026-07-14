@@ -2,6 +2,22 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.20] — build 134 (2026-07-14)
+
+### English
+- **Private photos.** Long-press any public photo to hide it. Hidden photos stay blurred to everyone until they request access and you approve — and you can grant someone permanent access so they never have to ask again. Long-press a hidden photo to make it public again.
+- **New "Private photos" screen (Me → Private photos).** See exactly who you've granted access to, and revoke anyone with one tap.
+- **Approve or reject right from the notification centre.** Access requests now arrive as a notification with inline Approve / Reject buttons — no need to open another screen.
+- **Photo limits raised to 6 public + 6 hidden (12 total).**
+- **Fixed: photo counter showed the wrong cap.** It now reads `2/6` instead of `2/5`.
+
+### 中文
+- **私密照片功能上线。** 长按任意公开照片即可设为隐藏。隐藏照片对所有人打码,别人需要申请查看、经你同意才能看到 —— 也可以给对方永久授权,以后不用再申请。长按私密照片可改回公开。
+- **新增「我 → 私密照片管理」屏。** 一眼看清你授权过哪些人,一键收回权限。
+- **通知中心可直接同意 / 拒绝。** 查看申请会以通知形式送达,通知里就有「同意」「拒绝」按钮,不用再跳转页面。
+- **公开 / 隐藏照片上限各提升至 6 张(共 12 张)。**
+- **修复:照片数量显示错误。** 计数现在正确显示 `2/6`,不再显示 `2/5`。
+
 ## [3.1.19] — build 133 (2026-07-14)
 
 ### English
