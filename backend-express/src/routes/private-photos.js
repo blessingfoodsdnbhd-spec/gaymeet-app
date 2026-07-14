@@ -10,7 +10,7 @@ const { ok, created, err } = require('../utils/respond');
 const { sendPushToUser } = require('../utils/push');
 const { isPremiumActive } = require('../utils/premium');
 
-const MAX_PRIVATE_PHOTOS = 5;
+const MAX_PRIVATE_PHOTOS = 6;
 
 /**
  * Persist a PRIVATE multer memory-buffer.

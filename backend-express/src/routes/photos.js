@@ -7,7 +7,7 @@ const { uploadMem, uploadDir } = require('../middleware/upload');
 const r2 = require('../services/r2Service');
 const { ok, err } = require('../utils/respond');
 
-const MAX_PUBLIC_PHOTOS = 5;
+const MAX_PUBLIC_PHOTOS = 6;
 
 /**
  * Store a multer memory-buffer either in R2 (if configured) or on disk.

@@ -12,4 +12,4 @@ export const TOPICS_ENABLED = false;
 
 /** Private Photos (私密照片) upload + request/unlock flow. Public photos are
  *  unaffected — they're normal social-app photos and stay visible. */
-export const PRIVATE_PHOTOS_ENABLED = false;
+export const PRIVATE_PHOTOS_ENABLED = true;

@@ -67,7 +67,7 @@ import type { RootStackParamList } from '../../navigation/types';
 
 type AnyNav = NativeStackNavigationProp<any>;
 
-const PHOTO_MAX = 5;
+const PHOTO_MAX = 6;
 
 /**
  * Edit Profile (EEEE) — the dedicated editing page reached from the 我 tab's
