@@ -330,6 +330,13 @@
     "deletePhotoAction": "삭제",
     "photoActions": "사진 옵션",
     "setAsAvatar": "아바타로 설정",
+    "setAsHidden": "비공개로 이동",
+    "setAsPublic": "공개로 이동",
+    "photoMoveFailed": "사진을 이동할 수 없습니다",
+    "privateFullTitle": "비공개 사진이 가득 찼습니다",
+    "privateFullBody": "비공개 사진은 최대 {{max}}장입니다. 먼저 하나를 삭제하세요.",
+    "publicFullTitle": "공개 사진이 가득 찼습니다",
+    "publicFullBody": "공개 사진은 최대 {{max}}장입니다. 먼저 하나를 삭제하세요.",
     "relationshipStatus": {
       "label": "연애 상태",
       "single": "싱글",

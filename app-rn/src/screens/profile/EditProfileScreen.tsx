@@ -62,6 +62,8 @@ import {
   getPrivatePhotos,
   getApprovedCount,
   relockAll,
+  movePhotoToPrivate,
+  movePhotoToPublic,
 } from '../../api/privatePhotos';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -526,13 +528,14 @@ export function EditProfileScreen() {
     ]);
   };
 
-  // Long-press a gallery photo → choose to make it the avatar (or delete).
-  // photos[0] is the avatar, so "set as avatar" is a reorder to the front.
+  // Long-press a gallery photo → choose to make it the avatar, hide it, or
+  // delete it. photos[0] is the avatar, so "set as avatar" is a reorder to the
+  // front. "设为隐藏" moves it into the locked private gallery (privatePhotos).
   const setAsAvatar = (url: string) => {
     if (!user) return;
-    if (url === user.avatarUrl) return; // already the avatar
-    Alert.alert(t('profile.photoActions'), '', [
-      {
+    const buttons: any[] = [];
+    if (url !== user.avatarUrl) {
+      buttons.push({
         text: t('profile.setAsAvatar'),
         onPress: async () => {
           try {
@@ -544,8 +547,59 @@ export function EditProfileScreen() {
             Alert.alert(t('profile.edit.uploadFailed'), detail);
           }
         },
+      });
+    }
+    if (PRIVATE_PHOTOS_ENABLED) {
+      buttons.push({ text: t('profile.setAsHidden'), onPress: () => moveToPrivate(url) });
+    }
+    buttons.push({ text: t('profile.deletePhotoAction'), style: 'destructive', onPress: () => removePublicPhoto(url) });
+    buttons.push({ text: t('common.cancel'), style: 'cancel' });
+    Alert.alert(t('profile.photoActions'), '', buttons);
+  };
+
+  // Move a PUBLIC photo → private (locked) gallery. Caps private at PHOTO_MAX.
+  const moveToPrivate = async (url: string) => {
+    if (!user) return;
+    if (privatePhotos.length >= PHOTO_MAX) {
+      Alert.alert(t('profile.privateFullTitle'), t('profile.privateFullBody', { max: PHOTO_MAX }));
+      return;
+    }
+    try {
+      const r = await movePhotoToPrivate(url);
+      setUser({ ...user, photos: r.photos, avatarUrl: r.avatarUrl, privatePhotosCount: r.privateCount });
+      await queryClient.invalidateQueries({ queryKey: ['me', 'privatePhotos'] });
+    } catch (e: any) {
+      const detail = e?.response?.data?.error || e?.message || '';
+      Alert.alert(t('profile.photoMoveFailed'), detail);
+    }
+  };
+
+  // Move a PRIVATE photo → public gallery. Caps public at PHOTO_MAX.
+  const moveToPublic = (url: string) => {
+    if (!user) return;
+    if ((user.photos?.length ?? 0) >= PHOTO_MAX) {
+      Alert.alert(t('profile.publicFullTitle'), t('profile.publicFullBody', { max: PHOTO_MAX }));
+      return;
+    }
+    Alert.alert(t('profile.photoActions'), '', [
+      {
+        text: t('profile.setAsPublic'),
+        onPress: async () => {
+          try {
+            const r = await movePhotoToPublic(url);
+            setUser({
+              ...user,
+              photos: r.photos,
+              avatarUrl: r.avatarUrl,
+              privatePhotosCount: Math.max(0, (user.privatePhotosCount ?? 1) - 1),
+            });
+            await queryClient.invalidateQueries({ queryKey: ['me', 'privatePhotos'] });
+          } catch (e: any) {
+            const detail = e?.response?.data?.error || e?.message || '';
+            Alert.alert(t('profile.photoMoveFailed'), detail);
+          }
+        },
       },
-      { text: t('profile.deletePhotoAction'), style: 'destructive', onPress: () => removePublicPhoto(url) },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
@@ -723,6 +777,7 @@ export function EditProfileScreen() {
                 onAdd={addPrivatePhoto}
                 onRemove={removePrivatePhoto}
                 onView={(i) => photoViewer.open(privatePhotos, i)}
+                onLongPress={moveToPublic}
                 badgeIcon={<Lock size={12} color="#FFFFFF" strokeWidth={2.2} />}
               />
               <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>

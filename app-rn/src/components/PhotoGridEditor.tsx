@@ -23,6 +23,7 @@ export function PhotoGridEditor({
   onRemove,
   onView,
   onSetAvatar,
+  onLongPress,
   avatarUrl,
   badgeIcon,
 }: {
@@ -35,6 +36,9 @@ export function PhotoGridEditor({
   onView?: (index: number) => void;
   /** Long-press a photo to set it as the avatar (gallery grids only). */
   onSetAvatar?: (url: string) => void;
+  /** Long-press a photo for a custom action (takes precedence over
+   *  onSetAvatar) — e.g. the private grid's "设为公开" menu. */
+  onLongPress?: (url: string) => void;
   /** The current avatar URL — that slot gets a highlighted ring + badge. */
   avatarUrl?: string | null;
   badgeIcon?: React.ReactNode;
@@ -68,9 +72,15 @@ export function PhotoGridEditor({
             >
               <Pressable
                 onPress={() => onView?.(i)}
-                onLongPress={onSetAvatar ? () => onSetAvatar(s.url!) : undefined}
+                onLongPress={
+                  onLongPress
+                    ? () => onLongPress(s.url!)
+                    : onSetAvatar
+                    ? () => onSetAvatar(s.url!)
+                    : undefined
+                }
                 delayLongPress={300}
-                disabled={!onView && !onSetAvatar}
+                disabled={!onView && !onSetAvatar && !onLongPress}
                 style={StyleSheet.absoluteFill}
               >
                 <ExpoImage

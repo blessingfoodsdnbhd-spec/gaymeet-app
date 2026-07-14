@@ -66,6 +66,18 @@ export const deletePrivatePhoto = (url: string) =>
     api.delete('/users/private-photos', { data: { url } }) as any,
   );
 
+/** Move one of my PUBLIC photos into the locked private gallery ("设为隐藏"). */
+export const movePhotoToPrivate = (url: string) =>
+  unwrap<{ photos: string[]; avatarUrl: string | null; privateCount: number }>(
+    api.post('/users/private-photos/from-public', { url }) as any,
+  );
+
+/** Move one of my PRIVATE photos back into the public gallery ("设为公开"). */
+export const movePhotoToPublic = (url: string) =>
+  unwrap<{ photos: string[]; avatarUrl: string | null }>(
+    api.post('/users/private-photos/to-public', { url }) as any,
+  );
+
 export const relockAll = () =>
   unwrap<{ revoked: number }>(
     api.post('/users/private-photos/relock') as any,

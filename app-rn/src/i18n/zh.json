@@ -1166,6 +1166,13 @@
     "deletePhotoAction": "删除",
     "photoActions": "照片选项",
     "setAsAvatar": "设为头像",
+    "setAsHidden": "设为隐藏照片",
+    "setAsPublic": "设为公开照片",
+    "photoMoveFailed": "移动照片失败",
+    "privateFullTitle": "隐藏照片已满",
+    "privateFullBody": "最多 {{max}} 张隐藏照片。请先移除一张。",
+    "publicFullTitle": "公开照片已满",
+    "publicFullBody": "最多 {{max}} 张公开照片。请先移除一张。",
     "relationshipStatus": {
       "label": "感情状态",
       "single": "单身",

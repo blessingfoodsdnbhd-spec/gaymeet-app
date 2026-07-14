@@ -1166,6 +1166,13 @@
     "deletePhotoAction": "Delete",
     "photoActions": "Photo options",
     "setAsAvatar": "Set as avatar",
+    "setAsHidden": "Move to hidden",
+    "setAsPublic": "Move to public",
+    "photoMoveFailed": "Couldn't move photo",
+    "privateFullTitle": "Hidden photos full",
+    "privateFullBody": "Up to {{max}} hidden photos. Remove one first.",
+    "publicFullTitle": "Public photos full",
+    "publicFullBody": "Up to {{max}} public photos. Remove one first.",
     "relationshipStatus": {
       "label": "Relationship status",
       "single": "Single",

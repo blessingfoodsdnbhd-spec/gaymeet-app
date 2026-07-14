@@ -330,6 +330,13 @@
     "deletePhotoAction": "削除",
     "photoActions": "写真オプション",
     "setAsAvatar": "アバターに設定",
+    "setAsHidden": "非公開にする",
+    "setAsPublic": "公開にする",
+    "photoMoveFailed": "写真を移動できませんでした",
+    "privateFullTitle": "非公開写真がいっぱいです",
+    "privateFullBody": "非公開写真は最大 {{max}} 枚です。先に1枚削除してください。",
+    "publicFullTitle": "公開写真がいっぱいです",
+    "publicFullBody": "公開写真は最大 {{max}} 枚です。先に1枚削除してください。",
     "relationshipStatus": {
       "label": "交際ステータス",
       "single": "独身",

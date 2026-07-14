@@ -11,6 +11,54 @@ const { sendPushToUser } = require('../utils/push');
 const { isPremiumActive } = require('../utils/premium');
 
 const MAX_PRIVATE_PHOTOS = 6;
+const MAX_PUBLIC_PHOTOS = 6;
+
+/**
+ * Copy an existing PUBLIC photo (public URL) into the private bucket so it
+ * stops being publicly reachable, returning a `b2priv://` ref. If the private
+ * bucket isn't configured or the copy fails, the original public URL is
+ * returned unchanged — the photo is still removed from the public grid, it just
+ * remains byte-reachable at its old URL.
+ */
+async function copyPublicToPrivate(publicUrl) {
+  try {
+    const resp = await fetch(publicUrl);
+    if (!resp.ok) return publicUrl;
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const ct = resp.headers.get('content-type') || 'image/jpeg';
+    let ext = '.jpg';
+    try { ext = (path.extname(new URL(publicUrl).pathname) || '.jpg').toLowerCase(); } catch (_) {}
+    const key = `private/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const ref = await r2.uploadPrivate(buf, key, ct);
+    return ref || publicUrl;
+  } catch (_) {
+    return publicUrl;
+  }
+}
+
+/**
+ * Copy a PRIVATE photo back into the public bucket, returning a stable public
+ * URL. A `b2priv://` ref can't live in the public grid (its signed URL
+ * expires), so we fetch the bytes via a short-lived signed URL and re-upload
+ * to the public bucket. Legacy public-URL refs pass through unchanged. Returns
+ * null on failure so the caller can abort without mutating the arrays.
+ */
+async function copyPrivateToPublic(ref) {
+  if (!r2.isPrivateRef(ref)) return ref; // already a public URL
+  try {
+    const signed = await r2.signedGetUrl(ref, 300);
+    if (!signed) return null;
+    const resp = await fetch(signed);
+    if (!resp.ok) return null;
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const ct = resp.headers.get('content-type') || 'image/jpeg';
+    const key = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+    const url = await r2.uploadFile(buf, key, ct);
+    return url || null;
+  } catch (_) {
+    return null;
+  }
+}
 
 /**
  * Persist a PRIVATE multer memory-buffer.
@@ -169,6 +217,90 @@ router.delete('/private-photos', auth, async (req, res, next) => {
     }
 
     ok(res, { privatePhotos: user.privatePhotos });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/private-photos/from-public — hide an existing PUBLIC photo ─
+// Moves a URL out of the public gallery and into the locked private gallery.
+// Bytes are copied into the private bucket when configured so the photo stops
+// being publicly reachable; the public grid slot frees up either way.
+router.post('/private-photos/from-public', auth, async (req, res, next) => {
+  try {
+    const { url } = req.body;
+    if (!url) return err(res, 'url required');
+    if (req.user.photoUploadBanned) return err(res, '你已被禁止上传照片', 403);
+
+    const user = await User.findById(req.user._id);
+    if (!user.photos.includes(url)) return err(res, 'Photo not found', 404);
+    if (user.privatePhotos.length >= MAX_PRIVATE_PHOTOS) {
+      return err(res, `Maximum ${MAX_PRIVATE_PHOTOS} private photos allowed`);
+    }
+
+    const ref = await copyPublicToPrivate(url);
+
+    user.photos = user.photos.filter((p) => p !== url);
+    if (user.avatarUrl === url) user.avatarUrl = user.photos[0] ?? null;
+    user.privatePhotos.push(ref);
+    await user.save();
+
+    // If we copied to a NEW private object, best-effort delete the old public one.
+    if (ref !== url) {
+      const r2Key = r2.keyFromUrl(url);
+      if (r2Key) r2.deleteFile(r2Key).catch(() => {});
+    }
+
+    ok(res, {
+      photos: user.photos,
+      avatarUrl: user.avatarUrl,
+      privateCount: user.privatePhotos.length,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/private-photos/to-public — un-hide a PRIVATE photo ────────
+// Moves a private photo back into the public gallery. b2priv:// refs are copied
+// into the public bucket first (their signed URL would expire in the grid).
+router.post('/private-photos/to-public', auth, async (req, res, next) => {
+  try {
+    let target = req.body.url ?? req.body.ref;
+    if (typeof target === 'object' && target !== null) {
+      target = target.ref ?? target.url;
+    }
+    if (!target) return err(res, 'url required');
+
+    const user = await User.findById(req.user._id);
+    if (!user.privatePhotos.includes(target)) {
+      // Tolerate a signed/display URL that no longer string-equals the ref.
+      const base = String(target).split('?')[0];
+      const match = user.privatePhotos.find(
+        (p) => String(target).startsWith(p) || p.includes(base)
+      );
+      if (!match) return err(res, 'Photo not found', 404);
+      target = match;
+    }
+    if (user.photos.length >= MAX_PUBLIC_PHOTOS) {
+      return err(res, `Maximum ${MAX_PUBLIC_PHOTOS} public photos allowed`);
+    }
+
+    const publicUrl = await copyPrivateToPublic(target);
+    if (!publicUrl) return err(res, 'Failed to move photo', 500);
+
+    user.privatePhotos = user.privatePhotos.filter((p) => p !== target);
+    user.photos.push(publicUrl);
+    if (!user.avatarUrl) user.avatarUrl = user.photos[0] ?? null;
+    await user.save();
+
+    // If we copied out of the private bucket, delete the original private object.
+    if (publicUrl !== target && r2.isPrivateRef(target)) {
+      const key = r2.keyFromPrivateRef(target);
+      r2.deleteFile(key, r2.PRIVATE_BUCKET_ID).catch(() => {});
+    }
+
+    ok(res, { photos: user.photos, avatarUrl: user.avatarUrl });
   } catch (e) {
     next(e);
   }
