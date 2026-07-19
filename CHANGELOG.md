@@ -2,6 +2,14 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.22] — build 136 (2026-07-19)
+
+### English
+- **Meyou is now strictly 18+.** Signing up asks for your date of birth, and the picker won't let you choose a date under 18. If you already have an account, you'll be asked once, on your next launch, to confirm your birthday — it takes three taps and you won't be asked again. Your birthday is never shown on your profile; only your age is, exactly as before.
+
+### 中文
+- **Meyou 现在严格限定 18 岁以上使用。** 注册时需填写出生日期,且日期选择器不允许选择未满 18 岁的日期。已有账号的用户,下次打开 App 时会**一次性**提示补充出生日期,三下点击即可完成,之后不再询问。出生日期不会显示在你的资料上,资料页显示的仍然只有年龄。
+
 ## [3.1.21] — build 135 (2026-07-19)
 
 ### English
