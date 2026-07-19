@@ -69,6 +69,18 @@ const R2_PUBLIC_URL = configured
   ? process.env.R2_PUBLIC_URL.replace(/^<|>$/g, '').replace(/\/+$/, '')
   : '';
 
+// The same object is reachable through more than one host: the direct B2
+// endpoint and the Cloudflare CDN in front of it. Stored URLs may use either,
+// depending on when they were written, so keyFromUrl() has to accept both —
+// otherwise a host switch silently orphans every file it fails to match.
+const R2_PUBLIC_URL_ALIASES = (
+  process.env.R2_PUBLIC_URL_ALIASES ||
+  'https://cdn.meyou.uk/file/meyou-media,https://f005.backblazeb2.com/file/meyou-media'
+)
+  .split(',')
+  .map((s) => s.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 // ── Private bucket (C-1) ─────────────────────────────────────────────────────
 // Private photos must NOT live at guessable public URLs. When a separate
 // private bucket is configured, uploads go there and are served only via
@@ -399,8 +411,12 @@ function keyFromPrivateRef(value) {
 function keyFromUrl(url) {
   if (!configured || !url) return null;
   const clean = url.replace(/[<>]/g, '');
-  if (!clean.startsWith(R2_PUBLIC_URL)) return null;
-  return clean.slice(R2_PUBLIC_URL.length).replace(/^\//, '');
+  for (const prefix of [R2_PUBLIC_URL, ...R2_PUBLIC_URL_ALIASES]) {
+    if (prefix && clean.startsWith(prefix)) {
+      return clean.slice(prefix.length).replace(/^\//, '');
+    }
+  }
+  return null;
 }
 
 module.exports = {
