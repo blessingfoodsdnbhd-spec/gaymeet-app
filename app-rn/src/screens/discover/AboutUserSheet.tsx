@@ -39,7 +39,7 @@ import { brandGradient } from '../../theme/tokens';
 import { tagById, type InterestTagId } from '../../data/interestTags';
 import { isFollowing as fetchIsFollowing, toggleFollow } from '../../api/follows';
 import { openConversation, getMatchStatus } from '../../api/chats';
-import { getMe, logProfileView } from '../../api/me';
+import { getMe, getUserById, logProfileView } from '../../api/me';
 import {
   getPrivatePhotos,
   getSent,
@@ -126,10 +126,28 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
   // the current user. The Nearby grid prepends self, and we'd otherwise
   // render a "Request to view" CTA pointing at the user's own photos.
   const isSelf = !!user && !!meFresh?.id && user.id === meFresh.id;
+
+  // The Nearby grid feeds this sheet raw /users/nearby aggregate documents,
+  // which never go through toPublicJSON — so they carry NO privatePhotosCount
+  // and the locked-photos block silently disappeared for anyone opening a
+  // profile from 附近 (it only ever showed on the chat → UserDetailScreen
+  // path, which fetches the full profile). Re-fetch the canonical profile here
+  // and use its count as the fallback. Same query key as useAboutUserSheet, so
+  // sheets opened from Moments/Comments hit the cache with no extra request.
+  const fullQ = useQuery({
+    queryKey: ['user', 'by-id', user?.id],
+    queryFn: () => getUserById(user!.id),
+    enabled: PRIVATE_PHOTOS_ENABLED && open && !!user?.id && !isSelf,
+    staleTime: 60_000,
+  });
+  const privateCount =
+    typeof user?.privatePhotosCount === 'number'
+      ? user.privatePhotosCount
+      : (fullQ.data?.privatePhotosCount ?? 0);
+
   // PRIVATE_PHOTOS_ENABLED off (Apple 4.3(b) strip) → the entire locked-photos
   // block + request flow + its queries are skipped. Public photos are unaffected.
-  const hasPrivate =
-    PRIVATE_PHOTOS_ENABLED && !isSelf && (user?.privatePhotosCount ?? 0) > 0;
+  const hasPrivate = PRIVATE_PHOTOS_ENABLED && !isSelf && privateCount > 0;
 
   // Reset local liked flag when the target user changes. Seed it from the
   // server's `iLiked` so a like the viewer already sent shows "已喜欢" on
@@ -528,7 +546,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
           {hasPrivate && (
             <View style={{ marginTop: 18 }}>
               <Text style={[styles.section, { color: theme.colors.muted }]}>
-                {t('userDetail.lockedPhotosCount', { n: user.privatePhotosCount })}
+                {t('userDetail.lockedPhotosCount', { n: privateCount })}
               </Text>
               {reqStatus === 'approved' ? (
                 privatePhotosQ.isLoading ? (
@@ -560,6 +578,7 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
               ) : (
                 <LockedPhotosBlock
                   status={reqStatus}
+                  count={privateCount}
                   busy={requestMut.isPending}
                   onRequest={() => requestMut.mutate()}
                 />
