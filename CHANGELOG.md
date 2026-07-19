@@ -2,6 +2,14 @@
 
 All notable changes to the Meyou app. / Meyou 应用的重要更新记录。
 
+## [3.1.21] — build 135 (2026-07-19)
+
+### English
+- **Your private photos now have their own grid on the Me tab.** A 6-slot grid sits under your public photos, laid out exactly like it — so you can see your hidden photos at a glance instead of hunting for them. Only you see it: visitors to your profile see nothing. Tap an empty slot to jump straight to Edit profile and add one.
+
+### 中文
+- **「我」页新增私密照片九宫格。** 公开照片下方多了一个 6 格私密照片区,布局与公开照片完全一致,自己的隐藏照片一眼看全,不用再翻来翻去。**仅自己可见** —— 别人访问你的主页看不到这一区。点击空格子可直接跳转编辑资料去添加。
+
 ## [3.1.20] — build 134 (2026-07-14)
 
 ### English
