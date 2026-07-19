@@ -20,6 +20,7 @@ function recordUserIp(userId, ip) {
   ).catch(() => {});
 }
 const { ok, created, err } = require('../utils/respond');
+const { validateDob } = require('../utils/ageGate');
 const generateUniqueReferralCode = require('../utils/generateReferralCode');
 const { supported: supportedCurrencies } = require('../utils/currency');
 const { sendEmail } = require('../utils/email');
@@ -28,6 +29,40 @@ const OtpCode = require('../models/OtpCode');
 const RecentVerification = require('../models/RecentVerification');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+/**
+ * 18+ gate for the signup paths. Validates the client-sent `dob` and, on
+ * failure, writes the 400 itself and returns null so the caller can just
+ * `if (!v) return;`. The `code` ('UNDERAGE' | 'DOB_REQUIRED' | 'DOB_INVALID')
+ * lets the client show a localized string instead of the bilingual fallback.
+ *
+ * `required` is decided per-path: true when this call creates a brand-new
+ * account, false when an existing (legacy) user is merely signing in — those
+ * are gated in-app by `isAgeVerified`, not blocked at the door.
+ */
+function checkDob(res, raw, required) {
+  const v = validateDob(raw, { required });
+  if (v.error) {
+    res.status(400).json({ error: v.error, code: v.code });
+    return null;
+  }
+  return v;
+}
+
+/**
+ * Backfill a validated adult DOB onto an account that doesn't have one — a
+ * legacy user clearing the age gate on sign-in. No-op when the account already
+ * has a DOB (never overwrite: a DOB is set once) or when none was supplied.
+ * Must be called on EVERY path that returns a session, including the OTP
+ * idempotency short-circuit, or a legacy user's DOB is silently dropped.
+ */
+async function backfillDob(user, date) {
+  if (!date || !user || user.dob) return user;
+  user.dob = date;
+  user.age = User.computeAge(date);
+  await user.save();
+  return user;
+}
 
 // Known Google OAuth client IDs for this project — used as a fallback so
 // iOS Sign-In works even when GOOGLE_IOS_CLIENT_ID isn't set on Render.
@@ -41,11 +76,17 @@ const GOOGLE_KNOWN_CLIENT_IDS = [
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, nickname, referralCode, deviceFingerprint } = req.body;
+    const { email, password, nickname, referralCode, deviceFingerprint, dob } = req.body;
     if (!email || !password || !nickname) {
       return err(res, 'email, password and nickname are required');
     }
     if (password.length < 6) return err(res, 'Password must be at least 6 characters');
+
+    // 18+ gate — this endpoint always creates a NEW account, so a valid adult
+    // DOB is mandatory. Checked before the uniqueness query so an underage
+    // signup can't probe which emails are taken.
+    const v = checkDob(res, dob, true);
+    if (!v) return;
 
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return err(res, 'Email already registered', 409);
@@ -69,6 +110,8 @@ router.post('/register', async (req, res, next) => {
       email,
       password,
       nickname,
+      dob: v.date,
+      age: User.computeAge(v.date), // denormalized for the nearby age filter
       referralCode: myReferralCode,
       referredBy,
       deviceFingerprint: deviceFingerprint || null,
@@ -166,8 +209,16 @@ router.post('/login', async (req, res, next) => {
 // Verifies Google ID token, finds or creates user, returns JWT.
 router.post('/google', async (req, res, next) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, dob } = req.body;
     if (!idToken) return err(res, 'idToken is required');
+
+    // 18+ gate. Apple/Google hand back an identity token with no birthdate and
+    // the native sheet runs before we can ask, so a first-time social user is
+    // created WITHOUT a DOB and collected by the in-app age gate (the response
+    // carries `isNewUser` + `user.isAgeVerified` for that). A `dob` sent by a
+    // client that already asked is honoured — and validated.
+    const dobCheck = checkDob(res, dob, false);
+    if (!dobCheck) return;
 
     // Accept any of: env-configured ids, plus the known project ids. iOS
     // tokens have `aud` = the iOS client id, web/Android tokens have `aud`
@@ -214,14 +265,19 @@ router.post('/google', async (req, res, next) => {
         await User.findByIdAndUpdate(user._id, { googleId });
       }
     }
+    const isNewUser = !user;
     if (!user) {
       const myReferralCode = await generateUniqueReferralCode();
       user = await User.create({
         email: email ? email.toLowerCase() : `google_${googleId}@placeholder.local`,
         googleId,
         nickname: name || (email ? email.split('@')[0] : `用户${Date.now()}`),
+        dob: dobCheck.date,
+        age: User.computeAge(dobCheck.date),
         referralCode: myReferralCode,
       });
+    } else {
+      await backfillDob(user, dobCheck.date);
     }
 
     if (user.isBanned || user.isDeleted) return err(res, '账号已被停用', 403); // 登录拦截
@@ -229,7 +285,7 @@ router.post('/google', async (req, res, next) => {
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
     await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
-    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+    ok(res, { accessToken, refreshToken, user: user.toPublicJSON(), isNewUser });
   } catch (e) {
     next(e);
   }
@@ -240,8 +296,13 @@ router.post('/google', async (req, res, next) => {
 // Required for App Store. Verifies Apple identity token, finds or creates user.
 router.post('/apple', async (req, res, next) => {
   try {
-    const { identityToken, name } = req.body;
+    const { identityToken, name, dob } = req.body;
     if (!identityToken) return err(res, 'identityToken is required');
+
+    // 18+ gate — same policy as /google above: no birthdate in the identity
+    // token, so first-time social users are gated in-app via `isAgeVerified`.
+    const dobCheck = checkDob(res, dob, false);
+    if (!dobCheck) return;
 
     let payload;
     try {
@@ -262,6 +323,7 @@ router.post('/apple', async (req, res, next) => {
         await User.findByIdAndUpdate(user._id, { appleId });
       }
     }
+    const isNewUser = !user;
     if (!user) {
       const myReferralCode = await generateUniqueReferralCode();
       const nickname = name || (email ? email.split('@')[0] : `用户${Date.now()}`);
@@ -269,8 +331,12 @@ router.post('/apple', async (req, res, next) => {
         email: email ? email.toLowerCase() : `apple_${appleId}@placeholder.local`,
         appleId,
         nickname,
+        dob: dobCheck.date,
+        age: User.computeAge(dobCheck.date),
         referralCode: myReferralCode,
       });
+    } else {
+      await backfillDob(user, dobCheck.date);
     }
 
     if (user.isBanned || user.isDeleted) return err(res, '账号已被停用', 403); // 登录拦截
@@ -278,7 +344,7 @@ router.post('/apple', async (req, res, next) => {
     const accessToken = signAccess(user._id.toString());
     const refreshToken = signRefresh(user._id.toString());
     await RefreshToken.record(user._id, refreshToken); // HIGH-C: track session
-    ok(res, { accessToken, refreshToken, user: user.toPublicJSON() });
+    ok(res, { accessToken, refreshToken, user: user.toPublicJSON(), isNewUser });
   } catch (e) {
     next(e);
   }
@@ -385,8 +451,16 @@ router.post('/send-otp', signupLimiter, async (req, res, next) => {
 // Verifies OTP, finds or creates user, returns JWT.
 router.post('/verify-otp', async (req, res, next) => {
   try {
-    const { email, code } = req.body;
+    const { email, code, dob } = req.body;
     if (!email || !code) return err(res, 'email and code are required');
+
+    // 18+ gate. This endpoint is BOTH login and signup — the user doesn't
+    // declare which, so a DOB can't be demanded up front without breaking every
+    // legacy sign-in. Policy: reject an underage/invalid date whenever one is
+    // sent, and let accounts that end up with no DOB be blocked in-app by the
+    // non-skippable age gate (`isAgeVerified: false`).
+    const dobCheck = checkDob(res, dob, false);
+    if (!dobCheck) return;
 
     const normalizedEmail = email.toLowerCase().trim();
     const trimmedCode = code.trim();
@@ -405,6 +479,10 @@ router.post('/verify-otp', async (req, res, next) => {
       const ru = await User.findById(recent.userId);
       if (ru) {
         if (ru.isBanned) return err(res, '账号已被封禁 / Account banned', 403);
+        // Backfill here too — this path returns a session without falling
+        // through to the create/backfill block below, so skipping it would
+        // silently drop the DOB of a legacy user who just cleared the gate.
+        await backfillDob(ru, dobCheck.date);
         return issueSession(res, ru);
       }
       // Stamp exists but user vanished (deleted) — fall through to normal path.
@@ -444,8 +522,13 @@ router.post('/verify-otp', async (req, res, next) => {
       user = await User.create({
         email: normalizedEmail,
         nickname: normalizedEmail.split('@')[0],
+        dob: dobCheck.date,
+        age: User.computeAge(dobCheck.date),
         referralCode: myReferralCode,
       });
+    } else {
+      // Legacy account clearing the age gate — backfill and move on.
+      await backfillDob(user, dobCheck.date);
     }
 
     // New users may pass an invite code — redeem it atomically. Best-effort:
@@ -490,10 +573,18 @@ router.post('/verify-otp', async (req, res, next) => {
 // set a password can call this to add one to their existing account.
 router.post('/register-with-password', async (req, res, next) => {
   try {
-    const { email, password, otpCode, inviteCode } = req.body;
+    const { email, password, otpCode, inviteCode, dob } = req.body;
     if (!email || !password || password.length < 6 || !otpCode) {
       return err(res, '请填写有效邮箱、验证码和至少6位密码 / Enter a valid email, code and 6+ character password', 400);
     }
+
+    // 18+ gate, pass 1: reject an underage/malformed DOB up front, before the
+    // OTP is even read — an underage signup should never consume a code or
+    // learn anything about the account. A MISSING dob is tolerated here and
+    // re-checked below, once we know whether this creates a new account or just
+    // adds a password to an existing (possibly legacy) one.
+    const dobCheck = checkDob(res, dob, false);
+    if (!dobCheck) return;
     const normalizedEmail = email.toLowerCase().trim();
     const trimmedCode = String(otpCode).trim();
 
@@ -519,12 +610,23 @@ router.post('/register-with-password', async (req, res, next) => {
       return err(res, '此邮箱已注册，请直接登录 / This email is already registered — please log in', 409);
     }
 
+    // 18+ gate, pass 2: a DOB is mandatory unless the account already has one
+    // on file. New accounts must always supply it; an existing OTP-only user
+    // adding a password keeps whatever DOB they have (or stays null and hits
+    // the in-app age gate).
+    if (!dobCheck.date && !user?.dob) {
+      const v = checkDob(res, dob, true);
+      if (!v) return;
+    }
+
     if (!user) {
       const myReferralCode = await generateUniqueReferralCode();
       user = await User.create({
         email: normalizedEmail,
         password, // hashed by the userSchema pre-save hook
         nickname: normalizedEmail.split('@')[0],
+        dob: dobCheck.date,
+        age: User.computeAge(dobCheck.date),
         referralCode: myReferralCode,
         // Match /register: default to KL centre so new users appear in nearby.
         location: { type: 'Point', coordinates: [101.6869, 3.1390] },
@@ -532,6 +634,12 @@ router.post('/register-with-password', async (req, res, next) => {
     } else {
       // Existing OTP-only user adding a password to their account for the first time.
       user.password = password;
+      // Backfill DOB if they didn't have one and just supplied a valid adult
+      // date — one fewer legacy account to gate on next launch.
+      if (!user.dob && dobCheck.date) {
+        user.dob = dobCheck.date;
+        user.age = User.computeAge(dobCheck.date);
+      }
       await user.save();
     }
 

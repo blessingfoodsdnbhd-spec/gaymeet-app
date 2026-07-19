@@ -189,7 +189,24 @@
     "setPasswordPromptSubtitle": "下次可以直接用邮箱和密码登录,不用再输验证码。",
     "setNow": "立即设置",
     "skip": "跳过 - 下次继续用验证码",
-    "passwordSetSuccess": "密码已设置,下次可用它登录。"
+    "passwordSetSuccess": "密码已设置,下次可用它登录。",
+    "dob": {
+      "label": "出生日期",
+      "placeholder": "请选择出生日期",
+      "hint": "你必须年满 18 岁才能使用 Meyou。此信息不会显示在你的资料上。",
+      "error": {
+        "required": "请填写出生日期",
+        "underage": "你必须年满 18 岁才能使用 Meyou"
+      }
+    },
+    "ageGate": {
+      "title": "确认你的年龄",
+      "subtitle": "Meyou 仅供成年人使用。请填写出生日期以继续——只需填写一次。",
+      "cta": "继续",
+      "signOut": "退出登录",
+      "signOutTitle": "要退出登录吗？",
+      "signOutBody": "下次登录时仍需确认出生日期。"
+    }
   },
   "errors": {
     "reservedName": "此名称为官方保留"

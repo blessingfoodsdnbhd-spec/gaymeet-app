@@ -7,6 +7,7 @@ import { useOnboarding } from '../store/onboarding';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { InterestTagsPickerScreen } from '../screens/auth/InterestTagsPickerScreen';
+import { AgeGateScreen } from '../screens/auth/AgeGateScreen';
 import { OnboardingFlow } from '../screens/onboarding/OnboardingFlow';
 import { ChatDetailScreen } from '../screens/chats/ChatDetailScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
@@ -71,7 +72,19 @@ export function RootNavigator() {
   const onbDone = useOnboarding((s) => s.done);
   const onbHydrated = useOnboarding((s) => s.hydrated);
   const needsTags = !!user && !user.interestsOnboardedAt;
-  const signedIn = !!user && !needsTags;
+  // 18+ age gate. Takes priority over every other gate — an unverified account
+  // must not see interests, onboarding or any app content. Covers legacy
+  // accounts (created before the gate, dob === null), first-time Apple/Google
+  // sign-ins (no birthdate in the identity token) and OTP sign-ups alike.
+  //
+  // Explicit `false` always gates. `undefined` means the SERVER predates this
+  // field (app build shipped ahead of the Render deploy) — fall back to "has a
+  // dob at all". Gating on `!== true` instead would brick that window: the gate
+  // writes a dob, the old server echoes a payload still missing the flag, and
+  // the user loops on the gate forever with no way into the app.
+  const needsAgeGate =
+    !!user && (user.isAgeVerified === false || (user.isAgeVerified === undefined && !user.dob));
+  const signedIn = !!user && !needsTags && !needsAgeGate;
   // Only genuinely-new accounts (no photos, no prompts) see the intro, and only
   // once we've hydrated the persisted flag and confirmed it's not done. Gating on
   // `onbHydrated` is essential: before the AsyncStorage read resolves `onbDone`
@@ -86,6 +99,16 @@ export function RootNavigator() {
         <Stack.Screen name="Auth">
           {() => <AuthStack needsTags={false} />}
         </Stack.Screen>
+      ) : needsAgeGate ? (
+        /* 18+ gate — first and non-skippable. Same top-level state-driven
+           pattern as InterestGate below (see the note there on why this must
+           NOT be a route inside AuthStack). Gestures off so it can't be
+           swiped away; the only exit is a valid adult DOB or signing out. */
+        <Stack.Screen
+          name="AgeGate"
+          component={AgeGateScreen}
+          options={{ gestureEnabled: false }}
+        />
       ) : needsTags ? (
         /* Interest onboarding is a TOP-LEVEL, state-driven screen (like Main) —
            NOT a route inside AuthStack. When a fresh sign-in flips needsTags

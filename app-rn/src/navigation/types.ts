@@ -26,6 +26,10 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
+  /** 18+ age gate — top-level, state-driven, shown before every other gate
+   *  while the signed-in user has no verified adult DOB (legacy accounts,
+   *  first-time social sign-ins). Non-skippable. */
+  AgeGate: undefined;
   /** Interest onboarding gate — top-level, state-driven (shown while the
    *  signed-in user has no interestsOnboardedAt). Replaces the old
    *  AuthStack-nested InterestTagsPicker route. */

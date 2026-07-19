@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { computeAge, computeZodiac } = require('../utils/zodiac');
+const { isAdultDob } = require('../utils/ageGate');
 
 const preferencesSchema = new mongoose.Schema(
   {
@@ -354,6 +355,14 @@ userSchema.virtual('distanceLabel').get(function () {
   return undefined; // Computed per-query via $geoNear
 });
 
+// 18+ gate: true only once a DOB is on file AND it clears the minimum age.
+// Legacy accounts (dob === null) read false — the client uses that to show the
+// blocking age-gate screen. `dob` stays optional in the schema so those users
+// can still sign in and be gated in the app rather than locked out of it.
+userSchema.virtual('isAgeVerified').get(function () {
+  return isAdultDob(this.dob);
+});
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
   if (this.isModified('password') && this.password) {
@@ -361,6 +370,11 @@ userSchema.pre('save', async function (next) {
   }
   next();
 });
+
+// ── Statics ───────────────────────────────────────────────────────────────────
+// Re-exported off the model so callers that already have `User` in scope don't
+// need a second require for the age math. Same implementation as utils/zodiac.
+userSchema.statics.computeAge = computeAge;
 
 // ── Methods ───────────────────────────────────────────────────────────────────
 userSchema.methods.comparePassword = function (plain) {
@@ -484,6 +498,12 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
     if (computedAge != null) obj.age = computedAge;
     obj.zodiacSign = computeZodiac(src.dob);
   }
+
+  // 18+ gate state. Always present (never undefined) so the client can treat a
+  // falsy value as "needs the age gate" without distinguishing "legacy account"
+  // from "old app version". Computed here rather than read off the virtual
+  // because toPublicJSON also runs on lean() plain objects.
+  obj.isAgeVerified = isAdultDob(src.dob);
 
   // Preferences: full object for self; a safe display subset for others.
   if (src.preferences) {

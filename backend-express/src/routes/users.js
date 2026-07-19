@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { computeAge } = require('../utils/zodiac');
+const { validateDob, MIN_AGE, MSG } = require('../utils/ageGate');
 const { NOT_OFFICIAL, isNotOfficial } = require('../utils/discovery');
 const { blockedIdSet } = require('../utils/blocking');
 const ProfileView = require('../models/ProfileView');
@@ -152,17 +153,40 @@ router.patch('/me', auth, async (req, res, next) => {
       updates.mobileGames = clean;
     }
 
+    // ── 18+ age gate ─────────────────────────────────────────────────────────
     // DOB is the source of truth: normalize it and denormalize the computed age
     // into `age` so the existing nearby age-range filter (matchStage.age) keeps
-    // working with no query change. Sending dob:null clears both.
+    // working with no query change.
+    //
+    // This is the endpoint the age gate writes through, so it is the real
+    // enforcement point — before this, a client could PATCH a 2015 birthday and
+    // sit in the app as a 10-year-old. Three rules:
+    //   1. Any DOB written must clear MIN_AGE (18) — otherwise 400.
+    //   2. A DOB already on file cannot be cleared back to null. Clearing it
+    //      would flip the account back to "legacy, un-gated", which is exactly
+    //      the state an underage user would want to reach.
+    //   3. `age` is never taken from the client when a DOB exists — it is
+    //      derived. Otherwise the age filter could be spoofed independently.
     if (updates.dob !== undefined) {
-      const d = updates.dob ? new Date(updates.dob) : null;
-      if (d && !isNaN(d.getTime())) {
-        updates.dob = d;
-        const a = computeAge(d);
-        if (a != null) updates.age = a;
+      const v = validateDob(updates.dob, { required: true });
+      if (v.error) return res.status(400).json({ error: v.error, code: v.code });
+      updates.dob = v.date;
+      updates.age = computeAge(v.date);
+    }
+
+    // Rule 3 for the no-dob-in-this-request case: a user who already has a DOB
+    // may not hand-edit `age` at all; legacy users with no DOB keep the old
+    // behaviour (age is all they have), but still can't claim to be a minor.
+    if (updates.age !== undefined && updates.dob === undefined) {
+      const me = await User.findById(req.user._id).select('dob');
+      if (me?.dob) {
+        delete updates.age; // derived from dob — ignore the client's value
       } else {
-        updates.dob = null;
+        const n = Number(updates.age);
+        if (!Number.isFinite(n) || n < MIN_AGE || n > 120) {
+          return res.status(400).json({ error: MSG.underage, code: 'UNDERAGE' });
+        }
+        updates.age = Math.floor(n);
       }
     }
 

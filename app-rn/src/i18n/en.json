@@ -189,7 +189,24 @@
     "setPasswordPromptSubtitle": "Next time you can sign in with just your email and password — no code needed.",
     "setNow": "Set password",
     "skip": "Skip — keep using codes",
-    "passwordSetSuccess": "Password set. You can now log in with it."
+    "passwordSetSuccess": "Password set. You can now log in with it.",
+    "dob": {
+      "label": "Date of birth",
+      "placeholder": "Select your date of birth",
+      "hint": "You must be 18 or older to use Meyou. This is not shown on your profile.",
+      "error": {
+        "required": "Please enter your date of birth",
+        "underage": "You must be 18 or older to use Meyou"
+      }
+    },
+    "ageGate": {
+      "title": "Confirm your age",
+      "subtitle": "Meyou is for adults only. Enter your date of birth to continue — you only need to do this once.",
+      "cta": "Continue",
+      "signOut": "Sign out",
+      "signOutTitle": "Sign out?",
+      "signOutBody": "You'll need to confirm your date of birth next time you sign in."
+    }
   },
   "errors": {
     "reservedName": "This name is reserved for official use"

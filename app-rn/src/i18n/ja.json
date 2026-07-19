@@ -598,7 +598,24 @@
     "setPasswordPromptSubtitle": "次回からはメールアドレスとパスワードだけでログインできます。コードは不要です。",
     "setNow": "パスワードを設定",
     "skip": "スキップ — コードを使い続ける",
-    "passwordSetSuccess": "パスワードを設定しました。次回からこれでログインできます。"
+    "passwordSetSuccess": "パスワードを設定しました。次回からこれでログインできます。",
+    "dob": {
+      "label": "生年月日",
+      "placeholder": "生年月日を選択してください",
+      "hint": "Meyou のご利用は 18 歳以上に限られます。この情報はプロフィールには表示されません。",
+      "error": {
+        "required": "生年月日を入力してください",
+        "underage": "18 歳以上でないと Meyou を利用できません"
+      }
+    },
+    "ageGate": {
+      "title": "年齢の確認",
+      "subtitle": "Meyou は成人向けのサービスです。続けるには生年月日を入力してください。入力は一度だけです。",
+      "cta": "続ける",
+      "signOut": "ログアウト",
+      "signOutTitle": "ログアウトしますか？",
+      "signOutBody": "次回ログイン時に、あらためて生年月日の確認が必要になります。"
+    }
   },
   "adminReports": {
     "title": "通報管理",

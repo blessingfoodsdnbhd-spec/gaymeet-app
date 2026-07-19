@@ -9,6 +9,9 @@ export interface AuthResponse {
   /** False → OTP-only account with no password yet; the client offers to set
    *  one after login. Undefined (social login) → no prompt. */
   hasPassword?: boolean;
+  /** Social sign-in only (Apple/Google): true when this call just created the
+   *  account. Those users have no DOB yet, so they land on the age gate. */
+  isNewUser?: boolean;
 }
 
 /** Server wraps payloads as { success: true, data: ... } via utils/respond.
@@ -101,24 +104,36 @@ async function postAuth<T>(path: string, body: unknown, opts?: PostAuthOpts): Pr
 export const sendOtp = (email: string) =>
   postAuth<{ success: true; devCode?: string }>('/auth/send-otp', { email });
 
-export const verifyOtp = (email: string, code: string, inviteCode?: string) =>
-  postAuth<AuthResponse>('/auth/verify-otp', { email, code, inviteCode: inviteCode || undefined });
+// `dob` ('YYYY-MM-DD') is optional here because this endpoint is BOTH login and
+// signup — a returning user has one on file already. Accounts that end up
+// without one are blocked by the in-app age gate (see AgeGateScreen).
+export const verifyOtp = (email: string, code: string, inviteCode?: string, dob?: string) =>
+  postAuth<AuthResponse>('/auth/verify-otp', {
+    email,
+    code,
+    inviteCode: inviteCode || undefined,
+    dob: dob || undefined,
+  });
 
 // ── Email + password auth (vc128) ───────────────────────────────────────────
 // Register requires an OTP the user already received via sendOtp() — this proves
 // email ownership before a password is set. Login uses a single ambiguous error
 // server-side (anti-enumeration). OTP login (sendOtp/verifyOtp) is kept as a
 // fallback path reachable from the login screen.
+// `dob` ('YYYY-MM-DD') is REQUIRED server-side for a brand-new account — the
+// 18+ age gate. The register form collects it and its picker is already bounded
+// at today−18y, but the server re-validates (400 + code:'UNDERAGE').
 export const registerWithPassword = (
   email: string,
   password: string,
   otpCode: string,
   inviteCode?: string,
   opts?: PostAuthOpts,
+  dob?: string,
 ) =>
   postAuth<AuthResponse>(
     '/auth/register-with-password',
-    { email, password, otpCode, inviteCode: inviteCode || undefined },
+    { email, password, otpCode, inviteCode: inviteCode || undefined, dob: dob || undefined },
     opts,
   );
 

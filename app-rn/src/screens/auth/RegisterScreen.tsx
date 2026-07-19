@@ -8,6 +8,7 @@ import { ChevronLeft, Mail, Lock, KeyRound } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../components/Button';
+import { DateField, formatYMD } from '../../components/DateField';
 import { useTheme } from '../../theme/ThemeProvider';
 import { sendOtp, registerWithPassword } from '../../api/auth';
 import { useAuth } from '../../store/auth';
@@ -18,6 +19,11 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 type Rt = RouteProp<AuthStackParamList, 'Register'>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// 18+ age gate. Meyou is a dating app, so the picker is hard-bounded at
+// today−18y: an underage date is not selectable at all, rather than selectable
+// and then rejected. The server re-validates regardless (this is UI only).
+const MIN_AGE = 18;
 
 export function RegisterScreen() {
   const nav = useNavigation<Nav>();
@@ -32,9 +38,16 @@ export function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [inviteCode, setInviteCode] = useState(route.params?.inviteCode ?? '');
+  const [dob, setDob] = useState<Date | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+
+  // Picker bounds, computed once per render off "now": [today−100y, today−18y].
+  const now = new Date();
+  const dobMax = new Date(now.getFullYear() - MIN_AGE, now.getMonth(), now.getDate());
+  const dobMin = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
+  const dobDefault = new Date(now.getFullYear() - 25, now.getMonth(), now.getDate());
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -85,6 +98,12 @@ export function RegisterScreen() {
       setErr(t('auth.passwordMismatch'));
       return;
     }
+    // 18+ gate. The picker can't produce an underage date, so this only catches
+    // "never opened the picker" — but the server enforces it either way.
+    if (!dob) {
+      setErr(t('auth.dob.error.required'));
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -93,6 +112,8 @@ export function RegisterScreen() {
         password,
         code.trim(),
         inviteCode.trim().toUpperCase() || undefined,
+        undefined,
+        formatYMD(dob) ?? undefined,
       );
       await signIn(res.accessToken, res.refreshToken, res.user, res.hasPassword);
     } catch (e: any) {
@@ -202,6 +223,26 @@ export function RegisterScreen() {
                   onSubmitEditing={register}
                 />
 
+                {/* 18+ age gate — required. Bounded picker (max = today−18y),
+                    so an underage date can't be picked in the first place. */}
+                <View style={{ marginTop: 18 }}>
+                  <DateField
+                    label={t('auth.dob.label')}
+                    placeholder={t('auth.dob.placeholder')}
+                    value={dob}
+                    onChange={(d) => {
+                      setDob(d);
+                      if (err) setErr(null);
+                    }}
+                    minDate={dobMin}
+                    maxDate={dobMax}
+                    defaultDate={dobDefault}
+                  />
+                  <Text style={{ marginTop: 6, fontSize: 12, color: theme.colors.muted }}>
+                    {t('auth.dob.hint')}
+                  </Text>
+                </View>
+
                 <Text style={{ marginTop: 18, fontSize: 12.5, color: theme.colors.muted }}>
                   {t('invite.optionalField')}
                 </Text>
@@ -219,7 +260,13 @@ export function RegisterScreen() {
               </View>
 
               <View style={{ marginTop: 24 }}>
-                <Button label={t('auth.register')} onPress={register} loading={busy} fullWidth />
+                <Button
+                  label={t('auth.register')}
+                  onPress={register}
+                  disabled={!dob}
+                  loading={busy}
+                  fullWidth
+                />
               </View>
 
               <Pressable

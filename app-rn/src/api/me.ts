@@ -18,6 +18,10 @@ export interface User {
   /** Date of birth (ISO). Source of truth for age + zodiac when set; `age` is
    *  denormalized server-side. Legacy users have `age` but no `dob`. */
   dob?: string | null;
+  /** 18+ gate: true once a DOB is on file AND it clears 18. False for legacy
+   *  accounts and first-time social sign-ins — RootNavigator shows the
+   *  non-skippable AgeGate screen until it flips true. */
+  isAgeVerified?: boolean;
   /** Computed server-side from `dob`. Absent for legacy (age-only) users. */
   zodiacSign?: {
     key: string;
@@ -114,7 +118,9 @@ export const patchMe = (
   patch: Partial<Pick<User, 'nickname' | 'bio' | 'bodyType' | 'city' | 'countryCode'>> & {
     tags?: string[];
     age?: number;
-    /** ISO 'YYYY-MM-DD'; null clears DOB (and the denormalized age). */
+    /** ISO 'YYYY-MM-DD'. Server enforces the 18+ gate: an underage or invalid
+     *  date is rejected (400, code 'UNDERAGE'), and a DOB already on file can
+     *  NOT be cleared back to null — sending null is now a 400 too. */
     dob?: string | null;
     height?: number;
     weight?: number;
