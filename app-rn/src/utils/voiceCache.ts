@@ -18,11 +18,47 @@ const MAX = 20;
 const cache = new Map<string, Audio.Sound | null>();
 
 let audioModeReady = false;
-/** Configure the audio session once (idempotent) so the first play is fast. */
+/**
+ * Configure the audio session for PLAYBACK. Cheap-latched: normally a no-op
+ * after the first call, but `invalidateAudioMode()` re-arms it so playback
+ * re-asserts the session after anything that mutated it (recording).
+ *
+ * The Android keys matter as much as the iOS ones: recording puts the session
+ * into a communication/earpiece routing mode, and a voice intro played after
+ * that came out of the earpiece (i.e. inaudible unless the phone is held to
+ * your ear) while the UI happily showed a "playing" state. Explicitly pinning
+ * `playThroughEarpieceAndroid: false` forces the loudspeaker every time.
+ */
 export async function ensureAudioMode() {
   if (audioModeReady) return;
   audioModeReady = true;
-  await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false }).catch(() => {});
+  await Audio.setAudioModeAsync({
+    playsInSilentModeIOS: true,
+    allowsRecordingIOS: false,
+    staysActiveInBackground: false,
+    shouldDuckAndroid: true,
+    playThroughEarpieceAndroid: false,
+  }).catch(() => {
+    // Failed to apply — un-latch so the next play retries rather than
+    // permanently running on whatever session the recorder left behind.
+    audioModeReady = false;
+  });
+}
+
+/**
+ * Re-arm `ensureAudioMode()`. Call after any `Audio.Recording` session ends:
+ * recording rewrites the shared audio session, and without this the latch
+ * meant playback never restored loudspeaker routing for the rest of the
+ * app's lifetime.
+ */
+export function invalidateAudioMode() {
+  audioModeReady = false;
+}
+
+/** Hand the audio session back to playback after a recording session. */
+export async function releasePlaybackAudio() {
+  invalidateAudioMode();
+  await ensureAudioMode();
 }
 
 function evict() {

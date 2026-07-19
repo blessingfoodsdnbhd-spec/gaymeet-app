@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { useTranslation } from 'react-i18next';
+import { releasePlaybackAudio } from '../utils/voiceCache';
 
 export const VOICE_MAX_MS = 60000; // 60s cap for a chat voice message
 export const VOICE_MIN_MS = 1000;
@@ -45,8 +46,12 @@ export function useVoiceRecorder(onMaxReached?: () => void) {
     setLevels(Array(BARS).fill(0.1));
   }, []);
 
+  // Hand the session back to playback. Dropping `allowsRecordingIOS` alone
+  // isn't enough: recording also leaves Android routed for capture, so we
+  // re-arm the shared playback mode (which pins loudspeaker output) instead
+  // of letting the once-per-launch latch keep the recorder's session.
   const releaseAudio = React.useCallback(async () => {
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    await releasePlaybackAudio();
   }, []);
 
   /** Begin recording. Returns false if permission denied / setup failed. */

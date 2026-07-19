@@ -8,6 +8,7 @@ import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { useTheme } from '../../theme/ThemeProvider';
 import { uploadVoiceIntro } from '../../api/me';
+import { releasePlaybackAudio } from '../../utils/voiceCache';
 
 const MAX_MS = 30000; // 30s cap (was 5s) — auto-stops at MAX_MS via the meter poll
 const MIN_MS = 1000;
@@ -61,7 +62,7 @@ export function VoiceRecorderSheet({
     try {
       if (soundRef.current) { await soundRef.current.unloadAsync(); soundRef.current = null; }
     } catch {}
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    await releasePlaybackAudio();
   }, []);
 
   // Reset + tear down whenever the sheet closes.
@@ -75,7 +76,7 @@ export function VoiceRecorderSheet({
     if (!rec) return;
     recRef.current = null; // guard against double stop (auto + manual)
     try { await rec.stopAndUnloadAsync(); } catch {}
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+    await releasePlaybackAudio();
     setUri(rec.getURI() ?? null);
     setPhase('recorded');
   }, []);

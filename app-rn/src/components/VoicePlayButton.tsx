@@ -49,12 +49,65 @@ export function VoicePlayButton({
     onPlayingChange?.(v);
   };
 
-  const stop = React.useCallback(async () => {
-    if (activeVoiceStop === stop) activeVoiceStop = null;
-    try { await soundRef.current?.unloadAsync(); } catch {}
-    soundRef.current = null;
-    set(false);
+  // Fires if playback never actually starts — see `armWatchdog`.
+  const watchdogRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearWatchdog = React.useCallback(() => {
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    watchdogRef.current = null;
   }, []);
+
+  /**
+   * Reset the UI *synchronously*, then unload in the background.
+   *
+   * `unloadAsync()` used to be awaited before flipping `playing` back to
+   * false. When the native call hung (a Sound wedged mid-prepare on Android)
+   * the button was stuck showing ⏸ forever and every further tap re-entered
+   * the same hanging await — the "pause doesn't respond" half of the bug.
+   * Nothing here needs the unload to have completed, so don't wait for it.
+   */
+  const stop = React.useCallback(() => {
+    if (activeVoiceStop === stop) activeVoiceStop = null;
+    clearWatchdog();
+    const s = soundRef.current;
+    soundRef.current = null;
+    loadingRef.current = false;
+    setLoading(false);
+    set(false);
+    if (s) {
+      s.setOnPlaybackStatusUpdate(null);
+      s.unloadAsync().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearWatchdog]);
+
+  /**
+   * Tear everything down if the sound hasn't reported `isPlaying` within
+   * `ms`. Covers the case where a play/replay call neither resolves nor
+   * rejects (Android ExoPlayer stalls on a re-used, never-played Sound):
+   * previously that left the button pinned at ⏸ with no audio, forever.
+   */
+  const armWatchdog = React.useCallback((ms: number) => {
+    clearWatchdog();
+    watchdogRef.current = setTimeout(() => { stop(); }, ms);
+  }, [clearWatchdog, stop]);
+
+  /**
+   * Drive `playing` from the *actual* playback status rather than optimistically
+   * from the fact that we called play(). A status carrying an error, or a loaded
+   * sound that has stopped without finishing, now resets the button instead of
+   * leaving it stuck in the playing state.
+   */
+  const attachStatus = React.useCallback((sound: Audio.Sound) => {
+    sound.setOnPlaybackStatusUpdate((s) => {
+      if (!s.isLoaded) {
+        if ((s as any).error) stop();
+        return;
+      }
+      if (s.didJustFinish) { stop(); return; }
+      if (s.isPlaying) { clearWatchdog(); set(true); }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stop, clearWatchdog]);
 
   const play = React.useCallback(async () => {
     if (!url) return;
@@ -65,43 +118,60 @@ export function VoicePlayButton({
     activeVoiceStop = stop;
     loadingRef.current = true;
     try {
+      // The session must be (re)asserted on BOTH paths. The fast path used to
+      // skip it, so a voice intro played straight after a recording session
+      // inherited the recorder's earpiece routing and was silent.
+      await ensureAudioMode();
       // Fast path: a preloaded sound (prefetched while the card was visible)
       // is already decoded — just replay it. Saves the 3–4s download+decode.
+      // Only trust it if it's *still* loaded; a Sound that was unloaded out
+      // from under us replays into silence.
       const pre = takeVoice(url);
-      let sound: Audio.Sound;
+      let sound: Audio.Sound | null = null;
       if (pre) {
-        sound = pre;
-        soundRef.current = sound;
-        set(true);
-        sound.setOnPlaybackStatusUpdate((s) => {
-          if (s.isLoaded && s.didJustFinish) stop();
-        });
-        await sound.replayAsync().catch(() => sound.playAsync());
-        return;
+        // Race the probe: a Sound wedged in the native layer can leave
+        // getStatusAsync() pending forever, which would strand the tap. If it
+        // doesn't answer promptly, treat the preload as unusable and refetch.
+        const st = await Promise.race([
+          pre.getStatusAsync().catch(() => null),
+          new Promise<null>((res) => setTimeout(() => res(null), 800)),
+        ]);
+        if (st?.isLoaded) {
+          sound = pre;
+          soundRef.current = sound;
+          attachStatus(sound);
+          armWatchdog(6000);
+          // Preloaded Sounds were created without an explicit tick interval, so
+          // they'd default to 500ms — too slow to flip the icon. Tighten it and
+          // also trust the status returned by replay/play so the ⏸ is immediate.
+          sound.setProgressUpdateIntervalAsync(50).catch(() => {});
+          const st2 = await sound.replayAsync().catch(() => sound!.playAsync());
+          if (st2?.isLoaded && st2.isPlaying) { clearWatchdog(); set(true); }
+          return;
+        }
+        pre.unloadAsync().catch(() => {}); // stale — fall through and refetch
       }
       // Slow path: not preloaded (e.g. opened from the grid). shouldPlay:true
       // starts on load — one bridge round-trip instead of load-then-play. Show
       // a spinner while it downloads so the tap doesn't look dead.
       setLoading(true);
-      await ensureAudioMode();
       const r = await Audio.Sound.createAsync(
         { uri: url },
         { shouldPlay: true, progressUpdateIntervalMillis: 50 },
       );
       sound = r.sound;
       soundRef.current = sound;
-      set(true);
-      sound.setOnPlaybackStatusUpdate((s) => {
-        if (s.isLoaded && s.didJustFinish) stop();
-      });
+      attachStatus(sound);
+      armWatchdog(6000);
+      if (r.status?.isLoaded && r.status.isPlaying) { clearWatchdog(); set(true); }
     } catch {
-      set(false);
+      stop();
     } finally {
       loadingRef.current = false;
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, stop]);
+  }, [url, stop, attachStatus, armWatchdog, clearWatchdog]);
 
   // Auto-play once on mount when requested; otherwise warm the cache when
   // `preload` is set so the first tap replays an already-decoded Sound. The
