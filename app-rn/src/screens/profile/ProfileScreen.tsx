@@ -50,7 +50,7 @@ import { tagById, type InterestTagId } from '../../data/interestTags';
 import { PRIVATE_PHOTOS_ENABLED } from '../../config/featureFlags';
 import { useAuth } from '../../store/auth';
 import { getMyStats, getViewers } from '../../api/me';
-import { getApprovedCount } from '../../api/privatePhotos';
+import { getApprovedCount, getPrivatePhotos } from '../../api/privatePhotos';
 import { getUnreadCount } from '../../api/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from '../../navigation/types';
@@ -118,6 +118,17 @@ export function ProfileScreen() {
     enabled: !!user,
     staleTime: 30_000,
   });
+  // Own private photos. The backend special-cases self and returns the real
+  // URLs (short-lived signed URLs for private-bucket refs, TTL 300s) — so keep
+  // staleTime well under that or the grid renders expired links. Shares the
+  // ['me','privatePhotos'] key with EditProfileScreen, which invalidates it
+  // after every add / remove / move, so this grid stays in sync for free.
+  const privatePhotosQ = useQuery({
+    queryKey: ['me', 'privatePhotos'],
+    queryFn: () => getPrivatePhotos(user!.id),
+    enabled: !!user && PRIVATE_PHOTOS_ENABLED,
+    staleTime: 60_000,
+  });
 
   if (!user) return null;
 
@@ -131,6 +142,7 @@ export function ProfileScreen() {
   const GRID_SLOTS = 6;
   const tile = Math.floor((width - theme.spacing.xl * 2 - GRID_GAP * 2) / 3);
   const overflow = photos.length - GRID_SLOTS;
+  const privatePhotos = privatePhotosQ.data?.photos ?? [];
   const stats = statsQ.data;
   const fmt = (n: number | undefined) => (typeof n === 'number' ? n : '—');
   const official = !!(user as any).isOfficial;
@@ -322,6 +334,55 @@ export function ProfileScreen() {
             );
           })}
         </View>
+
+        {/* Private photos — same 3 × 2 grid as above, but only ever rendered
+            here on your OWN profile (UserDetailScreen shows strangers the
+            locked "request access" card instead). Hidden entirely when you
+            have none, so the tab doesn't grow an empty section. Each filled
+            tile carries a lock badge to distinguish it from the public grid. */}
+        {PRIVATE_PHOTOS_ENABLED && privatePhotos.length > 0 && (
+          <>
+            <SectionTitle>
+              {t('profile.privatePhotosLimit', { count: privatePhotos.length })}
+            </SectionTitle>
+            <View style={styles.grid}>
+              {Array.from({ length: GRID_SLOTS }).map((_, i) => {
+                const url = privatePhotos[i];
+                if (url) {
+                  return (
+                    <Pressable
+                      key={`private-${i}-${url}`}
+                      onPress={() => photoViewer.open(privatePhotos, i)}
+                      style={{ width: tile, height: tile, borderRadius: theme.radius.m, overflow: 'hidden', backgroundColor: theme.colors.surface2 }}
+                    >
+                      <ExpoImage
+                        source={{ uri: url }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.lockBadge}>
+                        <Lock size={11} color="#FFFFFF" strokeWidth={2.4} />
+                      </View>
+                    </Pressable>
+                  );
+                }
+                return (
+                  <Pressable
+                    key={`private-add-${i}`}
+                    onPress={goEdit}
+                    style={{ width: tile, height: tile, borderRadius: theme.radius.m, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface2, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.colors.line }}
+                  >
+                    <Plus size={22} color={theme.colors.muted} strokeWidth={2} />
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 8 }}>
+              {t('profile.privatePhotosHint')}
+            </Text>
+          </>
+        )}
 
         {/* Bio preview (read-only). */}
         <SectionTitle>{t('profile.edit.bio')}</SectionTitle>
@@ -552,4 +613,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   moreText: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
+  // Lock chip on private-grid tiles — mirrors PhotoGridEditor's badgeIcon so
+  // the two surfaces read the same.
+  lockBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
 });
