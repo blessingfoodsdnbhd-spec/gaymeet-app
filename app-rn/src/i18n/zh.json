@@ -1808,5 +1808,14 @@
     "clearChatTitle": "清除本地聊天记录?",
     "clearChatBody": "仅删除本机缓存,服务器上的消息不受影响。",
     "note": "为节省空间,媒体缓存保留 7 天,本地聊天记录保留 60 天,App 每天自动清理一次。"
+  },
+  "update":   {
+    "forceTitle": "需要更新",
+    "forceBody": "当前版本已停止支持,请更新后继续使用 Meyou。",
+    "softTitle": "有新版本",
+    "softBody": "Meyou 新版本已发布,带来了体验优化和问题修复。",
+    "latestLabel": "最新版本 {{version}}",
+    "cta": "立即更新",
+    "later": "稍后再说"
   }
 }

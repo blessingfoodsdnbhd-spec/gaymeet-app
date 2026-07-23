@@ -1808,5 +1808,14 @@
     "clearChatTitle": "Clear local chat history?",
     "clearChatBody": "Only the on-device cache is removed; messages on the server are unaffected.",
     "note": "To save space, media is kept 7 days and local chat 60 days; the app cleans up once a day."
+  },
+  "update":   {
+    "forceTitle": "Update Required",
+    "forceBody": "This version of Meyou is no longer supported. Please update to keep using the app.",
+    "softTitle": "Update Available",
+    "softBody": "A new version of Meyou is ready — with improvements and fixes.",
+    "latestLabel": "Latest version {{version}}",
+    "cta": "Update Now",
+    "later": "Maybe Later"
   }
 }
