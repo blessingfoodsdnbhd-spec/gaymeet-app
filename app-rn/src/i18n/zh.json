@@ -1120,7 +1120,27 @@
   },
   "nearby": {
     "peopleCount": "{{n}} 人在附近",
-    "footnote": "仅显示开启了「附近」的同好"
+    "footnote": "只有已签到的人会显示在这里",
+    "checkin": {
+      "cta": "签到",
+      "checkout": "结束",
+      "hiddenTitle": "你当前不在地图上",
+      "hiddenSub": "签到后才会出现在附近的人面前",
+      "visibleTitle": "你正在附近显示",
+      "visibleSub": "剩余 {{min}} 分钟 · 随时可结束",
+      "sheetTitle": "签到到附近",
+      "sheetBody": "签到后,附近的人可以在一小段时间内发现你。你自己决定何时,并会自动结束。",
+      "bulletSession": "你只在选择的时间内出现,到期后自动下线。",
+      "bulletPrecise": "永远不会分享你的精确位置,只显示大致距离。",
+      "bulletOff": "任何时候都可结束,立即从附近消失。",
+      "durationLabel": "显示时长",
+      "minutes": "{{min}} 分钟",
+      "confirm": "立即签到",
+      "notNow": "暂不",
+      "toastOn": "已签到 — {{min}} 分钟内可见",
+      "toastOff": "已结束 — 你已从附近下线",
+      "failed": "签到更新失败"
+    }
   },
   "virtualLocation": {
     "unlockPremium": "升级 Premium 解锁",

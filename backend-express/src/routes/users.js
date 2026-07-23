@@ -248,6 +248,92 @@ router.put('/me/location', auth, async (req, res, next) => {
   }
 });
 
+// ── Nearby check-in (Apple Guideline 5.1.2(i)) ────────────────────────────────
+// Session-based, opt-in visibility on the 附近 grid. The user must check in
+// each session; the check-in auto-expires. No persistent "always share" flag.
+// Allowed durations (minutes) — kept small on purpose so location sharing is
+// always short-lived.
+const NEARBY_CHECKIN_MINUTES = [15, 30, 60];
+const NEARBY_CHECKIN_DEFAULT_MIN = 30;
+
+function nearbyStatusPayload(user) {
+  const exp = user.nearbyCheckinExpiresAt
+    ? new Date(user.nearbyCheckinExpiresAt)
+    : null;
+  const now = new Date();
+  const active = !!(exp && exp > now);
+  return {
+    checkedIn: active,
+    checkedInAt: active ? user.nearbyCheckedInAt : null,
+    expiresAt: active ? exp : null,
+    remainingMs: active ? exp.getTime() - now.getTime() : 0,
+  };
+}
+
+// ── GET /api/users/me/nearby/status ───────────────────────────────────────────
+router.get('/me/nearby/status', auth, async (req, res, next) => {
+  try {
+    ok(res, nearbyStatusPayload(req.user));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/me/nearby/checkin ─────────────────────────────────────────
+// Body: { minutes?: 15|30|60, latitude?, longitude? }. Makes the user visible on
+// Nearby for `minutes`, starting now. Optionally refreshes GPS in the same call.
+router.post('/me/nearby/checkin', auth, async (req, res, next) => {
+  try {
+    const raw = parseInt(req.body?.minutes, 10);
+    const minutes = NEARBY_CHECKIN_MINUTES.includes(raw)
+      ? raw
+      : NEARBY_CHECKIN_DEFAULT_MIN;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + minutes * 60 * 1000);
+
+    const update = {
+      nearbyCheckedInAt: now,
+      nearbyCheckinExpiresAt: expiresAt,
+      lastActiveAt: now,
+      isOnline: true,
+    };
+
+    // Opt-in also clears any legacy hide flag so the check-in actually surfaces
+    // the user (a stale hideFromNearby would otherwise silently suppress them).
+    update['preferences.hideFromNearby'] = false;
+
+    const { latitude, longitude } = req.body || {};
+    if (latitude != null && longitude != null) {
+      update.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+      };
+    }
+
+    await User.findByIdAndUpdate(req.user._id, update);
+    ok(res, nearbyStatusPayload({
+      nearbyCheckedInAt: now,
+      nearbyCheckinExpiresAt: expiresAt,
+    }));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── POST /api/users/me/nearby/checkout ────────────────────────────────────────
+// Immediately removes the user from Nearby (ends the session early).
+router.post('/me/nearby/checkout', auth, async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      nearbyCheckedInAt: null,
+      nearbyCheckinExpiresAt: null,
+    });
+    ok(res, nearbyStatusPayload({}));
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ── POST /api/users/me/teleport ───────────────────────────────────────────────
 router.post('/me/teleport', auth, async (req, res, next) => {
   try {
@@ -356,6 +442,8 @@ router.get('/nearby', auth, async (req, res, next) => {
       _id: { $nin: excludeIds },
       'preferences.hideFromNearby': { $ne: true },
       'preferences.stealthMode': { $ne: true },
+      // Apple 5.1.2(i): opt-in, session-based visibility — only checked-in users.
+      nearbyCheckinExpiresAt: { $gt: new Date() },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
     };
 

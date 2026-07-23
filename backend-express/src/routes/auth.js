@@ -365,6 +365,11 @@ const BYPASS_LOGINS = {
   // so it uses this fixed code. Distinct from hafiz, which MUST stay Free (it's
   // the Apple reviewer demo). Keep this entry; the account is reused.
   'qa-premium@meyou.test': '222222',
+  // Apple App Review demo account (Guideline 2.1(a)). Seeded by
+  // scripts/seed-review-account.js — fully onboarded Premium user with moments,
+  // chats, private photos, and checked-in neighbours for the Nearby flow. Uses
+  // this fixed OTP code (a password, demo1234, is also set as a fallback).
+  'apple-review@meyou.uk': '135790',
 };
 
 // Issue an access+refresh session for a user and return the standard auth

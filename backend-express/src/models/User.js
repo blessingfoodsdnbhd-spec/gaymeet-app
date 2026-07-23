@@ -106,6 +106,16 @@ const userSchema = new mongoose.Schema(
     lastActiveAt: { type: Date, default: Date.now },
     isOnline: { type: Boolean, default: false },
 
+    // ── Nearby check-in (Apple Guideline 5.1.2(i)) ───────────────────────────
+    // The 附近 grid displays approximate location to other users. Apple requires
+    // this to be OPT-IN and session-based: a user is only visible to others
+    // while a live check-in is active. There is deliberately NO persistent
+    // "always share my location" flag — the client must manually check in each
+    // session and the check-in auto-expires. `nearbyCheckinExpiresAt` in the
+    // future ⇔ currently visible on Nearby. Both null = not checked in (default).
+    nearbyCheckedInAt: { type: Date, default: null },
+    nearbyCheckinExpiresAt: { type: Date, default: null },
+
     // Daily-login streak (STREAK1). lastActiveDate is a UTC YYYY-MM-DD string;
     // updated once per day by the auth middleware via utils/streak.touchStreak.
     streak: {

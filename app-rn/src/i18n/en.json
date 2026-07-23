@@ -1120,7 +1120,27 @@
   },
   "nearby": {
     "peopleCount": "{{n}} nearby",
-    "footnote": "Showing people who allow Nearby"
+    "footnote": "Only people who checked in appear here",
+    "checkin": {
+      "cta": "Check in",
+      "checkout": "Check out",
+      "hiddenTitle": "You're not on the map",
+      "hiddenSub": "Check in to appear to people nearby",
+      "visibleTitle": "You're visible nearby",
+      "visibleSub": "{{min}} min left · tap Check out anytime",
+      "sheetTitle": "Check in to Nearby",
+      "sheetBody": "Check in to let nearby people discover you for a short time. You choose when, and it ends automatically.",
+      "bulletSession": "You only appear for the time you pick — then you're off automatically.",
+      "bulletPrecise": "Your exact location is never shared — only an approximate distance.",
+      "bulletOff": "Check out any time to disappear from Nearby instantly.",
+      "durationLabel": "Stay visible for",
+      "minutes": "{{min}} min",
+      "confirm": "Check in now",
+      "notNow": "Not now",
+      "toastOn": "Checked in — visible for {{min}} min",
+      "toastOff": "Checked out — you're off Nearby",
+      "failed": "Couldn't update check-in"
+    }
   },
   "virtualLocation": {
     "unlockPremium": "Unlock with Premium",
