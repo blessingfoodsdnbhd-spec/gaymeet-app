@@ -125,6 +125,11 @@ const userSchema = new mongoose.Schema(
     // verify-google-purchase; updated on the upgrade/downgrade token chain.
     googleOriginalPurchaseToken: { type: String, default: null, sparse: true },
 
+    // Demo/seed/review account (P0 isolation). Real users NEVER see isDemo
+    // accounts; isDemo viewers (Apple reviewer) see ONLY other isDemo accounts.
+    // Enforced in every real-user-visible query via demoVisibility(viewer).
+    isDemo: { type: Boolean, default: false, index: true },
+
     // Privacy preferences
     preferences: { type: preferencesSchema, default: () => ({}) },
 

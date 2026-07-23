@@ -10,6 +10,7 @@ const { hasProfanity } = require('../utils/profanityFilter');
 const { sendPushToUser } = require('../utils/push');
 const { notify } = require('../services/notificationService');
 const { blockedIdSet } = require('../utils/blocking');
+const { demoVisibility } = require('../utils/discovery');
 const { recordContentReport, hiddenFilter } = require('../services/report');
 
 // Meyou v2 nearby radius for moments — matches /api/discover/nearby default.
@@ -116,7 +117,9 @@ router.get('/', auth, async (req, res, next) => {
     // Auto-hidden moments drop out of the feed for everyone except their author,
     // who still sees them (client renders an 审核中 badge).
     const notHidden = hiddenFilter(req.user._id, 'user');
-    const moments = await Moment.find({ $and: [filter, notExpired, notBlocked, notHidden] })
+    // P0: real users never see demo-authored moments (isDemo denormalized).
+    const notDemo = { isDemo: demoVisibility(req.user) };
+    const moments = await Moment.find({ $and: [filter, notExpired, notBlocked, notHidden, notDemo] })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -212,6 +215,8 @@ router.post('/', auth, postingSuspended, async (req, res, next) => {
       content,
       images,
       visibility,
+      // P0: inherit demo flag from the author so demo posts stay isolated.
+      isDemo: req.user.isDemo === true,
     };
 
     // Ephemeral "24h story" moments (STORY1). Clamp to 1–168h; absent = permanent.

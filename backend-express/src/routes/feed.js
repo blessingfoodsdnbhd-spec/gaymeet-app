@@ -6,6 +6,7 @@ const Place = require('../models/Place');
 const { auth } = require('../middleware/auth');
 const { ok } = require('../utils/respond');
 const { hiddenFilter } = require('../services/report');
+const { demoVisibility } = require('../utils/discovery');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -115,6 +116,8 @@ router.get('/', auth, async (req, res, next) => {
 
     // Auto-hidden moments drop from the feed for everyone except their author.
     const notHidden = hiddenFilter(req.user._id, 'user');
+    // P0: real users never see demo-authored moments (isDemo denormalized).
+    const notDemo = { isDemo: demoVisibility(req.user) };
     const momentFilter =
       tab === 'following'
         ? {
@@ -122,8 +125,9 @@ router.get('/', auth, async (req, res, next) => {
             user: { $in: followingIds },
             visibility: { $in: ['public', 'friends'] },
             ...notHidden,
+            ...notDemo,
           }
-        : { isActive: true, visibility: 'public', ...notHidden };
+        : { isActive: true, visibility: 'public', ...notHidden, ...notDemo };
 
     // Events: only future + active. In following tab, only followed organizers;
     // in discover, all public events.

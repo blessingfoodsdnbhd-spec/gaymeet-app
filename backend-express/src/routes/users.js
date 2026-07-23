@@ -5,7 +5,7 @@ const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const { computeAge } = require('../utils/zodiac');
 const { validateDob, MIN_AGE, MSG } = require('../utils/ageGate');
-const { NOT_OFFICIAL, isNotOfficial } = require('../utils/discovery');
+const { NOT_OFFICIAL, isNotOfficial, demoVisibility } = require('../utils/discovery');
 const { blockedIdSet } = require('../utils/blocking');
 const ProfileView = require('../models/ProfileView');
 
@@ -357,6 +357,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       'preferences.hideFromNearby': { $ne: true },
       'preferences.stealthMode': { $ne: true },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
+      isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
 
     if (minAge || maxAge) {
@@ -488,6 +489,7 @@ router.get('/discover', auth, async (req, res, next) => {
             'preferences.hideFromNearby': { $ne: true },
             'preferences.stealthMode': { $ne: true },
             ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
+      isDemo: demoVisibility(me), // P0: real users never see demo accounts
             ...(role ? { role } : {}),
             ...(zodiac ? { zodiac } : {}),
             ...(mbti ? { mbti } : {}),
@@ -532,6 +534,7 @@ router.get('/locations', auth, async (req, res, next) => {
         'preferences.stealthMode':    { $ne: true },
         'preferences.hideFromNearby': { $ne: true },
         _id: { $nin: blockedArr },
+        isDemo: demoVisibility(req.user), // P0: real users never see demo accounts
         ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from the globe
       },
       { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
@@ -635,6 +638,7 @@ router.get('/widget-data', auth, async (req, res, next) => {
           isOnline: true,
           'preferences.stealthMode': { $ne: true },
           'preferences.hideFromNearby': { $ne: true },
+          isDemo: demoVisibility(me), // P0: real users never see demo accounts
           ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from widget
         },
       },

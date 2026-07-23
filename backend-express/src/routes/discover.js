@@ -5,7 +5,7 @@ const Swipe = require('../models/Swipe');
 const Match = require('../models/Match');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
-const { NOT_OFFICIAL } = require('../utils/discovery');
+const { NOT_OFFICIAL, demoVisibility } = require('../utils/discovery');
 const { followStatusMap } = require('../utils/followStatus');
 const { incomingLikerSet, outgoingLikeSet } = require('../utils/incomingLikes');
 const { isPremiumActive } = require('../utils/premium');
@@ -123,6 +123,7 @@ router.get('/cards', auth, async (req, res, next) => {
       'preferences.stealthMode': { $ne: true },
       isDeleted: { $ne: true },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
+      isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
     if (filterInterests) {
       baseQuery.interests = { $in: filterInterests };
@@ -264,6 +265,7 @@ router.post('/search-new', auth, async (req, res, next) => {
       'preferences.stealthMode': { $ne: true },
       isDeleted: { $ne: true },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
+      isDemo: demoVisibility(me), // P0: real users never see demo accounts
       lastActiveAt: { $gte: since }, // recently active only
     };
     if (filterInterests) baseQuery.interests = { $in: filterInterests };
@@ -452,6 +454,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       'preferences.stealthMode': { $ne: true },
       isDeleted: { $ne: true },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
+      isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
     if (filterInterests) {
       baseQuery.interests = { $in: filterInterests };

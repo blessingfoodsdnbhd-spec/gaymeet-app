@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const momentSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Denormalized from the author (P0 demo isolation): moments by a demo
+    // account are only ever shown to demo viewers. Set on create + backfilled.
+    isDemo: { type: Boolean, default: false, index: true },
     content: { type: String, default: '', maxlength: 500 },
     images: [{ type: String }], // max 9 URLs
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

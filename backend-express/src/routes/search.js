@@ -6,6 +6,7 @@ const VoteEvent = require('../models/VoteEvent');
 const ChatRoom = require('../models/ChatRoom');
 const { blockedIdArray } = require('../utils/blocking');
 const { isPremiumActive } = require('../utils/premium');
+const { demoVisibility } = require('../utils/discovery');
 
 // Escape user input before building a RegExp so "." / "*" etc. are literal and
 // a crafted query can't ReDoS or match unexpectedly.
@@ -38,6 +39,7 @@ router.get('/', auth, async (req, res, next) => {
             nickname: rx,
             _id: { $ne: meId, $nin: blocked },
             isDeleted: { $ne: true },
+            isDemo: demoVisibility(req.user), // P0: real users never see demo accounts
           })
             .select('nickname avatarUrl photos isOfficial isVerified isPremium premiumExpiresAt vipLevel vipExpiresAt')
             .limit(20)
