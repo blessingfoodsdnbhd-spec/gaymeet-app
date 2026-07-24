@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.meetupnearby.app",
       "supportsTablet": false,
-      "buildNumber": "136",
+      "buildNumber": "137",
       "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:meyou.uk",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.meetupnearby.app",
-      "versionCode": 136,
+      "versionCode": 137,
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
@@ -93,17 +93,10 @@
         }
       ],
       [
-        "react-native-iap",
-        {
-          "paymentProvider": "Play Store"
-        }
-      ],
-      "./plugins/withIapAndroidXFix.js",
-      [
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "1.9.25",
+            "kotlinVersion": "2.1.10",
             "compileSdkVersion": 35,
             "targetSdkVersion": 35
           },

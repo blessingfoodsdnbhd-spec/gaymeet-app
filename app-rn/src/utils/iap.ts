@@ -16,6 +16,10 @@ type PremiumResult = {
 
 const tx = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
 
+// react-native-iap 15.x (Nitro) — loaded lazily so the module never crashes
+// Expo Go / web where the native module is absent. The whole surface below is
+// typed `any`: we intentionally avoid importing the package's named types at
+// module scope so the import stays dynamic.
 async function loadRNIap(): Promise<any> {
   try {
     return await import('react-native-iap');
@@ -32,11 +36,82 @@ async function safeInit(RNIap: any) {
   }
 }
 
+// ─── Event-based purchase → Promise bridge ───────────────────────────────────
+// v15's `requestPurchase` no longer resolves with the purchase; the result
+// arrives asynchronously on `purchaseUpdatedListener` (success) or
+// `purchaseErrorListener` (failure/cancel). This helper re-collapses that back
+// into a single awaitable so the exported functions keep their old shape.
+//
+// `expectedIds` filters out unrelated / stale purchases (e.g. a leftover
+// unfinished transaction the store replays on connect) so we only resolve with
+// the SKU the caller actually asked to buy.
+// Resolves `null` on user cancellation, rejects on any real error.
+function isCancel(e: any): boolean {
+  const code = e?.code;
+  const msg = String(e?.message ?? e ?? '');
+  return code === 'user-cancelled' || /cancel|user closed/i.test(msg);
+}
+
+function awaitPurchase(
+  RNIap: any,
+  expectedIds: string[],
+  trigger: () => Promise<any>,
+): Promise<any | null> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let updSub: any;
+    let errSub: any;
+    let timer: any;
+
+    const cleanup = () => {
+      settled = true;
+      try { updSub?.remove?.(); } catch { /* noop */ }
+      try { errSub?.remove?.(); } catch { /* noop */ }
+      if (timer) clearTimeout(timer);
+    };
+
+    const matches = (p: any): boolean => {
+      if (!p) return false;
+      if (expectedIds.includes(p.productId)) return true;
+      const ids: string[] = Array.isArray(p.ids) ? p.ids : [];
+      return ids.some((i) => expectedIds.includes(i));
+    };
+
+    updSub = RNIap.purchaseUpdatedListener((purchase: any) => {
+      if (settled || !matches(purchase)) return;
+      cleanup();
+      resolve(purchase);
+    });
+
+    errSub = RNIap.purchaseErrorListener((err: any) => {
+      if (settled) return;
+      cleanup();
+      if (isCancel(err)) return resolve(null);
+      reject(new Error(String(err?.message ?? 'purchase failed')));
+    });
+
+    // Safety net — never leave the caller hanging if neither event fires.
+    timer = setTimeout(() => {
+      if (settled) return;
+      cleanup();
+      reject(new Error(tx('iapError.purchaseFailed', { detail: 'timeout' })));
+    }, 1000 * 60 * 5);
+
+    // A synchronous rejection (bad params / not connected) also aborts.
+    trigger().catch((e: any) => {
+      if (settled) return;
+      cleanup();
+      if (isCancel(e)) return resolve(null);
+      reject(new Error(String(e?.message ?? e)));
+    });
+  });
+}
+
 // ─── iOS purchase ────────────────────────────────────────────────────────────
 async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | null> {
   let products: any[];
   try {
-    products = await RNIap.getSubscriptions({ skus: [sku] });
+    products = await RNIap.fetchProducts({ skus: [sku], type: 'subs' });
   } catch (e: any) {
     throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
@@ -46,14 +121,16 @@ async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | nul
 
   let purchase: any;
   try {
-    purchase = await RNIap.requestSubscription({ sku });
+    purchase = await awaitPurchase(RNIap, [sku], () =>
+      RNIap.requestPurchase({ type: 'subs', request: { apple: { sku } } }),
+    );
   } catch (e: any) {
-    const msg = String(e?.message ?? e);
-    if (/cancel|user closed/i.test(msg)) return null;
-    throw new Error(tx('iapError.purchaseFailed', { detail: msg }));
+    throw new Error(tx('iapError.purchaseFailed', { detail: String(e?.message ?? e) }));
   }
   if (!purchase) return null;
 
+  // v15 iOS (StoreKit 2) drops the per-purchase `transactionReceipt` field;
+  // `getReceiptIOS()` still returns the base64 app receipt the backend verifies.
   let receipt: string | undefined = purchase.transactionReceipt;
   if (!receipt && RNIap.getReceiptIOS) {
     receipt = await RNIap.getReceiptIOS();
@@ -75,7 +152,7 @@ async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | nul
 // ─── Android purchase ────────────────────────────────────────────────────────
 // Play uses ONE subscription ID with multiple base plans; the caller still
 // passes an Apple-style sku (monthly/annual), and we translate to the right
-// base plan + look up its offerToken from subscriptionOfferDetails.
+// base plan + look up its offerToken from subscriptionOfferDetailsAndroid.
 async function purchaseAndroid(
   appleSku: string,
   RNIap: any,
@@ -88,16 +165,19 @@ async function purchaseAndroid(
 
   let products: any[];
   try {
-    products = await RNIap.getSubscriptions({ skus: [subscriptionId] });
+    products = await RNIap.fetchProducts({ skus: [subscriptionId], type: 'subs' });
   } catch (e: any) {
     throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
-  const product = (products || []).find((p: any) => p?.productId === subscriptionId);
+  const product = (products || []).find(
+    (p: any) => (p?.id ?? p?.productId) === subscriptionId,
+  );
   if (!product) {
     throw new Error(tx('iapError.skuMissing'));
   }
 
-  const offers = product.subscriptionOfferDetails || [];
+  const offers =
+    product.subscriptionOfferDetailsAndroid || product.subscriptionOfferDetails || [];
   const matchingOffer = offers.find((o: any) => o?.basePlanId === wantedBasePlan);
   if (!matchingOffer?.offerToken) {
     throw new Error(tx('iapError.skuMissing'));
@@ -105,18 +185,23 @@ async function purchaseAndroid(
 
   let purchase: any;
   try {
-    purchase = await RNIap.requestSubscription({
-      sku: subscriptionId,
-      subscriptionOffers: [
-        { sku: subscriptionId, offerToken: matchingOffer.offerToken },
-      ],
-    });
+    purchase = await awaitPurchase(RNIap, [subscriptionId], () =>
+      RNIap.requestPurchase({
+        type: 'subs',
+        request: {
+          google: {
+            skus: [subscriptionId],
+            subscriptionOffers: [
+              { sku: subscriptionId, offerToken: matchingOffer.offerToken },
+            ],
+          },
+        },
+      }),
+    );
   } catch (e: any) {
-    const msg = String(e?.message ?? e);
-    if (/cancel|user closed/i.test(msg)) return null;
-    throw new Error(tx('iapError.purchaseFailed', { detail: msg }));
+    throw new Error(tx('iapError.purchaseFailed', { detail: String(e?.message ?? e) }));
   }
-  // RNIap may return an array on Android (one purchase per SKU).
+  // Listener yields a single Purchase; keep the array guard for safety.
   const top = Array.isArray(purchase) ? purchase[0] : purchase;
   if (!top) return null;
 
@@ -179,14 +264,15 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
 
   try {
     if (Platform.OS === 'ios') {
-      // iOS: two separate products, each carries localizedPrice.
-      const products = await RNIap.getSubscriptions({
+      // iOS: two separate products, each carries displayPrice.
+      const products = await RNIap.fetchProducts({
         skus: [IAP_SKUS.monthly, IAP_SKUS.annual],
+        type: 'subs',
       });
       const find = (sku: string) =>
-        (products || []).find((p: any) => p?.productId === sku);
+        (products || []).find((p: any) => (p?.id ?? p?.productId) === sku);
       const fmt = (p: any) =>
-        p?.localizedPrice || p?.displayPrice || null;
+        p?.displayPrice || p?.localizedPrice || null;
       return {
         monthly: fmt(find(IAP_SKUS.monthly)),
         annual: fmt(find(IAP_SKUS.annual)),
@@ -195,13 +281,17 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
 
     // Android: ONE subscription with two base plans; the formatted price is
     // in each base plan's first pricing phase.
-    const products = await RNIap.getSubscriptions({
+    const products = await RNIap.fetchProducts({
       skus: [ANDROID_IAP.subscriptionId],
+      type: 'subs',
     });
     const product = (products || []).find(
-      (p: any) => p?.productId === ANDROID_IAP.subscriptionId,
+      (p: any) => (p?.id ?? p?.productId) === ANDROID_IAP.subscriptionId,
     );
-    const offers = product?.subscriptionOfferDetails || [];
+    const offers =
+      product?.subscriptionOfferDetailsAndroid ||
+      product?.subscriptionOfferDetails ||
+      [];
     const priceForBasePlan = (basePlanId: string): string | null => {
       const offer = offers.find((o: any) => o?.basePlanId === basePlanId);
       const phases = offer?.pricingPhases?.pricingPhaseList || [];
