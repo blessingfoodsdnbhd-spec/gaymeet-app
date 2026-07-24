@@ -203,7 +203,8 @@
           }
         ]
       ],
-      "expo-localization"
+      "expo-localization",
+      "./plugins/withIosBuildFixes.js"
     ],
     "extra": {
       "apiUrl": "https://gaymeet-api.onrender.com",
