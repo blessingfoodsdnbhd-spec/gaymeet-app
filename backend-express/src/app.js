@@ -120,6 +120,9 @@ app.get('/r/:roomId', roomLanding);
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // ── API routes ────────────────────────────────────────────────────────────────
+const configRoutes = require('./routes/config');
+app.use('/api/config', configRoutes);        // GET /version (public app-version gate)
+app.use('/api/admin', configRoutes.admin);   // GET/PUT /version (X-Admin-Token)
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/users', photosRoutes);

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Meyou · 版本管理 Version Gate</title>
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#FFFFFF; --line:#E6E5EC; --text:#1F1E29; --text2:#605F70;
+    --muted:#8E8DA0; --primary:#E25CAE; --primarySoft:#FCE3F0; --primaryDeep:#B23D87;
+    --secondary:#8B5CD8; --success:#3CC479; --error:#E14B5C; --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",Segoe UI,Roboto,sans-serif;
+    background:linear-gradient(135deg,#F6EEFB 0%,#FDE8F3 60%,#FFF3EA 100%);color:var(--text);
+    min-height:100vh;padding:24px 16px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 4px;background:linear-gradient(135deg,#4F8FE8,#8B5CD8,#E25CAE,#F08A4A);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--text2);font-size:14px;margin:0 0 20px}
+  .card{background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px;
+    box-shadow:0 8px 30px rgba(139,92,216,0.10)}
+  .card h2{font-size:16px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .platform-badge{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:var(--primarySoft);color:var(--primaryDeep)}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+  input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;
+    background:#fff;color:var(--text)}
+  input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primarySoft)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+  button{border:none;border-radius:12px;font-size:15px;font-weight:700;padding:13px 20px;cursor:pointer}
+  .primary{background:linear-gradient(135deg,#8B5CD8,#E25CAE);color:#fff;width:100%;
+    box-shadow:0 8px 20px rgba(226,92,174,0.35)}
+  .primary:active{transform:translateY(1px)}
+  .row{display:flex;gap:10px;align-items:center}
+  .row input{flex:1}
+  .ghost{background:#fff;border:1px solid var(--line);color:var(--text2);white-space:nowrap}
+  #status{padding:12px 14px;border-radius:12px;font-size:14px;margin-bottom:16px;display:none}
+  #status.ok{display:block;background:#E7F8EE;color:#1F7A47;border:1px solid #B6E8CC}
+  #status.err{display:block;background:#FDECEE;color:#B4303F;border:1px solid #F5C4CB}
+  .cur{font-size:12px;color:var(--secondary);margin-top:4px;min-height:16px}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>版本管理 · Version Gate</h1>
+  <p class="sub">拉高最低版本可强制老用户升级 · Raise <b>minimum</b> to hard-block old builds, <b>recommended</b> for a soft nudge.</p>
+
+  <div id="status"></div>
+
+  <div class="card">
+    <h2>🔐 连接 Connection</h2>
+    <label>API Base URL</label>
+    <input id="apiBase" placeholder="https://gaymeet-api.onrender.com" />
+    <label>Admin Token（X-Admin-Token，后端 ADMIN_TOKEN 环境变量）</label>
+    <div class="row">
+      <input id="token" type="password" placeholder="ADMIN_TOKEN" />
+      <button class="ghost" onclick="load()">载入 Load</button>
+    </div>
+    <p class="hint">凭据仅存本机浏览器（localStorage），不会上传到任何地方。</p>
+  </div>
+
+  <div class="card" id="iosCard">
+    <h2><span class="platform-badge">iOS</span> App Store</h2>
+    <div class="grid">
+      <div><label>Minimum（低于此 → 强制更新）</label><input id="ios_minimum" placeholder="3.1.14" /><div class="cur" id="ios_min_cur"></div></div>
+      <div><label>Recommended（低于此 → 温柔提示）</label><input id="ios_recommended" placeholder="3.1.16" /><div class="cur" id="ios_rec_cur"></div></div>
+      <div><label>Latest（仅展示）</label><input id="ios_latest" placeholder="3.1.16" /><div class="cur" id="ios_lat_cur"></div></div>
+      <div><label>Store URL</label><input id="ios_storeUrl" placeholder="https://apps.apple.com/app/idXXXX" /></div>
+    </div>
+    <label>自定义弹窗文案（可留空，用 App 内置双语文案）</label>
+    <input id="ios_message" placeholder="留空 = 默认文案" />
+  </div>
+
+  <div class="card" id="androidCard">
+    <h2><span class="platform-badge">Android</span> Google Play</h2>
+    <div class="grid">
+      <div><label>Minimum（低于此 → 强制更新）</label><input id="android_minimum" placeholder="3.1.14" /><div class="cur" id="android_min_cur"></div></div>
+      <div><label>Recommended（低于此 → 温柔提示）</label><input id="android_recommended" placeholder="3.1.16" /><div class="cur" id="android_rec_cur"></div></div>
+      <div><label>Latest（仅展示）</label><input id="android_latest" placeholder="3.1.16" /><div class="cur" id="android_lat_cur"></div></div>
+      <div><label>Store URL</label><input id="android_storeUrl" placeholder="https://play.google.com/store/apps/details?id=com.meetupnearby.app" /></div>
+    </div>
+    <label>自定义弹窗文案（可留空）</label>
+    <input id="android_message" placeholder="留空 = 默认文案" />
+  </div>
+
+  <div class="card">
+    <button class="primary" onclick="save()">💾 保存并生效 Save &amp; Publish</button>
+    <p class="hint">保存后 App 会在 1 分钟内（客户端缓存）拿到新配置,下次冷启即按新规则弹窗。</p>
+  </div>
+
+  <footer>Meyou 密友 · 内部工具 · 请勿分享此页面链接</footer>
+</div>
+
+<script>
+  var FIELDS = ['minimum','recommended','latest','storeUrl','message'];
+  var LS = 'meyou_admin_conn';
+
+  function el(id){ return document.getElementById(id); }
+  function setStatus(msg, ok){ var s=el('status'); s.textContent=msg; s.className = ok?'ok':'err'; }
+  function base(){ return (el('apiBase').value || 'https://gaymeet-api.onrender.com').replace(/\/+$/,''); }
+
+  // Restore saved connection creds.
+  (function(){
+    try {
+      var saved = JSON.parse(localStorage.getItem(LS) || '{}');
+      el('apiBase').value = saved.apiBase || 'https://gaymeet-api.onrender.com';
+      el('token').value = saved.token || '';
+      if (saved.token) load();
+    } catch(e){}
+  })();
+
+  function saveConn(){
+    localStorage.setItem(LS, JSON.stringify({ apiBase: el('apiBase').value, token: el('token').value }));
+  }
+
+  function fill(platform, gate){
+    gate = gate || {};
+    FIELDS.forEach(function(f){ var i = el(platform+'_'+f); if(i) i.value = gate[f] || ''; });
+    ['min:minimum','rec:recommended','lat:latest'].forEach(function(pair){
+      var k = pair.split(':'); var cur = el(platform+'_'+k[0]+'_cur');
+      if (cur) cur.textContent = gate[k[1]] ? ('当前 current: ' + gate[k[1]]) : '';
+    });
+  }
+
+  function readGate(platform){
+    var g = {};
+    FIELDS.forEach(function(f){ var i = el(platform+'_'+f); if(i && i.value.trim() !== '') g[f] = i.value.trim(); });
+    return g;
+  }
+
+  async function load(){
+    saveConn();
+    try {
+      var r = await fetch(base()+'/api/admin/version', { headers: { 'x-admin-token': el('token').value } });
+      var body = await r.json();
+      if (!r.ok) { setStatus('载入失败 Load failed: ' + (body.error || r.status), false); return; }
+      var d = body.data || body;
+      fill('ios', d.ios); fill('android', d.android);
+      setStatus('已载入当前配置 ✓ Loaded' + (d.updatedAt ? ('（上次更新 ' + new Date(d.updatedAt).toLocaleString() + '）') : ''), true);
+    } catch(e){ setStatus('网络错误 Network error: ' + e.message, false); }
+  }
+
+  async function save(){
+    saveConn();
+    var payload = { ios: readGate('ios'), android: readGate('android') };
+    try {
+      var r = await fetch(base()+'/api/admin/version', {
+        method: 'PUT',
+        headers: { 'content-type':'application/json', 'x-admin-token': el('token').value },
+        body: JSON.stringify(payload),
+      });
+      var body = await r.json();
+      if (!r.ok) { setStatus('保存失败 Save failed: ' + (body.error || r.status), false); return; }
+      var d = body.data || body;
+      fill('ios', d.ios); fill('android', d.android);
+      setStatus('✅ 已保存并生效 Saved. 用户下次冷启按新规则弹窗。', true);
+    } catch(e){ setStatus('网络错误 Network error: ' + e.message, false); }
+  }
+</script>
+</body>
+</html>
