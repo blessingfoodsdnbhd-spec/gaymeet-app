@@ -23,6 +23,15 @@ const PhotoLibrary = require('../models/PhotoLibrary');
 const GiftTransaction = require('../models/GiftTransaction');
 const Payment = require('../models/Payment');
 const RefreshToken = require('../models/RefreshToken');
+// Vote / contest collections — a deleted creator used to leave orphaned
+// VoteEvents whose creatorId populated to null and 500'd the whole Vote feed.
+const VoteEvent = require('../models/VoteEvent');
+const VoteEntry = require('../models/VoteEntry');
+const Vote = require('../models/Vote');
+const VoteReport = require('../models/VoteReport');
+const VoteReadState = require('../models/VoteReadState');
+const VoteEventUpdate = require('../models/VoteEventUpdate');
+const UserHighlight = require('../models/UserHighlight');
 const r2 = require('../services/r2Service');
 
 // ── GET /api/account/export ───────────────────────────────────────────────────
@@ -82,7 +91,15 @@ router.delete('/', auth, async (req, res, next) => {
     //         avatar + topic-persona + moment images + chat-image messages +
     //         photo library) so the bytes can be purged from storage too.
     const matchIds = await Match.find({ users: uid }).distinct('_id');
-    const [personas, moments, msgs, libRows] = await Promise.all([
+    // Vote footprint: the user's own contests, plus every entry that belongs to
+    // one of those contests OR was submitted by the user into someone else's
+    // contest. Resolved up front so both the photo-purge and the cascade below
+    // can reference the same id sets.
+    const myEventIds = await VoteEvent.find({ creatorId: uid }).distinct('_id');
+    const myEntryIds = await VoteEntry.find({
+      $or: [{ eventId: { $in: myEventIds } }, { submitterId: uid }],
+    }).distinct('_id');
+    const [personas, moments, msgs, libRows, voteEntries, voteEvents] = await Promise.all([
       TopicPersona.find({ userId: uid }, { photos: 1 }).lean(),
       Moment.find({ user: uid }, { imageUrls: 1 }).lean(),
       Message.find(
@@ -90,6 +107,8 @@ router.delete('/', auth, async (req, res, next) => {
         { mediaUrl: 1 }
       ).lean(),
       PhotoLibrary.find({ user: uid }, { photoUrl: 1 }).lean(),
+      VoteEntry.find({ _id: { $in: myEntryIds } }, { photoUrl: 1 }).lean(),
+      VoteEvent.find({ creatorId: uid }, { coverPhotos: 1, referencePhotos: 1 }).lean(),
     ]);
 
     const photoUrls = new Set();
@@ -101,6 +120,8 @@ router.delete('/', auth, async (req, res, next) => {
     moments.forEach((m) => (m.imageUrls || []).forEach(add));
     msgs.forEach((m) => add(m.mediaUrl));
     libRows.forEach((l) => add(l.photoUrl));
+    voteEntries.forEach((e) => add(e.photoUrl));
+    voteEvents.forEach((e) => { (e.coverPhotos || []).forEach(add); (e.referencePhotos || []).forEach(add); });
 
     // ── (2) Cascade-delete every DB row referencing the user. allSettled so
     //         one failing collection never blocks the rest.
@@ -118,6 +139,19 @@ router.delete('/', auth, async (req, res, next) => {
       PhotoLibrary.deleteMany({ user: uid }),
       GiftTransaction.deleteMany({ $or: [{ sender: uid }, { receiver: uid }] }),
       Payment.deleteMany({ user: uid }),
+      // Votes/contests — mirror the per-event cascade in routes/votes.js
+      // DELETE /:id so no orphaned vote row survives. Covers (a) the user's own
+      // contests + all their child rows and (b) the user's own entries/votes/
+      // reports/read-state inside OTHER people's contests. (Denormalized
+      // voteCount on strangers' entries the user had voted on is left as-is —
+      // a stale count is cosmetic, never a crash.)
+      Vote.deleteMany({ $or: [{ eventId: { $in: myEventIds } }, { entryId: { $in: myEntryIds } }, { voterId: uid }] }),
+      VoteEntry.deleteMany({ $or: [{ eventId: { $in: myEventIds } }, { submitterId: uid }] }),
+      VoteEventUpdate.deleteMany({ eventId: { $in: myEventIds } }),
+      VoteReport.deleteMany({ $or: [{ eventId: { $in: myEventIds } }, { entryId: { $in: myEntryIds } }, { reporterId: uid }] }),
+      UserHighlight.deleteMany({ $or: [{ eventId: { $in: myEventIds } }, { userId: uid }] }),
+      VoteReadState.deleteMany({ $or: [{ voteEventId: { $in: myEventIds } }, { userId: uid }] }),
+      VoteEvent.deleteMany({ creatorId: uid }),
       // Scrub the deleted user out of OTHER users' references.
       User.updateMany({ blockedUsers: uid }, { $pull: { blockedUsers: uid } }),
       Moment.updateMany({ likes: uid }, { $pull: { likes: uid } }),
