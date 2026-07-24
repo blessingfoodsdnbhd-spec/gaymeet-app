@@ -34,7 +34,7 @@ export interface VoteProgress {
 
 export interface VoteEventSummary {
   id: string;
-  creatorId: string;
+  creatorId: string | null; // null when the creator account was deleted (orphaned event)
   creator?: { id: string; displayName: string; avatarUrl: string | null; isOfficial?: boolean; isVerified?: boolean; isPremium?: boolean };
   title: string;
   description: string;

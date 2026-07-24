@@ -55,7 +55,10 @@ function effectiveStatus(ev, now = new Date()) {
 function serializeEvent(ev, creator) {
   return {
     id: ev._id.toString(),
-    creatorId: ev.creatorId?._id?.toString?.() ?? ev.creatorId.toString(),
+    // creatorId may populate to null when the creator's account was deleted
+    // (orphaned event). Guard the null-deref so one orphan can't 500 the whole
+    // feed — the feed already renders fine with creator: undefined.
+    creatorId: ev.creatorId ? (ev.creatorId._id?.toString?.() ?? ev.creatorId.toString()) : null,
     creator: creator
       ? { id: creator._id.toString(), displayName: creator.nickname, avatarUrl: creator.avatarUrl ?? null, isOfficial: creator.isOfficial ?? false, isVerified: creator.isVerified ?? false, isPremium: creator.isPremium ?? false }
       : undefined,
