@@ -9,6 +9,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
+import { showSafetyMenu } from '../../utils/safetyMenu';
 import { prefetchMany } from '../../utils/voiceCache';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -51,6 +52,7 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
   const virtualLng = useAuth((s) => s.user?.preferences?.virtualLng ?? null);
   const virtualLabel = useAuth((s) => s.user?.preferences?.virtualLocationLabel ?? null);
   const virtualActive = virtualLat != null && virtualLng != null;
+  const myId = useAuth((s) => s.user?.id ?? null);
   // Edge-to-edge like the Vote cards (ZZZ): no side padding, a 1px hairline
   // between columns. tile = full window width / cols, DPI-adaptive.
   const gap = 1;
@@ -128,6 +130,13 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
               width={tileW}
               height={tileH}
               onPress={() => onOpen(u)}
+              // Long-press → Block/Report (Apple safety requirement). Skip the
+              // user's own tile (index 0, prepended by the backend).
+              onLongPress={
+                u.id === myId
+                  ? undefined
+                  : () => showSafetyMenu({ userId: u.id, userName: u.nickname, nav })
+              }
             />
           ))}
         </View>
@@ -146,11 +155,13 @@ function Tile({
   width,
   height,
   onPress,
+  onLongPress,
 }: {
   user: DiscoverCardUser;
   width: number;
   height: number;
   onPress: () => void;
+  onLongPress?: () => void;
 }) {
   // Backend may not always populate avatarIdx (it's a server-computed
   // helper for the no-photo gradient fallback). NaN % n is NaN, which
@@ -165,6 +176,8 @@ function Tile({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       style={({ pressed }) => ({
         width,
         height,

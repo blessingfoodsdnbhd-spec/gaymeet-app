@@ -456,6 +456,10 @@ router.get('/nearby', auth, async (req, res, next) => {
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
       isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
+    // Apple 5.1.2(i): only surface users with a LIVE nearby check-in. Location
+    // sharing on the 附近 grid is opt-in + session-based — an expired/absent
+    // check-in ⇒ the user is not shown to others (they can still browse).
+    baseQuery.nearbyCheckinExpiresAt = { $gt: new Date() };
     if (filterInterests) {
       baseQuery.interests = { $in: filterInterests };
     }

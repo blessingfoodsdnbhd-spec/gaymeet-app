@@ -183,6 +183,37 @@ export const setVirtualLocation = (latitude: number, longitude: number, label: s
 export const clearVirtualLocation = () =>
   unwrap<{ success: true }>(api.delete('/users/me/teleport'));
 
+// ── Nearby check-in (Apple 5.1.2(i)) ─────────────────────────────────────────
+// Opt-in, session-based visibility on the 附近 grid. The user must check in each
+// session; the check-in auto-expires server-side. There is no persistent
+// "always share" toggle by design.
+export interface NearbyCheckinStatus {
+  checkedIn: boolean;
+  checkedInAt: string | null;
+  expiresAt: string | null;
+  remainingMs: number;
+}
+
+/** Allowed check-in durations (minutes), mirroring the backend whitelist. */
+export const NEARBY_CHECKIN_DURATIONS = [15, 30, 60] as const;
+
+export const getNearbyCheckinStatus = () =>
+  unwrap<NearbyCheckinStatus>(api.get('/users/me/nearby/status'));
+
+/** Check in — become visible on Nearby for `minutes`. Optionally refresh GPS
+ *  in the same call so the shared point is current. */
+export const nearbyCheckIn = (
+  minutes: number,
+  coords?: { latitude: number; longitude: number },
+) =>
+  unwrap<NearbyCheckinStatus>(
+    api.post('/users/me/nearby/checkin', { minutes, ...(coords ?? {}) }),
+  );
+
+/** Check out — leave Nearby immediately (ends the session early). */
+export const nearbyCheckOut = () =>
+  unwrap<NearbyCheckinStatus>(api.post('/users/me/nearby/checkout', {}));
+
 export interface MyStats {
   matches: number;
   following: number;
