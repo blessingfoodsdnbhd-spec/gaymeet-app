@@ -117,7 +117,16 @@ const { roomLanding } = require('./web/roomLanding');
 app.get('/r/:roomId', roomLanding);
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/health', (_, res) => res.json({ ok: true }));
+// `commit` echoes Render's injected git SHA + `nearbyCheckinGate` is a static
+// marker for THIS build — both let us verify exactly which code prod is serving
+// (used to confirm the P0 nearby-gate hotfix actually deployed).
+app.get('/health', (_, res) =>
+  res.json({
+    ok: true,
+    commit: process.env.RENDER_GIT_COMMIT || null,
+    nearbyCheckinGate: 'removed',
+  }),
+);
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
