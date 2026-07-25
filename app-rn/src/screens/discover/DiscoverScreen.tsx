@@ -18,7 +18,6 @@ import { EmptyState } from '../../components/EmptyState';
 
 import { CardStack, type CardStackHandle } from './CardStack';
 import { NearbyGrid } from './NearbyGrid';
-import { NearbyCheckInBar } from './NearbyCheckInBar';
 import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
@@ -636,9 +635,8 @@ function NearbyBody({
   const users = nearbyQ.data ?? [];
   return (
     <View style={{ flex: 1 }}>
-      {/* Apple 5.1.2(i): opt-in, session-based check-in gate. Sits above the
-          grid — the user only appears to others while checked in. */}
-      <NearbyCheckInBar />
+      {/* Nearby is open again — no check-in gate. Anyone in range appears
+          directly (reverted the opt-in check-in bar). */}
       {/* DDDDD — map view removed; 附近 is grid-only now. */}
       <NearbyGrid users={users} onOpen={onOpen} />
     </View>

@@ -140,11 +140,6 @@ export function NearbyGrid({ users, onOpen, cityLabel, countLabel }: Props) {
             />
           ))}
         </View>
-        <View style={{ alignItems: 'center', paddingTop: 18, paddingBottom: 8 }}>
-          <Text style={{ fontSize: 11.5, color: theme.colors.muted }}>
-            {t('nearby.footnote')}
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
