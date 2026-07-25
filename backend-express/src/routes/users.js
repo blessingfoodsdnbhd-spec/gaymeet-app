@@ -442,8 +442,7 @@ router.get('/nearby', auth, async (req, res, next) => {
       _id: { $nin: excludeIds },
       'preferences.hideFromNearby': { $ne: true },
       'preferences.stealthMode': { $ne: true },
-      // Apple 5.1.2(i): opt-in, session-based visibility — only checked-in users.
-      nearbyCheckinExpiresAt: { $gt: new Date() },
+      // Nearby is open again — no check-in gate (see discover.js /nearby).
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
       isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
