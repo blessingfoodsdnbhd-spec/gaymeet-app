@@ -19,6 +19,7 @@ const {
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
+const { recordPremiumPurchase } = require('../services/iapRevenue');
 
 // Apple product IDs cannot be reused after deletion, so we live in the
 // `.subscription.*` namespace rather than the original `.premium.*`.
@@ -131,6 +132,15 @@ router.post('/verify-apple-receipt', auth, async (req, res, next) => {
       { new: true },
     );
 
+    // Revenue log. Idempotent — restore-purchase replays the same receipt.
+    await recordPremiumPurchase({
+      userId: req.user._id,
+      platform: 'apple',
+      productId,
+      transactionId: top.original_transaction_id,
+      expiresAt,
+    });
+
     ok(res, {
       isPremium: updated.isPremium,
       premiumExpiresAt: updated.premiumExpiresAt
@@ -221,6 +231,15 @@ router.post('/apple-webhook', async (req, res) => {
         user.isPremium = true;
         user.premiumExpiresAt = new Date(expiresMs);
         await user.save();
+        // Each renewal is a new paid period — keyed on expiry, so it lands as
+        // its own Payment row rather than colliding with the initial purchase.
+        await recordPremiumPurchase({
+          userId: user._id,
+          platform: 'apple',
+          productId: transactionInfo?.productId,
+          transactionId: originalTxId,
+          expiresAt: expiresMs,
+        });
       }
     } else if (type === 'EXPIRED' || type === 'REFUND' || type === 'REVOKE') {
       user.isPremium = false;

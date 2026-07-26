@@ -14,6 +14,15 @@ const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { ok, err } = require('../utils/respond');
 const googlePlay = require('../utils/googlePlay');
+const { recordPremiumPurchase } = require('../services/iapRevenue');
+
+// Play returns the purchased base plan on the line item; we need it to tell a
+// monthly purchase from an annual one (both share one subscription id).
+function basePlanFromSub(sub) {
+  const item = sub?.lineItems?.[0];
+  return item?.offerDetails?.basePlanId || null;
+}
+
 
 const ANDROID_PACKAGE = 'com.meetupnearby.app';
 const SUBSCRIPTION_ID = 'com.meetupnearby.app.premium';
@@ -140,6 +149,16 @@ router.post('/verify-google-purchase', auth, async (req, res, next) => {
       },
       { new: true },
     );
+
+    // Revenue log. Idempotent — Play replays the same token on restore.
+    await recordPremiumPurchase({
+      userId: req.user._id,
+      platform: 'google',
+      productId: SUBSCRIPTION_ID,
+      basePlanId: basePlanFromSub(sub),
+      transactionId: purchaseToken,
+      expiresAt,
+    });
 
     ok(res, {
       isPremium: updated.isPremium,
@@ -328,6 +347,16 @@ router.post('/google-webhook', async (req, res) => {
     if (ACTIVE_STATES.has(state) && expiresAt) {
       user.isPremium = true;
       user.premiumExpiresAt = expiresAt;
+      // Each renewal period is keyed on its expiry, so repeated RTDN
+      // deliveries for the same period collapse to one Payment row.
+      await recordPremiumPurchase({
+        userId: user._id,
+        platform: 'google',
+        productId: SUBSCRIPTION_ID,
+        basePlanId: basePlanFromSub(sub),
+        transactionId: sn.purchaseToken,
+        expiresAt,
+      });
     } else if (TERMINAL_STATES.has(state)) {
       user.isPremium = false;
       user.premiumExpiresAt = new Date();
