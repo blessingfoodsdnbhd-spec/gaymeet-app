@@ -547,6 +547,11 @@ router.get('/nearby', auth, async (req, res, next) => {
         distanceBucket: distanceBucket(u.distanceMeters),
         distanceLabel: distanceBucketLabel(u.distanceMeters),
         distanceMeters: undefined,
+        // The raw 2dsphere point rides along in `...u` (the $project blacklist
+        // above never named it, and the aggregation bypasses toPublicJSON).
+        // Shipping metre-accurate coordinates next to the bucket hands back
+        // exactly the precision the bucket exists to hide. (Apple 5.1.2(i))
+        location: undefined,
       };
     });
 
@@ -628,41 +633,24 @@ router.get('/discover', auth, async (req, res, next) => {
   }
 });
 
-// ── GET /api/users/locations ──────────────────────────────────────────────────
-// Returns all non-stealth users with coordinates, for the 3-D globe view.
-// IMPORTANT: must stay before GET /:id to avoid "locations" being cast as ObjectId.
-router.get('/locations', auth, async (req, res, next) => {
-  try {
-    const blockedArr = [...(await blockedIdSet(req.user))];
-    const users = await User.find(
-      {
-        'location.coordinates': { $exists: true, $ne: null },
-        'preferences.stealthMode':    { $ne: true },
-        'preferences.hideFromNearby': { $ne: true },
-        _id: { $nin: blockedArr },
-        isDemo: demoVisibility(req.user), // P0: real users never see demo accounts
-        ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from the globe
-      },
-      { _id: 1, nickname: 1, photos: { $slice: 1 }, location: 1,
-        isOnline: 1, lastActiveAt: 1, 'preferences.hideDistance': 1 }
-    ).lean();
-
-    const result = users.map((u) => ({
-      id: u._id.toString(),
-      nickname: u.nickname || '用户',
-      lat: u.location?.coordinates?.[1],
-      lng: u.location?.coordinates?.[0],
-      avatar: u.photos?.[0] ?? null,
-      isOnline: u.isOnline ?? false,
-      lastActive: u.lastActiveAt ?? null,
-      privacy: u.preferences?.hideDistance ? 'blur' : 'normal',
-    })).filter((u) => u.lat != null && u.lng != null);
-
-    ok(res, result);
-  } catch (e) {
-    next(e);
-  }
-});
+// ── GET /api/users/locations — RETIRED (Apple 5.1.2(i)) ───────────────────────
+// Was: every non-stealth user's exact lat/lng, unbounded by distance, for a
+// 3-D globe view. That globe was never built — no shipping client has ever
+// called this route (`Globe` in the RN app is a lucide icon, nothing more) —
+// so it was dead code that nonetheless let any authenticated caller dump the
+// metre-accurate home coordinates of the entire user base in one request.
+//
+// It is also the precise shape of what App Review flagged: "the app enables
+// the display of nearby users' locations on a map". Everything user-facing
+// now goes through the coarse buckets in utils/distanceBucket.js, and there is
+// no endpoint left that returns another user's coordinates at all.
+//
+// Kept as an explicit 410 rather than deleted so any stale client that still
+// calls it gets a definitive answer instead of falling through to GET /:id and
+// casting "locations" as an ObjectId.
+router.get('/locations', auth, (req, res) =>
+  err(res, 'This endpoint has been removed.', 410)
+);
 
 // ── GET /api/users/likes ──────────────────────────────────────────────────────
 router.get('/likes', auth, async (req, res, next) => {
@@ -756,10 +744,13 @@ router.get('/widget-data', auth, async (req, res, next) => {
     ]);
 
     const nearbyOnline = nearbyUsers.length;
+    // Apple 5.1.2(i): this used to render the nearest user's distance as
+    // `${Math.round(m)}m` — a metre-accurate reading of one specific person,
+    // refreshable at will, which is a cleaner trilateration primitive than the
+    // Nearby grid ever was. Same coarse bucket as everywhere else.
     let closestDistance = '--';
     if (nearbyUsers.length > 0) {
-      const m = nearbyUsers[0].dist;
-      closestDistance = m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`;
+      closestDistance = distanceBucketLabel(nearbyUsers[0].dist) ?? '--';
     }
 
     // Recent conversations

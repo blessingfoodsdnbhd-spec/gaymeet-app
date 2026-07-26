@@ -419,7 +419,7 @@ userSchema.methods.comparePassword = function (plain) {
 const PUBLIC_USER_FIELDS = [
   '_id', 'id', 'nickname', 'bio', 'tags', 'avatarUrl', 'photos', 'voiceIntroUrl',
   'interests', 'interestsOnboardedAt', 'prompts', 'mobileGames',
-  'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode', 'location',
+  'height', 'weight', 'age', 'dob', 'bodyType', 'city', 'countryCode',
   'lastActiveAt', 'isOnline',
   'isPremium', 'premiumExpiresAt', 'isBoosted', 'boostExpiresAt',
   'isVerified', 'isVideoVerified', 'verifiedAt', 'isOfficial', 'vipLevel', 'vipExpiresAt',
@@ -448,6 +448,12 @@ const SELF_ONLY_FIELDS = [
   // to decide whether the one-time consent prompt still has to be shown. Never
   // exposed to other viewers: whether someone opted out is itself private.
   'nearbyEnabled',
+  // Apple 5.1.2(i): the raw 2dsphere point is metre-accurate. Another viewer
+  // gets ONLY the coarse `distanceBucket`/`distanceLabel` computed server-side
+  // (utils/distanceBucket.js) — never the coordinates those buckets derive
+  // from, which would make the bucket trivially reversible by trilateration.
+  // The owner still needs their own point to render "you are here" state.
+  'location',
 ];
 
 // Preference keys safe to show to other users (display hints only). The full

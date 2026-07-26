@@ -211,6 +211,12 @@ router.get('/cards', auth, async (req, res, next) => {
       // $geoNear wrote the raw metre value onto the doc and `...u` would spread
       // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
       distanceMeters: undefined,
+      // Same leak, one field over: `...u` also spreads the raw 2dsphere point.
+      // Bucketing the distance is pointless while the coordinates it was
+      // derived from ship alongside it — two of these reverse any bucket by
+      // trilateration. The aggregation bypasses toPublicJSON, so the model's
+      // SELF_ONLY allowlist can't strip it here. (Apple 5.1.2(i))
+      location: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
@@ -340,6 +346,12 @@ router.post('/search-new', auth, async (req, res, next) => {
       // $geoNear wrote the raw metre value onto the doc and `...u` would spread
       // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
       distanceMeters: undefined,
+      // Same leak, one field over: `...u` also spreads the raw 2dsphere point.
+      // Bucketing the distance is pointless while the coordinates it was
+      // derived from ship alongside it — two of these reverse any bucket by
+      // trilateration. The aggregation bypasses toPublicJSON, so the model's
+      // SELF_ONLY allowlist can't strip it here. (Apple 5.1.2(i))
+      location: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
@@ -538,6 +550,12 @@ router.get('/nearby', auth, async (req, res, next) => {
       // $geoNear wrote the raw metre value onto the doc and `...u` would spread
       // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
       distanceMeters: undefined,
+      // Same leak, one field over: `...u` also spreads the raw 2dsphere point.
+      // Bucketing the distance is pointless while the coordinates it was
+      // derived from ship alongside it — two of these reverse any bucket by
+      // trilateration. The aggregation bypasses toPublicJSON, so the model's
+      // SELF_ONLY allowlist can't strip it here. (Apple 5.1.2(i))
+      location: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
