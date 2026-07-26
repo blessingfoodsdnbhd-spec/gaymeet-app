@@ -882,7 +882,13 @@
     "viewGrid": "网格",
     "viewMap": "地图",
     "mapLocating": "正在定位…",
-    "mapApproxNote": "位置为近似显示——绝不显示精确位置"
+    "mapApproxNote": "位置为近似显示——绝不显示精确位置",
+    "distance": {
+      "lt1": "1 公里内",
+      "1to5": "1–5 公里",
+      "5to10": "5–10 公里",
+      "gt10": "10 公里以上"
+    }
   },
   "moments": {
     "compose": {
@@ -1120,26 +1126,16 @@
   },
   "nearby": {
     "peopleCount": "{{n}} 人在附近",
-    "footnote": "只有已签到的人会显示在这里",
-    "checkin": {
-      "cta": "签到",
-      "checkout": "结束",
-      "hiddenTitle": "你当前不在地图上",
-      "hiddenSub": "签到后才会出现在附近的人面前",
-      "visibleTitle": "你正在附近显示",
-      "visibleSub": "剩余 {{min}} 分钟 · 随时可结束",
-      "sheetTitle": "签到到附近",
-      "sheetBody": "签到后,附近的人可以在一小段时间内发现你。你自己决定何时,并会自动结束。",
-      "bulletSession": "你只在选择的时间内出现,到期后自动下线。",
-      "bulletPrecise": "永远不会分享你的精确位置,只显示大致距离。",
-      "bulletOff": "任何时候都可结束,立即从附近消失。",
-      "durationLabel": "显示时长",
-      "minutes": "{{min}} 分钟",
-      "confirm": "立即签到",
-      "notNow": "暂不",
-      "toastOn": "已签到 — {{min}} 分钟内可见",
-      "toastOff": "已结束 — 你已从附近下线",
-      "failed": "签到更新失败"
+    "consent": {
+      "title": "关于「附近」",
+      "body": "开启后,你会出现在附近的人的列表中。我们只显示大致距离范围,不显示地图,也不会公开你的精确位置。",
+      "bulletApprox": "只显示大致距离(如「1–5 公里」),没有地图",
+      "bulletSettings": "随时可在「设置 › 隐私」中关闭",
+      "bulletBlock": "可随时屏蔽或举报任何用户",
+      "accept": "继续",
+      "decline": "关闭(可稍后开启)",
+      "optedOut": "已关闭 — 你不会出现在附近列表中",
+      "failed": "设置失败,请重试"
     }
   },
   "virtualLocation": {

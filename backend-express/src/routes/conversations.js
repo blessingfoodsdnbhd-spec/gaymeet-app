@@ -10,6 +10,7 @@ const Match = require('../models/Match');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { isPremiumActive } = require('../utils/premium');
+const { distanceBucket, distanceBucketLabel, bucketSortMeters } = require('../utils/distanceBucket');
 const { sendPushToUser } = require('../utils/push');
 const { isAllowed } = require('../services/notificationService');
 const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
@@ -26,11 +27,8 @@ const voiceUpload = multer({
   },
 });
 
-function formatDist(meters) {
-  if (meters == null) return null;
-  if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
-}
+// formatDist removed with vc140 — it rounded to 100 m, which is precise enough
+// to trilaterate. Distances now go through utils/distanceBucket (5.1.2(i)).
 function haversineMeters(a, b) {
   if (!a || !b || a.length < 2 || b.length < 2) return null;
   const [lng1, lat1] = a;
@@ -130,8 +128,10 @@ router.get('/', auth, async (req, res, next) => {
               : other.lastActiveAt
                 ? other.lastActiveAt.toISOString()
                 : null,
-            distance: formatDist(distM),
-            distanceM: distM,
+            distance: distanceBucketLabel(distM),
+            distanceBucket: distanceBucket(distM),
+            // Coarse only (Apple 5.1.2(i)) — see utils/distanceBucket.
+            distanceM: bucketSortMeters(distM),
           },
           lastMessage: m.lastMessage ?? null,
           lastMessageAt: m.lastMessageAt ? m.lastMessageAt.toISOString() : null,

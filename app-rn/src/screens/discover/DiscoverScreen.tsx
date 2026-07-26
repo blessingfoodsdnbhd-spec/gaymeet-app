@@ -18,6 +18,7 @@ import { EmptyState } from '../../components/EmptyState';
 
 import { CardStack, type CardStackHandle } from './CardStack';
 import { NearbyGrid } from './NearbyGrid';
+import { NearbyConsentPrompt } from './NearbyConsentPrompt';
 import { MatchOverlay } from './MatchOverlay';
 import { AboutUserSheet } from './AboutUserSheet';
 import { FiltersSheet } from './FiltersSheet';
@@ -635,9 +636,11 @@ function NearbyBody({
   const users = nearbyQ.data ?? [];
   return (
     <View style={{ flex: 1 }}>
-      {/* Nearby is open again — no check-in gate. Anyone in range appears
-          directly (reverted the opt-in check-in bar). */}
+      {/* Anyone in range appears directly — no per-session check-in. Consent is
+          the one-time disclosure below (Apple 5.1.2(i)), revocable any time via
+          Settings › Privacy › "在附近功能中显示我". */}
       {/* DDDDD — map view removed; 附近 is grid-only now. */}
+      <NearbyConsentPrompt />
       <NearbyGrid users={users} onOpen={onOpen} />
     </View>
   );

@@ -122,7 +122,14 @@ router.patch('/privacy', auth, async (req, res, next) => {
   try {
     const update = {};
     if (typeof req.body.nearbyVisible === 'boolean') {
+      // Two fields, one switch. `preferences.hideFromNearby` is what every
+      // already-shipped client reads; `nearbyEnabled` is the vc140 Apple
+      // 5.1.2(i) consent record. Writing both here is what makes it impossible
+      // for them to disagree — the nearby queries require both to pass, so a
+      // half-applied update would silently hide the user. Also the endpoint the
+      // one-time Nearby consent prompt calls when the user declines.
       update['preferences.hideFromNearby'] = !req.body.nearbyVisible;
+      update.nearbyEnabled = req.body.nearbyVisible;
     }
     if (typeof req.body.showDistance === 'boolean') {
       update['preferences.hideDistance'] = !req.body.showDistance;

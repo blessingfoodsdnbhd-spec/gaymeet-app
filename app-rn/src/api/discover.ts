@@ -1,10 +1,18 @@
 import { api } from './client';
 import type { User } from './me';
 import type { InterestTagId } from '../data/interestTags';
+import type { DistanceBucket } from '../utils/distanceBucket';
 
 export interface DiscoverCardUser extends User {
-  /** Server-formatted, rounded to nearest 100m (e.g. "1.2 km", "300 m"). */
+  /** Server-formatted coarse label ("< 1 km", "1-5 km"). Prefer rendering
+   *  `distanceBucket` through utils/distanceBucket so it's localised; this is
+   *  the ASCII fallback for older backends. */
   distance: string | null;
+  // `distanceBucket` (Apple 5.1.2(i)) is inherited from User — declaring it
+  // again as required would break the several callsites that synthesise a card
+  // locally (GlobalMatchListener, useAboutUserSheet) from a plain User.
+  /** Always null now — kept so existing callsites still type-check. A precise
+   *  kilometre value would defeat the bucket it sits next to. */
   distKm: number | null;
   sharedTags: InterestTagId[];
   /** Index 0–9 picked deterministically server-side; drives placeholder gradient. */

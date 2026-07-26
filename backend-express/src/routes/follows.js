@@ -8,6 +8,7 @@ const { notify } = require('../services/notificationService');
 const { isPremiumActive } = require('../utils/premium');
 const PremiumGift = require('../models/PremiumGift');
 const { blockedIdSet, isBlockedBetween } = require('../utils/blocking');
+const { distanceBucket, bucketSortMeters } = require('../utils/distanceBucket');
 
 // ── POST /api/users/:id/follow — toggle follow / unfollow ─────────────────────
 router.post('/:id/follow', auth, async (req, res, next) => {
@@ -165,7 +166,9 @@ router.get('/:id/following', auth, async (req, res, next) => {
           ...rest,
           dob: u.dob ? new Date(u.dob).toISOString() : null,
           lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
-          distanceM: haversineMeters(myCoords, u.location?.coordinates),
+          // Coarse only (Apple 5.1.2(i)) — see utils/distanceBucket.
+          distanceM: bucketSortMeters(haversineMeters(myCoords, u.location?.coordinates)),
+          distanceBucket: distanceBucket(haversineMeters(myCoords, u.location?.coordinates)),
           isFollowing: followingSet.has(u._id.toString()),
           isSelf: u._id.toString() === req.user._id.toString(),
           isPremiumEffective: isPremiumActive(u),

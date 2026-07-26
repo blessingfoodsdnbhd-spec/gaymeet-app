@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { computeAge, computeZodiac } = require('../utils/zodiac');
 const { isAdultDob } = require('../utils/ageGate');
+const { distanceBucket, distanceBucketLabel } = require('../utils/distanceBucket');
 
 const preferencesSchema = new mongoose.Schema(
   {
@@ -115,6 +116,17 @@ const userSchema = new mongoose.Schema(
     // future ⇔ currently visible on Nearby. Both null = not checked in (default).
     nearbyCheckedInAt: { type: Date, default: null },
     nearbyCheckinExpiresAt: { type: Date, default: null },
+
+    // Apple 5.1.2(i) opt-OUT for Nearby visibility (vc140). Replaces the
+    // per-session check-in above, which is now dead: the session flow forced a
+    // manual "签到" every 30 minutes and, because no shipped client ever set the
+    // fields, it silently emptied 附近 for every live user. This flag is the
+    // durable consent record instead — default TRUE so Nearby works out of the
+    // box, flipped off by the "Show me in Nearby" switch in Privacy settings or
+    // by declining the one-time prompt on first entering the Nearby tab.
+    // Kept in lockstep with preferences.hideFromNearby by PATCH /api/me/privacy
+    // so the two can never disagree; the nearby queries require BOTH.
+    nearbyEnabled: { type: Boolean, default: true },
 
     // Daily-login streak (STREAK1). lastActiveDate is a UTC YYYY-MM-DD string;
     // updated once per day by the auth middleware via utils/streak.touchStreak.
@@ -432,6 +444,10 @@ const SELF_ONLY_FIELDS = [
   // "you can't send messages / upload photos" banners. Never shown to others.
   'isBanned', 'banReason', 'chatBanned', 'photoUploadBanned',
   'streak', // daily-login streak (STREAK1) — shown on own profile only
+  // Nearby opt-out state — the owner needs it to render the Privacy toggle and
+  // to decide whether the one-time consent prompt still has to be shown. Never
+  // exposed to other viewers: whether someone opted out is itself private.
+  'nearbyEnabled',
 ];
 
 // Preference keys safe to show to other users (display hints only). The full
@@ -547,12 +563,12 @@ userSchema.methods.toPublicJSON = function (distanceMeters, opts = {}) {
     ? src.hiddenPhotos.length
     : 0;
 
-  // Human-readable distance label.
+  // Coarse distance only — never a precise metre value (Apple 5.1.2(i)).
+  // distanceBucket is the key the v2 client localises; distanceLabel is the
+  // ASCII fallback already-shipped clients print verbatim.
   if (distanceMeters != null) {
-    obj.distanceLabel =
-      distanceMeters < 1000
-        ? `${Math.round(distanceMeters)} m`
-        : `${(distanceMeters / 1000).toFixed(1)} km`;
+    obj.distanceBucket = distanceBucket(distanceMeters);
+    obj.distanceLabel = distanceBucketLabel(distanceMeters);
   }
 
   // Expire boost.

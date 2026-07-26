@@ -5,6 +5,7 @@ const { auth } = require('../middleware/auth');
 const postingSuspended = require('../middleware/postingSuspended');
 const { ok, created, err } = require('../utils/respond');
 const { hasProfanity } = require('../utils/profanityFilter');
+const { distanceBucket, distanceBucketLabel } = require('../utils/distanceBucket');
 
 // ── GET /api/shouts ───────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res, next) => {
@@ -60,7 +61,10 @@ router.get('/', auth, async (req, res, next) => {
       content: s.content,
       createdAt: s.createdAt,
       expiresAt: s.expiresAt,
-      distanceMeters: s.distanceMeters,
+      // Coarse bucket only (Apple 5.1.2(i)) — a shout's metre-accurate distance
+      // pinpoints its author just as precisely as a Nearby card would.
+      distanceBucket: distanceBucket(s.distanceMeters),
+      distanceLabel: distanceBucketLabel(s.distanceMeters),
       user: s.userDoc,
     }));
 

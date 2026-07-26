@@ -29,9 +29,13 @@ export function PrivacySettings() {
   const setUser = useAuth((s) => s.setUser);
   const queryClient = useQueryClient();
 
-  // Optimistic local state — invert hideFromNearby into "visible".
+  // Optimistic local state — invert hideFromNearby into "visible". vc140 added
+  // `nearbyEnabled` (the Apple 5.1.2(i) consent record) as a second flag the
+  // nearby queries AND together; PATCH /api/me/privacy writes both, but read
+  // both here so a legacy account that only ever had hideFromNearby set still
+  // shows the switch in the position the server will actually act on.
   const [nearbyVisible, setNearbyVisible] = useState(
-    user ? !user.preferences?.hideFromNearby : true,
+    user ? !user.preferences?.hideFromNearby && user.nearbyEnabled !== false : true,
   );
   const [showDistance, setShowDistance] = useState(
     user ? !user.preferences?.hideDistance : true,

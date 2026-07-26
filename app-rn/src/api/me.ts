@@ -90,6 +90,13 @@ export interface User {
    *  an active grant to view them. */
   privatePhotosCount?: number;
   distanceLabel?: string | null;
+  /** Coarse distance bucket (Apple 5.1.2(i)). Render via
+   *  utils/distanceBucket#distanceBucketLabel, never a raw metre value. */
+  distanceBucket?: 'lt1' | '1to5' | '5to10' | 'gt10' | null;
+  /** Nearby visibility consent (vc140). Self-only; default true. Flipped by
+   *  Settings › Privacy › "Show me in Nearby" or by declining the one-time
+   *  Nearby disclosure. */
+  nearbyEnabled?: boolean;
   preferences?: {
     hideDistance?: boolean;
     hideOnlineStatus?: boolean;
@@ -275,7 +282,10 @@ export interface FollowedUser {
   dob?: string | null;
   lastActiveAt?: string | null;
   /** Distance in meters; for client-side 距离 sort. */
+  /** Quantized to one representative value per coarse bucket (Apple
+   *  5.1.2(i)) — a client-side sort key, not a real distance. */
   distanceM?: number | null;
+  distanceBucket?: 'lt1' | '1to5' | '5to10' | 'gt10' | null;
 }
 export const getFollowing = (userId: string) =>
   unwrap<FollowedUser[]>(api.get(`/users/${userId}/following`));
@@ -316,7 +326,10 @@ export interface LikerUser {
   isOfficial?: boolean;
   lastActiveAt?: string | null;
   /** Distance in meters (premium only); for client-side 距离 sort. */
+  /** Quantized to one representative value per coarse bucket (Apple
+   *  5.1.2(i)) — a client-side sort key, not a real distance. */
   distanceM?: number | null;
+  distanceBucket?: 'lt1' | '1to5' | '5to10' | 'gt10' | null;
 }
 export interface LikedMeResponse {
   count: number;
@@ -361,7 +374,10 @@ export interface ViewerUser {
   isBlurred?: boolean;
   lastActiveAt?: string | null;
   /** Distance in meters (premium only); for client-side 距离 sort. */
+  /** Quantized to one representative value per coarse bucket (Apple
+   *  5.1.2(i)) — a client-side sort key, not a real distance. */
   distanceM?: number | null;
+  distanceBucket?: 'lt1' | '1to5' | '5to10' | 'gt10' | null;
 }
 export interface ViewersResponse {
   count: number;

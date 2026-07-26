@@ -64,9 +64,11 @@ export interface ChatUser {
   /** ISO; null when a Premium user hides presence. */
   lastActiveAt?: string | null;
   dob?: string | null;
-  /** Server-formatted distance string, e.g. "3.9 km". */
+  /** Server-formatted coarse label, e.g. "1-5 km". */
   distance?: string | null;
-  /** Distance in meters for client-side 距离 sort. */
+  /** Coarse distance bucket (Apple 5.1.2(i)). */
+  distanceBucket?: 'lt1' | '1to5' | '5to10' | 'gt10' | null;
+  /** Quantized to one value per bucket — a sort key, not a real distance. */
   distanceM?: number | null;
 }
 

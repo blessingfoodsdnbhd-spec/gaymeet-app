@@ -10,6 +10,7 @@ import { avatarGradients } from '../../theme/tokens';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
 import { useAuth } from '../../store/auth';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { distanceBucketLabel } from '../../utils/distanceBucket';
 import { prefetchMany } from '../../utils/voiceCache';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -161,8 +162,11 @@ function Tile({
   // Backend may not always populate avatarIdx (it's a server-computed
   // helper for the no-photo gradient fallback). NaN % n is NaN, which
   // would index out-of-bounds and crash the destructure.
+  const { t } = useTranslation();
   const [a, b] = avatarGradients[(user.avatarIdx ?? 0) % avatarGradients.length];
   const initial = (user.nickname || '?').trim().charAt(0).toUpperCase();
+  // Coarse bucket only (Apple 5.1.2(i)) — see utils/distanceBucket.
+  const distLabel = distanceBucketLabel(t, user.distanceBucket, user.distance);
   const hasPhoto = !!user.avatarUrl;
   // Blurred tiles = locked-behind-Premium likers (JJJJ). Heavy blur + a lock
   // veil so free users see "someone liked you" without the identity.
@@ -220,9 +224,7 @@ function Tile({
             numberOfLines={1}
             badgeSize={14}
           />
-          {user.distance && (
-            <Text style={styles.tileDist}>{user.distance}</Text>
-          )}
+          {distLabel && <Text style={styles.tileDist}>{distLabel}</Text>}
         </LinearGradient>
       </View>
     </Pressable>

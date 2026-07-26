@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { computeAge, computeZodiac } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
 import { deferOpen } from '../../utils/deferOpen';
+import { distanceBucketLabel } from '../../utils/distanceBucket';
 import { FollowBadge } from '../../components/FollowBadge';
 import { NameWithBadge } from '../../components/NameWithBadge';
 import type { DiscoverCardUser } from '../../api/discover';
@@ -128,11 +129,11 @@ function DiscoverCardInner({ user, dragX, isTop }: Props) {
           </Text>
         </View>
 
-        {/* Distance pill — top-right */}
-        {user.distance && (
+        {/* Distance pill — top-right. Coarse bucket only (Apple 5.1.2(i)). */}
+        {distanceBucketLabel(t, user.distanceBucket, user.distance) && (
           <View style={styles.distancePill}>
             <Text style={[styles.distanceText, { color: theme.colors.text2 }]}>
-              {user.distance}
+              {distanceBucketLabel(t, user.distanceBucket, user.distance)}
             </Text>
           </View>
         )}

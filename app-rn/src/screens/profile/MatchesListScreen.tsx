@@ -25,6 +25,7 @@ import { getConversations, type ChatThread } from '../../api/chats';
 import { shortTime } from '../../utils/time';
 import { computeAge } from '../../utils/zodiac';
 import { presenceFrom } from '../../utils/lastActive';
+import { distanceBucketLabel } from '../../utils/distanceBucket';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
@@ -177,7 +178,9 @@ function MatchRow({ thread, onPress }: { thread: ChatThread; onPress: () => void
           const p = presenceFrom(t, thread.user.lastActiveAt, thread.user.isOnline);
           const parts: string[] = [];
           if (age != null) parts.push(String(age));
-          if (thread.user.distance) parts.push(thread.user.distance);
+          // Coarse bucket only (Apple 5.1.2(i)) — see utils/distanceBucket.
+          const dist = distanceBucketLabel(t, thread.user.distanceBucket, thread.user.distance);
+          if (dist) parts.push(dist);
           if (p) parts.push(p.text);
           if (parts.length === 0) return null;
           return (

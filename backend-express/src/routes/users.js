@@ -7,6 +7,7 @@ const { computeAge } = require('../utils/zodiac');
 const { validateDob, MIN_AGE, MSG } = require('../utils/ageGate');
 const { NOT_OFFICIAL, isNotOfficial, demoVisibility } = require('../utils/discovery');
 const { blockedIdSet } = require('../utils/blocking');
+const { distanceBucket, distanceBucketLabel, bucketSortMeters } = require('../utils/distanceBucket');
 const ProfileView = require('../models/ProfileView');
 
 // ── GET /api/users/me ─────────────────────────────────────────────────────────
@@ -46,7 +47,10 @@ router.get('/me/viewers', auth, async (req, res, next) => {
           isOnline: u.isOnline ?? false,
           dob: u.dob ? u.dob.toISOString() : null,
           lastActiveAt: u.lastActiveAt ? u.lastActiveAt.toISOString() : null,
-          distanceM: haversineMeters(myCoords, u.location?.coordinates),
+          // Quantized to the bucket's representative value (Apple 5.1.2(i)):
+          // this feeds a client-side 距离 sort, not a display string.
+          distanceM: bucketSortMeters(haversineMeters(myCoords, u.location?.coordinates)),
+          distanceBucket: distanceBucket(haversineMeters(myCoords, u.location?.coordinates)),
           isOfficial: u.isOfficial ?? false,
           isVerified: u.isVerified ?? false,
           isPremium: u.isPremium ?? false,
@@ -216,6 +220,13 @@ router.patch('/settings', auth, async (req, res, next) => {
     const prefUpdate = {};
     for (const f of prefFields) {
       if (req.body[f] !== undefined) prefUpdate[`preferences.${f}`] = req.body[f];
+    }
+    // Second write path for Nearby visibility (PATCH /api/me/privacy is the
+    // other). Mirror it onto the vc140 consent flag here too, or a client that
+    // goes through this endpoint would clear hideFromNearby while nearbyEnabled
+    // stayed false — and the query ANDs both, so the user would stay invisible.
+    if (typeof req.body.hideFromNearby === 'boolean') {
+      prefUpdate.nearbyEnabled = !req.body.hideFromNearby;
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, prefUpdate, {
@@ -442,7 +453,10 @@ router.get('/nearby', auth, async (req, res, next) => {
       _id: { $nin: excludeIds },
       'preferences.hideFromNearby': { $ne: true },
       'preferences.stealthMode': { $ne: true },
-      // Nearby is open again — no check-in gate (see discover.js /nearby).
+      // Apple 5.1.2(i) consent (vc140) — durable opt-out, not a session gate.
+      // `$ne: false` so accounts predating the field stay visible; see the
+      // longer note on the same filter in discover.js /nearby.
+      nearbyEnabled: { $ne: false },
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
       isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
@@ -515,20 +529,25 @@ router.get('/nearby', auth, async (req, res, next) => {
     const selfEntry = {
       ...me.toObject(),
       id: selfId,
-      distanceMeters: 0,
-      distanceLabel: '0 m',
+      isSelf: true,
+      distanceBucket: 'lt1',
+      distanceLabel: '< 1 km',
     };
 
     const combined = [selfEntry, ...others];
 
+    // Apple 5.1.2(i): collapse to a coarse bucket and strip the raw metre value
+    // that $geoNear attached — the sort above already consumed it, and shipping
+    // it would defeat the bucket. `distanceMeters: undefined` ⇒ key dropped by
+    // JSON.stringify. See utils/distanceBucket.js.
     const result = combined.map((u) => {
-      if (u.distanceMeters === 0 && u.distanceLabel) return u; // self entry already formatted
-      const dm = u.distanceMeters;
-      const label =
-        dm < 1000
-          ? `${Math.round(dm)} m`
-          : `${(dm / 1000).toFixed(1)} km`;
-      return { ...u, distanceLabel: label };
+      if (u.isSelf) return u; // self entry already formatted
+      return {
+        ...u,
+        distanceBucket: distanceBucket(u.distanceMeters),
+        distanceLabel: distanceBucketLabel(u.distanceMeters),
+        distanceMeters: undefined,
+      };
     });
 
     ok(res, result);
@@ -679,7 +698,11 @@ router.get('/likes', auth, async (req, res, next) => {
       const myCoords = me.location?.coordinates;
       ok(res, {
         count: likers.length,
-        users: likers.map((u) => ({ ...u, distanceM: haversineMeters(myCoords, u.location?.coordinates) })),
+        users: likers.map((u) => {
+          const m = haversineMeters(myCoords, u.location?.coordinates);
+          // Coarse only (Apple 5.1.2(i)) — see utils/distanceBucket.
+          return { ...u, distanceM: bucketSortMeters(m), distanceBucket: distanceBucket(m) };
+        }),
       });
     } else {
       // Free: count + blurred rows. We DO send the real avatarUrl so the client

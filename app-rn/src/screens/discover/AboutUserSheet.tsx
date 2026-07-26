@@ -49,6 +49,7 @@ import {
 import type { DiscoverCardUser } from '../../api/discover';
 import type { RootStackParamList } from '../../navigation/types';
 import { showSafetyMenu } from '../../utils/safetyMenu';
+import { distanceBucketLabel } from '../../utils/distanceBucket';
 import { shareProfile } from '../../utils/shareProfile';
 import { VoicePlayButton } from '../../components/VoicePlayButton';
 import { useDiscoverPrefs } from '../../store/discoverPrefs';
@@ -484,8 +485,11 @@ export function AboutUserSheet({ open, user, onClose, onLike }: Props) {
                   </View>
                 );
               })()}
-              {!!user.distance && (
-                <Text style={{ fontSize: 13, color: theme.colors.muted }}>{user.distance}</Text>
+              {/* Coarse bucket only (Apple 5.1.2(i)) — see utils/distanceBucket. */}
+              {!!distanceBucketLabel(t, user.distanceBucket, user.distance) && (
+                <Text style={{ fontSize: 13, color: theme.colors.muted }}>
+                  {distanceBucketLabel(t, user.distanceBucket, user.distance)}
+                </Text>
               )}
             </View>
 

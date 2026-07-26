@@ -13,11 +13,18 @@ function haversineMeters(a, b) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-/** Human display string for a distance in meters, or null. */
+/**
+ * Human display string for a distance in meters, or null.
+ *
+ * Delegates to the coarse buckets (Apple 5.1.2(i)). It used to round to 100 m;
+ * it is kept as a re-export rather than deleted so that a future caller
+ * reaching for "the distance formatter in geo.js" gets the compliant one
+ * instead of reinventing the precise version.
+ */
+const { distanceBucketLabel } = require('./distanceBucket');
+
 function formatDist(meters) {
-  if (meters == null) return null;
-  if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
+  return distanceBucketLabel(meters);
 }
 
 module.exports = { haversineMeters, formatDist };

@@ -9,6 +9,7 @@ const { NOT_OFFICIAL, demoVisibility } = require('../utils/discovery');
 const { followStatusMap } = require('../utils/followStatus');
 const { incomingLikerSet, outgoingLikeSet } = require('../utils/incomingLikes');
 const { isPremiumActive } = require('../utils/premium');
+const { distanceBucket, distanceBucketLabel } = require('../utils/distanceBucket');
 
 const MAX_DISTANCE_M = 100_000; // 100 km — Meyou is Malaysia-only at launch
 
@@ -26,10 +27,11 @@ function resolveOrigin(me) {
   };
 }
 
+// Apple 5.1.2(i): distance leaves the server as a coarse bucket only. This used
+// to round to the nearest 100 m, which is precise enough to trilaterate a home
+// address from three samples. See utils/distanceBucket.js.
 function formatDistance(meters) {
-  if (meters == null) return null;
-  if (meters < 1000) return `${Math.max(100, Math.round(meters / 100) * 100)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
+  return distanceBucketLabel(meters);
 }
 
 // Hide a Premium user's presence (online dot AND last-active time) from other
@@ -202,7 +204,13 @@ router.get('/cards', auth, async (req, res, next) => {
       ...u,
       id: u._id.toString(),
       distance: formatDistance(u.distanceMeters),
-      distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
+      distanceBucket: distanceBucket(u.distanceMeters),
+      // distKm is deliberately null: a 10 m-resolution number alongside the
+      // bucket would hand back exactly the precision the bucket exists to hide.
+      distKm: null,
+      // $geoNear wrote the raw metre value onto the doc and `...u` would spread
+      // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
+      distanceMeters: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
@@ -325,7 +333,13 @@ router.post('/search-new', auth, async (req, res, next) => {
       ...u,
       id: u._id.toString(),
       distance: formatDistance(u.distanceMeters),
-      distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
+      distanceBucket: distanceBucket(u.distanceMeters),
+      // distKm is deliberately null: a 10 m-resolution number alongside the
+      // bucket would hand back exactly the precision the bucket exists to hide.
+      distKm: null,
+      // $geoNear wrote the raw metre value onto the doc and `...u` would spread
+      // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
+      distanceMeters: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
@@ -456,9 +470,12 @@ router.get('/nearby', auth, async (req, res, next) => {
       ...NOT_OFFICIAL, // hide official accounts (Meyou 官方) from discovery
       isDemo: demoVisibility(me), // P0: real users never see demo accounts
     };
-    // Nearby is open again (product decision): anyone in range is surfaced
-    // directly, no check-in required. The nearbyCheckin* fields + endpoint are
-    // intentionally left in place (unused) so the live iOS client keeps working.
+    // Apple 5.1.2(i) consent, vc140: no per-session check-in — visibility is a
+    // durable opt-OUT. `$ne: false` (not `=== true`) is load-bearing: the field
+    // was added after launch, so every pre-vc140 account has it unset, and
+    // matching on `true` would empty 附近 for the entire existing user base the
+    // way the check-in gate did. Unset ⇒ visible; only an explicit decline hides.
+    baseQuery.nearbyEnabled = { $ne: false };
     if (filterInterests) {
       baseQuery.interests = { $in: filterInterests };
     }
@@ -514,7 +531,13 @@ router.get('/nearby', auth, async (req, res, next) => {
       ...u,
       id: u._id.toString(),
       distance: formatDistance(u.distanceMeters),
-      distKm: u.distanceMeters != null ? +(u.distanceMeters / 1000).toFixed(2) : null,
+      distanceBucket: distanceBucket(u.distanceMeters),
+      // distKm is deliberately null: a 10 m-resolution number alongside the
+      // bucket would hand back exactly the precision the bucket exists to hide.
+      distKm: null,
+      // $geoNear wrote the raw metre value onto the doc and `...u` would spread
+      // it straight out to the client. undefined ⇒ JSON.stringify drops the key.
+      distanceMeters: undefined,
       avatarIdx: hashToIdx(u._id.toString()),
       followStatus: fsMap.get(u._id.toString()) || 'none',
       likedByThem: isPremiumActive(me) && likers.has(u._id.toString()),
@@ -531,8 +554,11 @@ router.get('/nearby', auth, async (req, res, next) => {
     const self = {
       ...selfPublic,
       sharedTags: me.interests || [],
-      distance: '0 m',
-      distKm: 0,
+      // Own tile — same coarse bucket vocabulary as everyone else. "0 m" was a
+      // precise value in a field the client renders verbatim (5.1.2(i)).
+      distance: distanceBucketLabel(0),
+      distanceBucket: distanceBucket(0),
+      distKm: null,
       avatarIdx: hashToIdx(me._id.toString()),
     };
 

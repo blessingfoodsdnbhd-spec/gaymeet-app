@@ -882,7 +882,13 @@
     "viewGrid": "Grid",
     "viewMap": "Map",
     "mapLocating": "Locating you…",
-    "mapApproxNote": "Approximate positions — exact locations are never shown"
+    "mapApproxNote": "Approximate positions — exact locations are never shown",
+    "distance": {
+      "lt1": "Under 1 km",
+      "1to5": "1–5 km",
+      "5to10": "5–10 km",
+      "gt10": "Over 10 km"
+    }
   },
   "moments": {
     "compose": {
@@ -1120,26 +1126,16 @@
   },
   "nearby": {
     "peopleCount": "{{n}} nearby",
-    "footnote": "Only people who checked in appear here",
-    "checkin": {
-      "cta": "Check in",
-      "checkout": "Check out",
-      "hiddenTitle": "You're not on the map",
-      "hiddenSub": "Check in to appear to people nearby",
-      "visibleTitle": "You're visible nearby",
-      "visibleSub": "{{min}} min left · tap Check out anytime",
-      "sheetTitle": "Check in to Nearby",
-      "sheetBody": "Check in to let nearby people discover you for a short time. You choose when, and it ends automatically.",
-      "bulletSession": "You only appear for the time you pick — then you're off automatically.",
-      "bulletPrecise": "Your exact location is never shared — only an approximate distance.",
-      "bulletOff": "Check out any time to disappear from Nearby instantly.",
-      "durationLabel": "Stay visible for",
-      "minutes": "{{min}} min",
-      "confirm": "Check in now",
-      "notNow": "Not now",
-      "toastOn": "Checked in — visible for {{min}} min",
-      "toastOff": "Checked out — you're off Nearby",
-      "failed": "Couldn't update check-in"
+    "consent": {
+      "title": "About Nearby",
+      "body": "You will appear in other people’s Nearby list. We only show an approximate distance range — there is no map, and your precise location is never shared.",
+      "bulletApprox": "Approximate range only (e.g. “1–5 km”), no map",
+      "bulletSettings": "Turn it off any time in Settings › Privacy",
+      "bulletBlock": "Block or report anyone, at any time",
+      "accept": "Continue",
+      "decline": "Turn off (you can enable it later)",
+      "optedOut": "Turned off — you won’t appear in Nearby",
+      "failed": "Couldn’t update. Please try again."
     }
   },
   "virtualLocation": {
