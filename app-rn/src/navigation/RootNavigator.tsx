@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { useAuth } from '../store/auth';
 import { useOnboarding } from '../store/onboarding';
+import { countAndMaybeAskReview } from '../utils/reviewPrompt';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { InterestTagsPickerScreen } from '../screens/auth/InterestTagsPickerScreen';
@@ -92,6 +93,17 @@ export function RootNavigator() {
   // the intro on EVERY cold launch for any fresh-but-already-onboarded user.
   const fresh = !!user && (user.photos?.length ?? 0) === 0 && (user.prompts?.length ?? 0) === 0;
   const showOnboarding = signedIn && fresh && onbHydrated && !onbDone;
+
+  // Review trigger 3 of 3 — loyalty. Counts launches that reach a usable,
+  // signed-in app, so the gates above (age, interests, onboarding) don't burn
+  // the counter for someone who never got in. Deliberately NOT gated on
+  // showOnboarding: a brand-new account starts at 1 and needs ten launches
+  // before it can fire, by which point they're no longer new. The effect keys
+  // on `signedIn` so it runs once per cold start, not on every re-render.
+  React.useEffect(() => {
+    if (!signedIn) return;
+    void countAndMaybeAskReview('launch', 10, 'launch-10');
+  }, [signedIn]);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

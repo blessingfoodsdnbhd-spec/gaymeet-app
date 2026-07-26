@@ -44,6 +44,7 @@
     "expo-sharing": "~13.1.5",
     "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
+    "expo-store-review": "~8.1.5",
     "i18next": "^23.16.0",
     "lucide-react-native": "^0.460.0",
     "react": "19.0.0",

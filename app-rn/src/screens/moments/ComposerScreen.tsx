@@ -25,6 +25,7 @@ import { FriendPickerSheet, type TagPick } from '../../components/FriendPickerSh
 import { MomentLocationSheet, type MomentPlace } from '../../components/MomentLocationSheet';
 import { openSheetAfterKeyboardDismiss } from '../../utils/keyboardSheet';
 import { postMoment, patchMoment } from '../../api/moments';
+import { countAndMaybeAskReview } from '../../utils/reviewPrompt';
 import { uploadFile } from '../../api/upload';
 import { setMomentLocationHandler } from '../../utils/momentLocationBridge';
 
@@ -115,6 +116,11 @@ export function ComposerScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['moments'] });
       nav.goBack();
+      // Review trigger 2 of 3 — someone who has published five Moments is an
+      // invested user. Counts creates only; editing an old post says nothing
+      // about how they feel about the app. After goBack() so the native dialog
+      // lands on the feed rather than on a screen that's being torn down.
+      if (!isEditing) void countAndMaybeAskReview('moments', 5, 'moments-5');
     },
     onError: (e: any) => {
       const stage = e?.stage ?? 'post';

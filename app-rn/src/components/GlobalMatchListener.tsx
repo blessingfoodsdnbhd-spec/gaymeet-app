@@ -3,6 +3,7 @@ import { MatchOverlay } from '../screens/discover/MatchOverlay';
 import { useAuth } from '../store/auth';
 import { on, type WsMatchNew } from '../api/ws';
 import type { DiscoverCardUser } from '../api/discover';
+import { maybeAskReview } from '../utils/reviewPrompt';
 
 /**
  * Mounted at the app root. Listens for `match:new` WS events the user
@@ -43,13 +44,23 @@ export function GlobalMatchListener() {
     };
   }, [me]);
 
+  // Review trigger 1 of 3 — a mutual match is the strongest positive moment in
+  // the app. Fired on DISMISS rather than on open: the native rating dialog is
+  // itself a modal, and iOS silently drops it if something else is already
+  // presented, which would waste the one prompt we get. Fire-and-forget so
+  // closing the overlay is never delayed by it.
+  const dismissMatch = React.useCallback(() => {
+    setMatched(null);
+    void maybeAskReview('match');
+  }, []);
+
   return (
     <MatchOverlay
       open={matched != null}
       matchedUser={matched}
       me={me}
-      onMessage={() => setMatched(null)}
-      onLater={() => setMatched(null)}
+      onMessage={dismissMatch}
+      onLater={dismissMatch}
     />
   );
 }
