@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +35,11 @@ const BENEFIT_KEYS = [
 ] as const;
 
 type Plan = 'monthly' | 'annual';
+
+// Apple guideline 2.3.10 — an iOS build must not mention other platforms'
+// stores or accounts. Every billing string is therefore platform-split: iOS
+// only ever says Apple ID / App Store, Android only ever says Google.
+const STORE_SUFFIX = Platform.OS === 'ios' ? 'IOS' : 'Android';
 
 export function PremiumScreen() {
   const theme = useTheme();
@@ -271,7 +277,7 @@ export function PremiumScreen() {
             lineHeight: 16,
           }}
         >
-          {t('premium.disclaimer')}
+          {t(`premium.disclaimer${STORE_SUFFIX}`)}
         </Text>
 
         {/* Restore Purchases — Apple guideline 3.1.1. Subtle link
@@ -305,7 +311,7 @@ export function PremiumScreen() {
           {t('premium.subscription.title')} · {selectedDurationLabel} · {selectedPriceLabel}
         </Text>
         <Text style={{ color: theme.colors.muted, fontSize: 11, lineHeight: 15, textAlign: 'center', marginTop: 4 }}>
-          {t('premium.subscription.autoRenewTerms')}
+          {t(`premium.subscription.autoRenewTerms${STORE_SUFFIX}`)}
         </Text>
         <View style={styles.legalRow}>
           <Pressable onPress={() => openLegal(TERMS_URL)} hitSlop={10} style={{ padding: 4 }}>

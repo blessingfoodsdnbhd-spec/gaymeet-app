@@ -16,10 +16,15 @@ type PremiumResult = {
 
 const tx = (k: string, p?: Record<string, unknown>) => i18n.t(k, p);
 
-// react-native-iap 15.x (Nitro) — loaded lazily so the module never crashes
+// react-native-iap 14.4.x (Nitro) — loaded lazily so the module never crashes
 // Expo Go / web where the native module is absent. The whole surface below is
 // typed `any`: we intentionally avoid importing the package's named types at
 // module scope so the import stays dynamic.
+//
+// NOTE on `requestPurchase`: this version keys the per-platform request object
+// by `ios` / `android` (NOT `apple` / `google`). Using the wrong key makes the
+// library throw "Invalid request for iOS. The `sku` property is required."
+// before it ever reaches StoreKit.
 async function loadRNIap(): Promise<any> {
   try {
     return await import('react-native-iap');
@@ -37,7 +42,7 @@ async function safeInit(RNIap: any) {
 }
 
 // ─── Event-based purchase → Promise bridge ───────────────────────────────────
-// v15's `requestPurchase` no longer resolves with the purchase; the result
+// `requestPurchase` no longer resolves with the purchase; the result
 // arrives asynchronously on `purchaseUpdatedListener` (success) or
 // `purchaseErrorListener` (failure/cancel). This helper re-collapses that back
 // into a single awaitable so the exported functions keep their old shape.
@@ -122,7 +127,17 @@ async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | nul
   let purchase: any;
   try {
     purchase = await awaitPurchase(RNIap, [sku], () =>
-      RNIap.requestPurchase({ type: 'subs', request: { apple: { sku } } }),
+      RNIap.requestPurchase({
+        type: 'subs',
+        request: {
+          ios: {
+            sku,
+            // Keep the transaction open until the backend has verified the
+            // receipt; we finish it ourselves below.
+            andDangerouslyFinishTransactionAutomatically: false,
+          },
+        },
+      }),
     );
   } catch (e: any) {
     throw new Error(tx('iapError.purchaseFailed', { detail: String(e?.message ?? e) }));
@@ -189,7 +204,7 @@ async function purchaseAndroid(
       RNIap.requestPurchase({
         type: 'subs',
         request: {
-          google: {
+          android: {
             skus: [subscriptionId],
             subscriptionOffers: [
               { sku: subscriptionId, offerToken: matchingOffer.offerToken },

@@ -1610,14 +1610,16 @@
     "perMonth": "月",
     "saveTwoMonths": "2か月分お得",
     "monthlyEquivalent": "≈ 月 RM {{n}}",
-    "disclaimer": "購入確定時にApple IDまたはGoogleアカウントに課金されます。現在の期間終了の24時間以上前に自動更新をオフにしない限り、サブスクリプションは自動更新されます。現在の期間終了の24時間以内に表示価格で更新料金が請求されます。サブスクリプションの管理は 設定→Apple ID／Google→サブスクリプション で行えます。",
+    "disclaimerIOS": "購入確定時にApple IDに課金されます。現在の期間終了の24時間以上前に自動更新をオフにしない限り、サブスクリプションは自動更新されます。現在の期間終了の24時間以内に表示価格で更新料金が請求されます。サブスクリプションの管理は 設定→Apple ID→サブスクリプション で行えます。",
+    "disclaimerAndroid": "購入確定時にGoogleアカウントに課金されます。現在の期間終了の24時間以上前に自動更新をオフにしない限り、サブスクリプションは自動更新されます。現在の期間終了の24時間以内に表示価格で更新料金が請求されます。サブスクリプションの管理は Google Play→定期購入 で行えます。",
     "termsOfUse": "利用規約",
     "privacyPolicy": "プライバシーポリシー",
     "subscription": {
       "title": "Meyouプレミアム",
       "monthly": "月額",
       "annual": "年額",
-      "autoRenewTerms": "解約するまで自動更新されます。App StoreまたはGoogle Playのアカウント設定でいつでも解約できます。"
+      "autoRenewTermsIOS": "解約するまで自動更新されます。App Storeのアカウント設定でいつでも解約できます。",
+      "autoRenewTermsAndroid": "解約するまで自動更新されます。Google Playのアカウント設定でいつでも解約できます。"
     },
     "ctaAnnual": "年額 RM {{price}}",
     "ctaMonthly": "月額 RM {{price}}",

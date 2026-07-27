@@ -1664,14 +1664,16 @@
     "perMonth": "month",
     "saveTwoMonths": "Save 2 months",
     "monthlyEquivalent": "≈ RM {{n}} / month",
-    "disclaimer": "Payment will be charged to your Apple ID or Google account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period at the displayed price. Manage subscriptions in Settings → Apple ID / Google → Subscriptions.",
+    "disclaimerIOS": "Payment will be charged to your Apple ID at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period at the displayed price. Manage subscriptions in Settings → Apple ID → Subscriptions.",
+    "disclaimerAndroid": "Payment will be charged to your Google account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period at the displayed price. Manage subscriptions in Google Play → Subscriptions.",
     "termsOfUse": "Terms of Use",
     "privacyPolicy": "Privacy Policy",
     "subscription": {
       "title": "Meyou Premium",
       "monthly": "Monthly",
       "annual": "Annual",
-      "autoRenewTerms": "Auto-renews until canceled. Cancel anytime in your App Store or Google Play account settings."
+      "autoRenewTermsIOS": "Auto-renews until canceled. Cancel anytime in your App Store account settings.",
+      "autoRenewTermsAndroid": "Auto-renews until canceled. Cancel anytime in your Google Play account settings."
     },
     "ctaAnnual": "Annual RM {{price}}",
     "ctaMonthly": "Monthly RM {{price}}",
