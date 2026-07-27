@@ -33,11 +33,102 @@ async function loadRNIap(): Promise<any> {
   }
 }
 
-async function safeInit(RNIap: any) {
+// ─── Connection management ───────────────────────────────────────────────────
+// `initConnection()` RESOLVES `false` when the native side fails to open the
+// store connection — it does NOT reject. ios/HybridRnIap.swift:41-70 catches
+// the error, emits a purchase-error event and `return false`, and the JS
+// wrapper passes that boolean straight through (src/index.ts:836-843).
+// Ignoring the return value is what produced
+//   "Connection not initialized. Call initConnection() first."
+// on the very next call: every other native method opens with
+// `try self.ensureConnection()` (ios/HybridRnIap.swift:824-828), so the first
+// thing to blow up was `fetchProducts`, long before any purchase.
+//
+// The native `initConnection` also short-circuits to `true` while a previous
+// attempt is still in flight (`if self.isInitialized || self.isInitializing`),
+// so a second concurrent caller can be told "connected" before the store is
+// actually up. Every caller therefore funnels through ONE shared promise.
+const INIT_ATTEMPTS = 3;
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+let connected = false;
+let connecting: Promise<boolean> | null = null;
+let lastInitError: string | null = null;
+
+async function openConnection(RNIap: any): Promise<boolean> {
+  for (let attempt = 0; attempt < INIT_ATTEMPTS; attempt++) {
+    try {
+      if (await RNIap.initConnection()) return true;
+      lastInitError = 'initConnection returned false';
+    } catch (e: any) {
+      lastInitError = String(e?.message ?? e);
+    }
+    if (attempt < INIT_ATTEMPTS - 1) await delay(500 * (attempt + 1));
+  }
+  return false;
+}
+
+async function ensureConnected(RNIap: any, force = false): Promise<boolean> {
+  if (force) {
+    connected = false;
+    connecting = null;
+    // A full teardown is the only way to clear a wedged native connection —
+    // `initConnection` returns `true` immediately whenever `isInitialized` is
+    // already set. WARNING: endConnection() also clears every registered
+    // purchase listener (cleanupExistingState → purchaseUpdatedListeners
+    // .removeAll()), so this must NEVER run while a purchase is in flight.
+    try { await RNIap.endConnection(); } catch { /* noop */ }
+  }
+  if (connected) return true;
+  if (!connecting) connecting = openConnection(RNIap);
+  const ok = await connecting;
+  connecting = null;
+  connected = ok;
+  return ok;
+}
+
+async function requireConnection(RNIap: any, force = false): Promise<void> {
+  if (await ensureConnected(RNIap, force)) return;
+  throw new Error(tx('iapError.initFailed', { detail: lastInitError ?? 'unavailable' }));
+}
+
+function isNotConnected(e: any): boolean {
+  const code = e?.code;
+  const msg = String(e?.message ?? e ?? '');
+  return (
+    code === 'init-connection' ||
+    code === 'not-prepared' ||
+    code === 'connection-closed' ||
+    code === 'service-disconnected' ||
+    /connection not initialized|not initialized|initconnection/i.test(msg)
+  );
+}
+
+// Run a native call that needs an open connection, repairing the connection
+// once if the native side says it isn't initialized. Safe only BEFORE any
+// purchase listener is attached — see the endConnection warning above.
+async function withConnection<T>(RNIap: any, fn: () => Promise<T>): Promise<T> {
+  await requireConnection(RNIap);
   try {
-    await RNIap.initConnection();
+    return await fn();
   } catch (e: any) {
-    throw new Error(tx('iapError.initFailed', { detail: e?.message ?? e }));
+    if (!isNotConnected(e)) throw e;
+    await requireConnection(RNIap, true);
+    return await fn();
+  }
+}
+
+/**
+ * Open the store connection ahead of time, at app start. Never throws and
+ * never blocks startup — a failure here just means the first purchase pays
+ * the connection cost (and retries) itself.
+ */
+export async function warmUpIAP(): Promise<boolean> {
+  try {
+    const RNIap = await loadRNIap();
+    return await ensureConnected(RNIap);
+  } catch {
+    return false;
   }
 }
 
@@ -114,9 +205,14 @@ function awaitPurchase(
 
 // ─── iOS purchase ────────────────────────────────────────────────────────────
 async function purchaseIOS(sku: string, RNIap: any): Promise<PremiumResult | null> {
+  // This also doubles as the connection proof: once fetchProducts has come
+  // back the native side is genuinely initialized, so the requestPurchase
+  // below can attach its listeners without risking a repair-reconnect.
   let products: any[];
   try {
-    products = await RNIap.fetchProducts({ skus: [sku], type: 'subs' });
+    products = await withConnection(RNIap, () =>
+      RNIap.fetchProducts({ skus: [sku], type: 'subs' }),
+    );
   } catch (e: any) {
     throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
@@ -180,7 +276,9 @@ async function purchaseAndroid(
 
   let products: any[];
   try {
-    products = await RNIap.fetchProducts({ skus: [subscriptionId], type: 'subs' });
+    products = await withConnection(RNIap, () =>
+      RNIap.fetchProducts({ skus: [subscriptionId], type: 'subs' }),
+    );
   } catch (e: any) {
     throw new Error(tx('iapError.fetchFailed', { detail: e?.message ?? e }));
   }
@@ -272,7 +370,12 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
   let RNIap: any;
   try {
     RNIap = await loadRNIap();
-    await RNIap.initConnection();
+    // Runs on Premium-screen mount, i.e. usually the first thing to open the
+    // connection. Going through ensureConnected() means the Subscribe tap that
+    // follows shares this one attempt instead of racing it — the native
+    // `isInitializing` short-circuit would otherwise hand the tap a bogus
+    // "connected: true" and fail in fetchProducts.
+    if (!(await ensureConnected(RNIap))) return empty;
   } catch {
     return empty; // store not available — caller falls back
   }
@@ -280,10 +383,10 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
   try {
     if (Platform.OS === 'ios') {
       // iOS: two separate products, each carries displayPrice.
-      const products = await RNIap.fetchProducts({
+      const products = await withConnection<any[]>(RNIap, () => RNIap.fetchProducts({
         skus: [IAP_SKUS.monthly, IAP_SKUS.annual],
         type: 'subs',
-      });
+      }));
       const find = (sku: string) =>
         (products || []).find((p: any) => (p?.id ?? p?.productId) === sku);
       const fmt = (p: any) =>
@@ -296,10 +399,10 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
 
     // Android: ONE subscription with two base plans; the formatted price is
     // in each base plan's first pricing phase.
-    const products = await RNIap.fetchProducts({
+    const products = await withConnection<any[]>(RNIap, () => RNIap.fetchProducts({
       skus: [ANDROID_IAP.subscriptionId],
       type: 'subs',
-    });
+    }));
     const product = (products || []).find(
       (p: any) => (p?.id ?? p?.productId) === ANDROID_IAP.subscriptionId,
     );
@@ -325,7 +428,7 @@ export async function getLocalizedPrices(): Promise<LocalizedPrices> {
 
 export async function purchaseSubscription(sku: string): Promise<PremiumResult | null> {
   const RNIap = await loadRNIap();
-  await safeInit(RNIap);
+  await requireConnection(RNIap);
   if (Platform.OS === 'ios') return purchaseIOS(sku, RNIap);
   if (Platform.OS === 'android') return purchaseAndroid(sku, RNIap);
   throw new Error(tx('iapError.iosOnly'));
@@ -335,7 +438,7 @@ export async function purchaseSubscription(sku: string): Promise<PremiumResult |
 async function restoreIOS(RNIap: any): Promise<PremiumResult | null> {
   let purchases: any[] = [];
   try {
-    purchases = await RNIap.getAvailablePurchases();
+    purchases = await withConnection(RNIap, () => RNIap.getAvailablePurchases());
   } catch (e: any) {
     throw new Error(tx('iapError.restoreFailed', { detail: e?.message ?? e }));
   }
@@ -383,7 +486,7 @@ async function restoreIOS(RNIap: any): Promise<PremiumResult | null> {
 async function restoreAndroid(RNIap: any): Promise<PremiumResult | null> {
   let purchases: any[] = [];
   try {
-    purchases = await RNIap.getAvailablePurchases();
+    purchases = await withConnection(RNIap, () => RNIap.getAvailablePurchases());
   } catch (e: any) {
     throw new Error(tx('iapError.restoreFailed', { detail: e?.message ?? e }));
   }
@@ -439,7 +542,7 @@ async function restoreAndroid(RNIap: any): Promise<PremiumResult | null> {
  */
 export async function restoreSubscriptions(): Promise<PremiumResult | null> {
   const RNIap = await loadRNIap();
-  await safeInit(RNIap);
+  await requireConnection(RNIap);
   if (Platform.OS === 'ios') return restoreIOS(RNIap);
   if (Platform.OS === 'android') return restoreAndroid(RNIap);
   throw new Error(tx('iapError.iosOnly'));

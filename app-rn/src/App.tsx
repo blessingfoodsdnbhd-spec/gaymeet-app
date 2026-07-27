@@ -5,6 +5,7 @@ import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-c
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
 import { ensureAudioMode } from './utils/voiceCache';
+import { warmUpIAP } from './utils/iap';
 import { initSentry } from './lib/sentry';
 
 initSentry();
@@ -84,6 +85,12 @@ export function App() {
     // Daily local-cache maintenance (prune 60-day DM cache + evict 7-day media).
     // Foreground-triggered; self-throttles to once/24h. Non-blocking.
     runDailyCleanupIfDue();
+
+    // Open the store connection at boot so the Premium screen never has to.
+    // Every native IAP call fails with "Connection not initialized" until this
+    // succeeds, so getting it out of the way early removes the whole class of
+    // races. Never throws; a failure just means the first purchase retries.
+    warmUpIAP();
 
     (async () => {
       // Load fonts and check auth in parallel
