@@ -32,7 +32,10 @@ interface Props {
 }
 
 const RADIUS_OPTIONS = [2, 5, 10, 25, 50, 100];
-const DEFAULT_RADIUS = 10;
+// 100 is the 不限/unlimited chip (mapped to radiusKm=0 on apply). It is the
+// pre-selected value for anyone who has never set a radius, so the sheet shows
+// the same thing the grid is actually doing.
+const DEFAULT_RADIUS = 100;
 
 export function FiltersSheet({ open, initial, myInterests, onApply, onClose }: Props) {
   const theme = useTheme();

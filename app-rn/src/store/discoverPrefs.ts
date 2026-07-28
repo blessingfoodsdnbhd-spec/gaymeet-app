@@ -10,7 +10,7 @@ interface DiscoverPrefsState {
   /** When true, opening a profile in Nearby auto-plays their voice intro. Default ON. */
   introVoice: boolean;
   setIntroVoice: (v: boolean) => void;
-  /** Nearby grid column count (2/3/4). Default 3. */
+  /** Nearby grid column count (2/3/4). Default 4. */
   gridColumns: GridColumns;
   setGridColumns: (n: GridColumns) => void;
 }
@@ -21,7 +21,10 @@ export const useDiscoverPrefs = create<DiscoverPrefsState>((set) => ({
     set({ introVoice: v });
     AsyncStorage.setItem(KEY, v ? '1' : '0').catch(() => {});
   },
-  gridColumns: 3,
+  // 4 on a fresh install — the denser grid shows more people above the fold,
+  // which matters most for a new user with nothing else on screen. Anyone who
+  // has tapped the 格子 toggle keeps their choice (hydration below overrides).
+  gridColumns: 4,
   setGridColumns: (n) => {
     set({ gridColumns: n });
     AsyncStorage.setItem(COLS_KEY, String(n)).catch(() => {});

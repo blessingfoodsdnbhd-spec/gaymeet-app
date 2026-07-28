@@ -70,7 +70,7 @@ export const searchNewFriends = (filters?: DiscoverFilters) =>
     }),
   );
 
-export const getNearby = (radiusKm = 10, filters?: DiscoverFilters) =>
+export const getNearby = (radiusKm = 0, filters?: DiscoverFilters) =>
   unwrap<DiscoverCardUser[]>(
     api.get('/discover/nearby', {
       params: {

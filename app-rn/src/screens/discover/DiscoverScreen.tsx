@@ -209,7 +209,10 @@ export function DiscoverScreen() {
   // Nearby tab — only Cards reflected filter changes.)
   const nearbyQ = useQuery({
     queryKey: ['discover', 'nearby', filters.radiusKm ?? null, filters.interests ?? null],
-    queryFn: () => getNearby(filters.radiusKm ?? 10, filters),
+    // No saved radius (fresh install) → 0 = 不限/unlimited, not 10 km. A new
+    // user with an empty grid has no reason to stay; the backend drops the
+    // $geoNear cap for 0 and still sorts nearest-first.
+    queryFn: () => getNearby(filters.radiusKm ?? 0, filters),
     enabled: mode.kind === 'nearby',
     staleTime: 60_000,
   });
